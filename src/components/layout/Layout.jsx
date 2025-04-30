@@ -1,16 +1,15 @@
-import {
-	AppShell,
-	Burger,
-	Group,
-	Skeleton
-} from '@mantine/core';
+import { AppShell, Burger, Group, Skeleton } from '@mantine/core';
+import '@mantine/core/styles/AppShell.css';
+import '@mantine/core/styles/Burger.css';
+import '@mantine/core/styles/Group.css';
+import '@mantine/core/styles/Skeleton.css';
 import { useDisclosure } from '@mantine/hooks';
 
 export function Layout() {
   const [opened, { toggle }] = useDisclosure();
 
   return (
-    <AppShell
+     <AppShell
       header={{ height: 60 }}
       footer={{ height: 60 }}
       navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
@@ -62,7 +61,7 @@ export const Layout = ({
 	const [asideOpened, setAsideOpened] = useState(false);
 
 	const { header, main, footer } = parseLayout(view);
-	
+
 	const handleNavbarResize = (e, { size: { width } }) => {
 		if (!isMobile) setNavbarWidth(width);
 	};
@@ -85,7 +84,7 @@ export const Layout = ({
 		</Box>
 		</Resizable>
 	);
-  
+
 	const ResizableAside = ({ width, children }) => (
 		<Resizable
 		width={width}
