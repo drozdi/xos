@@ -1,0 +1,12 @@
+.react-resizable-handle {
+	width: 8px;
+	cursor: col-resize;
+	background: transparent;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 10;
+}
+.react-resizable-handle-e {
+	right: -4px;
+}
