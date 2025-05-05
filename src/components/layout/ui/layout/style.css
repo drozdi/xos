@@ -1,4 +1,3 @@
-
 .x-layout-container,
 .x-layout {
 	width: 100%;
@@ -12,10 +11,15 @@
 .x-layout {
 	display: grid;
 	max-height: 100%;
-	grid-template-rows: minmax(min-content, auto) minmax(auto, 1fr) minmax(min-content, auto);
-	grid-template-columns: minmax(min-content, auto) minmax(auto, 1fr) minmax(min-content, auto);
+	grid-template-rows: minmax(min-content, auto) minmax(auto, 1fr) minmax(
+			min-content,
+			auto
+		);
+	grid-template-columns: minmax(min-content, auto) minmax(auto, 1fr) minmax(
+			min-content,
+			auto
+		);
 }
-
 
 .x-layout-header,
 .x-layout-footer {
@@ -24,7 +28,8 @@
 	z-index: 20;
 	max-width: 100%;
 	min-height: 3rem;
-	/*@apply border-solid border-color bg-black/20;*/
+	border: 0 solid var(--mantine-color-default-border);
+	background-color: var(--mantine-color-dark-light);
 }
 .x-layout-main {
 	grid-column-start: 2;
