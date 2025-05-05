@@ -1,19 +1,12 @@
-import { Skeleton } from '@mantine/core';
+import './App.css';
 import { Layout } from './components/layout';
 
 function App() {
 	return (
-		<Layout
-			navbar={
-				<>
-					{Array(60)
-						.fill(0)
-						.map((_, index) => (
-							<Skeleton key={index} h={28} mt="sm" animate={false} />
-						))}
-				</>
-			}
-		></Layout>
+		<Layout container>
+			<div slot="left">left</div>
+			<div>123</div>
+		</Layout>
 	);
 }
 

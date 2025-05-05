@@ -1,0 +1,104 @@
+@reference "@style";
+
+.x-sidebar,
+.x-sidebar-container {
+	width: 16rem;
+	height: 100%;
+	max-height: 100%;
+	position: relative;
+}
+
+.x-sidebar {
+	min-width: 3.5rem;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 50;
+	/*@apply bg-surface border-r border-solid border-color;*/
+}
+
+.x-sidebar-content {
+	max-width: 100%;
+	max-height: 100%;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.x-sidebar-toggle-mini {
+	width: 100%;
+	/*@apply border-t border-color;*/
+}
+
+.x-sidebar-toggle {
+	position: absolute;
+	top: 3rem;
+	right: -0.5rem;
+	z-index: -10;
+	translate: 50% 0;
+}
+.x-sidebar--right .x-sidebar-toggle {
+	right: auto;
+	left: -0.5rem;
+	translate: -50% 0;
+}
+
+.x-sidebar-res {
+	width: 0.5rem;
+	cursor: col-resize;
+	background: transparent;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 10;
+}
+.x-sidebar--animate {
+	transition-property: all;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 200ms;
+}
+.x-sidebar--left {
+	left: 0;
+	border-right-width: 1px;
+}
+.x-sidebar--left .x-sidebar-res {
+	right: -0.25rem;
+}
+.x-sidebar--right {
+	right: 0;
+	border-left-width: 1px;
+}
+.x-sidebar--right .x-sidebar-res {
+	left: -0.25rem;
+}
+.x-sidebar--mini {
+	width: 3.5rem;
+}
+
+.x-sidebar-container:has(.x-sidebar--mini-overlay) {
+	width: 3.5rem;
+}
+.x-sidebar-container:has(.x-sidebar--overlay:not(.x-sidebar--mini-overlay)) {
+	width: 0;
+}
+.x-sidebar-container:has(.x-sidebar--mini) {
+	width: 3.5rem;
+}
+.x-sidebar-container:has(.x-sidebar--close) {
+	width: 0;
+}
+.x-sidebar--close {
+	width: 0;
+	border: 0;
+}
+.x-sidebar-container:has(.x-sidebar:not(.is-mounted)) {
+	overflow: hidden;
+}
+.x-sidebar-container:has(.is-mounted) {
+	min-width: 0 !important;
+}
+.x-sidebar.is-mounted {
+	min-width: 0 !important;
+}
