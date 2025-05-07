@@ -1,6 +1,7 @@
 import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
 import { forwardRef, memo, useEffect, useRef } from 'react';
+import { Sections } from '../../../ui/sections/Sections';
 import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
 
@@ -23,7 +24,8 @@ export const XHeader = memo(
 		const isLayout = !!ctx;
 
 		return (
-			<header
+			<Sections
+				component="header"
 				{...props}
 				className={classNames(
 					'x-header',
@@ -35,24 +37,7 @@ export const XHeader = memo(
 				ref={handleRef}
 			>
 				{children}
-			</header>
-		);
-		/*return (
-			<Sections
-				as="header"
-				square
-				{...props}
-				className={classNames(
-					"x-header",
-					{
-						"x-layout-header": isLayout,
-					},
-					className
-				)}
-				ref={handleRef}
-			>
-				{children}
 			</Sections>
-		);*/
+		);
 	}),
 );

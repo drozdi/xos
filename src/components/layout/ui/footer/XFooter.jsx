@@ -1,6 +1,7 @@
 import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
 import { forwardRef, memo, useEffect, useRef } from 'react';
+import { Sections } from '../../../ui/sections/Sections';
 import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
 
@@ -23,24 +24,8 @@ export const XFooter = memo(
 		const isLayout = !!ctx;
 
 		return (
-			<footer
-				{...props}
-				className={classNames(
-					'x-footer',
-					{
-						'x-layout-footer': isLayout,
-					},
-					className,
-				)}
-				ref={handleRef}
-			>
-				{children}
-			</footer>
-		);
-		/*return (
 			<Sections
-				as="footer"
-				square
+				component="footer"
 				{...props}
 				className={classNames(
 					'x-footer',
@@ -53,6 +38,6 @@ export const XFooter = memo(
 			>
 				{children}
 			</Sections>
-		);*/
+		);
 	}),
 );

@@ -4,10 +4,13 @@ import '@mantine/core/styles/Group.css';
 import '@mantine/core/styles/ScrollArea.css';
 import '@mantine/core/styles/Skeleton.css';
 import { useSetState } from '@mantine/hooks';
-import { memo, useMemo, useRef, useState } from 'react';
+import React, { memo, useMemo, useRef, useState } from 'react';
 import { useBreakpoint } from '../../hooks/use-breakpoint';
 import { useSlots } from '../../hooks/use-slots';
 import './style.css';
+
+import { ActionIcon } from '@mantine/core';
+import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
 
 import { XFooter } from './ui/footer';
 import { XHeader } from './ui/header';
@@ -15,8 +18,14 @@ import { XLayout } from './ui/layout';
 import { XMain } from './ui/main';
 import { XSidebar } from './ui/sidebar';
 
-function XBtn() {
-	return null;
+interface LayoutProps {
+	children: React.ReactNode;
+	className?: string;
+	container?: boolean;
+	view?: string;
+	breakpoint?: number;
+	overlay?: boolean;
+	toggle?: boolean;
 }
 
 export const Layout = memo(function LayoutFn({
@@ -27,15 +36,15 @@ export const Layout = memo(function LayoutFn({
 	breakpoint = 600,
 	overlay,
 	toggle,
-}) {
-	const layoutRef = useRef();
+}: LayoutProps) {
+	const layoutRef = useRef(null);
 	const [width, setWidth] = useState(0);
 
-	const [ls, updateLs] = useSetState({
+	const [ls, setLs] = useSetState({
 		open: true,
 		mini: false,
 	});
-	const [rs, updateRs] = useSetState({
+	const [rs, setRs] = useSetState({
 		open: true,
 		mini: false,
 	});
@@ -56,8 +65,8 @@ export const Layout = memo(function LayoutFn({
 			miniMouse: true,
 			miniToggle: toggle && !belowBreakpoint,
 			//resizeable: true,
-			onMini: (mini) => updateLs({ mini }),
-			onResize: (width) => updateLs({ width }),
+			onMini: (mini) => setLs({ mini }),
+			onResize: (width) => setLs({ width }),
 			//onToggle: () => true,
 		}),
 		[ls, overlay, breakpoint, toggle, belowBreakpoint],
@@ -74,56 +83,55 @@ export const Layout = memo(function LayoutFn({
 			miniMouse: true,
 			miniToggle: toggle && !belowBreakpoint,
 			//resizeable: true,
-			onMini: (mini) => updateRs({ mini }),
-			onResize: (width) => updateRs({ width }),
+			onMini: (mini) => setRs({ mini }),
+			onResize: (width) => setRs({ width }),
 			//onToggle: () => true,
 		}),
 		[rs, overlay, breakpoint, toggle, belowBreakpoint],
 	);
 
-	const left = () => {
-		return wrapSlot(slot('left', null), XSidebar, leftProps);
-	};
-	const right = () => {
-		return wrapSlot(slot('right', null), XSidebar, rightProps);
-	};
-	const footer = () => {
-		return wrapSlot(slot('footer', null), XFooter, { noPadding: true });
-	};
-	const header = () => {
-		return wrapSlot(slot('header', null), XHeader, {
+	const left = () => wrapSlot(slot('left', null), XSidebar, leftProps);
+	const right = () => wrapSlot(slot('right', null), XSidebar, rightProps);
+	const footer = () => wrapSlot(slot('footer', null), XFooter);
+	const header = () =>
+		wrapSlot(slot('header', null), XHeader, {
 			align: 'normal',
 			leftSection: belowBreakpoint && hasSlot('left') && (
-				<XBtn
-					color="primary"
-					leftSection="mdi-dock-left"
-					size="sm"
-					square
+				<ActionIcon
+					variant="filled"
+					size="lg"
+					aria-label="Left"
 					onClick={(e) => {
 						e.stopPropagation();
 						e.preventDefault();
-						updateLs({ open: !ls.open });
+						setLs({ open: !ls.open });
 					}}
-				/>
+				>
+					<IconSquareArrowLeft
+						style={{ width: '70%', height: '70%' }}
+						stroke={1.5}
+					/>
+				</ActionIcon>
 			),
 			rightSection: belowBreakpoint && hasSlot('right') && (
-				<XBtn
-					color="primary"
-					leftSection="mdi-dock-right"
-					size="sm"
-					square
+				<ActionIcon
+					variant="filled"
+					size="lg"
+					aria-label="Right"
 					onClick={(e) => {
 						e.stopPropagation();
 						e.preventDefault();
-						updateRs({ open: !rs.open });
+						setRs({ open: !rs.open });
 					}}
-				/>
+				>
+					<IconSquareArrowRight
+						style={{ width: '70%', height: '70%' }}
+						stroke={1.5}
+					/>
+				</ActionIcon>
 			),
 		});
-	};
-	const def = () => {
-		return wrapSlot(slot(), XMain);
-	};
+	const def = () => wrapSlot(slot(), XMain);
 
 	//console.log(children);
 	return (
