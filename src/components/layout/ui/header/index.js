@@ -1,1 +1,1 @@
-export * from './XHeader';
+export * from './XHeader.tsx';

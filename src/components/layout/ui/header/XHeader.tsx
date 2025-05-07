@@ -5,8 +5,13 @@ import { Sections } from '../../../ui/sections/Sections';
 import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
 
-export const XFooter = memo(
-	forwardRef(function XFooterFn({ children, className, ...props }, ref) {
+interface XHeaderProps {
+	children?: React.ReactNode;
+	className: string;
+}
+
+export const XHeader = memo(
+	forwardRef(function XHeaderFn({ children, className, ...props }: XHeaderProps, ref) {
 		const innerRef = useRef(null);
 		const handleRef = useMergedRef(innerRef, ref);
 
@@ -14,10 +19,10 @@ export const XFooter = memo(
 
 		useEffect(() => {
 			if (innerRef.current) {
-				ctx.instances.footer = innerRef.current;
+				ctx.instances.header = innerRef.current;
 			}
 			return () => {
-				delete ctx.instances.footer;
+				delete ctx.instances.header;
 			};
 		}, [innerRef.current]);
 
@@ -25,12 +30,12 @@ export const XFooter = memo(
 
 		return (
 			<Sections
-				component="footer"
+				component="header"
 				{...props}
 				className={classNames(
-					'x-footer',
+					'x-header',
 					{
-						'x-layout-footer': isLayout,
+						'x-layout-header': isLayout,
 					},
 					className,
 				)}

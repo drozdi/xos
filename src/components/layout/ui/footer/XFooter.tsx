@@ -1,12 +1,17 @@
 import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
-import { forwardRef, memo, useEffect, useRef } from 'react';
+import React, { forwardRef, memo, useEffect, useRef } from 'react';
 import { Sections } from '../../../ui/sections/Sections';
 import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
 
-export const XHeader = memo(
-	forwardRef(function XHeaderFn({ children, className, ...props }, ref) {
+interface XFooterProps {
+	children?: React.ReactNode;
+	className: string;
+}
+
+export const XFooter = memo(
+	forwardRef(function XFooterFn({ children, className, ...props }: XFooterProps, ref) {
 		const innerRef = useRef(null);
 		const handleRef = useMergedRef(innerRef, ref);
 
@@ -14,10 +19,10 @@ export const XHeader = memo(
 
 		useEffect(() => {
 			if (innerRef.current) {
-				ctx.instances.header = innerRef.current;
+				ctx.instances.footer = innerRef.current;
 			}
 			return () => {
-				delete ctx.instances.header;
+				delete ctx.instances.footer;
 			};
 		}, [innerRef.current]);
 
@@ -25,12 +30,12 @@ export const XHeader = memo(
 
 		return (
 			<Sections
-				component="header"
+				component="footer"
 				{...props}
 				className={classNames(
-					'x-header',
+					'x-footer',
 					{
-						'x-layout-header': isLayout,
+						'x-layout-footer': isLayout,
 					},
 					className,
 				)}

@@ -1,1 +1,1 @@
-export * from './XFooter';
+export * from './XFooter.tsx';

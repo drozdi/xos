@@ -36,16 +36,6 @@ export interface SectionsProps {
 * @type {React.ForwardRefExoticComponent}
 * @param {object} props - свойства
 * @param {string|Function} [props.className] - классы
-* @param {string} [props.bodyClass] - классы для тела
-* @param {boolean} [props.noPadding] - флаг для отключения отступов
-* @param {boolean} [props.col] - флаг для вертикального расположения элементов
-* @param {boolean} [props.row] - флаг для горизонтального расположения элементов
-* @param {boolean} [props.noWrap] - флаг для отключения переноса элементов на новую строку
-* @param {boolean} [props.dense] - флаг для плотного расположения элементов
-* @param {boolean} [props.square] - флаг для квадратного расположения элементов
-* @param {string} [props.size] - размер элементов
-* @param {string} [props.align] - выравнивание элементов по вертикали
-* @param {string} [props.justify] - выравнивание элементов по горизонтали
 * @param {React.ReactNode} [props.children] - дочерние элементы
 * @param {string|React.ReactElement} [props.leftSection] - левый раздел
 * @param {string|React.ReactElement} [props.rightSection] - правый раздел
@@ -60,9 +50,9 @@ export const Sections = forwardRef(
 		return (
 			<Flex px="md" py="xs" {...props} className={className} gap="md" ref={ref}>
 				{processSection(leftSection)}
-				<Box component={Flex} align="center" flex={1}>
+				<Flex component={Box} align="center" flex={1}>
 					{children}
-				</Box>
+				</Flex>
 				{processSection(rightSection)}
 			</Flex>
 		);
