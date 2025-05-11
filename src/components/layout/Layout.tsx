@@ -9,8 +9,8 @@ import { useBreakpoint } from '../../hooks/use-breakpoint';
 import { useSlots } from '../../hooks/use-slots';
 import './style.css';
 
-import { ActionIcon } from '@mantine/core';
-import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
+import { ActionIcon, Burger } from '@mantine/core';
+import { IconSquareArrowRight } from '@tabler/icons-react';
 
 import { XFooter } from './ui/footer';
 import { XHeader } from './ui/header';
@@ -97,6 +97,8 @@ export const Layout = memo(function LayoutFn({
 		wrapSlot(slot('header', null), XHeader, {
 			align: 'normal',
 			leftSection: belowBreakpoint && hasSlot('left') && (
+				<Burger size="sm" />
+				/*
 				<ActionIcon
 					variant="filled"
 					size="lg"
@@ -111,7 +113,7 @@ export const Layout = memo(function LayoutFn({
 						style={{ width: '70%', height: '70%' }}
 						stroke={1.5}
 					/>
-				</ActionIcon>
+				</ActionIcon>*/
 			),
 			rightSection: belowBreakpoint && hasSlot('right') && (
 				<ActionIcon

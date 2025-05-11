@@ -1,7 +1,17 @@
+import { Box, Button, Portal } from '@mantine/core';
 import { useMergedRef, useSetState } from '@mantine/hooks';
+import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { forwardRef, memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+	forwardRef,
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import { DraggableCore } from 'react-draggable';
 import { useBreakpoint } from '../../../../hooks/use-breakpoint';
 import { isUndefined } from '../../../../utils/is';
@@ -264,86 +274,142 @@ export const XSidebar = memo(
 				}
 			};
 		}, []);
+		const [ss, setSs] = useState(false);
 
 		return (
-			<div
-				className={classNames('x-sidebar-container', {
-					'x-layout-sidebar': isLayout,
-					[`x-layout-sidebar--${type}`]: isLayout && type,
-					'x-sidebar--animate': !canResized,
-				})}
-				style={containerStyle}
-				onMouseEnter={() => isMouseEvent && updateState({ innerMini: false })}
-				onMouseLeave={() => isMouseEvent && updateState({ innerMini: true })}
-			>
-				<XSidebarProvider value={{ width, isMini, isOpen }}>
-					<div
-						className={classNames('x-sidebar', {
-							'is-mounted': isMounted,
-							'x-layout-sidebar': isLayout,
-							[`x-layout-sidebar--${type}`]: isLayout && type,
-							[`x-sidebar--${type}`]: type,
-							'x-sidebar--toggle': miniToggle,
-							'x-sidebar--mini': isMini,
-							'x-sidebar--close': !isOpen,
-							'x-sidebar--animate': !canResized,
-							'x-sidebar--overlay': isOverlay,
-							'x-sidebar--mini-overlay': isMiniOverlay,
-						})}
-						style={style}
-						ref={handleRef}
-					>
-						{toggle && belowBreakpoint && (
-							<div className="x-sidebar-toggle">
-								<XBtn
-									color="accent"
-									size="xs"
-									rightSection={
-										<XIcon className="text-2xl">
-											{isOpen
-												? `mdi-menu-${type}`
-												: `mdi-menu-${
-														isLeftSidebar ? 'right' : 'left'
-													}`}
-										</XIcon>
-									}
-									onClick={onHandleToggle}
-									title={isOpen ? 'Свернуть' : 'Развернуть'}
-								/>
+			<>
+				<div
+					className={classNames('x-sidebar-container', {
+						'x-layout-sidebar': isLayout,
+						[`x-layout-sidebar--${type}`]: isLayout && type,
+						'x-sidebar--animate': !canResized,
+					})}
+					style={containerStyle}
+					onMouseEnter={() => isMouseEvent && updateState({ innerMini: false })}
+					onMouseLeave={() => isMouseEvent && updateState({ innerMini: true })}
+				>
+					<XSidebarProvider value={{ width, isMini, isOpen }}>
+						<div
+							className={classNames('x-sidebar', {
+								'is-mounted': isMounted,
+								'x-layout-sidebar': isLayout,
+								[`x-layout-sidebar--${type}`]: isLayout && type,
+								[`x-sidebar--${type}`]: type,
+								'x-sidebar--toggle': miniToggle,
+								'x-sidebar--mini': isMini,
+								'x-sidebar--close': !isOpen,
+								'x-sidebar--animate': !canResized,
+								'x-sidebar--overlay': isOverlay,
+								'x-sidebar--mini-overlay': isMiniOverlay,
+							})}
+							style={style}
+							ref={handleRef}
+						>
+							{toggle && belowBreakpoint && (
+								<div className="x-sidebar-toggle">
+									<XBtn
+										color="accent"
+										size="xs"
+										rightSection={
+											<XIcon className="text-2xl">
+												{isOpen
+													? `mdi-menu-${type}`
+													: `mdi-menu-${
+															isLeftSidebar
+																? 'right'
+																: 'left'
+														}`}
+											</XIcon>
+										}
+										onClick={onHandleToggle}
+										title={isOpen ? 'Свернуть' : 'Развернуть'}
+									/>
+								</div>
+							)}
+							<div className={classNames('x-sidebar-content', className)}>
+								{children}
 							</div>
-						)}
-						<div className={classNames('x-sidebar-content', className)}>
-							{children}
-						</div>
-						{miniToggle && !belowBreakpoint && (
-							<div className="x-sidebar-toggle-mini">
-								<XBtn
-									dimmed
-									plain
-									block
-									square
-									leftSection={
-										isMini
-											? `mdi-arrow-${
-													isLeftSidebar ? 'right' : 'left'
-												}-bold-box-outline`
-											: `mdi-arrow-${type}-bold-box-outline`
-									}
-									onClick={onHandleMiniToggle}
-									className="text-2xl py-0"
-									title={isMini ? 'Развернуть' : 'Свернуть'}
-								/>
-							</div>
-						)}
+							{miniToggle && !belowBreakpoint && (
+								<div className="x-sidebar-toggle-mini">
+									<Button
+										fullWidth
+										variant="default"
+										onClick={onHandleMiniToggle}
+										title={isMini ? 'Развернуть' : 'Свернуть'}
+									>
+										{isMini && isLeftSidebar ? (
+											<IconSquareArrowRight />
+										) : (
+											<IconSquareArrowLeft />
+										)}
+									</Button>
+								</div>
+							)}
 
-						{canResized && (
-							<DraggableCore onDrag={onHandleDrag} onStop={onHandleDragEnd}>
-								<div className="x-sidebar-res"></div>
-							</DraggableCore>
-						)}
-					</div>
-				</XSidebarProvider>
-			</div>
+							{canResized && (
+								<DraggableCore
+									onDrag={onHandleDrag}
+									onStop={onHandleDragEnd}
+								>
+									<div className="x-sidebar-res"></div>
+								</DraggableCore>
+							)}
+						</div>
+					</XSidebarProvider>
+				</div>
+				{true && (
+					<Portal target="body">
+						<Box
+							pos="fixed"
+							bg="rgba(0,0,0,0.5)"
+							color="rgb(255,255,255)"
+							top={64}
+							right={0}
+							w={ss ? '200' : 0}
+							p={16}
+							style={{
+								zIndex: 1000,
+							}}
+						>
+							fre:{' '}
+							<input
+								type="checkbox"
+								checked={ss}
+								onChange={() => setSs((v) => !v)}
+							/>
+							<br />
+							breakpoint: {breakpoint} - {ctx?.width}
+							<br />
+							isOpen: {isOpen ? 'true' : 'false'}
+							<br />
+							isMini: {isMini ? 'true' : 'false'}
+							<br />
+							isEvents: {isEvents ? 'true' : 'false'}
+							<br />
+							belowBreakpoint: {belowBreakpoint ? 'true' : 'false'}
+							<br />
+							isOverlay: {isOverlay ? 'true' : 'false'}
+							<br />
+							isMiniOverlay: {isMiniOverlay ? 'true' : 'false'}
+							<br />
+							isOpenBreakpoint: {isOpenBreakpoint ? 'true' : 'false'}
+							<br />
+							canResized: {canResized ? 'true' : 'false'}
+							<br />
+							isMouseEvent: {isMouseEvent ? 'true' : 'false'}
+							<br />
+							width: {width}
+							<br />
+							miniWidth: {miniWidth}
+							<br />
+							containerStyle: {JSON.stringify(containerStyle)}
+							<br />
+							style: {JSON.stringify(style)}
+							<br />
+						</Box>
+					</Portal>
+				)}
+			</>
 		);
 	}),
 );
