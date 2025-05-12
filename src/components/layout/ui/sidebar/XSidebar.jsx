@@ -1,12 +1,17 @@
-import { Box, Button, Portal } from '@mantine/core';
-import { useMergedRef, useSetState } from '@mantine/hooks';
-import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
+import { Box, Portal } from '@mantine/core';
+import { useMergedRef, useMounted, useSetState } from '@mantine/hooks';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { forwardRef, memo, useEffect, useMemo, useRef, useState } from 'react';
-import { DraggableCore } from 'react-draggable';
+import {
+	forwardRef,
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import { useBreakpoint } from '../../../../hooks/use-breakpoint';
-import { isUndefined } from '../../../../utils/is';
 import { useXLayoutContext } from '../layout';
 import './style.css';
 import { XSidebarProvider } from './XSidebarContext';
@@ -53,9 +58,10 @@ export const XSidebar = memo(
 		{
 			children,
 			className,
-
 			type,
+
 			breakpoint,
+
 			mini,
 			miniOverlay,
 			miniToggle,
@@ -66,8 +72,10 @@ export const XSidebar = memo(
 			toggle,
 
 			resizeable,
-			w,
-			miniW,
+			w = 256,
+			miniW = 56,
+
+			onBreakPoint,
 
 			onResize,
 			onMini,
@@ -79,55 +87,50 @@ export const XSidebar = memo(
 		const innerRef = useRef();
 		const handleRef = useMergedRef(innerRef, ref);
 		const ctx = useXLayoutContext();
-
 		const isLayout = !!ctx;
+
+		const belowBreakpoint = useBreakpoint(breakpoint, ctx?.width || 1000);
+		const isMounted = useMounted();
+		/* my be ref */
+		const breakPointFn = useCallback(
+			(value) => {
+				onBreakPoint?.(value);
+			},
+			[onBreakPoint],
+		);
+		useEffect(() => {
+			breakPointFn.current?.(belowBreakpoint);
+		}, [breakPointFn, belowBreakpoint]);
+
 		const isLeftSidebar = type === 'left';
 
-		const [
-			{ isMounted, width, miniWidth, innerMini, isOpenBreakpoint },
-			updateState,
-		] = useSetState({
+		const [{ width, miniWidth, isOpenBreakpoint }, updateState] = useSetState({
 			width: w,
 			miniWidth: miniW,
 			isOpenBreakpoint: false,
-			isMounted: false,
-			innerMini: mini,
 		});
 
 		const reverse = useMemo(() => type === 'right', [type]);
 
-		const belowBreakpoint = useBreakpoint(breakpoint, ctx?.width || 1000);
-
-		const { isEvents, isMouseEvent, isOpen, isOverlay } = useMemo(
+		const { isOpen, isOverlay } = useMemo(
 			() => ({
-				isEvents: !belowBreakpoint && (miniMouse || miniToggle),
-				isMouseEvent: !belowBreakpoint && miniMouse && !miniToggle,
 				isOpen: belowBreakpoint ? isOpenBreakpoint : open,
 				isOverlay: overlay || (belowBreakpoint && miniOverlay),
 			}),
-			[
-				belowBreakpoint,
-				miniMouse,
-				miniToggle,
-				isOpenBreakpoint,
-				open,
-				overlay,
-				miniOverlay,
-			],
+			[belowBreakpoint, isOpenBreakpoint, open, overlay, miniOverlay],
 		);
 
 		const { isMiniOverlay, isMini } = useMemo(
 			() => ({
-				isMiniOverlay:
-					(miniOverlay || ((isEvents || mini) && overlay)) && !belowBreakpoint,
-				isMini: isEvents ? innerMini : mini && !belowBreakpoint,
+				isMiniOverlay: (miniOverlay || (mini && overlay)) && !belowBreakpoint,
+				isMini: mini && !belowBreakpoint,
 			}),
-			[miniOverlay, isEvents, innerMini, overlay, mini, belowBreakpoint],
+			[miniOverlay, overlay, mini, belowBreakpoint],
 		);
 
 		const canResized = useMemo(
-			() => resizeable && !isEvents && !isMini && !belowBreakpoint,
-			[resizeable, isEvents, isMini, belowBreakpoint],
+			() => resizeable && !isMini && !belowBreakpoint,
+			[resizeable, isMini, belowBreakpoint],
 		);
 
 		const containerStyle = useMemo(
@@ -157,17 +160,15 @@ export const XSidebar = memo(
 			[width, isOpen, isMini, belowBreakpoint, w],
 		);
 
-		useEffect(() => {
-			if (innerRef.current) {
-				if (!isUndefined(window)) {
-					const style = window.getComputedStyle(innerRef.current);
-					const w = parseInt(style.width || 0, 10) || 0;
-					const minWidth = parseInt(style.minWidth || 0, 10) || 0;
-					//width ?? updateState({width: w});
-					miniWidth ?? updateState({ miniWidth: minWidth });
-				}
+		/*useEffect(() => {
+			if (innerRef.current && !isUndefined(window)) {
+				const style = window.getComputedStyle(innerRef.current);
+				const w = parseInt(style.width || 0, 10) || 0;
+				const minWidth = parseInt(style.minWidth || 0, 10) || 0;
+				//width ?? updateState({width: w});
+				miniWidth ?? updateState({ miniWidth: minWidth });
 			}
-		}, [innerRef]);
+		}, []);
 
 		useEffect(
 			() =>
@@ -202,7 +203,7 @@ export const XSidebar = memo(
 			};
 		}, [miniMouse, miniToggle, belowBreakpoint, innerRef.current]);
 
-		useEffect(() => onMini?.(isMini), [isMini]);
+		useEffect(() => onMini?.(isMini), [isMini]);*/
 
 		/*const onHandleDrag = useCallback(
 			(e, ui) => {
@@ -256,8 +257,7 @@ export const XSidebar = memo(
 			[width, isOpen, isMini, innerMini],
 		);*/
 
-		useEffect(() => {
-			updateState({ isMounted: true });
+		/*useEffect(() => {
 			if (ctx && innerRef.current) {
 				ctx.instances[type] = innerRef.current;
 			}
@@ -266,10 +266,86 @@ export const XSidebar = memo(
 					delete ctx.instances[type];
 				}
 			};
-		}, []);
+		}, []);*/
 		const [ss, setSs] = useState(false);
 
 		return (
+			<>
+				<XSidebarProvider value={{ width, isMini, isOpen }}>
+					<Box
+						className="x-sidebar-container"
+						h="100%"
+						mah="100%"
+						pos="relative"
+						w={width}
+					>
+						<div
+							className={classNames('x-sidebar', {
+								'is-mounted': isMounted,
+								'x-layout-sidebar': isLayout,
+								[`x-layout-sidebar--${type}`]: isLayout && type,
+								[`x-sidebar--${type}`]: type,
+								'x-sidebar--toggle': miniToggle,
+								'x-sidebar--mini': isMini,
+								'x-sidebar--close': !isOpen,
+								'x-sidebar--overlay': isOverlay,
+								'x-sidebar--mini-overlay': isMiniOverlay,
+							})}
+							//style={style}
+							ref={handleRef}
+						>
+							<div className={classNames('x-sidebar-content', className)}>
+								{children}
+							</div>
+						</div>
+					</Box>
+				</XSidebarProvider>
+
+				{true && (
+					<Portal target="body">
+						<Box
+							pos="fixed"
+							bg="rgba(0,0,0,0.5)"
+							color="rgb(255,255,255)"
+							top={64}
+							right={0}
+							w={ss ? '200' : 0}
+							p={16}
+							style={{
+								zIndex: 1000,
+							}}
+						>
+							fre:{' '}
+							<input
+								type="checkbox"
+								checked={ss}
+								onChange={() => setSs((v) => !v)}
+							/>
+							<br />
+							breakpoint: {breakpoint} - {ctx?.width}
+							<br />
+							mini: {mini ? 'true' : 'false'}
+							<br />
+							miniOverlay: {miniOverlay ? 'true' : 'false'}
+							<br />
+							miniToggle: {miniToggle ? 'true' : 'false'}
+							<br />
+							miniMouse: {miniMouse ? 'true' : 'false'}
+							<br />
+							open: {open ? 'true' : 'false'}
+							<br />
+							overlay: {overlay ? 'true' : 'false'}
+							<br />
+							toggle: {toggle ? 'true' : 'false'}
+							<br />
+							<br />
+						</Box>
+					</Portal>
+				)}
+			</>
+		);
+
+		/*return (
 			<>
 				<div
 					className={classNames('x-sidebar-container', {
@@ -277,9 +353,9 @@ export const XSidebar = memo(
 						[`x-layout-sidebar--${type}`]: isLayout && type,
 						'x-sidebar--animate': !canResized,
 					})}
-					style={containerStyle}
-					onMouseEnter={() => isMouseEvent && updateState({ innerMini: false })}
-					onMouseLeave={() => isMouseEvent && updateState({ innerMini: true })}
+					//style={containerStyle}
+					//onMouseEnter={() => isMouseEvent && updateState({ innerMini: false })}
+					//onMouseLeave={() => isMouseEvent && updateState({ innerMini: true })}
 				>
 					<XSidebarProvider value={{ width, isMini, isOpen }}>
 						<div
@@ -295,7 +371,7 @@ export const XSidebar = memo(
 								'x-sidebar--overlay': isOverlay,
 								'x-sidebar--mini-overlay': isMiniOverlay,
 							})}
-							style={style}
+							//style={style}
 							ref={handleRef}
 						>
 							{toggle && belowBreakpoint && (
@@ -420,7 +496,7 @@ export const XSidebar = memo(
 					</Portal>
 				)}
 			</>
-		);
+		);*/
 	}),
 );
 
