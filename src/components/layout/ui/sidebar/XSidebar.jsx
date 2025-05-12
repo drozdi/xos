@@ -3,15 +3,7 @@ import { useMergedRef, useSetState } from '@mantine/hooks';
 import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import {
-	forwardRef,
-	memo,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from 'react';
+import { forwardRef, memo, useEffect, useMemo, useRef, useState } from 'react';
 import { DraggableCore } from 'react-draggable';
 import { useBreakpoint } from '../../../../hooks/use-breakpoint';
 import { isUndefined } from '../../../../utils/is';
@@ -212,16 +204,15 @@ export const XSidebar = memo(
 
 		useEffect(() => onMini?.(isMini), [isMini]);
 
-		const onHandleDrag = useCallback(
+		/*const onHandleDrag = useCallback(
 			(e, ui) => {
 				updateState({
 					width: Math.max(miniWidth, w + (reverse ? -ui.deltaX : ui.deltaX)),
 				});
 			},
 			[reverse, miniWidth],
-		);
-
-		const onHandleDragEnd = useCallback(
+		);*/
+		/*const onHandleDragEnd = useCallback(
 			(e, ui) => {
 				const width = Math.max(
 					innerRef.current?.getBoundingClientRect().width,
@@ -231,9 +222,8 @@ export const XSidebar = memo(
 				onResize?.(width);
 			},
 			[innerRef.current, miniWidth],
-		);
-
-		const onHandleToggle = useCallback(() => {
+		);*/
+		/*const onHandleToggle = useCallback(() => {
 			if (
 				false ===
 				onToggle?.({
@@ -247,21 +237,24 @@ export const XSidebar = memo(
 			updateState({
 				isOpenBreakpoint: !isOpenBreakpoint,
 			});
-		}, [width, isOpen, isMini]);
-
-		const onHandleMiniToggle = useCallback(() => {
-			if (
-				false ===
-				onToggle?.({
-					width,
-					isOpen,
-					isMini,
-				})
-			) {
-				return;
-			}
-			updateState({ innerMini: !innerMini });
-		}, [width, isOpen, isMini]);
+		}, [width, isOpen, isMini]);*/
+		/*const onHandleMiniToggle = useCallback(
+			(event) => {
+				event?.preventDefault();
+				if (
+					false ===
+					onToggle?.({
+						width,
+						isOpen,
+						isMini,
+					})
+				) {
+					return;
+				}
+				updateState({ innerMini: !innerMini });
+			},
+			[width, isOpen, isMini, innerMini],
+		);*/
 
 		useEffect(() => {
 			updateState({ isMounted: true });
@@ -321,7 +314,7 @@ export const XSidebar = memo(
 														}`}
 											</XIcon>
 										}
-										onClick={onHandleToggle}
+										//onClick={onHandleToggle}
 										title={isOpen ? 'Свернуть' : 'Развернуть'}
 									/>
 								</div>
@@ -333,9 +326,11 @@ export const XSidebar = memo(
 								<div className="x-sidebar-toggle-mini">
 									<Button
 										fullWidth
+										justify="center"
 										variant="default"
-										onClick={onHandleMiniToggle}
+										//onClick={onHandleMiniToggle}
 										title={isMini ? 'Развернуть' : 'Свернуть'}
+										style={{ width: '100%', minHeight: '100%' }}
 									>
 										{isMini && isLeftSidebar ? (
 											<IconSquareArrowRight />
@@ -346,10 +341,10 @@ export const XSidebar = memo(
 								</div>
 							)}
 
-							{canResized && (
+							{canResized && false && (
 								<DraggableCore
-									onDrag={onHandleDrag}
-									onStop={onHandleDragEnd}
+								//onDrag={onHandleDrag}
+								//onStop={onHandleDragEnd}
 								>
 									<div className="x-sidebar-res"></div>
 								</DraggableCore>
@@ -377,6 +372,21 @@ export const XSidebar = memo(
 								checked={ss}
 								onChange={() => setSs((v) => !v)}
 							/>
+							<br />
+							mini: {mini ? 'true' : 'false'}
+							<br />
+							miniOverlay: {miniOverlay ? 'true' : 'false'}
+							<br />
+							miniToggle: {miniToggle ? 'true' : 'false'}
+							<br />
+							miniMouse: {miniMouse ? 'true' : 'false'}
+							<br />
+							open: {open ? 'true' : 'false'}
+							<br />
+							overlay: {overlay ? 'true' : 'false'}
+							<br />
+							toggle: {toggle ? 'true' : 'false'}
+							<br />
 							<br />
 							breakpoint: {breakpoint} - {ctx?.width}
 							<br />
