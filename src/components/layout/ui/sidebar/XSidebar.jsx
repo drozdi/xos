@@ -1,5 +1,6 @@
-import { Box, Portal } from '@mantine/core';
+import { Box, Button, Portal } from '@mantine/core';
 import { useMergedRef, useMounted, useSetState } from '@mantine/hooks';
+import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {
@@ -42,7 +43,7 @@ function XIcon() {
  * @param {boolean} [props.toggle] whether the sidebar toggle is shown (only applies when the sidebar is mini) and the sidebar is open (only applies when the sidebar is mini)
  * @param {boolean} [props.resizeable] whether the sidebar can be resized (only applies when the sidebar is mini)
  * @param {number} [props.w] width of the sidebar (only applies when the sidebar is mini)
- * @param {number} [props.miniW] width of the mini sidebar (only applies when the sidebar is mini)
+ * @param {number} [props.mw] width of the mini sidebar (only applies when the sidebar is mini)
  * @param {function} [props.onResize] function to call when the sidebar is resized (only applies when the sidebar is mini)
  * @param {function} [props.onMini] function to call when the mini sidebar is resized (only applies when the sidebar is mini)
  * @param {function} [props.onToggle] function to call when the sidebar is toggled (only applies when the sidebar is mini)
@@ -73,7 +74,7 @@ export const XSidebar = memo(
 
 			resizeable,
 			w = 256,
-			miniW = 56,
+			mw = 56,
 
 			onBreakPoint,
 
@@ -99,18 +100,19 @@ export const XSidebar = memo(
 			[onBreakPoint],
 		);
 		useEffect(() => {
-			breakPointFn.current?.(belowBreakpoint);
+			breakPointFn(belowBreakpoint);
 		}, [breakPointFn, belowBreakpoint]);
 
 		const isLeftSidebar = type === 'left';
+		const reverse = !isLeftSidebar;
 
-		const [{ width, miniWidth, isOpenBreakpoint }, updateState] = useSetState({
-			width: w,
-			miniWidth: miniW,
-			isOpenBreakpoint: false,
-		});
-
-		const reverse = useMemo(() => type === 'right', [type]);
+		const [{ width, miniWidth, isOpenBreakpoint, innerMini }, updateState] =
+			useSetState({
+				width: w,
+				miniWidth: mw,
+				innerMini: mini,
+				isOpenBreakpoint: false,
+			});
 
 		const { isOpen, isOverlay } = useMemo(
 			() => ({
@@ -126,6 +128,24 @@ export const XSidebar = memo(
 				isMini: mini && !belowBreakpoint,
 			}),
 			[miniOverlay, overlay, mini, belowBreakpoint],
+		);
+
+		const onHandleMiniToggle = useCallback(
+			(event) => {
+				event?.preventDefault();
+				if (
+					false ===
+					onToggle?.({
+						width,
+						isOpen,
+						isMini,
+					})
+				) {
+					return;
+				}
+				updateState({ innerMini: !innerMini });
+			},
+			[width, isOpen, isMini, innerMini],
 		);
 
 		const canResized = useMemo(
@@ -239,23 +259,6 @@ export const XSidebar = memo(
 				isOpenBreakpoint: !isOpenBreakpoint,
 			});
 		}, [width, isOpen, isMini]);*/
-		/*const onHandleMiniToggle = useCallback(
-			(event) => {
-				event?.preventDefault();
-				if (
-					false ===
-					onToggle?.({
-						width,
-						isOpen,
-						isMini,
-					})
-				) {
-					return;
-				}
-				updateState({ innerMini: !innerMini });
-			},
-			[width, isOpen, isMini, innerMini],
-		);*/
 
 		/*useEffect(() => {
 			if (ctx && innerRef.current) {
@@ -297,6 +300,22 @@ export const XSidebar = memo(
 							<div className={classNames('x-sidebar-content', className)}>
 								{children}
 							</div>
+							{miniToggle && !belowBreakpoint && (
+								<div className="x-sidebar-toggle-mini">
+									<Button
+										fullWidth
+										variant="default"
+										//onClick={onHandleMiniToggle}
+										title={isMini ? 'Развернуть' : 'Свернуть'}
+									>
+										{isMini && isLeftSidebar ? (
+											<IconSquareArrowRight />
+										) : (
+											<IconSquareArrowLeft />
+										)}
+									</Button>
+								</div>
+							)}
 						</div>
 					</Box>
 				</XSidebarProvider>

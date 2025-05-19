@@ -1,6 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import '@mantine/core/styles/ActionIcon.css';
 import '@mantine/core/styles/AppShell.css';
+import '@mantine/core/styles/Button.css';
 import '@mantine/core/styles/CloseButton.css';
 import '@mantine/core/styles/Flex.css';
 import '@mantine/core/styles/FloatingIndicator.css';
@@ -19,7 +20,6 @@ import '@mantine/core/styles/UnstyledButton.css';
 import '@mantine/core/styles/VisuallyHidden.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-
 createRoot(document.getElementById('root')).render(
 	<MantineProvider defaultColorScheme="dark">
 		<App />
