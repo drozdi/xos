@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
 
 export const XSidebarContext = createContext({
-	isMini: false,
-	isOpen: false,
+	mini: false,
+	open: false,
 });
 
 export const XSidebarProvider = ({ children, value }) => (

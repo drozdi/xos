@@ -53,6 +53,8 @@ export const Layout = memo(function LayoutFn({
 
 	const { slot, hasSlot, wrapSlot } = useSlots(children);
 
+	const [mm, setMm] = useState(false);
+
 	const leftProps = useMemo(
 		() => ({
 			type: 'left',
@@ -61,12 +63,15 @@ export const Layout = memo(function LayoutFn({
 			breakpoint: breakpoint,
 			//toggle: belowBreakpoint,
 			mini: ls.mini,
-			miniOverlay: overlay || belowBreakpoint,
-			miniMouse: true,
-			miniToggle: toggle && !belowBreakpoint,
+			miniToggle: true,
+			miniOverlay: true,
+			//miniMouse: true,
+			//miniOverlay: overlay || belowBreakpoint,
+			//miniMouse: true,
+			//miniToggle: toggle && !belowBreakpoint,
 			//resizeable: true,
-			onMini: (mini) => setLs({ mini }),
-			onResize: (width) => setLs({ width }),
+			//onMini: (mini) => setLs({ mini }),
+			//onResize: (width) => setLs({ width }),
 			//onToggle: () => true,
 		}),
 		[ls, overlay, breakpoint, toggle, belowBreakpoint],
@@ -83,8 +88,8 @@ export const Layout = memo(function LayoutFn({
 			miniMouse: true,
 			miniToggle: toggle && !belowBreakpoint,
 			//resizeable: true,
-			onMini: (mini) => setRs({ mini }),
-			onResize: (width) => setRs({ width }),
+			//onMini: (mini) => setRs({ mini }),
+			//onResize: (width) => setRs({ width }),
 			//onToggle: () => true,
 		}),
 		[rs, overlay, breakpoint, toggle, belowBreakpoint],

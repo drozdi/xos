@@ -18,6 +18,7 @@ import '@mantine/core/styles/ScrollArea.css';
 import '@mantine/core/styles/Skeleton.css';
 import '@mantine/core/styles/UnstyledButton.css';
 import '@mantine/core/styles/VisuallyHidden.css';
+
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')).render(

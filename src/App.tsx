@@ -11,7 +11,7 @@ function App() {
 			<div slot="header">header</div>
 			<div slot="footer">footer</div>
 			<div slot="left">
-				{Array(15)
+				{Array(25)
 					.fill(0)
 					.map((_, index) => (
 						<Skeleton key={index} h={28} mt="sm" animate={false} />
