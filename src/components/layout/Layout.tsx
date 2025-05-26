@@ -54,10 +54,11 @@ export const Layout = memo(function LayoutFn({
 
 	const { slot, hasSlot, wrapSlot } = useSlots(children);
 
-	const [mm, setMm] = useState(false);
-
+	const leftSidebar = useRef(null);
+	setTimeout(() => console.log(leftSidebar), 1000);
 	const leftProps = useMemo(
 		() => ({
+			ref: leftSidebar,
 			type: 'left',
 			open: ls.open,
 			overlay: overlay,
@@ -107,7 +108,7 @@ export const Layout = memo(function LayoutFn({
 			leftSection: belowBreakpoint && hasSlot('left') && (
 				<Burger
 					size="sm"
-					opened={layoutRef.current?.instances?.left.open}
+					opened={leftSidebar.open}
 					onClick={(e) => {
 						e.stopPropagation();
 						e.preventDefault();

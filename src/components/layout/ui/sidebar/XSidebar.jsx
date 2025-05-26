@@ -1,5 +1,5 @@
 import { Box, Portal, ScrollArea } from '@mantine/core';
-import { useMergedRef, useMounted, useSetState } from '@mantine/hooks';
+import { useMounted, useSetState } from '@mantine/hooks';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {
@@ -7,6 +7,7 @@ import {
 	memo,
 	useCallback,
 	useEffect,
+	useImperativeHandle,
 	useMemo,
 	useRef,
 	useState,
@@ -62,7 +63,6 @@ export const XSidebar = memo(
 		ref,
 	) {
 		const innerRef = useRef();
-		const handleRef = useMergedRef(innerRef, ref);
 		const layout = useXLayoutContext();
 		const isLayout = !!layout;
 
@@ -175,7 +175,13 @@ export const XSidebar = memo(
 		/**/
 
 		const ctx = useMemo(() => {
-			return { type, width, mini: isMini, open: isOpen };
+			return {
+				type,
+				width,
+				mini: isMini,
+				open: isOpen,
+				getElement: () => innerRef.current,
+			};
 		}, [type, width, isMini, isOpen]);
 
 		const onHandleToggle = useCallback(() => {
@@ -210,6 +216,8 @@ export const XSidebar = memo(
 			};
 		}, []);
 
+		useImperativeHandle(ref, () => ctx, [ctx]);
+
 		const [ss, setSs] = useState(true);
 
 		return (
@@ -232,7 +240,7 @@ export const XSidebar = memo(
 								'x-sidebar--overlay': isOverlay,
 								'x-sidebar--mini-overlay': isMiniOverlay,
 							})}
-							ref={handleRef}
+							ref={innerRef}
 						>
 							{toggle && belowBreakpoint && (
 								<XSidebarToggleBtn onClick={onHandleToggle} />
