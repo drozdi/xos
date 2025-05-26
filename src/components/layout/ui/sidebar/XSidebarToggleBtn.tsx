@@ -7,20 +7,21 @@ import { useXSidebarContext } from './XSidebarContext';
 
 import { ButtonProps } from '@mantine/core';
 
-export const XSidebarMiniBtn = memo((props: ButtonProps) => {
+export const XSidebarToggleBtn = memo((props: ButtonProps) => {
 	const ctx = useXSidebarContext();
 	const isLeft = ctx?.type === 'left';
-	const isMini = ctx?.mini || false;
+	const isOpen = ctx?.open || false;
 
 	return (
-		<div className="x-sidebar-toggle-mini">
+		<div className="x-sidebar-toggle">
 			<Button
 				{...props}
 				fullWidth
 				variant="default"
-				title={isMini ? 'Развернуть' : 'Свернуть'}
+				color="grape"
+				title={isOpen ? 'Развернуть' : 'Свернуть'}
 			>
-				{isMini && isLeft ? <IconSquareArrowRight /> : <IconSquareArrowLeft />}
+				{isOpen && isLeft ? <IconSquareArrowLeft /> : <IconSquareArrowRight />}
 			</Button>
 		</div>
 	);

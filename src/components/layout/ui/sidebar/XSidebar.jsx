@@ -15,9 +15,11 @@ import { useBreakpoint } from '../../../../hooks/use-breakpoint';
 import { useXLayoutContext } from '../layout';
 import './style.css';
 import { XSidebarProvider } from './XSidebarContext';
+import { XSidebarFooter } from './XSidebarFooter';
 import { XSidebarHeader } from './XSidebarHeader';
 import { XSidebarMiniBtn } from './XSidebarMiniBtn';
 import { XSidebarTitle } from './XSidebarTitle';
+import { XSidebarToggleBtn } from './XSidebarToggleBtn';
 
 function XBtn() {
 	return null;
@@ -61,12 +63,13 @@ export const XSidebar = memo(
 	) {
 		const innerRef = useRef();
 		const handleRef = useMergedRef(innerRef, ref);
-		const ctx = useXLayoutContext();
-		const isLayout = !!ctx;
+		const layout = useXLayoutContext();
+		const isLayout = !!layout;
 
 		const hasHeader = title || toggle;
+		const hasFooter = miniToggle;
 
-		const belowBreakpoint = useBreakpoint(breakpoint, ctx?.width || 1000);
+		const belowBreakpoint = useBreakpoint(breakpoint, layout?.width || 1000);
 		const isMounted = useMounted();
 
 		/* my be ref */
@@ -80,13 +83,13 @@ export const XSidebar = memo(
 			breakPointFn(belowBreakpoint);
 		}, [breakPointFn, belowBreakpoint]);
 
-		const [{ width, miniWidth, isOpenBreakpoint, innerMini }, updateState] =
-			useSetState({
-				width: w,
-				miniWidth: mw,
-				innerMini: mini,
-				isOpenBreakpoint: false,
-			});
+		const [{ width, miniWidth, innerMini }, updateState] = useSetState({
+			width: w,
+			miniWidth: mw,
+			innerMini: mini,
+		});
+
+		const [isOpenBreakpoint, setOpenBreakpoint] = useState(false);
 
 		const { isOpen, isOverlay, isEvents, isMouseEvent } = useMemo(
 			() => ({
@@ -119,33 +122,6 @@ export const XSidebar = memo(
 			() => resizeable && !isMini && !belowBreakpoint,
 			[resizeable, isMini, belowBreakpoint],
 		);*/
-
-		const containerStyle = useMemo(
-			() => ({
-				/*width:
-					!isOpen || isOverlay
-						? ''
-						: isMiniOverlay || isMini
-							? miniWidth
-							: isOverlay
-								? 0
-								: width,*/
-			}),
-			[width, isOpen, isMini, isOverlay, miniWidth, isMiniOverlay],
-		);
-		const style = useMemo(
-			() => ({
-				/*width: isOpen
-					? isMini
-						? miniWidth
-						: belowBreakpoint
-							? w || ''
-							: width
-					: 0,*/
-			}),
-			[width, isOpen, isMini, belowBreakpoint, w],
-		);
-
 		/*useEffect(() => {
 			if (innerRef.current && !isUndefined(window)) {
 				const style = window.getComputedStyle(innerRef.current);
@@ -156,21 +132,7 @@ export const XSidebar = memo(
 			}
 		}, []);
 
-		useEffect(
-			() =>
-				updateState({
-					isOpenBreakpoint: !isOpenBreakpoint,
-				}),
-			[open],
-		);
 
-		useEffect(
-			() =>
-				updateState({
-					isOpenBreakpoint: false,
-				}),
-			[belowBreakpoint],
-		);
 
 		useEffect(() => {
 			const handleClose = ({ target }) => {
@@ -210,55 +172,51 @@ export const XSidebar = memo(
 			},
 			[innerRef.current, miniWidth],
 		);*/
-		/*const onHandleToggle = useCallback(() => {
-			if (
-				false ===
-				onToggle?.({
-					width,
-					isOpen,
-					isMini,
-				})
-			) {
-				return;
-			}
-			updateState({
-				isOpenBreakpoint: !isOpenBreakpoint,
-			});
-		}, [width, isOpen, isMini]);*/
+		/**/
 
-		/*useEffect(() => {
-			if (ctx && innerRef.current) {
-				ctx.instances[type] = innerRef.current;
-			}
-			return () => {
-				if (ctx) {
-					delete ctx.instances[type];
-				}
-			};
-		}, []);*/
-		const [ss, setSs] = useState(true);
-
-		const ctx_ = useMemo(() => {
+		const ctx = useMemo(() => {
 			return { type, width, mini: isMini, open: isOpen };
 		}, [type, width, isMini, isOpen]);
+
+		const onHandleToggle = useCallback(() => {
+			if (false === onToggle?.(ctx)) {
+				return;
+			}
+			setOpenBreakpoint((v) => !v);
+		}, [onToggle, ctx]);
 
 		const onHandleMiniToggle = useCallback(
 			(event) => {
 				event?.preventDefault();
-				if (false === onToggle?.(ctx_)) {
+				if (false === onToggle?.(ctx)) {
 					return;
 				}
 				updateState({ innerMini: !innerMini });
 			},
-			[innerMini, onToggle, updateState, ctx_],
+			[innerMini, onToggle, updateState, ctx],
 		);
+
+		useEffect(() => setOpenBreakpoint(false), [belowBreakpoint]);
+		useEffect(() => setOpenBreakpoint((v) => !v), [open]);
+
+		useEffect(() => {
+			if (layout && ctx) {
+				layout.instances[type] = ctx;
+			}
+			return () => {
+				if (layout) {
+					delete layout.instances[type];
+				}
+			};
+		}, []);
+
+		const [ss, setSs] = useState(true);
 
 		return (
 			<>
-				<XSidebarProvider value={ctx_}>
+				<XSidebarProvider value={ctx}>
 					<div
 						className="x-sidebar-container"
-						style={containerStyle}
 						onMouseEnter={() =>
 							isMouseEvent && updateState({ innerMini: false })
 						}
@@ -269,13 +227,16 @@ export const XSidebar = memo(
 						<div
 							className={classNames('x-sidebar', {
 								[`x-sidebar--${type}`]: type,
+								'x-sidebar--close': !isOpen,
 								'x-sidebar--mini': isMini,
 								'x-sidebar--overlay': isOverlay,
 								'x-sidebar--mini-overlay': isMiniOverlay,
 							})}
-							//style={style}
 							ref={handleRef}
 						>
+							{toggle && belowBreakpoint && (
+								<XSidebarToggleBtn onClick={onHandleToggle} />
+							)}
 							{hasHeader && (
 								<XSidebarHeader>
 									{title && <XSidebarTitle>{title}</XSidebarTitle>}
@@ -286,6 +247,8 @@ export const XSidebar = memo(
 							>
 								{children}
 							</ScrollArea>
+							{hasHeader && <XSidebarFooter>footer</XSidebarFooter>}
+
 							{miniToggle && !belowBreakpoint && (
 								<XSidebarMiniBtn onClick={onHandleMiniToggle} />
 							)}
@@ -314,7 +277,7 @@ export const XSidebar = memo(
 								onChange={() => setSs((v) => !v)}
 							/>
 							<br />
-							breakpoint: {breakpoint} - {ctx?.width}
+							breakpoint: {breakpoint} - {layout?.width}
 							<br />
 							mini: {mini ? 'true' : 'false'}
 							<br />
@@ -344,6 +307,8 @@ export const XSidebar = memo(
 							isOverlay: {isOverlay ? 'true' : 'false'}
 							<br />
 							isMiniOverlay: {isMiniOverlay ? 'true' : 'false'}
+							<br />
+							isOpenBreakpoint: {isOpenBreakpoint ? 'true' : 'false'}
 							<br />
 						</Box>
 					</Portal>

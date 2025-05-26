@@ -88,8 +88,10 @@
 }
 .x-sidebar-container:has(.x-sidebar--close) {
 	width: 0;
+	min-width: 0;
 }
 .x-sidebar--close {
 	width: 0;
+	min-width: 0;
 	border: 0;
 }

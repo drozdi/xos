@@ -1,5 +1,6 @@
 import '@mantine/core/styles/AppShell.css';
 import '@mantine/core/styles/Burger.css';
+import '@mantine/core/styles/Button.css';
 import '@mantine/core/styles/Group.css';
 import '@mantine/core/styles/ScrollArea.css';
 import '@mantine/core/styles/Skeleton.css';
@@ -62,6 +63,7 @@ export const Layout = memo(function LayoutFn({
 			overlay: overlay,
 			breakpoint: breakpoint,
 			//toggle: belowBreakpoint,
+			toggle: true,
 			mini: ls.mini,
 			miniToggle: true,
 			miniOverlay: true,
@@ -98,11 +100,20 @@ export const Layout = memo(function LayoutFn({
 	const left = () => wrapSlot(slot('left', null), XSidebar, leftProps);
 	const right = () => wrapSlot(slot('right', null), XSidebar, rightProps);
 	const footer = () => wrapSlot(slot('footer', null), XFooter);
+
 	const header = () =>
 		wrapSlot(slot('header', null), XHeader, {
 			align: 'normal',
 			leftSection: belowBreakpoint && hasSlot('left') && (
-				<Burger size="sm" />
+				<Burger
+					size="sm"
+					opened={layoutRef.current?.instances?.left.open}
+					onClick={(e) => {
+						e.stopPropagation();
+						e.preventDefault();
+						setLs({ open: !ls.open });
+					}}
+				/>
 				/*
 				<ActionIcon
 					variant="filled"
