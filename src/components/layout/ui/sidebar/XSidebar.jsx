@@ -1,7 +1,6 @@
 import { Box, Portal, ScrollArea } from '@mantine/core';
 import { useMounted, useSetState } from '@mantine/hooks';
 import classNames from 'classnames';
-import PropTypes from 'prop-types';
 import {
 	forwardRef,
 	memo,
@@ -205,7 +204,7 @@ export const XSidebar = memo(
 		useEffect(() => setOpenBreakpoint(false), [belowBreakpoint]);
 		useEffect(() => setOpenBreakpoint((v) => !v), [open]);
 
-		useEffect(() => {
+		/*seEffect(() => {
 			if (layout && ctx) {
 				layout.instances[type] = ctx;
 			}
@@ -214,7 +213,7 @@ export const XSidebar = memo(
 					delete layout.instances[type];
 				}
 			};
-		}, []);
+		}, []);*/
 
 		useImperativeHandle(ref, () => ctx, [ctx]);
 
@@ -325,28 +324,3 @@ export const XSidebar = memo(
 		);
 	}),
 );
-
-XSidebar.propTypes = {
-	children: PropTypes.any,
-	className: PropTypes.string,
-	type: PropTypes.oneOf(['left', 'right']),
-
-	open: PropTypes.bool,
-	w: PropTypes.number,
-	overlay: PropTypes.bool,
-	toggle: PropTypes.bool,
-
-	breakpoint: PropTypes.number,
-
-	mini: PropTypes.bool,
-	miniW: PropTypes.number,
-	miniMouse: PropTypes.bool,
-	miniToggle: PropTypes.bool,
-	miniOverlay: PropTypes.bool,
-
-	resizeable: PropTypes.bool,
-
-	onMini: PropTypes.func,
-	onToggle: PropTypes.func,
-	onResize: PropTypes.func,
-};

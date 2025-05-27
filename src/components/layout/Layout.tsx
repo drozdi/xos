@@ -5,7 +5,7 @@ import '@mantine/core/styles/Group.css';
 import '@mantine/core/styles/ScrollArea.css';
 import '@mantine/core/styles/Skeleton.css';
 import { useSetState } from '@mantine/hooks';
-import React, { memo, useMemo, useRef, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useBreakpoint } from '../../hooks/use-breakpoint';
 import { useSlots } from '../../hooks/use-slots';
 import './style.css';
@@ -55,19 +55,21 @@ export const Layout = memo(function LayoutFn({
 	const { slot, hasSlot, wrapSlot } = useSlots(children);
 
 	const leftSidebar = useRef(null);
-	setTimeout(() => console.log(leftSidebar), 1000);
+
+	useEffect(() => console.log(leftSidebar.current), [leftSidebar.current]);
+
 	const leftProps = useMemo(
 		() => ({
 			ref: leftSidebar,
 			type: 'left',
 			open: ls.open,
-			overlay: overlay,
+			//overlay: overlay,
 			breakpoint: breakpoint,
 			//toggle: belowBreakpoint,
 			toggle: true,
 			mini: ls.mini,
-			miniToggle: true,
-			miniOverlay: true,
+			//miniToggle: true,
+			//miniOverlay: true,
 			//miniMouse: true,
 			//miniOverlay: overlay || belowBreakpoint,
 			//miniMouse: true,
@@ -108,7 +110,7 @@ export const Layout = memo(function LayoutFn({
 			leftSection: belowBreakpoint && hasSlot('left') && (
 				<Burger
 					size="sm"
-					opened={leftSidebar.open}
+					opened={!leftSidebar.current?.open}
 					onClick={(e) => {
 						e.stopPropagation();
 						e.preventDefault();
