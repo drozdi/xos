@@ -1,5 +1,5 @@
 import { Box, Portal, ScrollArea } from '@mantine/core';
-import { useMounted, useSetState } from '@mantine/hooks';
+import { useDisclosure, useMounted, useSetState } from '@mantine/hooks';
 import classNames from 'classnames';
 import {
 	forwardRef,
@@ -54,13 +54,11 @@ export const XSidebar = memo(
 	) {
 		const innerRef = useRef();
 		const layout = useXLayoutContext();
-		const isLayout = !!layout;
+		const isMounted = useMounted();
 
 		const hasHeader = title || toggle;
-		const hasFooter = miniToggle;
 
 		const belowBreakpoint = useBreakpoint(breakpoint, layout?.width || 1000);
-		const isMounted = useMounted();
 
 		/* my be ref */
 		const breakPointFn = useCallback(
@@ -78,7 +76,8 @@ export const XSidebar = memo(
 			miniWidth: mw,
 		});
 
-		const [isOpenBreakpoint, setOpenBreakpoint] = useState(false);
+		const [isOpenBreakpoint, openBreakpoint] = useDisclosure(false);
+
 		const [innerMini, setInnerMini] = useState(mini);
 
 		const { isOpen, isOverlay, isEvents, isMouseEvent } = useMemo(
@@ -108,10 +107,6 @@ export const XSidebar = memo(
 			[miniOverlay, overlay, innerMini, mini, isEvents, belowBreakpoint],
 		);
 
-		/*const canResized = useMemo(
-			() => resizeable && !isMini && !belowBreakpoint,
-			[resizeable, isMini, belowBreakpoint],
-		);*/
 		/*useEffect(() => {
 			if (innerRef.current && !isUndefined(window)) {
 				const style = window.getComputedStyle(innerRef.current);
@@ -146,29 +141,24 @@ export const XSidebar = memo(
 				mini: isMini,
 				open: isOpen,
 				getElement: () => innerRef.current,
+				toggleMini: (event) => {
+					event?.preventDefault();
+					if (false === onToggle?.(ctx)) {
+						return;
+					}
+					setInnerMini((v) => !v);
+				},
+				toggle: () => {
+					if (false === onToggle?.(ctx)) {
+						return;
+					}
+					openBreakpoint.toggle();
+				},
 			};
-		}, [type, width, isMini, isOpen]);
+		}, [type, width, isMini, isOpen, onToggle]);
 
-		const onHandleToggle = useCallback(() => {
-			if (false === onToggle?.(ctx)) {
-				return;
-			}
-			setOpenBreakpoint((v) => !v);
-		}, [onToggle, ctx]);
-
-		const onHandleMiniToggle = useCallback(
-			(event) => {
-				event?.preventDefault();
-				if (false === onToggle?.(ctx)) {
-					return;
-				}
-				setInnerMini((v) => !v);
-			},
-			[onToggle, updateState, ctx],
-		);
-
-		useEffect(() => setOpenBreakpoint(false), [belowBreakpoint]);
-		useEffect(() => setOpenBreakpoint((v) => !v), [open]);
+		useEffect(() => openBreakpoint.close(), [belowBreakpoint]);
+		useEffect(() => openBreakpoint.toggle(), [open]);
 		useEffect(() => setInnerMini(mini), [mini]);
 
 		/*seEffect(() => {
@@ -191,22 +181,26 @@ export const XSidebar = memo(
 				<XSidebarProvider value={ctx}>
 					<div
 						className="x-sidebar-container"
-						onMouseEnter={() => isMouseEvent && setInnerMini(false)}
-						onMouseLeave={() => isMouseEvent && setInnerMini(true)}
+						onMouseEnter={() => {
+							console.log(false);
+							isMouseEvent && setInnerMini(false);
+						}}
+						onMouseLeave={() => {
+							console.log(true);
+							isMouseEvent && setInnerMini(true);
+						}}
 					>
 						<div
 							className={classNames('x-sidebar', {
 								[`x-sidebar--${type}`]: type,
-								'x-sidebar--close': !isOpen,
+								'x-sidebar--close': !isOpen && isMounted,
 								'x-sidebar--mini': isMini,
 								'x-sidebar--overlay': isOverlay,
 								'x-sidebar--mini-overlay': isMiniOverlay,
 							})}
 							ref={innerRef}
 						>
-							{toggle && belowBreakpoint && (
-								<XSidebarToggleBtn onClick={onHandleToggle} />
-							)}
+							{toggle && belowBreakpoint && <XSidebarToggleBtn />}
 							{hasHeader && (
 								<XSidebarHeader>
 									{title && <XSidebarTitle>{title}</XSidebarTitle>}
@@ -218,9 +212,7 @@ export const XSidebar = memo(
 								{children}
 							</ScrollArea>
 
-							{miniToggle && !belowBreakpoint && (
-								<XSidebarMiniBtn onClick={onHandleMiniToggle} />
-							)}
+							{miniToggle && !belowBreakpoint && <XSidebarMiniBtn />}
 						</div>
 					</div>
 				</XSidebarProvider>
