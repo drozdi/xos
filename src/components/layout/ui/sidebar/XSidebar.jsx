@@ -15,19 +15,10 @@ import { useBreakpoint } from '../../../../hooks/use-breakpoint';
 import { useXLayoutContext } from '../layout';
 import './style.css';
 import { XSidebarProvider } from './XSidebarContext';
-import { XSidebarFooter } from './XSidebarFooter';
 import { XSidebarHeader } from './XSidebarHeader';
 import { XSidebarMiniBtn } from './XSidebarMiniBtn';
 import { XSidebarTitle } from './XSidebarTitle';
 import { XSidebarToggleBtn } from './XSidebarToggleBtn';
-
-function XBtn() {
-	return null;
-}
-
-function XIcon() {
-	return null;
-}
 
 export const XSidebar = memo(
 	forwardRef(function XSidebarFn(
@@ -82,13 +73,13 @@ export const XSidebar = memo(
 			breakPointFn(belowBreakpoint);
 		}, [breakPointFn, belowBreakpoint]);
 
-		const [{ width, miniWidth, innerMini }, updateState] = useSetState({
+		const [{ width, miniWidth }, updateState] = useSetState({
 			width: w,
 			miniWidth: mw,
-			innerMini: mini,
 		});
 
 		const [isOpenBreakpoint, setOpenBreakpoint] = useState(false);
+		const [innerMini, setInnerMini] = useState(mini);
 
 		const { isOpen, isOverlay, isEvents, isMouseEvent } = useMemo(
 			() => ({
@@ -131,8 +122,6 @@ export const XSidebar = memo(
 			}
 		}, []);
 
-
-
 		useEffect(() => {
 			const handleClose = ({ target }) => {
 				if (target.closest('.x-sidebar') !== innerRef.current) {
@@ -148,30 +137,7 @@ export const XSidebar = memo(
 			return () => {
 				document.removeEventListener('click', handleClose);
 			};
-		}, [miniMouse, miniToggle, belowBreakpoint, innerRef.current]);
-
-		useEffect(() => onMini?.(isMini), [isMini]);*/
-
-		/*const onHandleDrag = useCallback(
-			(e, ui) => {
-				updateState({
-					width: Math.max(miniWidth, w + (reverse ? -ui.deltaX : ui.deltaX)),
-				});
-			},
-			[reverse, miniWidth],
-		);*/
-		/*const onHandleDragEnd = useCallback(
-			(e, ui) => {
-				const width = Math.max(
-					innerRef.current?.getBoundingClientRect().width,
-					miniWidth,
-				);
-				updateState({ width });
-				onResize?.(width);
-			},
-			[innerRef.current, miniWidth],
-		);*/
-		/**/
+		}, [miniMouse, miniToggle, belowBreakpoint, innerRef.current]);*/
 
 		const ctx = useMemo(() => {
 			return {
@@ -196,13 +162,14 @@ export const XSidebar = memo(
 				if (false === onToggle?.(ctx)) {
 					return;
 				}
-				updateState({ innerMini: !innerMini });
+				setInnerMini((v) => !v);
 			},
-			[innerMini, onToggle, updateState, ctx],
+			[onToggle, updateState, ctx],
 		);
 
 		useEffect(() => setOpenBreakpoint(false), [belowBreakpoint]);
 		useEffect(() => setOpenBreakpoint((v) => !v), [open]);
+		useEffect(() => setInnerMini(mini), [mini]);
 
 		/*seEffect(() => {
 			if (layout && ctx) {
@@ -224,12 +191,8 @@ export const XSidebar = memo(
 				<XSidebarProvider value={ctx}>
 					<div
 						className="x-sidebar-container"
-						onMouseEnter={() =>
-							isMouseEvent && updateState({ innerMini: false })
-						}
-						onMouseLeave={() =>
-							isMouseEvent && updateState({ innerMini: true })
-						}
+						onMouseEnter={() => isMouseEvent && setInnerMini(false)}
+						onMouseLeave={() => isMouseEvent && setInnerMini(true)}
 					>
 						<div
 							className={classNames('x-sidebar', {
@@ -254,7 +217,6 @@ export const XSidebar = memo(
 							>
 								{children}
 							</ScrollArea>
-							{hasHeader && <XSidebarFooter>footer</XSidebarFooter>}
 
 							{miniToggle && !belowBreakpoint && (
 								<XSidebarMiniBtn onClick={onHandleMiniToggle} />

@@ -68,7 +68,7 @@ export const Layout = memo(function LayoutFn({
 			//toggle: belowBreakpoint,
 			toggle: true,
 			mini: ls.mini,
-			//miniToggle: true,
+			miniToggle: true,
 			//miniOverlay: true,
 			//miniMouse: true,
 			//miniOverlay: overlay || belowBreakpoint,
