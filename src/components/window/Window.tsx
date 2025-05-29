@@ -1,12 +1,20 @@
+import { ActionIcon, Box, Group } from '@mantine/core';
 import { useId } from '@mantine/hooks';
+import {
+	IconMinus,
+	IconReload,
+	IconWindowMaximize,
+	IconWindowMinimize,
+	IconX,
+} from '@tabler/icons-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { cloneElement, memo, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, memo, useImperativeHandle, useMemo, useRef } from 'react';
 import './style.css';
 import { WindowProvider } from './WindowContext';
 
 export const Window = memo(
-	forwardRefWithAs(function WindowFn(
+	forwardRef(function WindowFn(
 		{
 			parent = document.body,
 			aspectFactor,
@@ -49,25 +57,8 @@ export const Window = memo(
 		return (
 			<WindowProvider value={win}>
 				<div id={uid} className={classNames('xWindow', className, {})}>
-					<Box
-						className="xWindow-bar"
-						justify="between"
-						onDoubleClick={handleFullscreen}
-					>
-						{title && (
-							<Box.Section side className="xWindow-title">
-								{title}
-							</Box.Section>
-						)}
-						<WindowIcons
-							icons={icons}
-							isFullscreen={isFullscreen}
-							onFullscreen={handleFullscreen}
-							onCollapse={handleCollapse}
-							onClose={handleClose}
-							onReload={handleReload}
-							resizable={resizable}
-						/>
+					<Box className="xWindow-bar" justify="between">
+						<WindowIcons icons={icons} resizable={resizable} />
 					</Box>
 
 					<div className="xWindow-content" ref={contentRef}>
@@ -79,27 +70,15 @@ export const Window = memo(
 	}),
 );
 
-Window.propTypes = {
-	parent: PropTypes.any,
-	children: PropTypes.node,
-	className: PropTypes.string,
-	aspectFactor: PropTypes.number,
-	x: PropTypes.number,
-	y: PropTypes.number,
-	z: PropTypes.number,
-	w: PropTypes.number,
-	h: PropTypes.number,
-	title: PropTypes.string,
-	icons: PropTypes.string,
-	onFullscreen: PropTypes.func,
-	onCollapse: PropTypes.func,
-	onReload: PropTypes.func,
-	onClose: PropTypes.func,
-	resizable: PropTypes.bool,
-	draggable: PropTypes.bool,
-	wmGroup: PropTypes.string,
-	wmSort: PropTypes.number,
-};
+interface WindowIconsProps {
+	icons?: string;
+	resizable?: boolean;
+	isFullscreen?: boolean;
+	onFullscreen?: () => void;
+	onCollapse?: () => void;
+	onClose?: () => void;
+	onReload?: () => void;
+}
 
 const WindowIcons = memo(
 	({
@@ -110,71 +89,77 @@ const WindowIcons = memo(
 		onClose = () => {},
 		onReload = () => {},
 		resizable,
-	}) => (
-		<Box.Section
-			top
-			side
-			row
-			noPadding
-			as={XBtn.Group}
+	}: WindowIconsProps) => (
+		<Group
 			className="xWindow-drag-no"
-			color="dark"
-			size="sm"
-			flat
-			square
+			gap={0}
+			style={{
+				marginInlineStart: 'auto',
+			}}
 		>
 			{icons.split(/\s+/).map((type) => {
 				switch (type) {
 					case 'close':
 						return (
-							<XBtn
+							<ActionIcon
 								key={type}
-								className="bg-red-700/60"
-								leftSection="mdi-close"
+								variant="filled"
+								color="red"
 								title="Закрыть"
+								aria-label="Закрыть"
 								onClick={onClose}
-							/>
+							>
+								<IconX />
+							</ActionIcon>
 						);
 					case 'reload':
 						return (
-							<XBtn
+							<ActionIcon
 								key={type}
-								leftSection="mdi-reload"
 								title="Обновить"
+								aria-label="Обновить"
 								onClick={onReload}
-							/>
+							>
+								<IconReload />
+							</ActionIcon>
 						);
 					case 'fullscreen':
 						return (
 							resizable && (
-								<XBtn
+								<ActionIcon
 									key={type}
 									onClick={onFullscreen}
-									leftSection={
-										isFullscreen
-											? 'mdi-fullscreen-exit'
-											: 'mdi-fullscreen'
-									}
 									title={
 										isFullscreen ? 'Свернуть в окно' : 'Развернуть'
 									}
-								/>
+									aria-label={
+										isFullscreen ? 'Свернуть в окно' : 'Развернуть'
+									}
+								>
+									{isFullscreen ? (
+										<IconWindowMinimize />
+									) : (
+										<IconWindowMaximize />
+									)}
+								</ActionIcon>
 							)
 						);
 					case 'collapse':
 						return (
-							<XBtn
-								key={type}
+							<ActionIcon
 								onClick={onCollapse}
-								leftSection="mdi-window-minimize"
+								key={type}
 								title="Свернуть"
-							/>
+								aria-label="Свернуть"
+							>
+								<IconMinus />
+							</ActionIcon>
 						);
 					default:
 						return null;
 				}
 			})}
-		</Box.Section>
+		</Group>
 	),
 );
 WindowIcons.displayName = './features/WindowIcons';
@@ -186,51 +171,4 @@ WindowIcons.propTypes = {
 	onCollapse: PropTypes.func,
 	onClose: PropTypes.func,
 	onReload: PropTypes.func,
-};
-
-// думать
-const ResizableWrapper = memo(({ width, height, onResize, disabled, children }) => (
-	<Resizable
-		width={width}
-		height={height}
-		onResize={onResize}
-		draggableOpts={{ disabled }}
-		resizeHandles={!disabled ? ['s', 'w', 'e', 'n', 'sw', 'nw', 'se', 'ne'] : []}
-		handle={(axis, ref) => (
-			<div className={`xWindow-res xWindow-res--${axis}`} ref={ref} />
-		)}
-	>
-		{children}
-	</Resizable>
-));
-ResizableWrapper.displayName = './features/ResizableWrapper';
-ResizableWrapper.propTypes = {
-	width: PropTypes.number,
-	height: PropTypes.number,
-	onResize: PropTypes.func,
-	disabled: PropTypes.bool,
-	children: PropTypes.node,
-};
-
-const DraggableWrapper = memo(({ disabled, onDrag, children }) => {
-	const ref = useRef();
-	return (
-		<DraggableCore
-			disabled={disabled}
-			onDrag={onDrag}
-			handle=".xWindow-bar"
-			cancel=".xWindow-res, .xWindow-drag-no"
-			nodeRef={ref}
-		>
-			{cloneElement(children, { ref })}
-		</DraggableCore>
-	);
-});
-
-DraggableWrapper.displayName = './features/DraggableWrapper';
-DraggableWrapper.propTypes = {
-	disabled: PropTypes.bool,
-	onDrag: PropTypes.func,
-	children: PropTypes.node,
-	nodeRef: PropTypes.any,
 };
