@@ -8,7 +8,7 @@ import { Layout } from './components/layout';
 
 function App() {
 	return (
-		<Layout container>
+		<Layout container toggle>
 			<div slot="header">header</div>
 			<div slot="footer">footer</div>
 			<div slot="left">
