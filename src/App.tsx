@@ -5,6 +5,7 @@ import '@mantine/core/styles/default-css-variables.css';
 import '@mantine/core/styles/global.css';
 import './App.css';
 import { Layout } from './components/layout';
+import { Window } from './components/window';
 
 function App() {
 	return (
@@ -19,7 +20,9 @@ function App() {
 					))}
 			</div>
 
-			<div>123</div>
+			<div>
+				<Window>efwefewf</Window>
+			</div>
 		</Layout>
 	);
 }

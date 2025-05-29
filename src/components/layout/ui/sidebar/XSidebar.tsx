@@ -1,4 +1,4 @@
-import { ScrollArea } from '@mantine/core';
+import { Box, Portal, ScrollArea } from '@mantine/core';
 import { useDisclosure, useMounted, useSetState } from '@mantine/hooks';
 import classNames from 'classnames';
 import React, {
@@ -143,7 +143,9 @@ export const XSidebar = memo(
 					}
 					setInnerMini((v) => !v);
 				},
-				toggle: () => {
+				toggle: (event) => {
+					event?.preventDefault();
+					event?.stopPropagation();
 					if (false === onToggle?.(ctx)) {
 						return;
 					}
@@ -154,12 +156,13 @@ export const XSidebar = memo(
 
 		useEffect(() => {
 			const handleClose = ({ target }) => {
+				console.log('123');
 				if (target.closest('.x-sidebar') !== innerRef.current) {
 					setInnerMini(true);
 					openBreakpoint.close();
 				}
 			};
-			if (miniMouse && (miniToggle || belowBreakpoint)) {
+			if (miniMouse || (miniToggle && belowBreakpoint)) {
 				document.addEventListener('click', handleClose);
 			}
 			return () => {
@@ -193,43 +196,100 @@ export const XSidebar = memo(
 		}, [ctx, type, layout]);
 
 		useImperativeHandle(ref, () => ctx, [ctx]);
-
 		const [ss, setSs] = useState(true);
-
 		return (
-			<XSidebarProvider value={ctx}>
-				<div
-					className="x-sidebar-container"
-					onMouseEnter={() => isMouseEvent && setInnerMini(false)}
-					onMouseLeave={() => isMouseEvent && setInnerMini(true)}
-				>
-					<aside
-						className={classNames('x-sidebar', {
-							[`x-sidebar--${type}`]: type,
-							'x-sidebar--close': !isOpen && isMounted,
-							'x-sidebar--mini': isMini,
-							'x-sidebar--overlay': isOverlay,
-							'x-sidebar--mini-overlay': isMiniOverlay,
-						})}
-						ref={innerRef}
+			<>
+				<XSidebarProvider value={ctx}>
+					<div
+						className="x-sidebar-container"
+						onMouseEnter={() => isMouseEvent && setInnerMini(false)}
+						onMouseLeave={() => isMouseEvent && setInnerMini(true)}
 					>
-						{hasHeader && (
-							<XSidebarHeader>
-								{title && <XSidebarTitle>{title}</XSidebarTitle>}
-								{toggle && belowBreakpoint && <XSidebarToggleBtn />}
-							</XSidebarHeader>
-						)}
-						<ScrollArea
-							className={classNames('x-sidebar-content', className)}
+						<aside
+							className={classNames('x-sidebar', {
+								[`x-sidebar--${type}`]: type,
+								'x-sidebar--close': !isOpen && isMounted,
+								'x-sidebar--mini': isMini,
+								'x-sidebar--overlay': isOverlay,
+								'x-sidebar--mini-overlay': isMiniOverlay,
+							})}
+							ref={innerRef}
 						>
-							{children}
-						</ScrollArea>
-						<XSidebarFooter>
-							{miniToggle && !belowBreakpoint && <XSidebarMiniBtn />}
-						</XSidebarFooter>
-					</aside>
-				</div>
-			</XSidebarProvider>
+							{hasHeader && (
+								<XSidebarHeader>
+									{title && <XSidebarTitle>{title}</XSidebarTitle>}
+									{toggle && belowBreakpoint && <XSidebarToggleBtn />}
+								</XSidebarHeader>
+							)}
+							<ScrollArea
+								className={classNames('x-sidebar-content', className)}
+							>
+								{children}
+							</ScrollArea>
+							<XSidebarFooter>
+								{miniToggle && !belowBreakpoint && <XSidebarMiniBtn />}
+							</XSidebarFooter>
+						</aside>
+					</div>
+				</XSidebarProvider>
+				{true && (
+					<Portal target="body">
+						<Box
+							pos="fixed"
+							bg="rgba(0,0,0,0.5)"
+							color="rgb(255,255,255)"
+							top={64}
+							right={0}
+							w={ss ? '200' : 0}
+							p={16}
+							style={{
+								zIndex: 1000,
+							}}
+						>
+							fre:{' '}
+							<input
+								type="checkbox"
+								checked={ss}
+								onChange={() => setSs((v) => !v)}
+							/>
+							<br />
+							breakpoint: {breakpoint} - {layout?.width}
+							<br />
+							mini: {mini ? 'true' : 'false'}
+							<br />
+							miniOverlay: {miniOverlay ? 'true' : 'false'}
+							<br />
+							miniToggle: {miniToggle ? 'true' : 'false'}
+							<br />
+							miniMouse: {miniMouse ? 'true' : 'false'}
+							<br />
+							open: {open ? 'true' : 'false'}
+							<br />
+							overlay: {overlay ? 'true' : 'false'}
+							<br />
+							toggle: {toggle ? 'true' : 'false'}
+							<br />
+							<br />
+							belowBreakpoint: {belowBreakpoint ? 'true' : 'false'}
+							<br />
+							isEvents: {isEvents ? 'true' : 'false'}
+							<br />
+							isMouseEvent: {isMouseEvent ? 'true' : 'false'}
+							<br />
+							innerMini: {innerMini ? 'true' : 'false'}
+							<br />
+							isMini: {isMini ? 'true' : 'false'}
+							<br />
+							isOverlay: {isOverlay ? 'true' : 'false'}
+							<br />
+							isMiniOverlay: {isMiniOverlay ? 'true' : 'false'}
+							<br />
+							isOpenBreakpoint: {isOpenBreakpoint ? 'true' : 'false'}
+							<br />
+						</Box>
+					</Portal>
+				)}
+			</>
 		);
 	}),
 );

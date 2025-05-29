@@ -5,7 +5,6 @@ import { useXSidebarContext } from './XSidebarContext';
 
 export const XSidebarToggleBtn = () => {
 	const ctx = useXSidebarContext();
-	const isLeft = ctx?.type === 'left';
 	const isOpen = ctx?.open || false;
 
 	return (
@@ -13,6 +12,9 @@ export const XSidebarToggleBtn = () => {
 			variant="default"
 			color="grape"
 			title={isOpen ? 'Развернуть' : 'Свернуть'}
+			style={{
+				marginInlineStart: 'auto',
+			}}
 			onClick={ctx?.toggle}
 		/>
 	);

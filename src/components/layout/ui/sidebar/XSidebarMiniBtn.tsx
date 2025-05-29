@@ -9,15 +9,14 @@ export const XSidebarMiniBtn = () => {
 	const isLeft = ctx?.type === 'left';
 	const isMini = ctx?.mini || false;
 	return (
-		<div className="x-sidebar-toggle-mini">
-			<Button
-				fullWidth
-				variant="default"
-				title={isMini ? 'Развернуть' : 'Свернуть'}
-				onClick={ctx?.toggleMini}
-			>
-				{isMini && isLeft ? <IconSquareArrowRight /> : <IconSquareArrowLeft />}
-			</Button>
-		</div>
+		<Button
+			fullWidth
+			variant="filled"
+			radius={0}
+			title={isMini ? 'Развернуть' : 'Свернуть'}
+			onClick={ctx?.toggleMini}
+		>
+			{isMini && isLeft ? <IconSquareArrowRight /> : <IconSquareArrowLeft />}
+		</Button>
 	);
 };

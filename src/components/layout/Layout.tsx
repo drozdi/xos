@@ -64,17 +64,13 @@ export const Layout = memo(function LayoutFn({
 			type: 'left',
 			title: 'left',
 			open: ls.open,
-			//overlay: overlay,
+			overlay: overlay,
 			breakpoint: breakpoint,
-			//toggle: belowBreakpoint,
-			toggle: true,
+			toggle: belowBreakpoint,
 			mini: ls.mini,
-			miniToggle: true,
-			miniOverlay: true,
+			miniOverlay: overlay || belowBreakpoint,
 			miniMouse: true,
-			//miniOverlay: overlay || belowBreakpoint,
-			//miniMouse: true,
-			//miniToggle: toggle && !belowBreakpoint,
+			miniToggle: toggle && !belowBreakpoint,
 			//resizeable: true,
 			//onMini: (mini) => setLs({ mini }),
 			//onResize: (width) => setLs({ width }),
@@ -118,22 +114,6 @@ export const Layout = memo(function LayoutFn({
 						setLs({ open: !ls.open });
 					}}
 				/>
-				/*
-				<ActionIcon
-					variant="filled"
-					size="lg"
-					aria-label="Left"
-					onClick={(e) => {
-						e.stopPropagation();
-						e.preventDefault();
-						setLs({ open: !ls.open });
-					}}
-				>
-					<IconSquareArrowLeft
-						style={{ width: '70%', height: '70%' }}
-						stroke={1.5}
-					/>
-				</ActionIcon>*/
 			),
 			rightSection: belowBreakpoint && hasSlot('right') && (
 				<ActionIcon

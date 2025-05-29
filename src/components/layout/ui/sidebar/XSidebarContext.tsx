@@ -6,8 +6,8 @@ interface XSidebarContextType {
 	mini?: boolean;
 	open?: boolean;
 	getElement?: () => HTMLElement | null;
-	toggleMini?: () => void;
-	toggle?: () => void;
+	toggleMini?: (event: MouseEvent) => void;
+	toggle?: (event: MouseEvent) => void;
 }
 interface XSidebarProviderProps {
 	children: ReactNode;

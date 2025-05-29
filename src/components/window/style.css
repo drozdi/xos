@@ -1,0 +1,104 @@
+.xWindow {
+	@apply absolute m-0 p-0 border border-color bg-surface w-96 h-96 grid grid-rows-(--grid-row-window) transition-none;
+}
+.xWindow-title {
+	@apply truncate;
+}
+.xWindow-bar {
+	padding-left: 0;
+	padding-right: 0;
+	border-bottom: 0 solid var(--mantine-color-default-border);
+	}
+.xWindow-content {
+	position: relative;
+	overflow: auto;
+}
+
+.xWindow-res {
+	position: absolute;
+	z-index: 100;
+	display: none;
+}
+.xWindow-res--n,
+.xWindow-res--s {
+
+	//@apply h-2 left-0 right-0 cursor-n-resize;
+}
+.xWindow-res--e,
+.xWindow-res--w {
+	//@apply w-2 top-0 bottom-0 cursor-e-resize;
+}
+.xWindow-res--se,
+.xWindow-res--sw,
+.xWindow-res--ne,
+.xWindow-res--nw {
+	//@apply w-2 h-2;
+	z-index: 110;
+}
+.xWindow-res--nw {
+	//@apply cursor-nw-resize;
+}
+.xWindow-res--ne {
+	//@apply cursor-ne-resize;
+}
+.xWindow-res--se {
+	//@apply cursor-se-resize;
+}
+.xWindow-res--sw {
+	//@apply cursor-sw-resize;
+}
+.xWindow-res--n,
+.xWindow-res--nw,
+.xWindow-res--ne {
+	//@apply -top-1;
+}
+.xWindow-res--e,
+.xWindow-res--ne,
+.xWindow-res--se {
+	//@apply -right-1;
+}
+.xWindow-res--s,
+.xWindow-res--se,
+.xWindow-res--sw {
+	//@apply -bottom-1;
+}
+.xWindow-res--w,
+.xWindow-res--nw,
+.xWindow-res--sw {
+	//@apply -left-1;
+}
+
+.xWindow--resizable > .xWindow-res {
+	//@apply block;
+}
+.xWindow--draggable:not(.xWindow--fullscreen, .xWindow--collapsed) .xWindow-bar {
+	@apply cursor-move;
+}
+.xWindow--fullscreen {
+	@apply top-0 left-0 w-full h-full;
+}
+.xWindow {
+	--x-window-line-offset: 6rem;
+	/* box-shadow: 0 5px 10px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.07) inset;*/
+	&:before {
+		content: ' ';
+		@apply block h-0 absolute top-0 border-9 border-b-0 border-transparent border-t-separator;
+		left: var(--x-window-line-offset);
+		right: var(--x-window-line-offset);
+	}
+	&:after {
+		content: ' ';
+		@apply block h-0 absolute top-0 border-8 border-b-0 border-transparent border-t-info/50;
+		left: calc(var(--x-window-line-offset) + 1px);
+		right: calc(var(--x-window-line-offset) + 1px);
+	}
+}
+.xWindow--active {
+	&:after {
+		@apply border-t-red-500;
+	}
+}
+
+.xWindow--collapse {
+	@apply hidden;
+}
