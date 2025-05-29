@@ -1,5 +1,4 @@
-import { Button } from '@mantine/core';
-import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
+import { CloseButton } from '@mantine/core';
 import './style.css';
 
 import { useXSidebarContext } from './XSidebarContext';
@@ -10,14 +9,11 @@ export const XSidebarToggleBtn = () => {
 	const isOpen = ctx?.open || false;
 
 	return (
-		<Button
-			fullWidth
+		<CloseButton
 			variant="default"
 			color="grape"
 			title={isOpen ? 'Развернуть' : 'Свернуть'}
 			onClick={ctx?.toggle}
-		>
-			{isOpen && isLeft ? <IconSquareArrowLeft /> : <IconSquareArrowRight />}
-		</Button>
+		/>
 	);
 };
