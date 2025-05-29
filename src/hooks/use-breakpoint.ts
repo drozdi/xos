@@ -6,13 +6,17 @@ import { useMemo } from 'react';
  * @param {number} ctxWidth - Текущая ширина контекста.
  * @returns {boolean} - Возвращает true, если текущая ширина контекста меньше заданного breakpoint, иначе false.
  */
-export function useBreakpoint(breakpoint: number | null, ctxWidth: number): boolean {
+export function useBreakpoint(
+	breakpoint: number | null | undefined,
+	ctxWidth: number,
+): boolean {
 	return useMemo<boolean>(() => {
 		// Проверяем валидность брейкпоинта
-		const isValidBreakpoint = typeof breakpoint === 'number' && !isNaN(breakpoint);
+		const isValidBreakpoint =
+			typeof breakpoint === 'number' && !Number.isNaN(breakpoint);
 
 		// Проверяем валидность ширины контекста
-		const isValidWidth = typeof ctxWidth === 'number' && !isNaN(ctxWidth);
+		const isValidWidth = typeof ctxWidth === 'number' && !Number.isNaN(ctxWidth);
 
 		// Возвращаем false при невалидных данных
 		if (!isValidBreakpoint || !isValidWidth) return false;

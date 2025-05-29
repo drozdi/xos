@@ -12,5 +12,5 @@ export const XSidebarHeader = memo(({ children }: XSidebarHeaderProps) => {
 	const isLeft = ctx?.type === 'left';
 	const isMini = ctx?.mini || false;
 
-	return <div className="x-sidebar-header">{children}</div>;
+	return <header className="x-sidebar-header">{children}</header>;
 });

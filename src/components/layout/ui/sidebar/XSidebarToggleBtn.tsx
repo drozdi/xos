@@ -10,16 +10,14 @@ export const XSidebarToggleBtn = () => {
 	const isOpen = ctx?.open || false;
 
 	return (
-		<div className="x-sidebar-toggle">
-			<Button
-				fullWidth
-				variant="default"
-				color="grape"
-				title={isOpen ? 'Развернуть' : 'Свернуть'}
-				onClick={ctx?.toggle}
-			>
-				{isOpen && isLeft ? <IconSquareArrowLeft /> : <IconSquareArrowRight />}
-			</Button>
-		</div>
+		<Button
+			fullWidth
+			variant="default"
+			color="grape"
+			title={isOpen ? 'Развернуть' : 'Свернуть'}
+			onClick={ctx?.toggle}
+		>
+			{isOpen && isLeft ? <IconSquareArrowLeft /> : <IconSquareArrowRight />}
+		</Button>
 	);
 };
