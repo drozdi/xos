@@ -21,7 +21,9 @@ function App() {
 			</div>
 
 			<div>
-				<Window>efwefewf</Window>
+				<Window title="title" resizable icons="reload collapse fullscreen close">
+					efwefewf
+				</Window>
 			</div>
 		</Layout>
 	);

@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Group } from '@mantine/core';
+import { ActionIcon, Group } from '@mantine/core';
 import { useId } from '@mantine/hooks';
 import {
 	IconMinus,
@@ -56,12 +56,18 @@ export const Window = memo(
 
 		return (
 			<WindowProvider value={win}>
-				<div id={uid} className={classNames('xWindow', className, {})}>
-					<Box className="xWindow-bar" justify="between">
+				<div
+					id={uid}
+					className={classNames('x-window', className, {
+						'x-window--resizable': resizable,
+					})}
+				>
+					<Group className="x-window-header" justify="between">
+						{title && <div className="x-window-title">{title}</div>}
 						<WindowIcons icons={icons} resizable={resizable} />
-					</Box>
+					</Group>
 
-					<div className="xWindow-content" ref={contentRef}>
+					<div className="x-window-content" ref={contentRef}>
 						{children}
 					</div>
 				</div>
@@ -89,78 +95,94 @@ const WindowIcons = memo(
 		onClose = () => {},
 		onReload = () => {},
 		resizable,
-	}: WindowIconsProps) => (
-		<Group
-			className="xWindow-drag-no"
-			gap={0}
-			style={{
-				marginInlineStart: 'auto',
-			}}
-		>
-			{icons.split(/\s+/).map((type) => {
-				switch (type) {
-					case 'close':
-						return (
-							<ActionIcon
-								key={type}
-								variant="filled"
-								color="red"
-								title="Закрыть"
-								aria-label="Закрыть"
-								onClick={onClose}
-							>
-								<IconX />
-							</ActionIcon>
-						);
-					case 'reload':
-						return (
-							<ActionIcon
-								key={type}
-								title="Обновить"
-								aria-label="Обновить"
-								onClick={onReload}
-							>
-								<IconReload />
-							</ActionIcon>
-						);
-					case 'fullscreen':
-						return (
-							resizable && (
+	}: WindowIconsProps) => {
+		const props = {
+			size: 'xs',
+			radius: 0,
+			variant: 'subtle',
+			color: 'gray',
+		};
+		return (
+			<Group
+				className="x-window-icons x-window-drag-no"
+				gap={1}
+				style={{
+					marginInlineStart: 'auto',
+				}}
+			>
+				{icons.split(/\s+/).map((type) => {
+					switch (type) {
+						case 'close':
+							return (
 								<ActionIcon
 									key={type}
-									onClick={onFullscreen}
-									title={
-										isFullscreen ? 'Свернуть в окно' : 'Развернуть'
-									}
-									aria-label={
-										isFullscreen ? 'Свернуть в окно' : 'Развернуть'
-									}
+									{...props}
+									variant="filled"
+									color="red"
+									title="Закрыть"
+									aria-label="Закрыть"
+									onClick={onClose}
 								>
-									{isFullscreen ? (
-										<IconWindowMinimize />
-									) : (
-										<IconWindowMaximize />
-									)}
+									<IconX />
 								</ActionIcon>
-							)
-						);
-					case 'collapse':
-						return (
-							<ActionIcon
-								onClick={onCollapse}
-								key={type}
-								title="Свернуть"
-								aria-label="Свернуть"
-							>
-								<IconMinus />
-							</ActionIcon>
-						);
-					default:
-						return null;
-				}
-			})}
-		</Group>
-	),
+							);
+						case 'reload':
+							return (
+								<ActionIcon
+									key={type}
+									{...props}
+									title="Обновить"
+									aria-label="Обновить"
+									onClick={onReload}
+								>
+									<IconReload />
+								</ActionIcon>
+							);
+						case 'fullscreen':
+							return (
+								resizable && (
+									<ActionIcon
+										key={type}
+										{...props}
+										onClick={onFullscreen}
+										title={
+											isFullscreen
+												? 'Свернуть в окно'
+												: 'Развернуть'
+										}
+										aria-label={
+											isFullscreen
+												? 'Свернуть в окно'
+												: 'Развернуть'
+										}
+									>
+										{isFullscreen ? (
+											<IconWindowMinimize />
+										) : (
+											<IconWindowMaximize />
+										)}
+									</ActionIcon>
+								)
+							);
+						case 'collapse':
+							return (
+								<ActionIcon
+									key={type}
+									{...props}
+									onClick={onCollapse}
+									title="Свернуть"
+									aria-label="Свернуть"
+								>
+									<IconMinus />
+								</ActionIcon>
+							);
+						default:
+							return null;
+					}
+				})}
+			</Group>
+		);
+	},
 );
 WindowIcons.displayName = './features/WindowIcons';
 WindowIcons.propTypes = {

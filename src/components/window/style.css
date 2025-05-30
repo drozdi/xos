@@ -1,28 +1,45 @@
-.xWindow {
+.x-window {
 	position: absolute;
 	margin: 16px;
 	padding: 0;
 	border: 1px solid var(--mantine-color-default-border);
 	width: 386px;
 	height: 386px;
-	display: flex;
+	display: grid;
 	flex-direction: column;
-	/*@apply bg-surface w-96 h-96 grid grid-rows-(--grid-row-window) transition-none;*/
+	grid-template-columns: auto;
+	grid-template-rows:
+		minmax(min-content, auto) minmax(auto, 1fr)
+		minmax(min-content, auto);
 }
-.xWindow-title {
-	/*@apply truncate;*/
+
+.x-window-header {
+	padding: 0.25rem 0.75rem;
+	border-bottom: 1px solid var(--mantine-color-default-border);
 }
-.xWindow-bar {
-	padding-left: 0;
-	padding-right: 0;
-	border-bottom: 0 solid var(--mantine-color-default-border);
+.x-window-icons {
+	position: absolute;
+	right: 0;
+	top: 0;
 }
-.xWindow-content {
+
+.x-window-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.x-window-content {
 	position: relative;
 	overflow: auto;
 }
 
-.xWindow-res {
+.x-window--resizable {
+	resize: both;
+	overflow: auto;
+}
+
+/*.xWindow-res {
 	position: absolute;
 	z-index: 100;
 	display: none;
