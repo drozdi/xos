@@ -196,7 +196,7 @@ export const XSidebar = memo(
 		}, [ctx, type, layout]);
 
 		useImperativeHandle(ref, () => ctx, [ctx]);
-		const [ss, setSs] = useState(true);
+		const [ss, setSs] = useState(false);
 		return (
 			<>
 				<XSidebarProvider value={ctx}>

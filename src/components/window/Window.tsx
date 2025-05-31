@@ -1,5 +1,5 @@
 import { ActionIcon, Group } from '@mantine/core';
-import { useId } from '@mantine/hooks';
+import { useId, useMove } from '@mantine/hooks';
 import {
 	IconMinus,
 	IconReload,
@@ -9,7 +9,7 @@ import {
 } from '@tabler/icons-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { forwardRef, memo, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, memo, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import './style.css';
 import { WindowProvider } from './WindowContext';
 
@@ -20,8 +20,8 @@ export const Window = memo(
 			aspectFactor,
 			children,
 			className,
-			x,
-			y,
+			x = 20,
+			y = 20,
 			z,
 			w,
 			h,
@@ -41,6 +41,9 @@ export const Window = memo(
 		ref,
 	) {
 		const uid = useId();
+		const [position, setPosition] = useState({ x, y });
+		const { ref: containerRef, active } = useMove(setPosition);
+
 		const contentRef = useRef<HTMLElement>(null);
 		const win = useMemo(
 			() => ({
@@ -54,6 +57,14 @@ export const Window = memo(
 
 		useImperativeHandle(ref, () => win);
 
+		const style = useMemo(
+			() => ({
+				left: position.x,
+				top: position.y,
+			}),
+			[position],
+		);
+
 		return (
 			<WindowProvider value={win}>
 				<div
@@ -61,6 +72,8 @@ export const Window = memo(
 					className={classNames('x-window', className, {
 						'x-window--resizable': resizable,
 					})}
+					ref={containerRef}
+					style={style}
 				>
 					<Group className="x-window-header" justify="between">
 						{title && <div className="x-window-title">{title}</div>}
