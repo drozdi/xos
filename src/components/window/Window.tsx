@@ -179,7 +179,7 @@ export const Window = memo(
 			}));
 		}, []);
 
-		const style = useMemo(() => position, []);
+		const style = useMemo(() => position, [position]);
 
 		const containerRef = useRef(null);
 		return (
