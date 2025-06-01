@@ -1,6 +1,6 @@
 .x-window {
 	position: absolute;
-	margin: 16px;
+	margin: 0;
 	padding: 0;
 	border: 1px solid var(--mantine-color-default-border);
 	width: 386px;
@@ -37,6 +37,9 @@
 .x-window--resizable {
 	resize: both;
 	overflow: auto;
+}
+.x-window--draggable:not(.x-window--fullscreen, .x-window--collapsed) .x-window-header {
+	cursor: move;
 }
 
 /*.xWindow-res {
@@ -97,9 +100,7 @@
 .xWindow--resizable > .xWindow-res {
 	//@apply block;
 }*/
-.xWindow--draggable:not(.xWindow--fullscreen, .xWindow--collapsed) .xWindow-bar {
-	/*@apply cursor-move;*/
-}
+
 .xWindow--fullscreen {
 	/*@apply top-0 left-0 w-full h-full;*/
 }
