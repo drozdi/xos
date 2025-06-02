@@ -56,6 +56,7 @@ export const Window = memo(
 		ref,
 	) {
 		const uid = useId();
+		const wm = wmStore();
 		const [position, setPosition] = useState({
 			left: x,
 			top: y,
@@ -69,7 +70,42 @@ export const Window = memo(
 			isActive: false,
 		});
 
-		const wm = wmStore();
+		// Обработчик полного экрана
+		const handleFullscreen = useCallback(() => {
+			if (!resizable) return;
+			const newState = !isFullscreen;
+			updateState({ isFullscreen: newState, isCollapse: false });
+			onFullscreen?.(newState);
+		}, [isFullscreen, resizable, onFullscreen]);
+
+		// Обработчик свернуть экрана
+		const handleCollapse = useCallback(() => {
+			const newState = !isCollapse;
+			updateState({
+				isCollapse: newState,
+				isActive: newState ? false : isActive,
+			});
+			if (newState) {
+				wm?.disable?.();
+			}
+			onCollapse?.(newState);
+		}, [isCollapse, isActive, onCollapse]);
+
+		// Обработчик закрыть экрана
+		const handleClose = useCallback(
+			(event) => {
+				onClose?.(event);
+			},
+			[onClose],
+		);
+
+		// Обработчик обновить
+		const handleReload = useCallback(
+			(event) => {
+				onReload?.(event);
+			},
+			[onReload],
+		);
 
 		const win = useMemo(
 			() => ({
@@ -221,26 +257,43 @@ export const Window = memo(
 		);
 
 		useEffect(() => {
-			console.log('render win', win);
-			console.log('render wm', wm);
 			wm.add(win);
+			if (!x && !y) {
+				win.x = 'center';
+				win.y = 'center';
+			}
 			return () => wm.del(win);
 		}, []);
 
 		return (
 			<WindowProvider value={win}>
-				<DraggableWrapper onDrag={handleDrag} disabled={!draggable}>
+				<DraggableWrapper
+					onDrag={handleDrag}
+					disabled={!draggable || isFullscreen}
+				>
 					<div
 						id={uid}
 						className={classNames('x-window', className, {
 							'x-window--draggable': draggable,
-							'x-window--resizable': resizable,
+							'x-window--resizable':
+								resizable && !isFullscreen && !isCollapse,
+							'x-window--collapse': isCollapse,
+							'x-window--fullscreen': isFullscreen,
+							'x-window--active': isActive,
 						})}
 						style={style}
 					>
 						<Group className="x-window-header" justify="between">
 							{title && <div className="x-window-title">{title}</div>}
-							<WindowIcons icons={icons} resizable={resizable} />
+							<WindowIcons
+								icons={icons}
+								resizable={resizable}
+								isFullscreen={isFullscreen}
+								onFullscreen={handleFullscreen}
+								onCollapse={handleCollapse}
+								onClose={handleClose}
+								onReload={handleReload}
+							/>
 						</Group>
 
 						<div className="x-window-content">{children}</div>
@@ -255,10 +308,10 @@ interface WindowIconsProps {
 	icons?: string;
 	resizable?: boolean;
 	isFullscreen?: boolean;
-	onFullscreen?: () => void;
-	onCollapse?: () => void;
-	onClose?: () => void;
-	onReload?: () => void;
+	onFullscreen?: (event: MouseEvent) => void;
+	onCollapse?: (event: MouseEvent) => void;
+	onClose?: (event: MouseEvent) => void;
+	onReload?: (event: MouseEvent) => void;
 }
 const WindowIcons = memo(
 	({

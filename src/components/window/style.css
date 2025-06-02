@@ -42,92 +42,52 @@
 	cursor: move;
 }
 
-/*.xWindow-res {
-	position: absolute;
-	z-index: 100;
-	display: none;
-}
-/*
-.xWindow-res--n,
-.xWindow-res--s {
-
-	//@apply h-2 left-0 right-0 cursor-n-resize;
-}
-.xWindow-res--e,
-.xWindow-res--w {
-	//@apply w-2 top-0 bottom-0 cursor-e-resize;
-}
-.xWindow-res--se,
-.xWindow-res--sw,
-.xWindow-res--ne,
-.xWindow-res--nw {
-	//@apply w-2 h-2;
-	z-index: 110;
-}
-.xWindow-res--nw {
-	//@apply cursor-nw-resize;
-}
-.xWindow-res--ne {
-	//@apply cursor-ne-resize;
-}
-.xWindow-res--se {
-	//@apply cursor-se-resize;
-}
-.xWindow-res--sw {
-	//@apply cursor-sw-resize;
-}
-.xWindow-res--n,
-.xWindow-res--nw,
-.xWindow-res--ne {
-	//@apply -top-1;
-}
-.xWindow-res--e,
-.xWindow-res--ne,
-.xWindow-res--se {
-	//@apply -right-1;
-}
-.xWindow-res--s,
-.xWindow-res--se,
-.xWindow-res--sw {
-	//@apply -bottom-1;
-}
-.xWindow-res--w,
-.xWindow-res--nw,
-.xWindow-res--sw {
-	//@apply -left-1;
+.x-window--fullscreen {
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
 }
 
-.xWindow--resizable > .xWindow-res {
-	//@apply block;
-}*/
-
-.xWindow--fullscreen {
-	/*@apply top-0 left-0 w-full h-full;*/
-}
-/*
-.xWindow {
-	--x-window-line-offset: 6rem;
-	/* box-shadow: 0 5px 10px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.07) inset;*/
-/*&:before {
+.x-window {
+	--x-window-line-offset: 5rem;
+	--x-window-line-height: 6px;
+	box-shadow:
+		0 5px 10px rgba(0, 0, 0, 0.75),
+		0 0 0 1px rgba(255, 255, 255, 0.07) inset;
+	background-color: var(--mantine-color-body);
+	&:before {
 		content: ' ';
-		@apply block h-0 absolute top-0 border-9 border-b-0 border-transparent border-t-separator;
+		display: block;
+		position: absolute;
+		height: 0;
+		top: 0;
+		border: calc(var(--x-window-line-height) + 1px) solid transparent;
+		border-bottom-width: 0;
+		border-top-color: var(--mantine-color-default-border);
 		left: var(--x-window-line-offset);
 		right: var(--x-window-line-offset);
 	}
 	&:after {
 		content: ' ';
-		@apply block h-0 absolute top-0 border-8 border-b-0 border-transparent border-t-info/50;
+		display: block;
+		position: absolute;
+		height: 0;
+		top: 0;
+		border: var(--x-window-line-height) solid transparent;
+		border-bottom-width: 0;
+		border-top-color: var(--mantine-color-indigo-filled);
 		left: calc(var(--x-window-line-offset) + 1px);
 		right: calc(var(--x-window-line-offset) + 1px);
 	}
 }
-.xWindow--active {
+
+.x-window--active {
 	&:after {
-		@apply border-t-red-500;
+		border-top-color: red;
 	}
 }
 
-.xWindow--collapse {
-	@apply hidden;
+.x-window--collapse {
+	display: none;
 }
-*/

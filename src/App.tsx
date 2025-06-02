@@ -22,12 +22,24 @@ function App() {
 
 			<div>
 				<Window
-					title="title"
+					title="Win 1"
 					draggable
 					resizable
 					icons="reload collapse fullscreen close"
+					w={200}
+					h={200}
 				>
-					efwefewf
+					sdfsdf
+				</Window>
+				<Window
+					title="Win 2"
+					draggable
+					resizable
+					icons="reload collapse fullscreen close"
+					w={200}
+					h={200}
+				>
+					sdfsdf
 				</Window>
 			</div>
 		</Layout>
