@@ -1,5 +1,5 @@
 import { ActionIcon, Group } from '@mantine/core';
-import { useId } from '@mantine/hooks';
+import { useId, useSetState } from '@mantine/hooks';
 import {
 	IconMinus,
 	IconReload,
@@ -14,12 +14,14 @@ import React, {
 	forwardRef,
 	memo,
 	useCallback,
+	useEffect,
 	useImperativeHandle,
 	useMemo,
 	useRef,
 	useState,
 } from 'react';
 import { DraggableCore } from 'react-draggable';
+import { wmStore } from '../../core/window-system';
 import { getComputedSize } from '../../utils/domFns';
 import { minMax } from '../../utils/fns';
 import { isString } from '../../utils/is';
@@ -54,6 +56,20 @@ export const Window = memo(
 		ref,
 	) {
 		const uid = useId();
+		const [position, setPosition] = useState({
+			left: x,
+			top: y,
+			width: w,
+			height: h,
+			zIndex: z,
+		});
+		const [{ isFullscreen, isCollapse, isActive }, updateState] = useSetState({
+			isFullscreen: false,
+			isCollapse: false,
+			isActive: false,
+		});
+
+		const wm = wmStore();
 
 		const win = useMemo(
 			() => ({
@@ -61,6 +77,19 @@ export const Window = memo(
 				uid,
 				wmGroup,
 				wmSort,
+				get isFullscreen() {
+					return isFullscreen;
+				},
+				set isFullscreen(isFullscreen) {
+					updateState({ isFullscreen });
+				},
+				get isCollapse() {
+					return isCollapse;
+				},
+				set isCollapse(isCollapse) {
+					updateState({ isCollapse });
+				},
+
 				get position() {
 					return position;
 				},
@@ -154,24 +183,26 @@ export const Window = memo(
 					return position.zIndex;
 				},
 				set z(zIndex) {
-					//setPosition((v) => ({ ...v, zIndex: wm.zIndex }));
+					setPosition((v) => ({ ...v, zIndex: wm.zIndex }));
 				},
 			}),
-			[uid, wmGroup, wmSort],
+			[
+				uid,
+				wmGroup,
+				wmSort,
+				position,
+				isFullscreen,
+				isCollapse,
+				updateState,
+				parent,
+				aspectFactor,
+			],
 		);
 
 		useImperativeHandle(ref, () => win);
 
-		const [position, setPosition] = useState({
-			left: x,
-			top: y,
-			width: w,
-			height: h,
-			zIndex: z,
-		});
 		// Обработчик перетаскивания окна
 		const handleDrag = useCallback((e, { deltaX, deltaY }) => {
-			console.log(deltaX, deltaY);
 			setPosition((v) => ({
 				...v,
 				top: v.top + deltaY,
@@ -179,9 +210,23 @@ export const Window = memo(
 			}));
 		}, []);
 
-		const style = useMemo(() => position, [position]);
+		const style = useMemo(
+			() =>
+				isFullscreen || isCollapse
+					? {
+							zIndex: position.zIndex,
+						}
+					: position,
+			[isFullscreen, isCollapse, position],
+		);
 
-		const containerRef = useRef(null);
+		useEffect(() => {
+			console.log('render win', win);
+			console.log('render wm', wm);
+			wm.add(win);
+			return () => wm.del(win);
+		}, []);
+
 		return (
 			<WindowProvider value={win}>
 				<DraggableWrapper onDrag={handleDrag} disabled={!draggable}>

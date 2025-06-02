@@ -156,7 +156,6 @@ export const XSidebar = memo(
 
 		useEffect(() => {
 			const handleClose = ({ target }) => {
-				console.log('123');
 				if (target.closest('.x-sidebar') !== innerRef.current) {
 					setInnerMini(true);
 					openBreakpoint.close();
