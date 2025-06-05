@@ -13,6 +13,7 @@ import React, {
 	cloneElement,
 	forwardRef,
 	memo,
+	MouseEventHandler,
 	useCallback,
 	useEffect,
 	useImperativeHandle,
@@ -64,14 +65,23 @@ export const Window = memo(
 			height: h,
 			zIndex: z,
 		});
-		const [{ isFullscreen, isCollapse, isActive }, updateState] = useSetState({
+		const [{ isFullscreen, isCollapse, isActive }, updateState] = useSetState<{
+			isFullscreen: boolean;
+			isCollapse: boolean;
+			isActive: boolean;
+		}>({
 			isFullscreen: false,
 			isCollapse: false,
 			isActive: false,
 		});
+		const active = useMemo<boolean>(
+			() => wm.isActive?.({ uid }) ?? isActive,
+			[wm.current, uid, isActive],
+		);
+		const innerRef = useRef<HTMLDivElement>(null);
 
 		// Обработчик полного экрана
-		const handleFullscreen = useCallback(() => {
+		const handleFullscreen = useCallback<MouseEventHandler>(() => {
 			if (!resizable) return;
 			const newState = !isFullscreen;
 			updateState({ isFullscreen: newState, isCollapse: false });
@@ -79,7 +89,7 @@ export const Window = memo(
 		}, [isFullscreen, resizable, onFullscreen]);
 
 		// Обработчик свернуть экрана
-		const handleCollapse = useCallback(() => {
+		const handleCollapse = useCallback<MouseEventHandler>(() => {
 			const newState = !isCollapse;
 			updateState({
 				isCollapse: newState,
@@ -92,7 +102,7 @@ export const Window = memo(
 		}, [isCollapse, isActive, onCollapse]);
 
 		// Обработчик закрыть экрана
-		const handleClose = useCallback(
+		const handleClose = useCallback<MouseEventHandler>(
 			(event) => {
 				onClose?.(event);
 			},
@@ -100,11 +110,32 @@ export const Window = memo(
 		);
 
 		// Обработчик обновить
-		const handleReload = useCallback(
+		const handleReload = useCallback<MouseEventHandler>(
 			(event) => {
 				onReload?.(event);
 			},
 			[onReload],
+		);
+
+		const handleActive = useCallback<MouseEventHandler>(
+			(event) => {
+				if (!active) {
+					wm.setZIndex?.(wm.zIndex + 1);
+					wm.active?.({ uid });
+					setPosition((v) => ({ ...v, zIndex: wm.zIndex }));
+					updateState({ isActive: true, isCollapse: false });
+				}
+			},
+			[updateState, setPosition, active, uid, wm],
+		);
+		const handleDeActive = useCallback<MouseEventHandler>(
+			(event) => {
+				if (active && !innerRef.current?.contains(event?.target)) {
+					wm.disable();
+				}
+				updateState({ isActive: false });
+			},
+			[active, uid, updateState, title],
 		);
 
 		const win = useMemo(
@@ -235,7 +266,7 @@ export const Window = memo(
 			],
 		);
 
-		useImperativeHandle(ref, () => win);
+		useImperativeHandle(ref, () => win, []);
 
 		// Обработчик перетаскивания окна
 		const handleDrag = useCallback((e, { deltaX, deltaY }) => {
@@ -257,12 +288,22 @@ export const Window = memo(
 		);
 
 		useEffect(() => {
-			wm.add(win);
+			document.documentElement.addEventListener('mousedown', handleDeActive);
+			return () => {
+				document.documentElement.removeEventListener('mousedown', handleDeActive);
+			};
+		}, [handleDeActive]);
+
+		useEffect(() => {
+			wm?.add?.(win);
 			if (!x && !y) {
 				win.x = 'center';
 				win.y = 'center';
 			}
-			return () => wm.del(win);
+			return () => {
+				wm?.disable?.();
+				wm?.del?.(win);
+			};
 		}, []);
 
 		return (
@@ -270,6 +311,7 @@ export const Window = memo(
 				<DraggableWrapper
 					onDrag={handleDrag}
 					disabled={!draggable || isFullscreen}
+					innerRef={innerRef}
 				>
 					<div
 						id={uid}
@@ -279,8 +321,9 @@ export const Window = memo(
 								resizable && !isFullscreen && !isCollapse,
 							'x-window--collapse': isCollapse,
 							'x-window--fullscreen': isFullscreen,
-							'x-window--active': isActive,
+							'x-window--active': active,
 						})}
+						onMouseDownCapture={handleActive}
 						style={style}
 					>
 						<Group className="x-window-header" justify="between">
@@ -308,11 +351,12 @@ interface WindowIconsProps {
 	icons?: string;
 	resizable?: boolean;
 	isFullscreen?: boolean;
-	onFullscreen?: (event: MouseEvent) => void;
-	onCollapse?: (event: MouseEvent) => void;
-	onClose?: (event: MouseEvent) => void;
-	onReload?: (event: MouseEvent) => void;
+	onFullscreen?: MouseEventHandler;
+	onCollapse?: MouseEventHandler;
+	onClose?: MouseEventHandler;
+	onReload?: MouseEventHandler;
 }
+
 const WindowIcons = memo(
 	({
 		icons,
@@ -435,29 +479,34 @@ interface DraggableWrapperProps {
 	disabled?: boolean;
 	onDrag?: (e: any, data: any) => void;
 	children: React.ReactNode;
+	innerRef: React.RefObject<HTMLElement>;
 }
-const DraggableWrapper = memo(({ disabled, onDrag, children }: DraggableWrapperProps) => {
-	const ref = useRef<null | HTMLElement>(null);
-	return (
-		<DraggableCore
-			disabled={disabled}
-			onDrag={onDrag}
-			handle=".x-window-header"
-			cancel=".x-window-drag-no"
-			nodeRef={ref}
-		>
-			{cloneElement(children, { ref })}
-		</DraggableCore>
-	);
-});
+const DraggableWrapper = memo(
+	({ disabled, onDrag, children, innerRef }: DraggableWrapperProps) => {
+		const ref = innerRef ?? useRef<null | HTMLElement>(null);
+		return (
+			<DraggableCore
+				disabled={disabled}
+				onDrag={onDrag}
+				handle=".x-window-header"
+				cancel=".x-window-drag-no"
+				nodeRef={ref}
+			>
+				{cloneElement(children, { ref })}
+			</DraggableCore>
+		);
+	},
+);
 DraggableWrapper.propTypes = {
 	disabled: PropTypes.bool,
 	onDrag: PropTypes.func,
 	children: PropTypes.node,
+	innerRef: PropTypes.RefObject,
 };
 DraggableWrapper.defaultProps = {
 	disabled: false,
 	onDrag: () => {},
 	children: null,
+	innerRef: {},
 };
 DraggableWrapper.displayName = './features/DraggableWrapper';
