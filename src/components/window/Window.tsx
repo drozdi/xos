@@ -25,9 +25,39 @@ import { DraggableCore } from 'react-draggable';
 import { wmStore } from '../../core/window-system';
 import { getComputedSize } from '../../utils/domFns';
 import { minMax } from '../../utils/fns';
-import { isString } from '../../utils/is';
 import './style.css';
 import { WindowProvider } from './WindowContext';
+
+interface WindowProps {
+	parent?: HTMLElement;
+	aspectFactor?: number;
+	className?: string;
+	children: React.ReactNode;
+	x?: number | string;
+	y?: number | string;
+	z?: number;
+	w?: number | string;
+	h?: number | string;
+	title?: string;
+	icons?: string;
+	resizable?: boolean;
+	draggable?: boolean;
+	wmGroup?: string;
+	wmSort?: number;
+	tabIndex?: number;
+	onFullscreen?: (fullscreen: boolean) => void;
+	onCollapse?: (collapse: boolean) => void;
+	onReload?: (event: React.MouseEvent) => void;
+	onClose?: (event: React.MouseEvent) => void;
+}
+
+interface PositionState {
+	left?: number | string;
+	top?: number | string;
+	width?: number | string;
+	height?: number | string;
+	zIndex?: number;
+}
 
 export const Window = memo(
 	forwardRef(function WindowFn(
@@ -53,12 +83,12 @@ export const Window = memo(
 			wmGroup,
 			wmSort = 0,
 			tabIndex = -1,
-		},
-		ref,
+		}: WindowProps,
+		ref: React.Ref<unknown>,
 	) {
 		const uid = useId();
 		const wm = wmStore();
-		const [position, setPosition] = useState({
+		const [position, setPosition] = useState<PositionState>({
 			left: x,
 			top: y,
 			width: w,
@@ -78,32 +108,38 @@ export const Window = memo(
 			() => wm.isActive?.({ uid }) ?? isActive,
 			[wm.current, uid, isActive],
 		);
-		const innerRef = useRef<HTMLDivElement>(null);
+		const innerRef = useRef<HTMLElement>(null);
 
 		// Обработчик полного экрана
-		const handleFullscreen = useCallback<MouseEventHandler>(() => {
-			if (!resizable) return;
-			const newState = !isFullscreen;
-			updateState({ isFullscreen: newState, isCollapse: false });
-			onFullscreen?.(newState);
-		}, [isFullscreen, resizable, onFullscreen]);
+		const handleFullscreen = useCallback<MouseEventHandler>(
+			(event: React.MouseEvent) => {
+				if (!resizable) return;
+				const newState = !isFullscreen;
+				updateState({ isFullscreen: newState, isCollapse: false });
+				onFullscreen?.(newState);
+			},
+			[isFullscreen, resizable, onFullscreen],
+		);
 
 		// Обработчик свернуть экрана
-		const handleCollapse = useCallback<MouseEventHandler>(() => {
-			const newState = !isCollapse;
-			updateState({
-				isCollapse: newState,
-				isActive: newState ? false : isActive,
-			});
-			if (newState) {
-				wm?.disable?.();
-			}
-			onCollapse?.(newState);
-		}, [isCollapse, isActive, onCollapse]);
+		const handleCollapse = useCallback<MouseEventHandler>(
+			(event: React.MouseEvent) => {
+				const newState = !isCollapse;
+				updateState({
+					isCollapse: newState,
+					isActive: newState ? false : isActive,
+				});
+				if (newState) {
+					wm?.disable?.();
+				}
+				onCollapse?.(newState);
+			},
+			[isCollapse, isActive, onCollapse],
+		);
 
 		// Обработчик закрыть экрана
 		const handleClose = useCallback<MouseEventHandler>(
-			(event) => {
+			(event: React.MouseEvent) => {
 				onClose?.(event);
 			},
 			[onClose],
@@ -111,14 +147,14 @@ export const Window = memo(
 
 		// Обработчик обновить
 		const handleReload = useCallback<MouseEventHandler>(
-			(event) => {
+			(event: React.MouseEvent) => {
 				onReload?.(event);
 			},
 			[onReload],
 		);
 
-		const handleActive = useCallback<MouseEventHandler>(
-			(event) => {
+		const handleActive = useCallback(
+			(event: React.MouseEvent) => {
 				if (!active) {
 					wm.setZIndex?.(wm.zIndex + 1);
 					wm.active?.({ uid });
@@ -128,9 +164,9 @@ export const Window = memo(
 			},
 			[updateState, setPosition, active, uid, wm],
 		);
-		const handleDeActive = useCallback<MouseEventHandler>(
-			(event) => {
-				if (active && !innerRef.current?.contains(event?.target)) {
+		const handleDeActive = useCallback(
+			(event: React.MouseEvent) => {
+				if (active && !innerRef.current?.contains(event?.target as HTMLElement)) {
 					wm.disable();
 				}
 				updateState({ isActive: false });
@@ -144,37 +180,46 @@ export const Window = memo(
 				uid,
 				wmGroup,
 				wmSort,
-				get isFullscreen() {
+				get isFullscreen(): boolean {
 					return isFullscreen;
 				},
-				set isFullscreen(isFullscreen) {
-					updateState({ isFullscreen });
+				set isFullscreen(isFullscreen: boolean) {
+					if (!resizable) return;
+					updateState({ isFullscreen, isCollapse: false });
+					onFullscreen?.(isFullscreen);
 				},
-				get isCollapse() {
+				get isCollapse(): boolean {
 					return isCollapse;
 				},
-				set isCollapse(isCollapse) {
-					updateState({ isCollapse });
+				set isCollapse(isCollapse: boolean) {
+					updateState({
+						isCollapse: isCollapse,
+						isActive: isCollapse ? false : isActive,
+					});
+					if (isCollapse) {
+						wm?.disable?.();
+					}
+					onCollapse?.(isCollapse);
 				},
 
-				get position() {
+				get position(): PositionState {
 					return position;
 				},
-				set position(value) {
+				set position(value: PositionState) {
 					setPosition((v) => ({
 						...v,
 						...(value || {}),
 					}));
 				},
-				get w() {
+				get w(): number | string | undefined {
 					return position.width;
 				},
-				set w(val) {
+				set w(val: number | string) {
 					if (!val) {
 						return;
 					}
 					setPosition((pos) => {
-						if (isString(val) && val.substr(-1) === '%') {
+						if (typeof val === 'string' && val.substr(-1) === '%') {
 							val = Math.ceil(
 								(getComputedSize(parent)[0] * parseInt(val, 10)) / 100,
 							);
@@ -186,15 +231,15 @@ export const Window = memo(
 						return { ...pos };
 					});
 				},
-				get h() {
+				get h(): number | string | undefined {
 					return position.height;
 				},
-				set h(val) {
+				set h(val: number | string) {
 					if (!val) {
 						return;
 					}
 					setPosition((pos) => {
-						if (isString(val) && val.substr(-1) === '%') {
+						if (typeof val === 'string' && val.substr(-1) === '%') {
 							val = Math.ceil(
 								(getComputedSize(parent)[1] * parseInt(val, 10)) / 100,
 							);
@@ -206,19 +251,20 @@ export const Window = memo(
 						return { ...pos };
 					});
 				},
-				get x() {
+				get x(): number | string | undefined {
 					return position.left;
 				},
-				set x(val) {
+				set x(val: number | string) {
 					setPosition((pos) => {
 						const [width] = getComputedSize(parent);
+						const [_width] = getComputedSize(innerRef.current);
 						if (val === 'center') {
-							pos.left = (width - pos.width) / 2;
+							pos.left = (width - _width) / 2;
 						} else if (val === 'right') {
-							pos.left = width - pos.width;
+							pos.left = width - _width;
 						} else if (val === 'left') {
 							pos.left = 0;
-						} else if (isString(val) && val.substr(-1) === '%') {
+						} else if (typeof val === 'string' && val.substr(-1) === '%') {
 							pos.left = Math.ceil((width * parseInt(val, 10)) / 100);
 						} else {
 							pos.left = val;
@@ -226,19 +272,20 @@ export const Window = memo(
 						return { ...pos };
 					});
 				},
-				get y() {
+				get y(): number | string | undefined {
 					return position.top;
 				},
-				set y(val) {
+				set y(val: number | string) {
 					setPosition((pos) => {
 						const [, height] = getComputedSize(parent);
+						const [, _height] = getComputedSize(innerRef.current);
 						if (val === 'center') {
-							pos.top = (height - pos.height) / 2;
+							pos.top = (height - _height) / 2;
 						} else if (val === 'bottom') {
-							pos.top = height - pos.height;
+							pos.top = height - _height;
 						} else if (val === 'top') {
 							pos.top = 0;
-						} else if (isString(val) && val.substr(-1) === '%') {
+						} else if (typeof val === 'string' && val.substr(-1) === '%') {
 							pos.top = Math.ceil((height * parseInt(val, 10)) / 100);
 						} else {
 							pos.top = val;
@@ -246,10 +293,10 @@ export const Window = memo(
 						return { ...pos };
 					});
 				},
-				get z() {
+				get z(): number | string | undefined {
 					return position.zIndex;
 				},
-				set z(zIndex) {
+				set z(zIndex: number | string) {
 					setPosition((v) => ({ ...v, zIndex: wm.zIndex }));
 				},
 			}),
@@ -359,13 +406,13 @@ interface WindowIconsProps {
 
 const WindowIcons = memo(
 	({
-		icons,
-		isFullscreen,
-		onFullscreen = () => {},
-		onCollapse = () => {},
-		onClose = () => {},
-		onReload = () => {},
+		icons = '',
 		resizable,
+		isFullscreen,
+		onFullscreen = (event: React.MouseEvent) => {},
+		onCollapse = (event: React.MouseEvent) => {},
+		onClose = (event: React.MouseEvent) => {},
+		onReload = (event: React.MouseEvent) => {},
 	}: WindowIconsProps) => {
 		const props = {
 			size: 'xs',
@@ -478,12 +525,12 @@ WindowIcons.displayName = './features/WindowIcons';
 interface DraggableWrapperProps {
 	disabled?: boolean;
 	onDrag?: (e: any, data: any) => void;
-	children: React.ReactNode;
+	children: React.ReactElement;
 	innerRef: React.RefObject<HTMLElement>;
 }
 const DraggableWrapper = memo(
 	({ disabled, onDrag, children, innerRef }: DraggableWrapperProps) => {
-		const ref = innerRef ?? useRef<null | HTMLElement>(null);
+		const ref = innerRef ?? useRef<HTMLElement>(null);
 		return (
 			<DraggableCore
 				disabled={disabled}
