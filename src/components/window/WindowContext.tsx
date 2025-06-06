@@ -6,7 +6,7 @@ interface WindowProps {
 	value: any;
 }
 
-export const WindowContext = createContext<any | null>(null);
+export const WindowContext = createContext<any | WindowContextType | null>(null);
 
 export const WindowProvider = ({ children, value }: WindowProps) => (
 	<WindowContext.Provider value={value}>{children}</WindowContext.Provider>

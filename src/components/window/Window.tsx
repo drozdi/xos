@@ -21,12 +21,14 @@ import React, {
 	useRef,
 	useState,
 } from 'react';
-import { DraggableCore } from 'react-draggable';
+import { DraggableCore, DraggableEventHandler } from 'react-draggable';
 import { wmStore } from '../../core/window-system';
 import { getComputedSize } from '../../utils/domFns';
 import { minMax } from '../../utils/fns';
 import './style.css';
 import { WindowProvider } from './WindowContext';
+
+('use client');
 
 interface WindowProps {
 	parent?: HTMLElement;
@@ -108,7 +110,7 @@ export const Window = memo(
 			() => wm.isActive?.({ uid }) ?? isActive,
 			[wm.current, uid, isActive],
 		);
-		const innerRef = useRef<HTMLElement>(null);
+		const innerRef = useRef<HTMLElement | null>(null);
 
 		// Обработчик полного экрана
 		const handleFullscreen = useCallback<MouseEventHandler>(
@@ -165,7 +167,7 @@ export const Window = memo(
 			[updateState, setPosition, active, uid, wm],
 		);
 		const handleDeActive = useCallback(
-			(event: React.MouseEvent) => {
+			(event: MouseEvent) => {
 				if (active && !innerRef.current?.contains(event?.target as HTMLElement)) {
 					wm.disable();
 				}
@@ -224,7 +226,7 @@ export const Window = memo(
 								(getComputedSize(parent)[0] * parseInt(val, 10)) / 100,
 							);
 						}
-						pos.width = minMax(val, 0, 10000);
+						pos.width = minMax(val, 0, 10000) as number;
 						if (aspectFactor) {
 							pos.height = pos.width * aspectFactor;
 						}
@@ -244,7 +246,7 @@ export const Window = memo(
 								(getComputedSize(parent)[1] * parseInt(val, 10)) / 100,
 							);
 						}
-						pos.height = minMax(val, 0, 10000);
+						pos.height = minMax(val, 0, 10000) as number;
 						if (aspectFactor) {
 							pos.width = pos.height / aspectFactor;
 						}
@@ -316,11 +318,11 @@ export const Window = memo(
 		useImperativeHandle(ref, () => win, []);
 
 		// Обработчик перетаскивания окна
-		const handleDrag = useCallback((e, { deltaX, deltaY }) => {
+		const handleDrag = useCallback<DraggableEventHandler>((e, { deltaX, deltaY }) => {
 			setPosition((v) => ({
 				...v,
-				top: v.top + deltaY,
-				left: v.left + deltaX,
+				top: (v.top as number) + deltaY,
+				left: (v.left as number) + deltaX,
 			}));
 		}, []);
 
@@ -526,11 +528,11 @@ interface DraggableWrapperProps {
 	disabled?: boolean;
 	onDrag?: (e: any, data: any) => void;
 	children: React.ReactElement;
-	innerRef: React.RefObject<HTMLElement>;
+	innerRef: React.RefObject<HTMLElement | null>;
 }
 const DraggableWrapper = memo(
 	({ disabled, onDrag, children, innerRef }: DraggableWrapperProps) => {
-		const ref = innerRef ?? useRef<HTMLElement>(null);
+		const ref = innerRef ?? useRef<HTMLElement | null>(null);
 		return (
 			<DraggableCore
 				disabled={disabled}
