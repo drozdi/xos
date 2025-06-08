@@ -72,3 +72,5 @@ export const wmStore = create<wmStoreProps>((set, get) => ({
 		set({ ...get(), stack, stacks });
 	},
 }));
+
+export const useWindowManager = wmStore;

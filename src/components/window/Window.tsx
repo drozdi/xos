@@ -1,5 +1,5 @@
 import { ActionIcon, Group } from '@mantine/core';
-import { useId, useSetState } from '@mantine/hooks';
+import { useSetState } from '@mantine/hooks';
 import {
 	IconMinus,
 	IconReload,
@@ -16,6 +16,7 @@ import React, {
 	MouseEventHandler,
 	useCallback,
 	useEffect,
+	useId,
 	useImperativeHandle,
 	useMemo,
 	useRef,
@@ -173,7 +174,7 @@ export const Window = memo(
 				}
 				updateState({ isActive: false });
 			},
-			[active, uid, updateState, title],
+			[active, uid, updateState],
 		);
 
 		const win = useMemo(
@@ -182,6 +183,7 @@ export const Window = memo(
 				uid,
 				wmGroup,
 				wmSort,
+				title,
 				get isFullscreen(): boolean {
 					return isFullscreen;
 				},
@@ -301,11 +303,15 @@ export const Window = memo(
 				set z(zIndex: number | string) {
 					setPosition((v) => ({ ...v, zIndex: wm.zIndex }));
 				},
+				focus(event: React.MouseEvent): void {
+					handleActive(event);
+				},
 			}),
 			[
 				uid,
 				wmGroup,
 				wmSort,
+				title,
 				position,
 				isFullscreen,
 				isCollapse,

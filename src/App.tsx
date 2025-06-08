@@ -5,13 +5,19 @@ import '@mantine/core/styles/default-css-variables.css';
 import '@mantine/core/styles/global.css';
 import './App.css';
 import { Layout } from './components/layout';
+import { XFooter } from './components/layout/ui/footer';
+import { StartMenu } from './components/start-menu';
 import { Window } from './components/window';
+import { WindowManager } from './components/window-manager';
 
 function App() {
 	return (
 		<Layout container toggle>
 			<div slot="header">header</div>
-			<div slot="footer">footer</div>
+			<XFooter px={0} py={0} slot="footer">
+				<StartMenu />
+				<WindowManager />
+			</XFooter>
 			<div slot="left">
 				{Array(25)
 					.fill(0)
