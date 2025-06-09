@@ -18,7 +18,7 @@ export const StartMenu = () => {
 		appManager.createApp('apps/calculator/app', {});
 	};
 	const onIconTicTac = () => {
-		appManager.createApp('apps/tic-tac-toe/app', {}, false);
+		appManager.createApp('apps/tic-tac-toe/app', {});
 	};
 	useEffect(() => {
 		appManager.reloadApps();

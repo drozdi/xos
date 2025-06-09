@@ -1,10 +1,9 @@
-import { Window } from "../../features";
-import { useApp } from "../../features/app";
-import { Box } from "../../shared/internal/box";
-import { XBtn } from "../../shared/ui";
-import { Field, Information } from "./components";
-import store from "./store";
-import "./style.css";
+import { Box, Button, Stack } from '@mantine/core';
+import { IconReload } from '@tabler/icons-react';
+import { Window } from '../../components/window';
+import { useApp } from '../../core/app-system';
+import { Field, Information } from './components';
+import store from './store';
 
 const WIN_COMBINATIONS = [
 	[0, 1, 2],
@@ -20,7 +19,7 @@ const WIN_COMBINATIONS = [
 export function AppTicTacToe() {
 	const { isEnd, field, setPlayer, draw, endGame, restart } = store();
 	const $app = useApp();
-	$app.on("reload", () => restart());
+	$app.on('reload', () => restart());
 	const checkWinner = () => {
 		if (isEnd) {
 			return;
@@ -34,7 +33,7 @@ export function AppTicTacToe() {
 				setPlayer(field[a]);
 			}
 		}
-		if (!win && field.every((cell) => cell !== "")) {
+		if (!win && field.every((cell) => cell !== '')) {
 			draw();
 		}
 	};
@@ -43,29 +42,24 @@ export function AppTicTacToe() {
 
 	return (
 		<Window title="Крестик Нолик" draggable icons="reload collapse close">
-			<Box col className="tic-tao-toe">
-				<Box.Section row side className="text-2xl">
-					<Box.Section>
-						<Information />
-					</Box.Section>
-					<Box.Section side>
-						<XBtn
-							size="sm"
-							disabled={!isEnd}
-							leftSection="mdi-reload"
-							color="info"
-							onClick={() => restart()}
-						/>
-					</Box.Section>
-				</Box.Section>
-				<Box.Section>
-					<Field />
-				</Box.Section>
-			</Box>
+			<Stack h="100%" align="stretch" justify="flex-start" gap="xs">
+				<Box ta="center" size="xl">
+					<Information />
+					<Button
+						size="sm"
+						disabled={!isEnd}
+						color="info"
+						onClick={() => restart()}
+					>
+						<IconReload />
+					</Button>
+				</Box>
+				<Field />
+			</Stack>
 		</Window>
 	);
 }
 
-AppTicTacToe.displayName = "apps/tic-tac-toe/app";
+AppTicTacToe.displayName = 'apps/tic-tac-toe/app';
 
 export default AppTicTacToe;

@@ -1,4 +1,5 @@
-import store from "../store";
+import { Button, Grid } from '@mantine/core';
+import store from '../store';
 
 export function Field() {
 	const { isEnd, player, field, setPlayer, setField } = store();
@@ -9,21 +10,23 @@ export function Field() {
 		let newField = field.slice();
 		newField[i] = player;
 		setField(newField);
-		setPlayer(player === "X" ? "O" : "X");
+		setPlayer(player === 'X' ? 'O' : 'X');
 	};
 	return (
-		<div className="tic-tac-toe__board">
+		<Grid justify="center" align="center" columns={3} gutter={0}>
 			{field.map((cell, index) => {
 				return (
-					<button
-						className="tic-tac-toe__btn"
-						key={index}
-						onClick={() => handleClickField(index)}
-					>
-						{cell}
-					</button>
+					<Grid.Col p="xs" ta="center" key={index} span={1}>
+						<Button
+							size="lg"
+							fullWidth
+							onClick={() => handleClickField(index)}
+						>
+							{cell}
+						</Button>
+					</Grid.Col>
 				);
 			})}
-		</div>
+		</Grid>
 	);
 }
