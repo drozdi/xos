@@ -1,0 +1,5 @@
+controllers:
+  resource:
+    path: '../Controller/'
+    namespace: Device\Controller
+  type: attribute

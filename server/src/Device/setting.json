@@ -1,0 +1,68 @@
+{
+  "name": "Device",
+  "claimant": {
+    "device": "Устройства",
+    "device.device": "Устройства: Устройства",
+    "device.subDevice": "Устройства: Компаненты",
+    "device.type": "Устройства: Типы",
+    "device.property": "Устройства: Свойства",
+    "device.component": "Устройства: Типы компанентов",
+    "device.software": "Устройства: Программы",
+    "device.software.type": "Устройства: Типы программ"
+  },
+  "map-access": {
+    "can_write_off": 16,
+    "type": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "property": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "component": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "device": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8,
+      "can_mod": 16,
+      "can_location": 32,
+      "can_repair": 64
+    },
+    "subDevice": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8,
+      "can_mod": 16
+    },
+    "software": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8,
+      "type": {
+        "can_create": 1,
+        "can_read": 2,
+        "can_update": 4,
+        "can_delete": 8
+      }
+    },
+    "license": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    }
+  }
+}
