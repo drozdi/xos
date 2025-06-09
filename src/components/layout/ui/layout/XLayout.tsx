@@ -1,11 +1,19 @@
 import classNames from 'classnames';
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { useElementResizeObserver } from '../../../../hooks/use-element-resize-observer';
 import { XLayoutProvider } from './XLayoutContext';
 import './style.css';
 
+interface XLayoutProps {
+	children?: React.ReactNode;
+	className?: string;
+	container?: boolean;
+	view?: string;
+	onResize?: (width: number, height: number) => void;
+}
+
 export const XLayout = forwardRef(function XLayoutFn(
-	{ children, className, container, view = 'hhh lpr fff', onResize },
+	{ children, className, container, view = 'hhh lpr fff', onResize }: XLayoutProps,
 	ref,
 ) {
 	const {

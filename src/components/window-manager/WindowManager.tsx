@@ -5,7 +5,7 @@ import { wmStore } from '../../core/window-system/store';
 export const WindowManager = memo(() => {
 	const { isActive, _stack } = wmStore((state: Record<string, any>) => ({
 		isActive: state.isActive,
-		_stack: state.stack,
+		_stack: { ...state.stack },
 	}));
 	const stack = useMemo<any[]>(() => Object.values(_stack), [_stack]);
 	return (

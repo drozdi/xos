@@ -6,7 +6,7 @@ import {
 	IconSettings,
 	IconTicTac,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { appManager } from '../../core/app-system/app-manager';
 
 import '../../apps/calculator/core';
@@ -15,11 +15,14 @@ import '../../apps/tic-tac-toe/core';
 export const StartMenu = () => {
 	const [opened, setOpened] = useState(false);
 	const onCalculator = () => {
-		appManager.createApp('apps/calculator/app', {}, false);
+		appManager.createApp('apps/calculator/app', {});
 	};
 	const onIconTicTac = () => {
 		appManager.createApp('apps/tic-tac-toe/app', {}, false);
 	};
+	useEffect(() => {
+		appManager.reloadApps();
+	}, []);
 
 	return (
 		<Popover

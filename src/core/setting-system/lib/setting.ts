@@ -70,7 +70,7 @@ export class Setting {
 		return val;
 	}
 
-	get(name: string, def?: any, type: (val: any) => any = (v) => v): any {
+	get(name: string, def?: any, type): any {
 		const fullKey = this.key(name);
 		let result: any = storageLocal.get(fullKey, null);
 
@@ -96,7 +96,7 @@ export class Setting {
 
 		// Разрешение значения и преобразование типа
 		result = this.config?.resolveValue(result);
-		return type(result) ?? def;
+		return type?.(result) ?? def;
 	}
 
 	all(): SettingOptions {

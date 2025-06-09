@@ -75,9 +75,9 @@ export const useAppManager = create(
 				}));
 			},
 
-			constApp(conf: IAppPorps, pathName = null): App {
+			constApp(conf: IAppPorps, pathName?: string): App {
 				const $app = new App(conf);
-				$app.pathName = conf.pathName;
+				$app.pathName = pathName;
 
 				$app.on('activated', () => {
 					set({ activeApp: pathName });
@@ -123,7 +123,7 @@ export const useAppManager = create(
 
 					if (!generatedPath) {
 						return providerApp(processedComponent, {
-							app: constApp({ smKey: _conf.smKey }),
+							app: constApp({ smKey: _conf.smKey }, generatedPath),
 							...conf,
 						});
 					}
@@ -137,7 +137,7 @@ export const useAppManager = create(
 						set((state: Record<string, any>) => ({
 							runs: { ...state.runs, [generatedPath]: newApp },
 						}));
-						console.log(newApp);
+
 						mount && get().mountRoot(newApp);
 					} else {
 						get$App(get().runs[generatedPath])?.active();
@@ -191,8 +191,7 @@ export const useAppManager = create(
 			reloadApps() {
 				try {
 					get().history.forEach((appConfig: any) => {
-						let Component = appConfig.appName;
-						get().buildApp(Component, appConfig.conf);
+						get().buildApp(appConfig.appName, appConfig.conf);
 					});
 				} catch (error) {
 					console.error('Error reloading apps:', error);

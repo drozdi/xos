@@ -1,23 +1,12 @@
-import '@mantine/core/styles/AppShell.css';
-import '@mantine/core/styles/Burger.css';
-import '@mantine/core/styles/Button.css';
-import '@mantine/core/styles/Group.css';
-import '@mantine/core/styles/ScrollArea.css';
-import '@mantine/core/styles/Skeleton.css';
 import { useSetState } from '@mantine/hooks';
 import React, { memo, useMemo, useRef, useState } from 'react';
 import { useBreakpoint } from '../../hooks/use-breakpoint';
 import { useSlots } from '../../hooks/use-slots';
-import './style.css';
 
 import { ActionIcon, Burger } from '@mantine/core';
 import { IconSquareArrowRight } from '@tabler/icons-react';
 
-import { XFooter } from './ui/footer';
-import { XHeader } from './ui/header';
-import { XLayout } from './ui/layout';
-import { XMain } from './ui/main';
-import { XSidebar } from './ui/sidebar';
+import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
 interface LayoutProps {
 	children: React.ReactNode;

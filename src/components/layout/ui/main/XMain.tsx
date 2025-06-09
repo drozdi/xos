@@ -5,8 +5,13 @@ import { forwardRef, memo, useEffect, useRef } from 'react';
 import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
 
+interface XMainProps {
+	className?: string;
+	children?: React.ReactNode;
+}
+
 export const XMain = memo(
-	forwardRef(function XMainFn({ children, className, ...props }, ref) {
+	forwardRef(function XMainFn({ children, className, ...props }: XMainProps, ref) {
 		const innerRef = useRef(null);
 		const handleRef = useMergedRef(innerRef, ref);
 

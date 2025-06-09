@@ -64,22 +64,22 @@ export const Storage = cached(function StorageFn(type: string, key: string) {
 			}
 			this.set('.first', false);
 		},
-		useState(name: string, initial: any): [any, Function] {
-			const [state, setState] = useState(this.get(name, initial));
+		useState<T>(name: string, initial?: T): [T, Function] {
+			const [state, setState] = useState<T>(this.get(name, initial));
 			useEffect(() => {
 				this.set(name, state);
 			}, [state, name]);
-			return [state, setState];
+			return [state as T, setState];
 		},
-		useStateObject(
+		useSetState<T extends Record<string, any>>(
 			name: string,
-			initial: Record<string, any>,
-		): [Record<string, any>, Function] {
-			const [state, updateState] = useSetState(this.get(name, initial));
+			initial?: T,
+		): [T, Function] {
+			const [state, updateState] = useSetState<T>(this.get(name, initial));
 			useEffect(() => {
 				this.set(name, state);
 			}, [state, name]);
-			return [state, updateState];
+			return [state as T, updateState];
 		},
 		useStateProxy(name: string, initial: Record<string, any>): any {
 			const [state, dispatch] = useState(this.get(name, initial));

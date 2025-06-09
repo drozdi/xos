@@ -1,4 +1,4 @@
-import { Box, Flex } from '@mantine/core';
+import { Box, Flex, FlexProps } from '@mantine/core';
 import PropTypes from 'prop-types';
 import React, { forwardRef, useMemo } from 'react';
 
@@ -23,7 +23,7 @@ const processSection = (
 	}, [section]);
 };
 
-export interface SectionsProps {
+export interface SectionsProps extends FlexProps {
 	children: React.ReactNode;
 	leftSection?: React.ReactNode | string;
 	rightSection?: React.ReactNode | string;

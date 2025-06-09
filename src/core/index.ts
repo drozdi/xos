@@ -1,5 +1,5 @@
-import { appManager } from './app-system/app-manager';
-import { config } from './config-system/config';
+import { appManager } from './app-system';
+import { config } from './config-system';
 import { settingManager } from './setting-system/setting-manager';
 
 export const core: {

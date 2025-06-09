@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Window } from '../../components/window';
-import { useApp } from '../../core/app-system/context';
+import { useApp } from '../../core/app-system';
 
-import { Box, Button, Group } from '@mantine/core';
+import { Box, Button, Grid, Stack, Text } from '@mantine/core';
 import { useSetState } from '@mantine/hooks';
 import { isObject } from '../../utils/is';
 
@@ -224,20 +224,20 @@ export function AppCalculator() {
 			onReload={() => handleClickReset()}
 			icons="reload collapse close"
 		>
-			<Box col>
-				<Box className="items-end">
-					<Box className="opacity-80">
+			<Stack gap="xs">
+				<Box px="0.5rem">
+					<Text ta="right" opacity={0.8} size="md">
 						{'\u00A0'}
 						{subTitle}
-					</Box>
-					<Box className="text-3xl">
+					</Text>
+					<Text ta="right" size="lg">
 						{'\u00A0'}
 						{title}
-					</Box>
+					</Text>
 				</Box>
-				{matrix.map((lines, index) => (
-					<Group grow pills key={index}>
-						{lines.map((num, index) => {
+				<Grid gutter={0}>
+					{matrix.map((lines, index) => {
+						return lines.map((num, index) => {
 							const key = {
 								span: 1,
 								...(isObject(num)
@@ -247,24 +247,31 @@ export function AppCalculator() {
 										}),
 							};
 							return (
-								<Button
+								<Grid.Col
 									key={index}
-									className={
-										num === '='
-											? 'w-[calc(50%+6*var(--spacing))]'
-											: 'w-1/4'
-									}
-									color={index === 3 || num === '=' ? 'accent' : 'info'}
-									onClick={() => handleClickButton(`${num}`)}
-									disabled={disabled.includes(num)}
+									p={3}
+									span={num === '=' ? '6' : '3'}
 								>
-									{num}
-								</Button>
+									<Button
+										fullWidth
+										color={
+											index === 3 || num === '='
+												? 'violet'
+												: 'indigo'
+										}
+										variant="filled"
+										radius={0}
+										onClick={() => handleClickButton(`${num}`)}
+										disabled={disabled.includes(num)}
+									>
+										{num}
+									</Button>
+								</Grid.Col>
 							);
-						})}
-					</Group>
-				))}
-			</Box>
+						});
+					})}
+				</Grid>
+			</Stack>
 		</Window>
 	);
 }
