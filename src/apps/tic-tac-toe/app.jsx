@@ -41,7 +41,7 @@ export function AppTicTacToe() {
 	checkWinner();
 
 	return (
-		<Window title="Крестик Нолик" draggable icons="reload collapse close">
+		<Window title="Крестик Нолик" h={370} draggable icons="reload collapse close">
 			<Stack h="100%" align="stretch" justify="flex-start" gap="xs">
 				<Box ta="center" size="xl">
 					<Information />
