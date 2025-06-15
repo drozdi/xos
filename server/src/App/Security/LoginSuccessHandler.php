@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Security;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,8 +15,7 @@ class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
         return new JsonResponse([
             'user' => [
                 'id' => $user->getId(),
-                'login' => $user->getLogin(),
-				'email' => $user->getEmail(),
+                'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
             ]
         ]);

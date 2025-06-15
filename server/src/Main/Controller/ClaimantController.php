@@ -26,7 +26,7 @@ use Main\Repository\ClaimantRepository;
 
 use Main\Service\MainManager;
 
-#[Route('/main/claimant')]
+#[Route('/api/main/claimant')]
 class ClaimantController extends AbstractController {
     #[Route('/list', name: 'main_claimant_list')]
     public function list (Request $request, ClaimantRepository $ClaimantRepository): JsonResponse {

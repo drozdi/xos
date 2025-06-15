@@ -3,7 +3,7 @@
 /*
  * This file is part of the Symfony package.
  *
- * (c) Fabien Potencier <fabien@symfony.com>
+ * (c) Fabien Potencier <fabien@symfony.components>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -19,7 +19,7 @@ use function Symfony\Component\String\u;
  * services into a Symfony application.
  * See https://symfony.com/doc/current/service_container.html#creating-configuring-services-in-the-container.
  *
- * @author Javier Eguiluz <javier.eguiluz@gmail.com>
+ * @author Javier Eguiluz <javier.eguiluz@gmail.components>
  */
 final class Validator
 {

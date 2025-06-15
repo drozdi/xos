@@ -8,11 +8,4 @@ export default defineConfig({
 	css: {
 		postcss: './postcss.config.js',
 	},
-	server: {
-		open: true,
-		cors: true,
-		proxy: {
-			'/api': 'http://xos',
-		},
-	},
 });

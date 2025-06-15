@@ -1,6 +1,6 @@
 #controllers:
 #    resource:
-#        path: ../src/Controller/
+#        path: ../src/App/Controller/
 #        namespace: App\Controller
 #    type: attribute
 homepage:

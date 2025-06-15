@@ -26,9 +26,9 @@ use Main\Repository\ClaimantRepository;
 
 use Main\Service\MainManager;
 
-#[Route('/main/user')]
+#[Route('/api/main/user', name: 'api_main_user_')]
 class UserController extends AbstractController {
-    #[Route('/list', name: 'main_user_list')]
+    #[Route('/list', name: 'list')]
     public function list (Request $request, UserRepository $UserRepository): JsonResponse {
         $req = array_merge([
             't' => "list",
@@ -83,7 +83,7 @@ class UserController extends AbstractController {
             'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
         ]);
     }
-    #[Route('/filter', name: 'main_user_filter')]
+    #[Route('/filter', name: 'filter')]
     public function filter (EntityManagerInterface $entityManager, OURepository $OURepository): JsonResponse {
         $items = [];
         foreach ($entityManager->createQuery('SELECT ou FROM '.OU::class.' ou ORDER BY ou.sort ASC, ou.code ASC')->execute() as $ou) {
@@ -131,7 +131,7 @@ class UserController extends AbstractController {
         }
         return $this->json($items);
     }
-    #[Route('/{id}', name: 'main_user_detail', methods: ['GET', 'HEAD'])]
+    #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
     public function detail (int $id, MainManager $mainManager): JsonResponse {
         $user = $mainManager->user($id);
         $accesses = [];
@@ -186,7 +186,7 @@ class UserController extends AbstractController {
             'roles' => $user->getRoles()
         ]);
     }
-    #[Route('/', name: 'main_user_create', methods: ['POST'])]
+    #[Route('/', name: 'create', methods: ['POST'])]
     public function create (Request $request, MainManager $mainManager): JsonResponse {
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
@@ -200,7 +200,7 @@ class UserController extends AbstractController {
         }
         return $this->json($user->getId(), Response::HTTP_CREATED);
     }
-    #[Route('/{id}', name: 'main_user_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'update', methods: ['PUT'])]
     public function update (int $id, Request $request, MainManager $mainManager): JsonResponse {
         $req = $request->toArray();
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
@@ -213,7 +213,7 @@ class UserController extends AbstractController {
         }
         return $this->json($user->getId(), Response::HTTP_CREATED);
     }
-    #[Route('/{id}', name: 'main_user_remove', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
     public function remove (int $id, UserRepository $UserRepository): JsonResponse {
         $user = $UserRepository->find($id);
         $arUser = [

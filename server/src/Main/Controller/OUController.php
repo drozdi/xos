@@ -26,9 +26,9 @@ use Main\Repository\ClaimantRepository;
 
 use Main\Service\MainManager;
 
-#[Route('/main/ou')]
+#[Route('/api/main/ou', name: 'api_main_ou_')]
 class OUController extends AbstractController {
-    #[Route('/list', name: 'main_ou_ist')]
+    #[Route('/list', name: 'list')]
     public function дшые (Request $request, OURepository $OURepository): JsonResponse {
         $req = array_merge([
             't' => "list",
@@ -86,7 +86,7 @@ class OUController extends AbstractController {
             'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
         ]);
     }
-    #[Route('/', name: 'main_ou_create', methods: ['POST'])]
+    #[Route('/', name: 'create', methods: ['POST'])]
     public function create (Request $request, MainManager $mainManager): JsonResponse {
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
@@ -100,7 +100,7 @@ class OUController extends AbstractController {
         }
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
-    #[Route('/{id}', name: 'main_ou_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'update', methods: ['PUT'])]
     public function update (int $id, Request $request, MainManager $mainManager): JsonResponse {
         $req = $request->toArray();
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
@@ -113,7 +113,7 @@ class OUController extends AbstractController {
         }
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
-    #[Route('/{id}', name: 'main_ou_detail', methods: ['GET', 'HEAD'])]
+    #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
     public function detail (int $id, MainManager $mainManager): JsonResponse {
         $ou = $mainManager->ou($id);
         return $this->json([
@@ -127,7 +127,7 @@ class OUController extends AbstractController {
             'user_id' => $ou->getUser()? $ou->getUser()->getId(): null,
         ]);
     }
-    #[Route('/{id}', name: 'main_ou_remove', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
     public function remove (int $id, OURepository $OURepository): JsonResponse {
         $ou = $OURepository->find($id);
         $arOu = [

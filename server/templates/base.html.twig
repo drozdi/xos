@@ -11,25 +11,11 @@
         {% block stylesheets %}
             {{ encore_entry_link_tags('app') }}
         {% endblock %}
-        <script>
-            window.__QUASAR_SSR_SERVER__ = false
-            window.__VUE_OPTIONS_API__ = true
-            window.__VUE_PROD_DEVTOOLS__ = false
-            window.__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ = false
-            function s() {
-                if (!performance.memory) return
-                console.log('jsHeapSizeLimit', (performance.memory.jsHeapSizeLimit/8/1024/1024) + 'Mb')
-                console.log('totalJSHeapSize', (performance.memory.totalJSHeapSize/8/1024/1024) + 'Mb')
-                console.log('usedJSHeapSize', (performance.memory.usedJSHeapSize/8/1024/1024) + 'Mb')
-                setTimeout(s, 5000)
-            }
-            s()
-        </script>
         {% block javascripts %}
             {{ encore_entry_script_tags('app') }}
         {% endblock %}
     </head>
     <body>
-		<div id="q-app" style="width: 100%; height: 100%;"></div>
+		<div id="app"></div>
     </body>
 </html>

@@ -26,9 +26,9 @@ use Main\Repository\ClaimantRepository;
 
 use Main\Service\MainManager;
 
-#[Route('/main/group')]
+#[Route('/api/main/group', name: 'api_main_group_')]
 class GroupController extends AbstractController {
-    #[Route('/list', name: 'main_group_list')]
+    #[Route('/list', name: 'list')]
     public function list (Request $request, GroupRepository $GroupRepository): JsonResponse {
         $req = array_merge([
             't' => "list",
@@ -86,7 +86,7 @@ class GroupController extends AbstractController {
             'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
         ]);
     }
-    #[Route('/filter', name: 'main_group_filter')]
+    #[Route('/filter', name: 'filter')]
     public function loadFilter(EntityManagerInterface $entityManager, OURepository $OURepository): JsonResponse {
         $items = [];
         foreach ($entityManager->createQuery('SELECT ou FROM ' . OU::class . ' ou ORDER BY ou.sort ASC, ou.code ASC')->execute() as $ou) {
@@ -99,7 +99,7 @@ class GroupController extends AbstractController {
         }
         return $this->json($items);
     }
-    #[Route('/', name: 'main_group_create', methods: ['POST'])]
+    #[Route('/', name: 'create', methods: ['POST'])]
     public function create (Request $request, MainManager $mainManager): JsonResponse {
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
@@ -113,7 +113,7 @@ class GroupController extends AbstractController {
         }
         return $this->json($group->getId(), Response::HTTP_CREATED);
     }
-    #[Route('/{id}', name: 'main_group_update', methods: ['PUT'])]
+    #[Route('/{id}', name: 'update', methods: ['PUT'])]
     public function update (int $id, Request $request, MainManager $mainManager): JsonResponse {
         $req = $request->toArray();
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
@@ -126,7 +126,7 @@ class GroupController extends AbstractController {
         }
         return $this->json($group->getId(), Response::HTTP_CREATED);
     }
-    #[Route('/{id}', name: 'main_group_detail', methods: ['GET', 'HEAD'])]
+    #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
     public function detail (int $id, MainManager $mainManager): JsonResponse {
         $group = $mainManager->group($id);
         $accesses = array();
@@ -167,7 +167,7 @@ class GroupController extends AbstractController {
             'users' => $users
         ]);
     }
-    #[Route('/{id}', name: 'main_group_remove', methods: ['DELETE'])]
+    #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
     public function remove(int $id, GroupRepository $GroupRepository): JsonResponse {
         $group = $GroupRepository->find($id);
         $arGroup = [

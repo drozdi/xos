@@ -9,7 +9,7 @@ use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 class Kernel extends BaseKernel
 {
     use MicroKernelTrait;
-    protected function configureRoutes(RoutingConfigurator $routes): void {
+        protected function configureRoutes(RoutingConfigurator $routes): void {
         $routes->import('../../config/{routes}/'.$this->environment.'/*.yaml');
         $routes->import('../../config/{routes}/*.yaml');
 
@@ -22,5 +22,6 @@ class Kernel extends BaseKernel
         $routes->import('../../src/*/config/{routes}/'.$this->environment.'/*.yaml');
         $routes->import('../../src/*/config/{routes}/*.yaml');
         $routes->import('../../src/*/config/routes.yaml');
+
     }
 }
