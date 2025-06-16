@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Базовый URL вашего Symfony бэкенда
+// Базовый URL Symfony бэкенда
 const API_BASE_URL = 'http://localhost:8000';
 
 // Создаем экземпляр Axios
@@ -31,26 +31,10 @@ api.interceptors.response.use(
 	(error) => {
 		if (error.response && error.response.status === 401) {
 			localStorage.removeItem('token');
-			window.location = '/login';
+			//window.location = '/login';
 		}
 		return Promise.reject(error);
 	},
 );
-
-// API методы
-export const authAPI = {
-	login: (username: string, password: string | number) => {
-		return api.post('/api/login', { username, password });
-	},
-	getCurrentUser: () => {
-		return api.get('/api/user');
-	},
-};
-
-export const protectedAPI = {
-	getProtectedData: () => {
-		return api.get('/api/protected');
-	},
-};
 
 export default api;

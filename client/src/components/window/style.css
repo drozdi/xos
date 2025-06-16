@@ -16,6 +16,7 @@
 .x-window-header {
 	padding: 0.25rem 0.75rem;
 	border-bottom: 1px solid var(--mantine-color-default-border);
+	user-select: none;
 }
 .x-window-icons {
 	position: absolute;
@@ -27,6 +28,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	user-select: text;
 }
 
 .x-window-content {

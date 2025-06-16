@@ -36,7 +36,25 @@ class ApiLoginController extends AbstractController {
         // controller can be blank: it will never be called!
         throw new \Exception('Don\'t forget to activate logout in security.yaml');
     }
+    #[Route('/user', name: 'user', methods: ['GET'])]
+    public function user(Security $security): JsonResponse {
+        $user = $this->getUser();
 
+        return $this->json([
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'roles' => $user->getRoles(),
+        ]);
+    }
+
+
+    #[Route('/protected', name: 'protected', methods: ['GET'])]
+    public function protected(): JsonResponse  {
+        return $this->json([
+            'message' => 'This is protected data!',
+            'user' => $this->getUser()->getEmail()
+        ]);
+    }
     #[Route('/refresh-token', name: 'refresh_token', methods: ['POST'])]
     public function refreshToken(): JsonResponse {
         return $this->json([

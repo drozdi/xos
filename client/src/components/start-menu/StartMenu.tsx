@@ -8,11 +8,13 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { appManager } from '../../core/app-system/app-manager';
+import { useAuthSystem } from '../../core/auth-system';
 
 import '../../apps/calculator/core';
 import '../../apps/tic-tac-toe/core';
 
 export const StartMenu = () => {
+	const isAuth = useAuthSystem((state) => state.isAuth);
 	const [opened, setOpened] = useState(false);
 	const onCalculator = () => {
 		appManager.createApp('apps/calculator/app', {});
@@ -21,8 +23,8 @@ export const StartMenu = () => {
 		appManager.createApp('apps/tic-tac-toe/app', {});
 	};
 	useEffect(() => {
-		appManager.reloadApps();
-	}, []);
+		isAuth && appManager.reloadApps();
+	}, [isAuth]);
 
 	return (
 		<Popover

@@ -1,12 +1,13 @@
 import { Button, Modal, PasswordInput, TextInput, Tooltip } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAuthSystem } from '../../core/auth-system';
 
 export const AuthForm = () => {
 	const isAuth = useAuthSystem((state) => state.isAuth);
 	const login = useAuthSystem((state) => state.login);
+	const loadUser = useAuthSystem((state) => state.loadUser);
 
 	const close = () => {};
 
@@ -21,6 +22,10 @@ export const AuthForm = () => {
 	});
 
 	const valid = form.values.password.length >= 6;
+
+	useEffect(() => {
+		!isAuth && loadUser();
+	}, []);
 
 	return (
 		<Modal opened={!isAuth} onClose={close} title="Authentication">
