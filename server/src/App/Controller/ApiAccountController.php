@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Main\Entity\User;
 use Main\Service\ClaimantManager;
 
-#[Route('/api/account')]
+#[Route('/1api/account')]
 class ApiAccountController extends AbstractController {
     #[Route('', methods: ['GET'])]
     public function detail (#[CurrentUser] ?User $user): JsonResponse {

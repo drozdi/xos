@@ -11,7 +11,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 
 use Main\Entity\User;
 
-#[Route('/api', name: 'api_app_')]
+#[Route('/1api', name: 'api_app_')]
 class ApiLoginController extends AbstractController {
     #[Route('/login', name: 'login', methods: ['POST'])]
     public function index(#[CurrentUser] ?User $user): JsonResponse {
