@@ -28,5 +28,9 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 			});
 		//console.log('response', response);
 	},
-	async ()
+	async logout () {
+		
+	}
+
+
 }));
