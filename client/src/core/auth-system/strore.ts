@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import roles from '../roles-system';
+import scopes from '../scopes-system';
 import { authAPI } from './api';
 
 interface authStoreProps {
@@ -20,6 +22,7 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 				localStorage.setItem('token', response.data.token);
 				const userResponse = await authAPI.getCurrentUser();
 				set({ isAuth: true, user: userResponse.data.user });
+				get().loadAccc();
 			}
 			return response;
 		});
@@ -37,5 +40,27 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 	},
 	logout: async () => {
 		localStorage.removeItem('token');
+	},
+	loadAccc: async () => {
+		return Promise.all([
+			authAPI.getAccountMap().then(({ data }) => {
+				for (let k in data) {
+					scopes.joinScopes(k, data[k]);
+				}
+				return data;
+			}),
+			authAPI.getAccountRoles().then(({ data }) => {
+				roles.joinRole(data || []);
+				return data;
+			}),
+			authAPI.getAccountAccesses().then(({ data }) => {
+				scopes.joinLevel(data || {});
+				return data;
+			}),
+			authAPI.getAccountOptions().then(({ data }) => {
+				//console.log(data)
+				return data;
+			}),
+		]);
 	},
 }));

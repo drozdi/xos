@@ -17,9 +17,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Main\Entity\User;
 use Main\Service\ClaimantManager;
 
-#[Route('/api/account')]
+#[Route('/api/account', name: 'api_app_account_' )]
 class ApiAccountController extends AbstractController {
-    #[Route('', methods: ['GET'])]
+    #[Route('', name: 'detail', methods: ['GET'])]
     public function detail (#[CurrentUser] ?User $user): JsonResponse {
         if (null === $user) {
             return $this->json([
@@ -40,7 +40,7 @@ class ApiAccountController extends AbstractController {
             'x_timestamp' => $user->getXTimestamp("Y-m-d H:m:s"),
         ]);
     }
-    #[Route('/map', name: 'app_account_map', methods: ['GET'])]
+    #[Route('/map', name: 'map', methods: ['GET'])]
     public function map (ClaimantManager $cm): JsonResponse {
         $ret = [];
         foreach ($cm->getMap() as $k => $v) {
@@ -48,7 +48,7 @@ class ApiAccountController extends AbstractController {
         }
         return $this->json($ret);
     }
-    #[Route('/accesses', name: 'app_account_accesses', methods: ['GET'])]
+    #[Route('/accesses', name: 'accesses', methods: ['GET'])]
     public function accesses (#[CurrentUser] ?User $user, ClaimantManager $cm): JsonResponse {
         $ret = [];
         foreach ($user->getAccesses() as $access) {
@@ -61,21 +61,21 @@ class ApiAccountController extends AbstractController {
         }
         return $this->json($ret);
     }
-    #[Route('/roles', name: 'app_account_roles', methods: ['GET'])]
+    #[Route('/roles', name: 'roles', methods: ['GET'])]
     public function roles (#[CurrentUser] ?User $user): JsonResponse {
         return $this->json($user->getRoles());
     }
-    #[Route('/options', name: 'app_account_options', methods: ['GET'])]
+    #[Route('/options', name: 'options', methods: ['GET'])]
     public function options (#[CurrentUser] ?User $user): JsonResponse {
         return $this->json($user->getOptions());
     }
-    #[Route('/options', name: 'app_account_options_update', methods: ['PUT'])]
+    #[Route('/options', name: 'options_update', methods: ['PUT'])]
     public function updateOptions (#[CurrentUser] ?User $user, Request $request, EntityManagerInterface $entityManager): JsonResponse {
         $user->setOptions($request->toArray());
         $entityManager->flush();
         return $this->json($user->getOptions());
     }
-    #[Route('', name: 'app_account_update', methods: ['PUT'])]
+    #[Route('', name: 'update', methods: ['PUT'])]
     public function update (Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, UserPasswordHasherInterface $passwordHasher, #[CurrentUser] ?User $user): JsonResponse {
         $ar = $request->toArray();
         $entityManager->getConnection()->beginTransaction();

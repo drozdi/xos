@@ -11,4 +11,17 @@ export const authAPI = {
 	getProtectedData: async () => {
 		return await api.get('/api/protected');
 	},
+
+	getAccountMap: async () => {
+		return await api.get('/api/account/map');
+	},
+	getAccountRoles: async () => {
+		return await api.get('/api/account/roles');
+	},
+	getAccountAccesses: async () => {
+		return await api.get('/api/account/accesses');
+	},
+	getAccountOptions: async () => {
+		return await api.get('/api/account/options');
+	},
 };

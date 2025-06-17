@@ -1,6 +1,8 @@
 import { appManager } from './app-system';
 import { config } from './config-system';
-import { settingManager } from './setting-system/setting-manager';
+import roles from './roles-system';
+import scopes from './scopes-system';
+import { settingManager } from './setting-system';
 
 export const core: {
 	$config: any;
@@ -8,10 +10,18 @@ export const core: {
 	$app: any;
 	list: Record<string, any>;
 	app: Function;
+	$scopes: any;
+	$roles: any;
+	joinScopes: Function;
+	getCanScope: Function;
+	getLevelScope: Function;
+	checkHasScope: Function;
 } = {
 	$config: config,
 	$sm: settingManager,
 	$app: appManager,
+	$scopes: scopes,
+	$roles: roles,
 	list: {},
 	app(proto: any, conf = {}, root: any): any {
 		root = root ?? appManager.createRoot();
@@ -21,5 +31,18 @@ export const core: {
 			);
 		}
 		return this.list[proto.displayName];
+	},
+
+	joinScopes(app = '', map = {}) {
+		this.$scopes.joinScopes(app, map);
+	},
+	getCanScope(scope) {
+		return this.$scopes.getCanScope(scope);
+	},
+	getLevelScope(scope) {
+		return this.$scopes.getLevelScope(scope);
+	},
+	checkHasScope(scope) {
+		return this.$scopes.checkHasScope(scope);
 	},
 };
