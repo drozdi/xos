@@ -1,3 +1,7 @@
+import { authAPI } from '../auth-system';
+import roles from '../roles-system';
+import scopes from '../scopes-system';
+
 const loadAccc = async () => {
 	return Promise.all([
 		authAPI.getAccountMap().then(({ data }) => {

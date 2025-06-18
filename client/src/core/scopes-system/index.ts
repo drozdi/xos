@@ -108,12 +108,14 @@ const coreScope: ICoreScope = {
 		return (this.cacheLevelScopes[scope.join('.')] = level);
 	},
 	checkHasScope(scope) {
-		let not = 0;
+		let not = false;
 		if (scope.substr(0, 1) === '!') {
-			not = 1;
+			not = true;
 			scope = scope.substr(1);
 		}
-		return !!(this.getLevelScope(scope) & this.getCanScope(scope)) ^ not;
+		let result = Boolean(this.getLevelScope(scope) & this.getCanScope(scope));
+
+		return not ? !result : result;
 	},
 	getRoleRoot(s) {
 		let scope = s.split('.').slice(s.substr(0, 4) == 'can_' ? 1 : 0);
