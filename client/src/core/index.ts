@@ -36,13 +36,13 @@ export const core: {
 	joinScopes(app = '', map = {}) {
 		this.$scopes.joinScopes(app, map);
 	},
-	getCanScope(scope) {
+	getCanScope(scope: string) {
 		return this.$scopes.getCanScope(scope);
 	},
-	getLevelScope(scope) {
+	getLevelScope(scope: string) {
 		return this.$scopes.getLevelScope(scope);
 	},
-	checkHasScope(scope) {
+	checkHasScope(scope: string) {
 		return this.$scopes.checkHasScope(scope);
 	},
 };

@@ -11,7 +11,7 @@ interface ICoreScope {
 	cacheLevelScopes: Record<string, any>;
 	cacheScopes: Record<string, any>;
 	subs: Record<string, any>;
-	joinLevel(key: Record<string, any> | string, level: number): void;
+	joinLevel(key: Record<string, any> | string, level?: number): void;
 	joinScopes(app: string, map: Record<string, any>): void;
 	getCanScope(scope: string): number;
 	getLevelScope(scope: string): number;
