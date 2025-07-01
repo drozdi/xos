@@ -9,8 +9,6 @@ export const AuthForm = () => {
 	const init = useAuthSystem((state) => state.init);
 	const login = useAuthSystem((state) => state.login);
 
-	const close = () => {};
-
 	const [opened, setOpened] = useState(false);
 
 	const form = useForm({
@@ -28,7 +26,7 @@ export const AuthForm = () => {
 	}, []);
 
 	return (
-		<Modal opened={!isAuth} onClose={close} title="Authentication">
+		<Modal opened={!isAuth} title="Authentication">
 			<form onSubmit={form.onSubmit(login)}>
 				<TextInput
 					placeholder="Your login"

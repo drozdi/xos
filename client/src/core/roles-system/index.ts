@@ -1,3 +1,5 @@
+import { rolesAPI } from './api';
+
 interface IRoles {
 	roles: string[];
 	parent?: any;
@@ -15,6 +17,7 @@ interface ICoreRoles {
 	isRoot(): boolean;
 	sub(app: string): IRoles;
 	isAdmin(mod?: string): boolean;
+	load(): void;
 }
 
 class Roles implements IRoles {
@@ -62,6 +65,14 @@ const coreRoles: ICoreRoles = {
 			this.subs[app] = new Roles(app, this);
 		}
 		return this.subs[app];
+	},
+	async load() {
+		return rolesAPI.getRoles().then(({ data }) => {
+			for (let k in data) {
+				coreRoles.joinRole(k, data[k]);
+			}
+			return data;
+		});
 	},
 };
 

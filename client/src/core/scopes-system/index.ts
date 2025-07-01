@@ -1,3 +1,5 @@
+import { scopesAPI } from './api';
+
 interface IScope {
 	app: string;
 	parent: any;
@@ -16,9 +18,10 @@ interface ICoreScope {
 	getCanScope(scope: string): number;
 	getLevelScope(scope: string): number;
 	checkHasScope(scope: string): boolean;
-	getRoleRoot(scope: string): number;
+	getRoleRoot(scope: string): string[];
 	getRoleAdmin(scope: string): string;
 	sub(app: string): IScope;
+	load(): void;
 }
 
 class Scope implements IScope {
@@ -30,7 +33,7 @@ class Scope implements IScope {
 	}
 	checkHasScope(s: string) {
 		let scope = s.split('.');
-		let can = scope.shift();
+		let can = scope.shift() as string;
 		if (scope.length === 0) {
 			scope.unshift(this.app);
 		}
@@ -56,7 +59,7 @@ class Scope implements IScope {
 	}
 }
 
-const coreScope: ICoreScope = {
+const coreScopes: ICoreScope = {
 	mapScopes: {},
 	levelScopes: {},
 	cacheLevelScopes: {},
@@ -138,6 +141,20 @@ const coreScope: ICoreScope = {
 		}
 		return this.subs[app];
 	},
+	async load() {
+		return await Promise.all([
+			scopesAPI.getMap().then(({ data }) => {
+				for (let k in data) {
+					coreScopes.joinScopes(k, data[k]);
+				}
+				return data;
+			}),
+			scopesAPI.getAccesses().then(({ data }) => {
+				coreScopes.joinLevel(data || {});
+				return data;
+			}),
+		]);
+	},
 };
 
-export default coreScope;
+export default coreScopes;

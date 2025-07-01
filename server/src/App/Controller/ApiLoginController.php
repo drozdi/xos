@@ -14,7 +14,7 @@ use Main\Entity\User;
 #[Route('/api', name: 'api_app_')]
 class ApiLoginController extends AbstractController {
     #[Route('/login', name: 'login', methods: ['POST'])]
-    public function index(#[CurrentUser] ?User $user): JsonResponse {
+    public function login(#[CurrentUser] ?User $user): JsonResponse {
         /*if (null === $user) {
             return $this->json([
                 'message' => 'missing credentials',
@@ -36,6 +36,24 @@ class ApiLoginController extends AbstractController {
         // controller can be blank: it will never be called!
         throw new \Exception('Don\'t forget to activate logout in security.yaml');
     }
+
+    #[Route('/login-check', name: 'login_check', methods: ['GET'])]
+    public function check(Security $security): JsonResponse {
+        $user = $security->getUser();
+
+        if (!$user) {
+            return $this->json([
+                'error' => 'Unauthorized'
+            ], 401);
+        }
+
+        return $this->json([
+            'status' => 'authenticated',
+        ]);
+    }
+
+
+
     #[Route('/user', name: 'user', methods: ['GET'])]
     public function user(Security $security): JsonResponse {
         $user = $this->getUser();
