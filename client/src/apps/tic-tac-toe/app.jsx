@@ -1,5 +1,5 @@
 import { Box, Button, Stack } from '@mantine/core';
-import { IconReload } from '@tabler/icons-react';
+import { TbReload } from 'react-icons/tb';
 import { Window } from '../../components/window';
 import { useApp } from '../../core/app-system';
 import { Field, Information } from './components';
@@ -51,7 +51,7 @@ export function AppTicTacToe() {
 						color="info"
 						onClick={() => restart()}
 					>
-						<IconReload />
+						<TbReload />
 					</Button>
 				</Box>
 				<Field />

@@ -4,7 +4,7 @@ import { useBreakpoint } from '../../hooks/use-breakpoint';
 import { useSlots } from '../../hooks/use-slots';
 
 import { ActionIcon, Burger } from '@mantine/core';
-import { IconSquareArrowRight } from '@tabler/icons-react';
+import { TbSquareArrowRight } from 'react-icons/tb';
 
 import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
@@ -113,7 +113,7 @@ export const Layout = memo(function LayoutFn({
 						setRs({ open: !rs.open });
 					}}
 				>
-					<IconSquareArrowRight
+					<TbSquareArrowRight
 						style={{ width: '70%', height: '70%' }}
 						stroke={1.5}
 					/>

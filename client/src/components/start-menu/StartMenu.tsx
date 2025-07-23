@@ -1,12 +1,13 @@
 import { Button, Group, Popover, Stack } from '@mantine/core';
-import {
-	IconBrandWindows,
-	IconCalculator,
-	IconLogout,
-	IconSettings,
-	IconTicTac,
-} from '@tabler/icons-react';
+
 import { useEffect, useState } from 'react';
+import {
+	TbBrandWindows,
+	TbCalculator,
+	TbLogout,
+	TbSettings,
+	TbTicTac,
+} from 'react-icons/tb';
 import { appManager } from '../../core/app-system/app-manager';
 import { useAuthSystem } from '../../core/auth-system';
 
@@ -41,7 +42,7 @@ export const StartMenu = () => {
 					color="gray"
 					onClick={() => setOpened((o) => !o)}
 				>
-					<IconBrandWindows />
+					<TbBrandWindows />
 				</Button>
 			</Popover.Target>
 			<Popover.Dropdown p={0}>
@@ -50,10 +51,10 @@ export const StartMenu = () => {
 						<Stack align="stretch" justify="flex-start" gap={0}></Stack>
 						<Stack align="stretch" justify="flex-end" gap={0}>
 							<Button size="lg" radius={0} color="gray" variant="subtle">
-								<IconSettings />
+								<TbSettings />
 							</Button>
 							<Button size="lg" radius={0} color="gray" variant="subtle">
-								<IconLogout />
+								<TbLogout />
 							</Button>
 						</Stack>
 					</Stack>
@@ -63,7 +64,7 @@ export const StartMenu = () => {
 							radius={0}
 							variant={opened ? 'light' : 'subtle'}
 							color="gray"
-							leftSection={<IconCalculator />}
+							leftSection={<TbCalculator />}
 							onClick={onCalculator}
 						>
 							Calculator
@@ -73,7 +74,7 @@ export const StartMenu = () => {
 							radius={0}
 							variant={opened ? 'light' : 'subtle'}
 							color="gray"
-							leftSection={<IconTicTac />}
+							leftSection={<TbTicTac />}
 							onClick={onIconTicTac}
 						>
 							TicTacToe

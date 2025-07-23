@@ -1,11 +1,4 @@
 import { ActionIcon, Group } from '@mantine/core';
-import {
-	IconMinus,
-	IconReload,
-	IconWindowMaximize,
-	IconWindowMinimize,
-	IconX,
-} from '@tabler/icons-react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {
@@ -21,6 +14,13 @@ import React, {
 	useRef,
 } from 'react';
 import { DraggableCore, DraggableEventHandler } from 'react-draggable';
+import {
+	TbMinus,
+	TbReload,
+	TbWindowMaximize,
+	TbWindowMinimize,
+	TbX,
+} from 'react-icons/tb';
 import { useApp } from '../../core/app-system';
 import { wmStore } from '../../core/window-system/store';
 import { getComputedSize } from '../../utils/domFns';
@@ -538,7 +538,7 @@ const WindowIcons = memo(
 									aria-label="Закрыть"
 									onClick={onClose}
 								>
-									<IconX />
+									<TbX />
 								</ActionIcon>
 							);
 						case 'reload':
@@ -550,7 +550,7 @@ const WindowIcons = memo(
 									aria-label="Обновить"
 									onClick={onReload}
 								>
-									<IconReload />
+									<TbReload />
 								</ActionIcon>
 							);
 						case 'fullscreen':
@@ -572,9 +572,9 @@ const WindowIcons = memo(
 										}
 									>
 										{isFullscreen ? (
-											<IconWindowMinimize />
+											<TbWindowMinimize />
 										) : (
-											<IconWindowMaximize />
+											<TbWindowMaximize />
 										)}
 									</ActionIcon>
 								)
@@ -588,7 +588,7 @@ const WindowIcons = memo(
 									title="Свернуть"
 									aria-label="Свернуть"
 								>
-									<IconMinus />
+									<TbMinus />
 								</ActionIcon>
 							);
 						default:

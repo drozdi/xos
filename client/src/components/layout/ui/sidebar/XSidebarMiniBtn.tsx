@@ -1,5 +1,5 @@
 import { Button } from '@mantine/core';
-import { IconSquareArrowLeft, IconSquareArrowRight } from '@tabler/icons-react';
+import { TbSquareArrowLeft, TbSquareArrowRight } from 'react-icons/tb';
 import './style.css';
 
 import { useXSidebarContext } from './XSidebarContext';
@@ -16,7 +16,7 @@ export const XSidebarMiniBtn = () => {
 			title={isMini ? 'Развернуть' : 'Свернуть'}
 			onClick={ctx?.toggleMini}
 		>
-			{isMini && isLeft ? <IconSquareArrowRight /> : <IconSquareArrowLeft />}
+			{isMini && isLeft ? <TbSquareArrowRight /> : <TbSquareArrowLeft />}
 		</Button>
 	);
 };
