@@ -110,7 +110,7 @@ export function TemplateSlot({
 	...props
 }: {
 	name: string;
-	children?: any;
+	children?: React.ReactNode;
 }) {
 	const manager = useContext(TemplateManagerContext);
 
@@ -124,6 +124,20 @@ export function TemplateSlot({
 	const element = slotTemplates ? slotTemplates : children;
 
 	return cloneElement(isValidElement(element) ? element : <>{element}</>, props);
+}
+
+export function TemplateHasSlot({
+	name,
+	children,
+}: {
+	children: React.ReactNode;
+	name: string;
+}) {
+	if (useTemplateManager().isTemplates(name)) {
+		return children;
+	} else {
+		return null;
+	}
 }
 
 /**

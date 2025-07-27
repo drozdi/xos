@@ -8,8 +8,18 @@ import { WindowManager } from './components/window-manager';
 function App() {
 	return (
 		<Layout container>
-			<Layout.Header>header</Layout.Header>
-			<Layout.Footer>footer</Layout.Footer>
+			<Layout.Header>
+				<span>header</span>
+			</Layout.Header>
+			<Layout.Footer>
+				<span>footer</span>
+			</Layout.Footer>
+			<Layout.Left>
+				<span>left</span>
+			</Layout.Left>
+			<Layout.Right>
+				<span>right</span>
+			</Layout.Right>
 			main
 		</Layout>
 	);

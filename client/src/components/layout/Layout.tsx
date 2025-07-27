@@ -4,7 +4,13 @@ import { useBreakpoint } from '../../hooks/use-breakpoint';
 
 import { ActionIcon, Burger } from '@mantine/core';
 import { TbSquareArrowRight } from 'react-icons/tb';
-import { Template, TemplateProvider, useTemplateContext } from './context';
+import {
+	Template,
+	TemplateHasSlot,
+	TemplateProvider,
+	TemplateSlot,
+	useTemplateContext,
+} from './context';
 
 import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
@@ -134,19 +140,26 @@ export const Layout = memo(function LayoutFn({
 				}}
 				ref={layoutRef}
 			>
-				{isTemplates('header') && (
-					<XHeader {...headerProps}>{getTemplates('header')}</XHeader>
-				)}
-
-				{isTemplates('footer') && <XFooter>{getTemplates('footer')}</XFooter>}
-
-				{isTemplates('left') && (
-					<XSidebar {...leftProps}>{getTemplates('left')}</XSidebar>
-				)}
-
-				{isTemplates('right') && (
-					<XSidebar {...rightProps}>{getTemplates('right')}</XSidebar>
-				)}
+				<TemplateHasSlot name="header">
+					<XHeader {...headerProps}>
+						<TemplateSlot name="header">asdsf</TemplateSlot>
+					</XHeader>
+				</TemplateHasSlot>
+				<TemplateHasSlot name="footer">
+					<XFooter>
+						<TemplateSlot name="footer">asdsf</TemplateSlot>
+					</XFooter>
+				</TemplateHasSlot>
+				<TemplateHasSlot name="left">
+					<XSidebar {...leftProps}>
+						<TemplateSlot name="left">asdsf</TemplateSlot>
+					</XSidebar>
+				</TemplateHasSlot>
+				<TemplateHasSlot name="right">
+					<XSidebar {...rightProps}>
+						<TemplateSlot name="right">asdsf</TemplateSlot>
+					</XSidebar>
+				</TemplateHasSlot>
 				<XMain>{children}</XMain>
 			</XLayout>
 		</TemplateProvider>
