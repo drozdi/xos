@@ -4,7 +4,7 @@ import { useBreakpoint } from '../../hooks/use-breakpoint';
 
 import { ActionIcon, Burger } from '@mantine/core';
 import { TbSquareArrowRight } from 'react-icons/tb';
-import { Template, TemplateProvider, TemplateSlot, useTemplateContext } from './context';
+import { Template, TemplateProvider, useTemplateContext } from './context';
 
 import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
@@ -124,7 +124,7 @@ export const Layout = memo(function LayoutFn({
 
 	//console.log(children);
 	return (
-		<TemplateProvider>
+		<TemplateProvider value={context}>
 			<XLayout
 				container={container}
 				className={className}
@@ -135,27 +135,17 @@ export const Layout = memo(function LayoutFn({
 				ref={layoutRef}
 			>
 				{isTemplates('header') && (
-					<XHeader {...headerProps}>
-						<TemplateSlot name="header" />
-					</XHeader>
+					<XHeader {...headerProps}>{getTemplates('header')}</XHeader>
 				)}
 
-				{isTemplates('footer') && (
-					<XFooter>
-						<TemplateSlot name="footer" />
-					</XFooter>
-				)}
+				{isTemplates('footer') && <XFooter>{getTemplates('footer')}</XFooter>}
 
 				{isTemplates('left') && (
-					<XSidebar {...leftProps}>
-						<TemplateSlot name="left" />
-					</XSidebar>
+					<XSidebar {...leftProps}>{getTemplates('left')}</XSidebar>
 				)}
 
 				{isTemplates('right') && (
-					<XSidebar {...rightProps}>
-						<TemplateSlot name="right" />
-					</XSidebar>
+					<XSidebar {...rightProps}>{getTemplates('right')}</XSidebar>
 				)}
 				<XMain>{children}</XMain>
 			</XLayout>
