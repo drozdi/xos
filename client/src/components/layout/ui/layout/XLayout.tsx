@@ -18,7 +18,6 @@ export const XLayout = forwardRef(function XLayoutFn(
 	ref,
 ) {
 	const context = useTemplateContext();
-	const getTemplates = (slotName: string) => context.templates[slotName];
 	const isTemplates = (slotName: string) => !!context.templates[slotName];
 
 	const {
@@ -57,7 +56,7 @@ export const XLayout = forwardRef(function XLayoutFn(
 			isFl: rows[2][0] === 'l' || !isTemplates?.('footer'),
 			isFr: rows[2][2] === 'r' || !isTemplates?.('footer'),
 		}),
-		[rows],
+		[rows, context?.templates],
 	);
 
 	const classes = useMemo(
