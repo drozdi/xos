@@ -7,6 +7,13 @@ import { WindowManager } from './components/window-manager';
 
 function App() {
 	return (
+		<Layout container>
+			<Layout.Header>header</Layout.Header>
+			<Layout.Footer>footer</Layout.Footer>
+			main
+		</Layout>
+	);
+	return (
 		<>
 			<Layout container toggle>
 				<div slot="header">header</div>

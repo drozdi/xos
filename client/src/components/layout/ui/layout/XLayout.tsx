@@ -1,8 +1,9 @@
 import classNames from 'classnames';
-import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useMemo } from 'react';
 import { useElementResizeObserver } from '../../../../hooks/use-element-resize-observer';
-import { XLayoutProvider } from './XLayoutContext';
+import { TemplateProvider, useTemplateContext } from '../../context';
 import './style.css';
+import { XLayoutProvider } from './XLayoutContext';
 
 interface XLayoutProps {
 	children?: React.ReactNode;
@@ -16,6 +17,10 @@ export const XLayout = forwardRef(function XLayoutFn(
 	{ children, className, container, view = 'hhh lpr fff', onResize }: XLayoutProps,
 	ref,
 ) {
+	const context = useTemplateContext();
+	const getTemplates = (slotName: string) => context.templates[slotName];
+	const isTemplates = (slotName: string) => !!context.templates[slotName];
+
 	const {
 		ref: containerRef,
 		width,
@@ -23,7 +28,6 @@ export const XLayout = forwardRef(function XLayoutFn(
 	} = useElementResizeObserver({
 		onResize,
 	});
-	const instances = useRef({});
 	const rows = useMemo(
 		() =>
 			view
@@ -37,12 +41,6 @@ export const XLayout = forwardRef(function XLayoutFn(
 
 	const ctx = useMemo(() => {
 		return {
-			get instances() {
-				return instances.current;
-			},
-			set instances(val) {
-				instances.current = val;
-			},
 			container,
 			rows,
 			width,
@@ -54,12 +52,12 @@ export const XLayout = forwardRef(function XLayoutFn(
 
 	const { isHl, isHr, isFl, isFr } = useMemo(
 		() => ({
-			isHl: rows[0][0] === 'l' || !instances.current.header,
-			isHr: rows[0][2] === 'r' || !instances.current.header,
-			isFl: rows[2][0] === 'l' || !instances.current.footer,
-			isFr: rows[2][2] === 'r' || !instances.current.footer,
+			isHl: rows[0][0] === 'l' || !isTemplates?.('header'),
+			isHr: rows[0][2] === 'r' || !isTemplates?.('header'),
+			isFl: rows[2][0] === 'l' || !isTemplates?.('footer'),
+			isFr: rows[2][2] === 'r' || !isTemplates?.('footer'),
 		}),
-		[rows, instances.current.header, instances.current.footer],
+		[rows],
 	);
 
 	const classes = useMemo(
@@ -83,5 +81,9 @@ export const XLayout = forwardRef(function XLayoutFn(
 		);
 	}
 
-	return <XLayoutProvider value={ctx}>{layout}</XLayoutProvider>;
+	return (
+		<XLayoutProvider value={ctx}>
+			<TemplateProvider value={context}>{layout}</TemplateProvider>
+		</XLayoutProvider>
+	);
 });

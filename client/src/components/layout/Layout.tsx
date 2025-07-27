@@ -1,10 +1,10 @@
 import { useSetState } from '@mantine/hooks';
 import React, { memo, useMemo, useRef, useState } from 'react';
 import { useBreakpoint } from '../../hooks/use-breakpoint';
-import { useSlots } from '../../hooks/use-slots';
 
 import { ActionIcon, Burger } from '@mantine/core';
 import { TbSquareArrowRight } from 'react-icons/tb';
+import { Template, TemplateProvider, TemplateSlot, useTemplateContext } from './context';
 
 import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
@@ -27,6 +27,10 @@ export const Layout = memo(function LayoutFn({
 	overlay,
 	toggle,
 }: LayoutProps) {
+	const context = useTemplateContext();
+	const getTemplates = (slotName: string) => context.templates[slotName];
+	const isTemplates = (slotName: string) => !!context.templates[slotName];
+
 	const layoutRef = useRef(null);
 	const [width, setWidth] = useState(0);
 
@@ -41,7 +45,7 @@ export const Layout = memo(function LayoutFn({
 
 	const belowBreakpoint = useBreakpoint(breakpoint, width);
 
-	const { slot, hasSlot, wrapSlot } = useSlots(children);
+	const hasSlot = () => true;
 
 	const leftSidebar = useRef(null);
 
@@ -83,13 +87,8 @@ export const Layout = memo(function LayoutFn({
 		}),
 		[rs, overlay, breakpoint, toggle, belowBreakpoint],
 	);
-
-	const left = () => wrapSlot(slot('left', null), XSidebar, leftProps);
-	const right = () => wrapSlot(slot('right', null), XSidebar, rightProps);
-	const footer = () => wrapSlot(slot('footer', null), XFooter);
-
-	const header = () =>
-		wrapSlot(slot('header', null), XHeader, {
+	const headerProps = useMemo(
+		() => ({
 			align: 'normal',
 			leftSection: belowBreakpoint && hasSlot('left') && (
 				<Burger
@@ -119,25 +118,60 @@ export const Layout = memo(function LayoutFn({
 					/>
 				</ActionIcon>
 			),
-		});
-	const def = () => wrapSlot(slot(), XMain);
+		}),
+		[belowBreakpoint],
+	);
 
 	//console.log(children);
 	return (
-		<XLayout
-			container={container}
-			className={className}
-			view={view}
-			onResize={({ width }) => {
-				setWidth(width);
-			}}
-			ref={layoutRef}
-		>
-			{hasSlot('left') && left()}
-			{hasSlot('right') && right()}
-			{hasSlot('header') && header()}
-			{hasSlot('footer') && footer()}
-			{def()}
-		</XLayout>
+		<TemplateProvider>
+			<XLayout
+				container={container}
+				className={className}
+				view={view}
+				onResize={({ width }) => {
+					setWidth(width);
+				}}
+				ref={layoutRef}
+			>
+				{isTemplates('header') && (
+					<XHeader {...headerProps}>
+						<TemplateSlot name="header" />
+					</XHeader>
+				)}
+
+				{isTemplates('footer') && (
+					<XFooter>
+						<TemplateSlot name="footer" />
+					</XFooter>
+				)}
+
+				{isTemplates('left') && (
+					<XSidebar {...leftProps}>
+						<TemplateSlot name="left" />
+					</XSidebar>
+				)}
+
+				{isTemplates('right') && (
+					<XSidebar {...rightProps}>
+						<TemplateSlot name="right" />
+					</XSidebar>
+				)}
+				<XMain>{children}</XMain>
+			</XLayout>
+		</TemplateProvider>
 	);
 });
+
+Layout.Header = ({ children }: { children: React.ReactNode }) => {
+	return <Template slot="header">{children}</Template>;
+};
+Layout.Footer = ({ children }: { children: React.ReactNode }) => {
+	return <Template slot="footer">{children}</Template>;
+};
+Layout.Left = ({ children }: { children: React.ReactNode }) => {
+	return <Template slot="left">{children}</Template>;
+};
+Layout.Right = ({ children }: { children: React.ReactNode }) => {
+	return <Template slot="right">{children}</Template>;
+};

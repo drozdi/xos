@@ -1,7 +1,7 @@
 import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import { forwardRef, memo, useEffect, useRef } from 'react';
+import { forwardRef, memo, useRef } from 'react';
 import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
 
@@ -17,7 +17,7 @@ export const XMain = memo(
 
 		const ctx = useXLayoutContext();
 
-		useEffect(() => {
+		/*useEffect(() => {
 			if (ctx && innerRef.current) {
 				ctx.instances.main = innerRef.current;
 			}
@@ -26,14 +26,18 @@ export const XMain = memo(
 					delete ctx.instances.main;
 				}
 			};
-		}, [innerRef.current]);
+		}, [innerRef.current]);*/
 
 		const isLayout = !!ctx;
 		return (
 			<main
 				{...props}
 				ref={handleRef}
-				className={classNames('x-main x-layout-main x-main-content', className)}
+				className={classNames(
+					'x-main x-main-content',
+					{ 'x-layout-main': isLayout },
+					className,
+				)}
 			>
 				<div className="x-layout-content">{children}</div>
 			</main>

@@ -1,6 +1,6 @@
 import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
-import { forwardRef, memo, useEffect, useRef } from 'react';
+import { forwardRef, memo, useRef } from 'react';
 import { Sections } from '../../../ui/sections/Sections';
 import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
@@ -17,14 +17,14 @@ export const XHeader = memo(
 
 		const ctx = useXLayoutContext();
 
-		useEffect(() => {
+		/*useEffect(() => {
 			if (innerRef.current) {
 				ctx.instances.header = innerRef.current;
 			}
 			return () => {
 				delete ctx.instances.header;
 			};
-		}, [innerRef.current]);
+		}, [innerRef.current]);*/
 
 		const isLayout = !!ctx;
 

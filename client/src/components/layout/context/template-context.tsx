@@ -12,24 +12,20 @@ import {
 type TemplateManagerStateType = Record<string, any>;
 type TemplateManagerContextType = {
 	templates: TemplateManagerStateType;
-	registerTemplate: (slotName: string, element: any) => void;
-	unregisterTemplate: (slotName: string) => void;
+	register: (slotName: string, element: any) => void;
+	unregister: (slotName: string) => void;
 };
 
 // Создаем контекст для менеджера шаблонов
 const TemplateManagerContext = createContext<TemplateManagerContextType | null>(null);
 
-/**
- * Провайдер для управления шаблонами
- * @param {Object} props - Свойства компонента
- * @param {React.ReactNode} props.children - Дочерние элементы
- */
-export function TemplateProvider({ children }: { children: React.ReactNode }) {
+// Фабрика контекста для создания нового контекста
+function factoryContext(): TemplateManagerContextType {
 	// Состояние для хранения шаблонов: { [slotName]: [elements] }
 	const [templates, setTemplates] = useState<TemplateManagerStateType>({});
 
 	// Регистрация шаблона
-	const registerTemplate = (slotName: string, element: any) => {
+	const register = (slotName: string, element: any) => {
 		setTemplates((prev) => ({
 			...prev,
 			[slotName]: element,
@@ -37,7 +33,7 @@ export function TemplateProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	// Удаление шаблона
-	const unregisterTemplate = (slotName: string) => {
+	const unregister = (slotName: string) => {
 		setTemplates((prev: TemplateManagerStateType): TemplateManagerStateType => {
 			return {
 				...prev,
@@ -47,15 +43,29 @@ export function TemplateProvider({ children }: { children: React.ReactNode }) {
 	};
 
 	// Значение контекста
-	const contextValue = useMemo<TemplateManagerContextType>(
+	return useMemo<TemplateManagerContextType>(
 		() => ({
 			templates,
-			registerTemplate,
-			unregisterTemplate,
+			register,
+			unregister,
 		}),
 		[templates],
 	);
+}
 
+/**
+ * Провайдер для управления шаблонами
+ * @param {Object} props - Свойства компонента
+ * @param {React.ReactNode} props.children - Дочерние элементы
+ */
+export function TemplateProvider({
+	children,
+	value,
+}: {
+	children: React.ReactNode;
+	value?: TemplateManagerContextType;
+}) {
+	const contextValue = value || factoryContext();
 	return (
 		<TemplateManagerContext.Provider value={contextValue}>
 			{children}
@@ -70,12 +80,12 @@ export function Template({ slot, children }: { slot: string; children: any }) {
 	useEffect(() => {
 		if (manager) {
 			// Регистрируем шаблон в менеджере
-			manager.registerTemplate(slot, cloneElement(children, { key: uniqueId }));
+			manager.register(slot, cloneElement(children, { key: uniqueId }));
 		}
 
 		return () => {
 			if (manager) {
-				manager.unregisterTemplate(slot);
+				manager.unregister(slot);
 			}
 		};
 	}, [children]);
@@ -114,6 +124,15 @@ export function TemplateSlot({
 	const element = slotTemplates ? slotTemplates : children;
 
 	return cloneElement(isValidElement(element) ? element : <>{element}</>, props);
+}
+
+/**
+ * Хук для получения контекста менеджера шаблонов
+ * @returns {Object} Контекст для доступа к API менеджера шаблонов
+ */
+
+export function useTemplateContext() {
+	return useContext(TemplateManagerContext) || factoryContext();
 }
 
 /**

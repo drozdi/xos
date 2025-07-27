@@ -183,7 +183,7 @@ export const XSidebar = memo(
 			}
 		}, [w, mW]);
 
-		useEffect(() => {
+		/*useEffect(() => {
 			if (layout && ctx) {
 				layout.instances[type] = ctx;
 			}
@@ -192,7 +192,7 @@ export const XSidebar = memo(
 					delete layout.instances[type];
 				}
 			};
-		}, [ctx, type, layout]);
+		}, [ctx, type, layout]);*/
 
 		useImperativeHandle(ref, () => ctx, [ctx]);
 		const [ss, setSs] = useState(false);
