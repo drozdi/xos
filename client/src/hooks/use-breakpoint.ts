@@ -7,7 +7,7 @@ import { useMemo } from 'react';
  * @returns {boolean} - Возвращает true, если текущая ширина контекста меньше заданного breakpoint, иначе false.
  */
 export function useBreakpoint(
-	breakpoint: number | null | undefined,
+	breakpoint: number | string | undefined,
 	ctxWidth: number,
 ): boolean {
 	return useMemo<boolean>(() => {

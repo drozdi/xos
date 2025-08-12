@@ -1,13 +1,13 @@
 import { createContext, ReactNode, useContext } from 'react';
 
 interface XSidebarContextType {
-	type: 'left' | 'right';
+	type?: 'left' | 'right';
 	width?: number;
 	mini?: boolean;
 	open?: boolean;
 	getElement?: () => HTMLElement | null;
-	toggleMini?: (event: MouseEvent) => void;
-	toggle?: (event: MouseEvent) => void;
+	toggleMini?: (event: React.MouseEvent) => void;
+	toggle?: (event: React.MouseEvent) => void;
 }
 interface XSidebarProviderProps {
 	children: ReactNode;

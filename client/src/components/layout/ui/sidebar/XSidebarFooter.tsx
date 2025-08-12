@@ -4,10 +4,13 @@ import './style.css';
 import { useXSidebarContext } from './XSidebarContext';
 
 export interface XSidebarFooterProps {
-	children: React.ReactNode;
+	children?: React.ReactNode;
 }
 
 export const XSidebarFooter = memo(({ children }: XSidebarFooterProps) => {
+	if (!children) {
+		return null;
+	}
 	const ctx = useXSidebarContext();
 	const isLeft = ctx?.type === 'left';
 	const isMini = ctx?.mini || false;

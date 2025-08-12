@@ -24,7 +24,7 @@ import { XSidebarToggleBtn } from './XSidebarToggleBtn';
 export interface XSidebarProps {
 	type: 'left' | 'right';
 	title?: string;
-	breakpoint?: string;
+	breakpoint?: number | string;
 	className?: string;
 	children?: React.ReactNode;
 	mini?: boolean;
@@ -176,8 +176,8 @@ export const XSidebar = memo(
 		useEffect(() => {
 			if (innerRef.current && typeof window !== 'undefined') {
 				const style = window.getComputedStyle(innerRef.current);
-				const _w = w || parseInt(style.width || 0, 10) || 0;
-				const _mW = mW || parseInt(style.minWidth || 0, 10) || 0;
+				const _w = w || parseInt(style.width || '0', 10) || 0;
+				const _mW = mW || parseInt(style.minWidth || '0', 10) || 0;
 				_w && updateState({ width: _w });
 				_mW && updateState({ miniWidth: _mW });
 			}

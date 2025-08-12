@@ -2,12 +2,11 @@ import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
 import React, { forwardRef, memo, useRef } from 'react';
 import { Sections } from '../../../ui/sections/Sections';
-import { useXLayoutContext } from '../layout/XLayoutContext';
 import './style.css';
 
 interface XFooterProps {
-	children?: React.ReactNode;
-	className: string;
+	children: React.ReactNode;
+	className?: string;
 }
 
 export const XFooter = memo(
@@ -15,30 +14,11 @@ export const XFooter = memo(
 		const innerRef = useRef(null);
 		const handleRef = useMergedRef(innerRef, ref);
 
-		const ctx = useXLayoutContext();
-
-		/*useEffect(() => {
-			if (innerRef.current) {
-				ctx.instances.footer = innerRef.current;
-			}
-			return () => {
-				delete ctx.instances.footer;
-			};
-		}, [innerRef.current]);*/
-
-		const isLayout = !!ctx;
-
 		return (
 			<Sections
 				component="footer"
 				{...props}
-				className={classNames(
-					'x-footer',
-					{
-						'x-layout-footer': isLayout,
-					},
-					className,
-				)}
+				className={classNames('x-footer', className)}
 				ref={handleRef}
 			>
 				{children}

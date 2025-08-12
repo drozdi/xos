@@ -12,9 +12,6 @@ export const XSidebarToggleBtn = () => {
 			variant="default"
 			color="grape"
 			title={isOpen ? 'Развернуть' : 'Свернуть'}
-			style={{
-				marginInlineStart: 'auto',
-			}}
 			onClick={ctx?.toggle}
 		/>
 	);

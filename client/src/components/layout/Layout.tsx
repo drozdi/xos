@@ -51,8 +51,6 @@ export const Layout = memo(function LayoutFn({
 
 	const belowBreakpoint = useBreakpoint(breakpoint, width);
 
-	const hasSlot = () => true;
-
 	const leftSidebar = useRef(null);
 
 	const leftProps = useMemo(
@@ -96,7 +94,8 @@ export const Layout = memo(function LayoutFn({
 	const headerProps = useMemo(
 		() => ({
 			align: 'normal',
-			leftSection: belowBreakpoint && hasSlot('left') && (
+			className: 'x-layout-header',
+			leftSection: belowBreakpoint && isTemplates?.('left') && (
 				<Burger
 					size="sm"
 					opened={!leftSidebar.current?.open}
@@ -107,7 +106,7 @@ export const Layout = memo(function LayoutFn({
 					}}
 				/>
 			),
-			rightSection: belowBreakpoint && hasSlot('right') && (
+			rightSection: belowBreakpoint && isTemplates?.('right') && (
 				<ActionIcon
 					variant="filled"
 					size="lg"
@@ -146,7 +145,7 @@ export const Layout = memo(function LayoutFn({
 					</XHeader>
 				</TemplateHasSlot>
 				<TemplateHasSlot name="footer">
-					<XFooter>
+					<XFooter className="x-layout-footer">
 						<TemplateSlot name="footer">asdsf</TemplateSlot>
 					</XFooter>
 				</TemplateHasSlot>

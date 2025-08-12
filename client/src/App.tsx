@@ -17,9 +17,6 @@ function App() {
 			<Layout.Left>
 				<span>left</span>
 			</Layout.Left>
-			<Layout.Right>
-				<span>right</span>
-			</Layout.Right>
 			main
 		</Layout>
 	);
