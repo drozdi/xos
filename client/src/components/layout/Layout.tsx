@@ -150,12 +150,18 @@ export const Layout = memo(function LayoutFn({
 					</XFooter>
 				</TemplateHasSlot>
 				<TemplateHasSlot name="left">
-					<XSidebar {...leftProps}>
+					<XSidebar
+						className="x-layout-sidebar x-layout-sidebar--left"
+						{...leftProps}
+					>
 						<TemplateSlot name="left">asdsf</TemplateSlot>
 					</XSidebar>
 				</TemplateHasSlot>
 				<TemplateHasSlot name="right">
-					<XSidebar {...rightProps}>
+					<XSidebar
+						className="x-layout-sidebar x-layout-sidebar--right"
+						{...rightProps}
+					>
 						<TemplateSlot name="right">asdsf</TemplateSlot>
 					</XSidebar>
 				</TemplateHasSlot>
