@@ -18,6 +18,7 @@ export const AuthForm = () => {
 			password: '',
 		},
 	});
+	console.log(isAuth);
 
 	const valid = form.values.password.length >= 6;
 
@@ -26,7 +27,7 @@ export const AuthForm = () => {
 	}, []);
 
 	return (
-		<Modal opened={!isAuth} title="Authentication">
+		<Modal opened={!isAuth} onClose={() => {}} title="Authentication">
 			<form onSubmit={form.onSubmit(login)}>
 				<TextInput
 					placeholder="Your login"

@@ -74,6 +74,9 @@ export const XSidebar = memo(
 			}: XSidebarProps,
 			ref: React.Ref<any>,
 		) => {
+			if (!children) {
+				return null;
+			}
 			const innerRef = useRef<HTMLElement>(null);
 			const layout = useXLayoutContext();
 			const isMounted = useMounted();

@@ -8,5 +8,5 @@ XOS.app(
 	{
 		smKey: 'core',
 	},
-	createRoot(document.getElementById('root')),
+	createRoot(document.querySelector('body')),
 );

@@ -1,5 +1,4 @@
 import { Box, Flex, FlexProps } from '@mantine/core';
-import PropTypes from 'prop-types';
 import React, { forwardRef, useMemo } from 'react';
 
 /**
@@ -58,11 +57,5 @@ export const Sections = forwardRef(
 		);
 	},
 );
-Sections.propTypes = {
-	children: PropTypes.node,
-	leftSection: PropTypes.oneOfType([PropTypes.string, PropTypes.element]),
-	rightSection: PropTypes.oneOfType([PropTypes.string, PropTypes.element]),
-	classNames: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-};
 
 Sections.displayName = 'internal/Sections';

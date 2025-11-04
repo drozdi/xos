@@ -13,7 +13,9 @@ export const XHeader = memo(
 	forwardRef(function XHeaderFn({ children, className, ...props }: XHeaderProps, ref) {
 		const innerRef = useRef(null);
 		const handleRef = useMergedRef(innerRef, ref);
-
+		if (!children) {
+			return null;
+		}
 		return (
 			<Sections
 				component="header"

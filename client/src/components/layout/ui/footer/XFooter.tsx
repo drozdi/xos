@@ -13,7 +13,9 @@ export const XFooter = memo(
 	forwardRef(function XFooterFn({ children, className, ...props }: XFooterProps, ref) {
 		const innerRef = useRef(null);
 		const handleRef = useMergedRef(innerRef, ref);
-
+		if (!children) {
+			return null;
+		}
 		return (
 			<Sections
 				component="footer"

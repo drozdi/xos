@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../api';
 import coreOptions from '../options-system';
 import coreRoles from '../roles-system';
 import coreScopes from '../scopes-system';
@@ -19,6 +20,10 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 	loading: false,
 	user: '',
 	init: async () => {
+		set({
+			isAuth: false,
+			loading: true,
+		});
 		return authAPI
 			.check()
 			.then(get().load)
@@ -30,18 +35,17 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 			});
 	},
 	login: async ({ login, password }) => {
-		const response = await authAPI.login(login, password).then(async (response) => {
-			if (response.status === 200) {
-				localStorage.setItem('token', response.data.token);
-				await get().load();
-				set({ isAuth: true, loading: false });
-			}
+		return await authAPI.login(login, password).then(async (response) => {
+			localStorage.setItem(ACCESS_TOKEN_KEY, response.token);
+			localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+			console.log(response);
+			await get().load();
 			return response;
 		});
-		return response;
 	},
 	logout: async () => {
-		localStorage.removeItem('token');
+		localStorage.removeItem(ACCESS_TOKEN_KEY);
+		localStorage.removeItem(REFRESH_TOKEN_KEY);
 	},
 	load: async () => {
 		return Promise.all([coreRoles.load(), coreScopes.load(), coreOptions.load()]);

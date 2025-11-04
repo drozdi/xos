@@ -44,7 +44,8 @@ const coreRoles: ICoreRoles = {
 	roles: [],
 	subs: {},
 	joinRole(role) {
-		this.roles = this.roles.concat(role).values();
+		this.roles.push(role);
+		//this.roles = (this.roles || []).concat(role).values();
 	},
 	isRole(role) {
 		role = (role || '').toUpperCase();
@@ -67,10 +68,10 @@ const coreRoles: ICoreRoles = {
 		return this.subs[app];
 	},
 	async load() {
-		return rolesAPI.getRoles().then(({ data }) => {
-			for (let k in data) {
-				coreRoles.joinRole(k, data[k]);
-			}
+		return await rolesAPI.getRoles().then((data) => {
+			data.forEach((role, index) => {
+				this.joinRole(role);
+			});
 			return data;
 		});
 	},

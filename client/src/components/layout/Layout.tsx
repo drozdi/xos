@@ -145,7 +145,7 @@ export const Layout = memo(function LayoutFn({
 					</XHeader>
 				</TemplateHasSlot>
 				<TemplateHasSlot name="footer">
-					<XFooter className="x-layout-footer">
+					<XFooter px="0" py="0" className="x-layout-footer">
 						<TemplateSlot name="footer">asdsf</TemplateSlot>
 					</XFooter>
 				</TemplateHasSlot>
@@ -165,7 +165,7 @@ export const Layout = memo(function LayoutFn({
 						<TemplateSlot name="right">asdsf</TemplateSlot>
 					</XSidebar>
 				</TemplateHasSlot>
-				<XMain>{children}</XMain>
+				<XMain className="x-layout-main">{children}</XMain>
 			</XLayout>
 		</TemplateProvider>
 	);
