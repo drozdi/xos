@@ -15,6 +15,10 @@ type TemplateManagerContextType = {
 	register: (slotName: string, element: any) => void;
 	unregister: (slotName: string) => void;
 };
+interface TemplateSlotProps extends React.HTMLAttributes<HTMLElement> {
+	name: string;
+	children?: React.ReactNode;
+}
 
 // Создаем контекст для менеджера шаблонов
 const TemplateManagerContext = createContext<TemplateManagerContextType | null>(null);
@@ -104,26 +108,27 @@ export function Template({ slot, children }: { slot: string; children: any }) {
  * @param {string} props.name - Имя слота
  * @param {string} props.children - Дочерние элементы
  */
-export function TemplateSlot({
-	name,
-	children,
-	...props
-}: {
-	name: string;
-	children?: React.ReactNode;
-}) {
+export function TemplateSlot({ name, children, ...slotProps }: TemplateSlotProps) {
 	const manager = useContext(TemplateManagerContext);
 
+	// Если нет менеджера, используем children как fallback
 	if (!manager) {
-		console.warn('TemplateSlot используется вне TemplateProvider');
-		return null;
+		console.warn('Template.Slot используется вне TemplateProvider');
+		return children || null;
 	}
 
-	const slotTemplates = manager.templates[name];
+	const template = manager.templates[name] || children;
 
-	const element = slotTemplates ? slotTemplates : children;
-
-	return cloneElement(isValidElement(element) ? element : <>{element}</>, props);
+	// Если шаблона не валиден
+	if (!isValidElement(template)) {
+		return <>{template}</>;
+	}
+	if (typeof template === 'function') {
+		// Для функциональных шаблонов передаем параметры
+		return template(slotProps);
+	}
+	// Для статических элементов клонируем с props
+	return cloneElement(template, { ...slotProps, key: template.key });
 }
 
 export function TemplateHasSlot({
@@ -133,20 +138,8 @@ export function TemplateHasSlot({
 	children: React.ReactNode;
 	name: string;
 }) {
-	if (useTemplateManager().isTemplates(name)) {
-		return children;
-	} else {
-		return null;
-	}
-}
-
-/**
- * Хук для получения контекста менеджера шаблонов
- * @returns {Object} Контекст для доступа к API менеджера шаблонов
- */
-
-export function useTemplateContext() {
-	return useContext(TemplateManagerContext) || factoryContext();
+	const { isTemplates } = useTemplateManager();
+	return isTemplates(name) ? <>{children}</> : null;
 }
 
 /**
