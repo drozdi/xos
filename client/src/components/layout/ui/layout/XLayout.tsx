@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import React, { forwardRef, useImperativeHandle, useMemo } from 'react';
 import { useElementResizeObserver } from '../../../../hooks/use-element-resize-observer';
-import { TemplateProvider, useTemplateContext } from '../../context';
+import { useTemplateManager } from '../../context';
 import './style.css';
 import { XLayoutProvider } from './XLayoutContext';
 
@@ -17,8 +17,8 @@ export const XLayout = forwardRef(function XLayoutFn(
 	{ children, className, container, view = 'hhh lpr fff', onResize }: XLayoutProps,
 	ref,
 ) {
-	const context = useTemplateContext();
-	const isTemplates = (slotName: string) => !!context.templates[slotName];
+	const context = useTemplateManager();
+	const hasTemplates = (slotName: string) => !!context.templates[slotName];
 
 	const {
 		ref: containerRef,
@@ -51,10 +51,10 @@ export const XLayout = forwardRef(function XLayoutFn(
 
 	const { isHl, isHr, isFl, isFr } = useMemo(
 		() => ({
-			isHl: rows[0][0] === 'l' || !isTemplates?.('header'),
-			isHr: rows[0][2] === 'r' || !isTemplates?.('header'),
-			isFl: rows[2][0] === 'l' || !isTemplates?.('footer'),
-			isFr: rows[2][2] === 'r' || !isTemplates?.('footer'),
+			isHl: rows[0][0] === 'l' || !hasTemplates?.('header'),
+			isHr: rows[0][2] === 'r' || !hasTemplates?.('header'),
+			isFl: rows[2][0] === 'l' || !hasTemplates?.('footer'),
+			isFr: rows[2][2] === 'r' || !hasTemplates?.('footer'),
 		}),
 		[rows, context?.templates],
 	);
@@ -80,9 +80,5 @@ export const XLayout = forwardRef(function XLayoutFn(
 		);
 	}
 
-	return (
-		<XLayoutProvider value={ctx}>
-			<TemplateProvider value={context}>{layout}</TemplateProvider>
-		</XLayoutProvider>
-	);
+	return <XLayoutProvider value={ctx}>{layout}</XLayoutProvider>;
 });

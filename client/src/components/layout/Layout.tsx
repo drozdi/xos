@@ -1,16 +1,10 @@
 import { useSetState } from '@mantine/hooks';
-import React, { memo, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useBreakpoint } from '../../hooks/use-breakpoint';
 
 import { ActionIcon, Burger } from '@mantine/core';
 import { TbSquareArrowRight } from 'react-icons/tb';
-import {
-	Template,
-	TemplateHasSlot,
-	TemplateProvider,
-	TemplateSlot,
-	useTemplateContext,
-} from './context';
+import { Template } from './context';
 
 import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
@@ -24,7 +18,7 @@ interface LayoutProps {
 	toggle?: boolean;
 }
 
-export const Layout = memo(function LayoutFn({
+export const Layout = ({
 	children,
 	className,
 	container,
@@ -32,11 +26,7 @@ export const Layout = memo(function LayoutFn({
 	breakpoint = 600,
 	overlay,
 	toggle,
-}: LayoutProps) {
-	const context = useTemplateContext();
-	const getTemplates = (slotName: string) => context.templates[slotName];
-	const isTemplates = (slotName: string) => !!context.templates[slotName];
-
+}: LayoutProps) => {
 	const layoutRef = useRef(null);
 	const [width, setWidth] = useState(0);
 
@@ -127,9 +117,8 @@ export const Layout = memo(function LayoutFn({
 		[belowBreakpoint],
 	);
 
-	//console.log(children);
 	return (
-		<TemplateProvider value={context}>
+		<Template.Provider>
 			<XLayout
 				container={container}
 				className={className}
@@ -139,37 +128,37 @@ export const Layout = memo(function LayoutFn({
 				}}
 				ref={layoutRef}
 			>
-				<TemplateHasSlot name="header">
+				<Template.Has name="header">
 					<XHeader {...headerProps}>
-						<TemplateSlot name="header">asdsf</TemplateSlot>
+						<Template.Slot name="header">asdsf</Template.Slot>
 					</XHeader>
-				</TemplateHasSlot>
-				<TemplateHasSlot name="footer">
+				</Template.Has>
+				<Template.Has name="footer">
 					<XFooter px="0" py="0" className="x-layout-footer">
-						<TemplateSlot name="footer">asdsf</TemplateSlot>
+						<Template.Slot name="footer">asdsf</Template.Slot>
 					</XFooter>
-				</TemplateHasSlot>
-				<TemplateHasSlot name="left">
+				</Template.Has>
+				<Template.Has name="left">
 					<XSidebar
 						className="x-layout-sidebar x-layout-sidebar--left"
 						{...leftProps}
 					>
-						<TemplateSlot name="left">asdsf</TemplateSlot>
+						<Template.Slot name="left">asdsf</Template.Slot>
 					</XSidebar>
-				</TemplateHasSlot>
-				<TemplateHasSlot name="right">
+				</Template.Has>
+				<Template.Has name="right">
 					<XSidebar
 						className="x-layout-sidebar x-layout-sidebar--right"
 						{...rightProps}
 					>
-						<TemplateSlot name="right">asdsf</TemplateSlot>
+						<Template.Slot name="right">asdsf</Template.Slot>
 					</XSidebar>
-				</TemplateHasSlot>
+				</Template.Has>
 				<XMain className="x-layout-main">{children}</XMain>
 			</XLayout>
-		</TemplateProvider>
+		</Template.Provider>
 	);
-});
+};
 
 Layout.Header = ({ children }: { children: React.ReactNode }) => {
 	return <Template slot="header">{children}</Template>;

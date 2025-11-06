@@ -70,7 +70,7 @@ const TemplateContext = createContext<TemplateStateValue | null>(null);
  *   return <HeaderTemplate />;
  * }
  */
-export function useTemplateManager() {
+export const useTemplateManager = () => {
 	const context = useContext(TemplateContext);
 
 	if (!context) {
@@ -96,7 +96,7 @@ export function useTemplateManager() {
 		 */
 		hasTemplate: (slotName: string): boolean => !!context.templates[slotName],
 	};
-}
+};
 
 /**
  * Создает и возвращает контекст шаблонов с состоянием и методами для управления шаблонами.
@@ -204,16 +204,7 @@ function factoryContext(): TemplateContextValue {
  * Элемент регистрируется в менеджере слотов при монтировании и автоматически
  * удаляется при размонтировании.
  */
-export function Template({
-	slot = 'default',
-	children,
-	...props
-}: TemplateProps): Function & {
-	Has: Function;
-	Slot: Function;
-	use: Function;
-	Provider: Function;
-} {
+export const Template = ({ slot = 'default', children, ...props }: TemplateProps) => {
 	const manager = useContext(TemplateContext);
 	const uniqueId = useId();
 
@@ -242,7 +233,7 @@ export function Template({
 	}
 
 	return null;
-}
+};
 
 /**
  * Компонент провайдера контекста для шаблона.
@@ -265,7 +256,6 @@ Template.Provider = ({ children, value }: TemplateProviderProps) => {
 	);
 };
 
-typescript;
 /**
  * Компонент слота шаблона, используемый для динамической вставки контента в шаблон.
  *
