@@ -1,6 +1,5 @@
 import { ActionIcon, Group } from '@mantine/core';
 import classNames from 'classnames';
-import PropTypes from 'prop-types';
 import React, {
 	cloneElement,
 	forwardRef,
@@ -122,6 +121,8 @@ export const Window = memo(
 			del: state.del,
 			disable: state.disable,
 		}));
+		console.log(wm);
+
 		const $app = useApp();
 		const $sm = $app?.sm('WINDOW');
 		const positionRef = useRef<PositionState>({
@@ -215,6 +216,7 @@ export const Window = memo(
 			(event: React.MouseEvent) => {
 				if (active || isCollapse) return;
 				const newZIndex = wm.zIndex + 1;
+				console.log(newZIndex);
 				updateZIndex(newZIndex);
 				wm?.active({ uid });
 				updateState({
@@ -478,6 +480,7 @@ export const Window = memo(
 							'x-window--active': active,
 						})}
 						onMouseDownCapture={focus}
+						// onClick={focus}
 						style={style}
 					>
 						<Group className="x-window-header" justify="between">
@@ -617,35 +620,6 @@ const DraggableWrapper = memo(
 	},
 );
 
-WindowIcons.propTypes = {
-	icons: PropTypes.string,
-	resizable: PropTypes.bool,
-	isFullscreen: PropTypes.bool,
-	onFullscreen: PropTypes.func,
-	onCollapse: PropTypes.func,
-	onClose: PropTypes.func,
-	onReload: PropTypes.func,
-};
-WindowIcons.defaultProps = {
-	icons: '',
-	resizable: false,
-	isFullscreen: false,
-	onFullscreen: () => {},
-	onCollapse: () => {},
-	onClose: () => {},
-	onReload: () => {},
-};
+Window.displayName = './features/Window';
 WindowIcons.displayName = './features/WindowIcons';
-DraggableWrapper.propTypes = {
-	disabled: PropTypes.bool,
-	onDrag: PropTypes.func,
-	children: PropTypes.node,
-	innerRef: PropTypes.RefObject,
-};
-DraggableWrapper.defaultProps = {
-	disabled: false,
-	onDrag: () => {},
-	children: null,
-	innerRef: {},
-};
 DraggableWrapper.displayName = './features/DraggableWrapper';

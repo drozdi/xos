@@ -1,7 +1,6 @@
 import classNames from 'classnames';
-import React, { forwardRef, useImperativeHandle, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useElementResizeObserver } from '../../../../hooks/use-element-resize-observer';
-import { useTemplateManager } from '../../context';
 import './style.css';
 import { XLayoutProvider } from './XLayoutContext';
 
@@ -13,73 +12,85 @@ interface XLayoutProps {
 	onResize?: (width: number, height: number) => void;
 }
 
-export const XLayout = forwardRef(
-	(
-		{ children, className, container, view = 'hhh lpr fff', onResize }: XLayoutProps,
-		ref,
-	) => {
-		const context = useTemplateManager();
+export const XLayout = ({
+	children,
+	className,
+	container,
+	view = 'hhh lpr fff',
+	onResize,
+}: XLayoutProps) => {
+	const {
+		ref: containerRef,
+		width,
+		height,
+	} = useElementResizeObserver({
+		onResize,
+	});
+	const rows = useMemo(
+		() =>
+			view
+				.toLowerCase()
+				.split(' ')
+				.map((row) => {
+					return row.split('');
+				}),
+		[view],
+	);
 
-		const {
-			ref: containerRef,
+	const [instances, setInstances] = useState({
+		header: false,
+		footer: false,
+		left: false,
+		right: false,
+	});
+	const joinInstance = useCallback(
+		(instance: 'header' | 'footer' | 'left' | 'right', val: boolean) => {
+			setInstances((prev) => ({ ...prev, [instance]: val }));
+		},
+		[],
+	);
+
+	const ctx = useMemo(() => {
+		return {
+			instances,
+			joinInstance,
+			container,
+			rows,
 			width,
 			height,
-		} = useElementResizeObserver({
-			onResize,
-		});
-		const rows = useMemo(
-			() =>
-				view
-					.toLowerCase()
-					.split(' ')
-					.map((row) => {
-						return row.split('');
-					}),
-			[view],
+		};
+	}, [container, instances, width, height, rows]);
+
+	const { isHl, isHr, isFl, isFr } = useMemo(
+		() => ({
+			isHl: rows[0][0] === 'l' || !instances.header,
+			isHr: rows[0][2] === 'r' || !instances.header,
+			isFl: rows[2][0] === 'l' || !instances.footer,
+			isFr: rows[2][2] === 'r' || !instances.footer,
+		}),
+		[rows, instances],
+	);
+
+	const classes = useMemo(
+		() => ({
+			'x-layout--hl': isHl,
+			'x-layout--hr': isHr,
+			'x-layout--fl': isFl,
+			'x-layout--fr': isFr,
+		}),
+		[isHl, isHr, isFl, isFr],
+	);
+
+	let layout = (
+		<div className={classNames('x-layout', classes, className)}>{children}</div>
+	);
+	if (container) {
+		layout = (
+			<div className="x-layout-container" ref={containerRef}>
+				{layout}
+			</div>
 		);
+	}
 
-		const ctx = useMemo(() => {
-			return {
-				container,
-				rows,
-				width,
-				height,
-			};
-		}, [container, width, height, rows]);
-
-		useImperativeHandle(ref, () => ctx);
-
-		const { isHl, isHr, isFl, isFr } = useMemo(
-			() => ({
-				isHl: rows[0][0] === 'l' || !context?.hasTemplates?.('header'),
-				isHr: rows[0][2] === 'r' || !context?.hasTemplates?.('header'),
-				isFl: rows[2][0] === 'l' || !context?.hasTemplates?.('footer'),
-				isFr: rows[2][2] === 'r' || !context?.hasTemplates?.('footer'),
-			}),
-			[rows],
-		);
-
-		const classes = useMemo(
-			() => ({
-				'x-layout--hl': isHl,
-				'x-layout--hr': isHr,
-				'x-layout--fl': isFl,
-				'x-layout--fr': isFr,
-			}),
-			[isHl, isHr, isFl, isFr],
-		);
-
-		let layout = (
-			<div className={classNames('x-layout', classes, className)}>{children}</div>
-		);
-		if (container) {
-			layout = (
-				<div className="x-layout-container" ref={containerRef}>
-					{layout}
-				</div>
-			);
-		}
-
-		return <XLayoutProvider value={ctx}>{layout}</XLayoutProvider>;
-	},
-);
+	return <XLayoutProvider value={ctx}>{layout}</XLayoutProvider>;
+};

@@ -1,7 +1,7 @@
-import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
-import React, { forwardRef, memo, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { Sections } from '../../../ui/sections/Sections';
+import { useXLayoutContext } from '../layout';
 import './style.css';
 
 interface XFooterProps {
@@ -9,22 +9,22 @@ interface XFooterProps {
 	className?: string;
 }
 
-export const XFooter = memo(
-	forwardRef(function XFooterFn({ children, className, ...props }: XFooterProps, ref) {
-		const innerRef = useRef(null);
-		const handleRef = useMergedRef(innerRef, ref);
-		if (!children) {
-			return null;
-		}
-		return (
-			<Sections
-				component="footer"
-				{...props}
-				className={classNames('x-footer', className)}
-				ref={handleRef}
-			>
-				{children}
-			</Sections>
-		);
-	}),
-);
+export function XFooter({ children, className, ...props }: XFooterProps) {
+	if (!children) {
+		return null;
+	}
+	const ctx = useXLayoutContext();
+	useEffect(() => {
+		ctx?.joinInstance?.('footer', true);
+		return () => ctx?.joinInstance?.('footer', false);
+	}, []);
+	return (
+		<Sections
+			component="footer"
+			{...props}
+			className={classNames('x-footer', className)}
+		>
+			{children}
+		</Sections>
+	);
+}

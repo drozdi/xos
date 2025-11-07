@@ -1,4 +1,4 @@
-import { isArray, isBoolean, isObject, isSymbol } from "./is";
+import { isArray, isBoolean, isObject, isSymbol } from './is';
 function last(array) {
 	const length = array == null ? 0 : array.length;
 	return length ? array[length - 1] : undefined;
@@ -8,18 +8,13 @@ function isKey(value, object) {
 		return false;
 	}
 	const type = typeof value;
-	if (
-		type === "number" ||
-		type === "boolean" ||
-		value == null ||
-		isSymbol(value)
-	) {
+	if (type === 'number' || type === 'boolean' || value == null || isSymbol(value)) {
 		return true;
 	}
 	return object != null && value in Object(object);
 }
 function toKey(value) {
-	if (typeof value === "string" || isSymbol(value)) {
+	if (typeof value === 'string' || isSymbol(value)) {
 		return value;
 	}
 	return `${value}`;
@@ -31,7 +26,7 @@ function castPath(value, object) {
 	if (isArray(value)) {
 		return value;
 	}
-	return isKey(value, object) ? [value] : value.split(".");
+	return isKey(value, object) ? [value] : value.split('.');
 }
 export function get(object, path) {
 	path = castPath(path, object);

@@ -1,7 +1,7 @@
-import { useMergedRef } from '@mantine/hooks';
 import classNames from 'classnames';
-import { forwardRef, memo, useRef } from 'react';
+import { useEffect } from 'react';
 import { Sections } from '../../../ui/sections/Sections';
+import { useXLayoutContext } from '../layout';
 import './style.css';
 
 interface XHeaderProps {
@@ -9,22 +9,22 @@ interface XHeaderProps {
 	className?: string;
 }
 
-export const XHeader = memo(
-	forwardRef(function XHeaderFn({ children, className, ...props }: XHeaderProps, ref) {
-		const innerRef = useRef(null);
-		const handleRef = useMergedRef(innerRef, ref);
-		if (!children) {
-			return null;
-		}
-		return (
-			<Sections
-				component="header"
-				{...props}
-				className={classNames('x-header', className)}
-				ref={handleRef}
-			>
-				{children}
-			</Sections>
-		);
-	}),
-);
+export function XHeader({ children, className, ...props }: XHeaderProps) {
+	if (!children) {
+		return null;
+	}
+	const ctx = useXLayoutContext();
+	useEffect(() => {
+		ctx?.joinInstance?.('footer', true);
+		return () => ctx?.joinInstance?.('footer', false);
+	}, []);
+	return (
+		<Sections
+			component="header"
+			{...props}
+			className={classNames('x-header', className)}
+		>
+			{children}
+		</Sections>
+	);
+}

@@ -3,10 +3,10 @@
  * @param {Function} fn - Функция, которую нужно кэшировать.
  * @returns {Function} - Кэширующая обертка для переданной функции.
  */
-export function cached(fn) {
+export function cached<T>(fn) {
 	var cache = Object.create(null);
-	return function cachedFn(...args) {
-		var hit = cache[args.join("-")];
-		return hit || (cache[args.join("-")] = fn(...args));
+	return function cachedFn(...args): T {
+		var hit = cache[args.join('-')];
+		return hit || (cache[args.join('-')] = fn(...args));
 	};
 }

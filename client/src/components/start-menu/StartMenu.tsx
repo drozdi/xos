@@ -5,6 +5,7 @@ import {
 	TbBrandWindows,
 	TbCalculator,
 	TbLogout,
+	TbMatrix,
 	TbSettings,
 	TbTicTac,
 } from 'react-icons/tb';
@@ -12,6 +13,7 @@ import { appManager } from '../../core/app-system/app-manager';
 import { useAuthSystem } from '../../core/auth-system';
 
 import '../../apps/calculator/core';
+import '../../apps/sudoku/core';
 import '../../apps/tic-tac-toe/core';
 
 export const StartMenu = () => {
@@ -22,6 +24,9 @@ export const StartMenu = () => {
 	};
 	const onIconTicTac = () => {
 		appManager.createApp('apps/tic-tac-toe/app', {});
+	};
+	const onSudoku = () => {
+		appManager.createApp('apps/sudoku/app', {});
 	};
 	useEffect(() => {
 		isAuth && appManager.reloadApps();
@@ -58,7 +63,17 @@ export const StartMenu = () => {
 							</Button>
 						</Stack>
 					</Stack>
-					<Stack>
+					<Stack gap="0" justify="start">
+						<Button
+							size="lg"
+							radius={0}
+							variant={opened ? 'light' : 'subtle'}
+							color="gray"
+							leftSection={<TbMatrix />}
+							onClick={onSudoku}
+						>
+							Sudoku
+						</Button>
 						<Button
 							size="lg"
 							radius={0}

@@ -182,6 +182,11 @@ export const XSidebar = memo(
 				}
 			}, [w, mW]);
 
+			useEffect(() => {
+				layout?.joinInstance?.(type, true);
+				return () => layout?.joinInstance?.(type, false);
+			}, [type]);
+
 			useImperativeHandle(ref, () => ctx, [ctx]);
 			const [ss, setSs] = useState(false);
 			return (

@@ -4,7 +4,7 @@ import { useBreakpoint } from '../../hooks/use-breakpoint';
 
 import { ActionIcon, Burger } from '@mantine/core';
 import { TbSquareArrowRight } from 'react-icons/tb';
-import { Template, factoryContext } from './context';
+import { Template } from './context';
 
 import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
@@ -27,7 +27,7 @@ export const Layout = ({
 	overlay,
 	toggle,
 }: LayoutProps) => {
-	const context = factoryContext();
+	const context = Template.factory();
 	const hasTemplate = (slotName: string): boolean => !!context.templates[slotName];
 	const layoutRef = useRef(null);
 	const [width, setWidth] = useState(0);
