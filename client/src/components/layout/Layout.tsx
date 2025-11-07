@@ -4,7 +4,7 @@ import { useBreakpoint } from '../../hooks/use-breakpoint';
 
 import { ActionIcon, Burger } from '@mantine/core';
 import { TbSquareArrowRight } from 'react-icons/tb';
-import { Template } from './context';
+import { Template, factoryContext } from './context';
 
 import { XFooter, XHeader, XLayout, XMain, XSidebar } from './ui';
 
@@ -27,6 +27,8 @@ export const Layout = ({
 	overlay,
 	toggle,
 }: LayoutProps) => {
+	const context = factoryContext();
+	const hasTemplate = (slotName: string): boolean => !!context.templates[slotName];
 	const layoutRef = useRef(null);
 	const [width, setWidth] = useState(0);
 
@@ -85,7 +87,7 @@ export const Layout = ({
 		() => ({
 			align: 'normal',
 			className: 'x-layout-header',
-			leftSection: belowBreakpoint && isTemplates?.('left') && (
+			leftSection: belowBreakpoint && hasTemplate?.('left') && (
 				<Burger
 					size="sm"
 					opened={!leftSidebar.current?.open}
@@ -96,7 +98,7 @@ export const Layout = ({
 					}}
 				/>
 			),
-			rightSection: belowBreakpoint && isTemplates?.('right') && (
+			rightSection: belowBreakpoint && hasTemplate?.('right') && (
 				<ActionIcon
 					variant="filled"
 					size="lg"
@@ -118,7 +120,7 @@ export const Layout = ({
 	);
 
 	return (
-		<Template.Provider>
+		<Template.Provider value={context}>
 			<XLayout
 				container={container}
 				className={className}
@@ -130,12 +132,12 @@ export const Layout = ({
 			>
 				<Template.Has name="header">
 					<XHeader {...headerProps}>
-						<Template.Slot name="header">asdsf</Template.Slot>
+						<Template.Slot name="header" />
 					</XHeader>
 				</Template.Has>
 				<Template.Has name="footer">
 					<XFooter px="0" py="0" className="x-layout-footer">
-						<Template.Slot name="footer">asdsf</Template.Slot>
+						<Template.Slot name="footer" />
 					</XFooter>
 				</Template.Has>
 				<Template.Has name="left">

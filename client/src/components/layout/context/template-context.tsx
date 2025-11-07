@@ -94,7 +94,7 @@ export const useTemplateManager = () => {
 		 * @param slotName - Имя слота, для которого проверяется наличие шаблона.
 		 * @returns `true`, если шаблон существует; `false` — в противном случае.
 		 */
-		hasTemplate: (slotName: string): boolean => !!context.templates[slotName],
+		hasTemplates: (slotName: string): boolean => !!context.templates[slotName],
 	};
 };
 
@@ -106,7 +106,7 @@ export const useTemplateManager = () => {
  * @example
  * const { templates, register, unregister } = factoryContext();
  */
-function factoryContext(): TemplateContextValue {
+export function factoryContext(): TemplateContextValue {
 	/**
 	 * Состояние, хранящее зарегистрированные шаблоны, где ключ — имя слота, значение — React-элемент.
 	 *
@@ -150,10 +150,12 @@ function factoryContext(): TemplateContextValue {
 			 * unregister('header');
 			 */
 			unregister: (slotName: string) => {
-				setTemplates((prev: TemplateStateValue): TemplateStateValue => {
-					const { [slotName]: _, ...rest } = prev;
-					return rest;
-				});
+				setTemplates(
+					(prev: TemplateStateValue): TemplateStateValue => ({
+						...prev,
+						[slotName]: undefined,
+					}),
+				);
 			},
 		}),
 		[],
@@ -206,7 +208,7 @@ function factoryContext(): TemplateContextValue {
  */
 export const Template = ({ slot = 'default', children, ...props }: TemplateProps) => {
 	const manager = useContext(TemplateContext);
-	const uniqueId = useId();
+	const [uniqueId] = useState(useId());
 
 	const element = useMemo(
 		() =>
@@ -316,8 +318,8 @@ Template.Slot = ({ name = 'default', children, ...slotProps }: TemplateSlotProps
  * </Template.Has>
  */
 Template.Has = ({ name, children }: { name: string; children: React.ReactNode }) => {
-	const { hasTemplate } = useTemplateManager();
-	return hasTemplate(name) ? children : null;
+	const { hasTemplates } = useTemplateManager();
+	return hasTemplates(name) ? children : null;
 };
 
 /**

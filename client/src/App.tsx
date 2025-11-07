@@ -1,11 +1,10 @@
-import { AuthForm } from './components/auth-form';
 import { Layout } from './components/layout';
 import { StartMenu } from './components/start-menu';
 import { WindowManager } from './components/window-manager';
-import { useAuthSystem } from './core/auth-system';
 
 function App() {
-	const isAuth = useAuthSystem((state) => state.isAuth);
+	//const isAuth = useAuthSystem((state) => state.isAuth);
+	const isAuth = true;
 	return (
 		<>
 			{isAuth && (
@@ -22,7 +21,7 @@ function App() {
 					<div>main</div>
 				</Layout>
 			)}
-			<AuthForm />
+			{/* <AuthForm /> */}
 		</>
 	);
 }
