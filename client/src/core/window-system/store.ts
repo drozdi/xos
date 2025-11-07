@@ -19,13 +19,13 @@ export const wmStore = create<wmStoreProps>((set, get) => ({
 	stack: {},
 	stacks: {},
 	setZIndex(zIndex) {
-		set({ ...get(), zIndex });
+		set({ zIndex: zIndex + 1 });
 	},
 	active(win) {
-		set({ ...get(), current: win?.uid });
+		set({ current: win?.uid });
 	},
 	disable() {
-		set({ ...get(), current: undefined });
+		set({ current: undefined });
 	},
 	isActive(win) {
 		return get().current === win.uid;
