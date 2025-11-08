@@ -40,7 +40,7 @@ class Roles implements IRoles {
 	}
 }
 
-const coreRoles: ICoreRoles = {
+export const coreRoles: ICoreRoles = {
 	roles: [],
 	subs: {},
 	joinRole(role) {
@@ -76,5 +76,3 @@ const coreRoles: ICoreRoles = {
 		});
 	},
 };
-
-export default coreRoles;

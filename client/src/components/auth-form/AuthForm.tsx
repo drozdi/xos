@@ -18,7 +18,6 @@ export const AuthForm = () => {
 			password: '',
 		},
 	});
-	console.log(isAuth);
 
 	const valid = form.values.password.length >= 6;
 

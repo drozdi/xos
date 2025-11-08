@@ -4,12 +4,8 @@ interface ICoreOptions {
 	load(): void;
 }
 
-const coreOptions: ICoreOptions = {
+export const coreOptions: ICoreOptions = {
 	async load() {
-		return optionsAPI.getOptions().then(({ data }) => {
-			return data;
-		});
+		return await optionsAPI.getOptions();
 	},
 };
-
-export default coreOptions;

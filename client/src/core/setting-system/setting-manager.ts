@@ -1,4 +1,4 @@
-import { config } from '../config-system/config';
+import { config } from '../config-system';
 import { Setting } from './lib/setting';
 import { SettingManager } from './lib/setting-manager';
 

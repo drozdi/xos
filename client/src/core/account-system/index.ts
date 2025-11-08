@@ -1,24 +1,24 @@
 import { authAPI } from '../auth-system';
-import roles from '../roles-system';
-import scopes from '../scopes-system';
+import { coreRoles } from '../roles-system';
+import { coreScopes } from '../scopes-system';
 
 export const loadAccc = async () => {
 	return Promise.all([
-		authAPI.getAccountMap().then(({ data }) => {
+		authAPI.getAccountMap().then((data) => {
 			for (let k in data) {
-				scopes.joinScopes(k, data[k]);
+				coreScopes.joinScopes(k, data[k]);
 			}
 			return data;
 		}),
-		authAPI.getAccountRoles().then(({ data }) => {
-			roles.joinRole(data || []);
+		authAPI.getAccountRoles().then((data) => {
+			coreRoles.joinRole(data || []);
 			return data;
 		}),
-		authAPI.getAccountAccesses().then(({ data }) => {
-			scopes.joinLevel(data || {});
+		authAPI.getAccountAccesses().then((data) => {
+			coreScopes.joinLevel(data || {});
 			return data;
 		}),
-		authAPI.getAccountOptions().then(({ data }) => {
+		authAPI.getAccountOptions().then((data) => {
 			//console.log(data)
 			return data;
 		}),

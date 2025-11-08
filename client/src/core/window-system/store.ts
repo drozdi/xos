@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-interface wmStoreProps {
+interface WmStoreVavue {
 	zIndex: number;
 	current: string | undefined;
 	stack: { [key: string]: any };
@@ -13,16 +13,20 @@ interface wmStoreProps {
 	del: (win: any) => void;
 }
 
-export const wmStore = create<wmStoreProps>((set, get) => ({
+export const useWmStore = create<WmStoreVavue>((set, get) => ({
 	zIndex: 100,
 	current: undefined,
 	stack: {},
 	stacks: {},
 	setZIndex(zIndex) {
-		set({ zIndex: zIndex + 1 });
+		if (zIndex > get().zIndex) {
+			set({ zIndex });
+		}
 	},
 	active(win) {
-		set({ current: win?.uid });
+		if (win.uid !== get().current) {
+			set({ current: win?.uid });
+		}
 	},
 	disable() {
 		set({ current: undefined });
@@ -50,7 +54,7 @@ export const wmStore = create<wmStoreProps>((set, get) => ({
 			stack[win.uid] = win;
 		}
 
-		set({ ...get(), stack, stacks });
+		set({ stack, stacks });
 	},
 	del(win) {
 		const stack = get().stack;
@@ -69,8 +73,6 @@ export const wmStore = create<wmStoreProps>((set, get) => ({
 		} else {
 			delete stack[win.uid];
 		}
-		set({ ...get(), stack, stacks });
+		set({ stack, stacks });
 	},
 }));
-
-export const useWindowManager = wmStore;

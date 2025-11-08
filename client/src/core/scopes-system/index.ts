@@ -59,7 +59,7 @@ class Scope implements IScope {
 	}
 }
 
-const coreScopes: ICoreScope = {
+export const coreScopes: ICoreScope = {
 	mapScopes: {},
 	levelScopes: {},
 	cacheLevelScopes: {},
@@ -143,18 +143,16 @@ const coreScopes: ICoreScope = {
 	},
 	async load() {
 		return await Promise.all([
-			scopesAPI.getMap().then(({ data }) => {
+			scopesAPI.getMap().then((data) => {
 				for (let k in data) {
 					coreScopes.joinScopes(k, data[k]);
 				}
 				return data;
 			}),
-			scopesAPI.getAccesses().then(({ data }) => {
+			scopesAPI.getAccesses().then((data) => {
 				coreScopes.joinLevel(data || {});
 				return data;
 			}),
 		]);
 	},
 };
-
-export default coreScopes;

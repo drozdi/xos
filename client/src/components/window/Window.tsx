@@ -21,7 +21,7 @@ import {
 	TbX,
 } from 'react-icons/tb';
 import { useApp } from '../../core/app-system';
-import { windowManager, wmStore } from '../../core/window-system';
+import { setZIndex, useWmStore, zIndex } from '../../core/window-system';
 import { getComputedSize } from '../../utils/domFns';
 import { minMax } from '../../utils/fns';
 import './style.css';
@@ -110,17 +110,21 @@ export const Window = forwardRef(function WindowFn(
 	ref: React.Ref<unknown>,
 ) {
 	const uid = useId();
-	const wm = wmStore((state) => ({
-		isActive: state.isActive,
-		current: state.current,
-		setZIndex: state.setZIndex,
-		active: state.active,
-		zIndex: state.zIndex,
-		add: state.add,
-		del: state.del,
-		disable: state.disable,
-	}));
-	console.log(uid, wm.zIndex);
+	const wm = useWmStore(
+		useCallback(
+			(state) => ({
+				isActive: state.isActive,
+				current: state.current,
+				setZIndex: state.setZIndex,
+				active: state.active,
+				zIndex: state.zIndex,
+				add: state.add,
+				del: state.del,
+				disable: state.disable,
+			}),
+			[],
+		),
+	);
 
 	const $app = useApp();
 	const $sm = $app?.sm('WINDOW');
@@ -148,7 +152,7 @@ export const Window = forwardRef(function WindowFn(
 	);
 	const updateZIndex = useCallback(
 		(zIndex: number) => {
-			wm?.setZIndex(zIndex);
+			setZIndex(zIndex);
 			updatePosition({ zIndex });
 		},
 		[updatePosition],
@@ -210,15 +214,12 @@ export const Window = forwardRef(function WindowFn(
 		},
 		[onReload, emit],
 	);
+	25;
 
 	const handleActive = useCallback(
 		(event: React.MouseEvent) => {
 			if (active || isCollapse) return;
-			console.log(wm.zIndex);
-			console.log(wm.zIndex + 3);
-			const zIndex = wm.zIndex + 3;
-			updatePosition({ zIndex });
-			windowManager?.setZIndex(zIndex);
+			updateZIndex(zIndex + 1);
 			wm?.active({ uid });
 			updateState({
 				isActive: true,
@@ -376,7 +377,7 @@ export const Window = forwardRef(function WindowFn(
 			},
 			set z(zIndex: number | string) {
 				updatePosition({
-					zIndex: wm.zIndex,
+					zIndex: zIndex,
 				});
 			},
 			focus,
@@ -440,13 +441,12 @@ export const Window = forwardRef(function WindowFn(
 	}, [handleDeActive]);
 
 	useEffect(() => {
-		console.log(1234567);
 		$sm.active = true;
 		$app?.register(winAPI);
 		$app?.on('activated', handleActive);
 		$app?.on('deactivated', handleDeActive);
 		wm?.add(winAPI);
-		winAPI.z = Math.max(wm.zIndex, position.zIndex ?? 0);
+		winAPI.z = Math.max(zIndex, position.zIndex ?? 0);
 		$sm.first(() => {
 			if (w) winAPI.w = w;
 			if (h) winAPI.h = h;

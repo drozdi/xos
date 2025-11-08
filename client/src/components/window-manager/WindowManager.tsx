@@ -1,9 +1,9 @@
 import { Button, Group } from '@mantine/core';
 import { memo, useMemo } from 'react';
-import { wmStore } from '../../core/window-system/store';
+import { useWmStore } from '../../core/window-system/store';
 
 export const WindowManager = memo(() => {
-	const { isActive, _stack } = wmStore((state: Record<string, any>) => ({
+	const { isActive, _stack } = useWmStore((state: Record<string, any>) => ({
 		isActive: state.isActive,
 		_stack: { ...state.stack },
 	}));

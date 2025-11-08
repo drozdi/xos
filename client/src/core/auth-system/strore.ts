@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../api';
-import coreOptions from '../options-system';
-import coreRoles from '../roles-system';
-import coreScopes from '../scopes-system';
+import { coreOptions } from '../options-system';
+import { coreRoles } from '../roles-system';
+import { coreScopes } from '../scopes-system';
 import { authAPI } from './api';
 
 interface authStoreProps {
@@ -38,7 +38,6 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 		return await authAPI.login(login, password).then(async (response) => {
 			localStorage.setItem(ACCESS_TOKEN_KEY, response.token);
 			localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
-			console.log(response);
 			await get().load();
 			return response;
 		});

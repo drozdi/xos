@@ -1,28 +1,28 @@
-function getTag(value) {
+function getTag(value: unknown) {
 	if (value == null) {
 		return value === undefined ? '[object Undefined]' : '[object Null]';
 	}
 	return toString.call(value);
 }
-export function isFunction(func) {
+export function isFunction(func: unknown): boolean {
 	return (
 		typeof func === 'function' ||
 		Object.prototype.toString.call(func) === '[object Function]'
 	);
 }
-export function isNumber(val) {
+export function isNumber(val: unknown): boolean {
 	return typeof val === 'number' && !Number.isNaN(val);
 }
-export function isString(val) {
+export function isString(val: unknown): boolean {
 	return typeof val === 'string';
 }
-export function isBoolean(val) {
+export function isBoolean(val: unknown): boolean {
 	return typeof val === 'boolean' || val === true || val === false;
 }
-export function isArray(val) {
+export function isArray(val: unknown): boolean {
 	return Array.isArray(val);
 }
-export function isObject(obj) {
+export function isObject(obj: unknown): boolean {
 	return obj !== null && typeof obj === 'object' && !!obj;
 }
 export function isEmptyObject(val) {

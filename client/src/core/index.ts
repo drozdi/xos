@@ -1,7 +1,7 @@
 import { appManager } from './app-system';
 import { config } from './config-system';
-import roles from './roles-system';
-import scopes from './scopes-system';
+import { coreRoles } from './roles-system';
+import { coreScopes } from './scopes-system';
 import { settingManager } from './setting-system';
 
 export const core: {
@@ -20,8 +20,8 @@ export const core: {
 	$config: config,
 	$sm: settingManager,
 	$app: appManager,
-	$scopes: scopes,
-	$roles: roles,
+	$scopes: coreScopes,
+	$roles: coreRoles,
 	list: {},
 	app(proto: any, conf = {}, root: any): any {
 		root = root ?? appManager.createRoot();

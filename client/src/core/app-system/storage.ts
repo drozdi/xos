@@ -1,7 +1,7 @@
 import { useSetState } from '@mantine/hooks';
 import { useEffect, useState } from 'react';
 import { cached } from '../../utils/cached';
-import { settingManager } from '../setting-system/setting-manager';
+import { settingManager } from '../setting-system';
 
 export const Storage = cached(function StorageFn(type: string, key: string) {
 	let smActive = false;

@@ -1,4 +1,4 @@
-import { wmStore } from './store';
+import { useWmStore } from './store';
 
 // zIndex: 100,
 // 	current: undefined,
@@ -11,7 +11,7 @@ import { wmStore } from './store';
 // 	add(win)
 // 	del(win)
 export const windowManager = {
-	setZIndex: wmStore.getState().setZIndex,
+	setZIndex: useWmStore.getState().setZIndex,
 	/*open: useWindowManager.getState().openWindow,
 	close: useWindowManager.getState().closeWindow,
 	minimize: useWindowManager.getState().minimizeWindow,
