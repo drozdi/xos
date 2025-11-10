@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { ActionIcon, Group } from '@mantine/core';
-import classNames from 'classnames';
+import cls from 'clsx';
 import React, {
 	cloneElement,
 	forwardRef,
@@ -411,16 +411,6 @@ export const Window = forwardRef(function WindowFn(
 		}));
 	}, []);
 
-	const style = useMemo(
-		() =>
-			isFullscreen || isCollapse
-				? {
-						zIndex: position.zIndex,
-					}
-				: position,
-		[isFullscreen, isCollapse, position],
-	);
-
 	useEffect(() => {
 		if (!isBrowser) {
 			return;
@@ -463,17 +453,41 @@ export const Window = forwardRef(function WindowFn(
 			$app?.unRegister(winAPI);
 		};
 	}, []);
+
 	const dnd = useDraggable({
 		id: uid,
 		disabled: draggable && !isFullscreen,
+		data: winAPI,
 	});
+	const { setActivatorNodeRef, setNodeRef, listeners, attributes, transform } = dnd;
 	console.log(dnd);
-	const { setActivatorNodeRef, setNodeRef, listeners, attributes } = dnd;
+
+	useEffect(() => {
+		const newPosition = {};
+		if (transform?.x) {
+			newPosition.left = (dnd.activeNodeRect?.left || 0) + transform.x;
+		}
+		if (transform?.y) {
+			newPosition.top = (dnd.activeNodeRect?.top || 0) + transform.y;
+		}
+		updatePosition(newPosition);
+	}, [transform]);
+
+	const style = useMemo(
+		() => ({
+			/*...(isFullscreen || isCollapse
+				? {
+						zIndex: position.zIndex,
+					}
+				: position),*/
+		}),
+		[isFullscreen, isCollapse, position, transform],
+	);
 	return (
 		<WindowProvider value={winAPI}>
 			<div
 				id={uid}
-				className={classNames('x-window', className, {
+				className={cls('x-window', className, {
 					'x-window--draggable': draggable,
 					'x-window--resizable': resizable && !isFullscreen && !isCollapse,
 					'x-window--collapse': isCollapse,
@@ -490,6 +504,7 @@ export const Window = forwardRef(function WindowFn(
 				<Group
 					className="x-window-header"
 					justify="between"
+					{...listeners}
 					ref={setActivatorNodeRef}
 				>
 					{title && <div className="x-window-title">{title}</div>}

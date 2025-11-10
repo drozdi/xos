@@ -1,3 +1,11 @@
+import {
+	DndContext,
+	KeyboardSensor,
+	MouseSensor,
+	TouchSensor,
+	useSensor,
+	useSensors,
+} from '@dnd-kit/core';
 import { MantineProvider } from '@mantine/core';
 import { createContext, ReactNode, useContext } from 'react';
 export const AppContext = createContext<any>(null);
@@ -10,9 +18,15 @@ export const AppProvider = ({
 	app: any;
 	[key: string]: any;
 }) => {
+	const mouseSensor = useSensor(MouseSensor);
+	const touchSensor = useSensor(TouchSensor);
+	const keyboardSensor = useSensor(KeyboardSensor);
+	const sensors = useSensors(mouseSensor, touchSensor, keyboardSensor);
 	return (
 		<AppContext.Provider value={app}>
-			<MantineProvider defaultColorScheme="dark">{children}</MantineProvider>
+			<DndContext sensors={sensors}>
+				<MantineProvider defaultColorScheme="dark">{children}</MantineProvider>
+			</DndContext>
 		</AppContext.Provider>
 	);
 };
