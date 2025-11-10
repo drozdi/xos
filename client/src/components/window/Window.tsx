@@ -1,8 +1,8 @@
 import { useDraggable } from '@dnd-kit/core';
 import { ActionIcon, Group } from '@mantine/core';
+import { useMergedRef } from '@mantine/hooks';
 import cls from 'clsx';
 import React, {
-	cloneElement,
 	forwardRef,
 	memo,
 	MouseEventHandler,
@@ -13,7 +13,6 @@ import React, {
 	useMemo,
 	useRef,
 } from 'react';
-import { DraggableCore, DraggableEventHandler } from 'react-draggable';
 import {
 	TbMinus,
 	TbReload,
@@ -27,60 +26,6 @@ import { getComputedSize } from '../../utils/domFns';
 import { minMax } from '../../utils/fns';
 import './style.css';
 import { WindowProvider } from './WindowContext';
-
-('use client');
-
-interface IWindowProps {
-	parent?: HTMLElement;
-	aspectFactor?: number;
-	className?: string;
-	children: React.ReactNode;
-	x?: number | string;
-	y?: number | string;
-	z?: number;
-	w?: number | string;
-	h?: number | string;
-	title?: string;
-	icons?: string;
-	resizable?: boolean;
-	draggable?: boolean;
-	wmGroup?: string;
-	wmSort?: number;
-	tabIndex?: number;
-	onFullscreen?: (fullscreen: boolean) => void;
-	onCollapse?: (collapse: boolean) => void;
-	onReload?: (event: React.MouseEvent) => void;
-	onClose?: (event: React.MouseEvent) => void;
-}
-interface IWindowIconsProps {
-	icons?: string;
-	resizable?: boolean;
-	isFullscreen?: boolean;
-	onFullscreen?: MouseEventHandler;
-	onCollapse?: MouseEventHandler;
-	onClose?: MouseEventHandler;
-	onReload?: MouseEventHandler;
-}
-interface IDraggableWrapperProps {
-	disabled?: boolean;
-	onDrag?: (e: any, data: any) => void;
-	children: React.ReactElement;
-	innerRef: React.RefObject<HTMLElement | null>;
-}
-
-interface PositionState {
-	left?: number | string;
-	top?: number | string;
-	width?: number | string;
-	height?: number | string;
-	zIndex?: number;
-}
-
-interface StateState {
-	isFullscreen: boolean;
-	isCollapse: boolean;
-	isActive: boolean;
-}
 
 const isBrowser = typeof window !== 'undefined';
 
@@ -110,22 +55,18 @@ export const Window = forwardRef(function WindowFn(
 	}: IWindowProps,
 	ref: React.Ref<unknown>,
 ) {
+	const innerRef = useRef<React.RefObject<HTMLElement> | null>(null);
 	const uid = useId();
-	const wm = useWmStore(
-		useCallback(
-			(state) => ({
-				isActive: state.isActive,
-				current: state.current,
-				setZIndex: state.setZIndex,
-				active: state.active,
-				zIndex: state.zIndex,
-				add: state.add,
-				del: state.del,
-				disable: state.disable,
-			}),
-			[],
-		),
-	);
+	const wm = useWmStore((state) => ({
+		isActive: state.isActive,
+		current: state.current,
+		setZIndex: state.setZIndex,
+		active: state.active,
+		zIndex: state.zIndex,
+		add: state.add,
+		del: state.del,
+		disable: state.disable,
+	}));
 
 	const $app = useApp();
 	const $sm = $app?.sm('WINDOW');
@@ -136,57 +77,80 @@ export const Window = forwardRef(function WindowFn(
 		height: h,
 		zIndex: z,
 	});
+
 	const [position, setPosition] = $sm.useState<PositionState>(
 		'position',
 		positionRef.current,
 	);
-	const updatePosition = useCallback(
-		(pos: PositionState) =>
-			setPosition(
-				(prev: PositionState) =>
-					(positionRef.current = {
-						...prev,
-						...pos,
-					}),
-			),
-		[],
-	);
-	const updateZIndex = useCallback(
-		(zIndex: number) => {
-			setZIndex(zIndex);
-			updatePosition({ zIndex });
-		},
-		[updatePosition],
-	);
-	const [{ isFullscreen, isCollapse, isActive }, updateState] =
+
+	const updatePosition = useCallback((pos: PositionState) => {
+		const newPosition = { ...positionRef.current, ...pos };
+		positionRef.current = newPosition;
+		setPosition(newPosition);
+	}, []);
+
+	const updateZIndex = useCallback((zIndex: number) => {
+		setZIndex(zIndex);
+		updatePosition({ zIndex });
+	}, []);
+
+	const [{ isFullscreen, isCollapse, isActive: localActive }, updateState] =
 		$sm.useSetState<StateState>('state', {
 			isFullscreen: false,
 			isCollapse: false,
 			isActive: false,
 		});
-	const active = useMemo<boolean>(
-		() => wm?.isActive({ uid }) ?? isActive,
-		[wm.current, uid, isActive],
+
+	const isActive = useMemo<boolean>(
+		() => wm?.isActive({ uid }) ?? localActive,
+		[wm.current, uid, localActive],
 	);
-	const innerRef = useRef<React.RefObject<HTMLElement> | null>(null);
 
 	const emit = useCallback<any>(
 		(...args: Record<string, any>[]) => $app?.emit(...args),
 		[$app],
 	);
+
+	const handleActive = useCallback(
+		(event: React.MouseEvent) => {
+			if (isActive || isCollapse) return;
+			updateZIndex(zIndex + 1);
+			updateState({
+				isActive: true,
+				isCollapse: false,
+			});
+			wm?.active({ uid });
+		},
+		[isCollapse, isActive, uid, wm],
+	);
+
+	const handleDeActive = useCallback(
+		(event: React.MouseEvent) => {
+			if (!isActive) {
+				return;
+			}
+			wm?.disable();
+			updateState({ isActive: false });
+		},
+		[isActive, uid, updateState],
+	);
+
 	// Обработчик полного экрана
 	const handleFullscreen = useCallback<MouseEventHandler>(
-		(event: React.MouseEvent) => {
-			if (!resizable) return;
+		(event) => {
+			if (!resizable) {
+				return;
+			}
 			const newState = !isFullscreen;
 			updateState({ isFullscreen: newState, isCollapse: false });
 			onFullscreen?.(newState);
 		},
 		[isFullscreen, resizable, onFullscreen],
 	);
+
 	// Обработчик свернуть экрана
 	const handleCollapse = useCallback<MouseEventHandler>(
-		(event: React.MouseEvent) => {
+		(event) => {
 			const newState = !isCollapse;
 			updateState({
 				isCollapse: newState,
@@ -197,52 +161,31 @@ export const Window = forwardRef(function WindowFn(
 			}
 			onCollapse?.(newState);
 		},
-		[isCollapse, isActive, onCollapse],
+		[isCollapse, isActive, onCollapse, handleDeActive],
 	);
+
 	// Обработчик закрыть экрана
 	const handleClose = useCallback<MouseEventHandler>(
-		(event: React.MouseEvent) => {
+		(event) => {
 			emit('close', event);
 			onClose?.(event);
 		},
 		[onClose, emit],
 	);
+
 	// Обработчик обновить
 	const handleReload = useCallback<MouseEventHandler>(
-		(event: React.MouseEvent) => {
+		(event) => {
 			emit('reload', event);
 			onReload?.(event);
 		},
 		[onReload, emit],
 	);
-	25;
-
-	const handleActive = useCallback(
-		(event: React.MouseEvent) => {
-			if (active || isCollapse) return;
-			updateZIndex(zIndex + 1);
-			wm?.active({ uid });
-			updateState({
-				isActive: true,
-				isCollapse: false,
-			});
-		},
-		[isCollapse, active, uid, wm],
-	);
-	const handleDeActive = useCallback(
-		(event: MouseEvent) => {
-			if (!active) {
-				return;
-			}
-			wm?.disable();
-			updateState({ isActive: false });
-		},
-		[active, uid, updateState],
-	);
 
 	const focus = useCallback(
-		(event: React.MouseEvent) =>
-			$app ? emit('activated', event) : handleActive(event),
+		(event: React.MouseEvent) => {
+			$app ? emit('activated', event) : handleActive(event);
+		},
 		[handleActive, emit, $app],
 	);
 
@@ -314,14 +257,14 @@ export const Window = forwardRef(function WindowFn(
 		[parent],
 	);
 
-	const winAPI = useMemo(
+	const winAPI = useMemo<WindowContextValue>(
 		() => ({
 			__: 'window',
 			uid,
 			wmGroup,
 			wmSort,
 			title,
-			get isFullscreen(): boolean {
+			get isFullscreen() {
 				return isFullscreen;
 			},
 			set isFullscreen(isFullscreen: boolean) {
@@ -329,7 +272,7 @@ export const Window = forwardRef(function WindowFn(
 				updateState({ isFullscreen, isCollapse: false });
 				onFullscreen?.(isFullscreen);
 			},
-			get isCollapse(): boolean {
+			get isCollapse() {
 				return isCollapse;
 			},
 			set isCollapse(isCollapse: boolean) {
@@ -343,7 +286,7 @@ export const Window = forwardRef(function WindowFn(
 				onCollapse?.(isCollapse);
 			},
 
-			get position(): PositionState {
+			get position() {
 				return positionRef.current;
 			},
 			set position(value: PositionState) {
@@ -399,17 +342,18 @@ export const Window = forwardRef(function WindowFn(
 		],
 	);
 
-	useImperativeHandle(ref, () => winAPI, [winAPI]);
+	const style = useMemo(
+		() => ({
+			...(isFullscreen || isCollapse
+				? {
+						zIndex: position.zIndex,
+					}
+				: position),
+		}),
+		[isFullscreen, isCollapse, position],
+	);
 
-	// Обработчик перетаскивания окна
-	const handleDrag = useCallback<DraggableEventHandler>((e, { deltaX, deltaY }) => {
-		if (isFullscreen || isCollapse) return;
-		setPosition((prev: PositionState) => ({
-			...prev,
-			left: (prev.left as number) + deltaX,
-			top: (prev.top as number) + deltaY,
-		}));
-	}, []);
+	useImperativeHandle(ref, () => winAPI, [winAPI]);
 
 	useEffect(() => {
 		if (!isBrowser) {
@@ -454,35 +398,48 @@ export const Window = forwardRef(function WindowFn(
 		};
 	}, []);
 
-	const dnd = useDraggable({
+	const {
+		activeNodeRect,
+		setActivatorNodeRef,
+		setNodeRef,
+		listeners,
+		attributes,
+		transform,
+	} = useDraggable({
 		id: uid,
-		disabled: draggable && !isFullscreen,
+		disabled: !draggable || isFullscreen,
 		data: winAPI,
+		attributes: {
+			tabIndex,
+		},
 	});
-	const { setActivatorNodeRef, setNodeRef, listeners, attributes, transform } = dnd;
-	console.log(dnd);
 
 	useEffect(() => {
 		const newPosition = {};
 		if (transform?.x) {
-			newPosition.left = (dnd.activeNodeRect?.left || 0) + transform.x;
+			newPosition.left = (activeNodeRect?.left || 0) + transform.x;
 		}
 		if (transform?.y) {
-			newPosition.top = (dnd.activeNodeRect?.top || 0) + transform.y;
+			newPosition.top = (activeNodeRect?.top || 0) + transform.y;
 		}
 		updatePosition(newPosition);
 	}, [transform]);
 
-	const style = useMemo(
-		() => ({
-			/*...(isFullscreen || isCollapse
-				? {
-						zIndex: position.zIndex,
+	const handleRef = useMergedRef(innerRef, setNodeRef);
+
+	const listeners_ = useMemo(() => {
+		return Object.fromEntries(
+			Object.entries(listeners).map(([eventName, handle]) => [
+				eventName,
+				(event: MouseEvent) => {
+					if (event.target === event.currentTarget) {
+						handle(event);
 					}
-				: position),*/
-		}),
-		[isFullscreen, isCollapse, position, transform],
-	);
+				},
+			]),
+		);
+	}, [listeners]);
+
 	return (
 		<WindowProvider value={winAPI}>
 			<div
@@ -492,19 +449,17 @@ export const Window = forwardRef(function WindowFn(
 					'x-window--resizable': resizable && !isFullscreen && !isCollapse,
 					'x-window--collapse': isCollapse,
 					'x-window--fullscreen': isFullscreen,
-					'x-window--active': active,
+					'x-window--active': isActive,
 				})}
 				onMouseDownCapture={focus}
-				// onClick={focus}
 				style={style}
-				{...listeners}
 				{...attributes}
-				ref={setNodeRef}
+				ref={handleRef}
 			>
 				<Group
 					className="x-window-header"
 					justify="between"
-					{...listeners}
+					{...listeners_}
 					ref={setActivatorNodeRef}
 				>
 					{title && <div className="x-window-title">{title}</div>}
@@ -530,10 +485,10 @@ const WindowIcons = memo(
 		icons = '',
 		resizable,
 		isFullscreen,
-		onFullscreen = (event: React.MouseEvent) => {},
-		onCollapse = (event: React.MouseEvent) => {},
-		onClose = (event: React.MouseEvent) => {},
-		onReload = (event: React.MouseEvent) => {},
+		onFullscreen,
+		onCollapse,
+		onClose,
+		onReload,
 	}: IWindowIconsProps) => {
 		const props = {
 			size: 'xs',
@@ -542,13 +497,7 @@ const WindowIcons = memo(
 			color: 'gray',
 		};
 		return (
-			<Group
-				className="x-window-icons x-window-drag-no"
-				gap={1}
-				style={{
-					marginInlineStart: 'auto',
-				}}
-			>
+			<Group className="x-window-icons x-window-drag-no" gap={1} ms="auto">
 				{icons.split(/\s+/).map((type) => {
 					switch (type) {
 						case 'close':
@@ -624,23 +573,5 @@ const WindowIcons = memo(
 	},
 );
 
-const DraggableWrapper = memo(
-	({ disabled, onDrag, children, innerRef }: IDraggableWrapperProps) => {
-		const ref = innerRef ?? useRef<React.RefObject<HTMLElement> | null>(null);
-		return (
-			<DraggableCore
-				disabled={disabled}
-				onDrag={onDrag}
-				handle=".x-window-header"
-				cancel=".x-window-drag-no"
-				nodeRef={ref}
-			>
-				{cloneElement(children, { ref })}
-			</DraggableCore>
-		);
-	},
-);
-
 Window.displayName = './features/Window';
 WindowIcons.displayName = './features/WindowIcons';
-DraggableWrapper.displayName = './features/DraggableWrapper';

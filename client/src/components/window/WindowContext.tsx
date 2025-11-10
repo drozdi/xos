@@ -1,17 +1,11 @@
-import { createContext, ReactNode, useContext } from 'react';
+import { createContext, useContext } from 'react';
 
-interface WindowContextType {}
-interface WindowProps {
-	children: ReactNode;
-	value: any;
-}
+export const WindowContext = createContext<WindowContextValue | null>(null);
 
-export const WindowContext = createContext<any | WindowContextType | null>(null);
-
-export const WindowProvider = ({ children, value }: WindowProps) => (
+export const WindowProvider = ({ children, value }: WindowProviderProps) => (
 	<WindowContext.Provider value={value}>{children}</WindowContext.Provider>
 );
 
-export function useWindowContext(): any | null {
+export function useWindowContext(): WindowContextValue | null {
 	return useContext(WindowContext);
 }

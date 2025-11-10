@@ -96,7 +96,8 @@ export class Setting {
 
 		// Разрешение значения и преобразование типа
 		result = this.config?.resolveValue(result);
-		return type?.(result) ?? def;
+
+		return type?.(result ?? def) ?? result ?? def;
 	}
 
 	all(): SettingOptions {
