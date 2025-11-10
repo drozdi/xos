@@ -1,3 +1,4 @@
+import { useDraggable } from '@dnd-kit/core';
 import { ActionIcon, Group } from '@mantine/core';
 import classNames from 'classnames';
 import React, {
@@ -462,43 +463,49 @@ export const Window = forwardRef(function WindowFn(
 			$app?.unRegister(winAPI);
 		};
 	}, []);
-
+	const dnd = useDraggable({
+		id: uid,
+		disabled: draggable && !isFullscreen,
+	});
+	console.log(dnd);
+	const { setActivatorNodeRef, setNodeRef, listeners, attributes } = dnd;
 	return (
 		<WindowProvider value={winAPI}>
-			<DraggableWrapper
-				onDrag={handleDrag}
-				disabled={!draggable || isFullscreen}
-				innerRef={innerRef}
+			<div
+				id={uid}
+				className={classNames('x-window', className, {
+					'x-window--draggable': draggable,
+					'x-window--resizable': resizable && !isFullscreen && !isCollapse,
+					'x-window--collapse': isCollapse,
+					'x-window--fullscreen': isFullscreen,
+					'x-window--active': active,
+				})}
+				onMouseDownCapture={focus}
+				// onClick={focus}
+				style={style}
+				{...listeners}
+				{...attributes}
+				ref={setNodeRef}
 			>
-				<div
-					id={uid}
-					className={classNames('x-window', className, {
-						'x-window--draggable': draggable,
-						'x-window--resizable': resizable && !isFullscreen && !isCollapse,
-						'x-window--collapse': isCollapse,
-						'x-window--fullscreen': isFullscreen,
-						'x-window--active': active,
-					})}
-					onMouseDownCapture={focus}
-					// onClick={focus}
-					style={style}
+				<Group
+					className="x-window-header"
+					justify="between"
+					ref={setActivatorNodeRef}
 				>
-					<Group className="x-window-header" justify="between">
-						{title && <div className="x-window-title">{title}</div>}
-						<WindowIcons
-							icons={icons}
-							resizable={resizable}
-							isFullscreen={isFullscreen}
-							onFullscreen={handleFullscreen}
-							onCollapse={handleCollapse}
-							onClose={handleClose}
-							onReload={handleReload}
-						/>
-					</Group>
+					{title && <div className="x-window-title">{title}</div>}
+					<WindowIcons
+						icons={icons}
+						resizable={resizable}
+						isFullscreen={isFullscreen}
+						onFullscreen={handleFullscreen}
+						onCollapse={handleCollapse}
+						onClose={handleClose}
+						onReload={handleReload}
+					/>
+				</Group>
 
-					<div className="x-window-content">{children}</div>
-				</div>
-			</DraggableWrapper>
+				<div className="x-window-content">{children}</div>
+			</div>
 		</WindowProvider>
 	); //*/
 });
