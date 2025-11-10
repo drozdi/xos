@@ -5,17 +5,7 @@ import { coreRoles } from '../roles-system';
 import { coreScopes } from '../scopes-system';
 import { authAPI } from './api';
 
-interface authStoreProps {
-	isAuth: boolean;
-	loading: boolean;
-	user?: string;
-	init(): void;
-	login(val: { login: string; password: string }): void;
-	logout(): void;
-	load(): void;
-}
-
-export const useAuthSystem = create<authStoreProps>((set, get) => ({
+export const useAuthSystem = create<AuthStoreValue>((set, get) => ({
 	isAuth: false,
 	loading: false,
 	user: '',
@@ -24,7 +14,7 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 			isAuth: false,
 			loading: true,
 		});
-		return authAPI
+		return await authAPI
 			.check()
 			.then(get().load)
 			.then(() => {
@@ -34,11 +24,15 @@ export const useAuthSystem = create<authStoreProps>((set, get) => ({
 				});
 			});
 	},
-	login: async ({ login, password }) => {
+	login: async ({ login, password }: RequestAuthLogin) => {
 		return await authAPI.login(login, password).then(async (response) => {
 			localStorage.setItem(ACCESS_TOKEN_KEY, response.token);
 			localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
 			await get().load();
+			set({
+				isAuth: true,
+				loading: false,
+			});
 			return response;
 		});
 	},

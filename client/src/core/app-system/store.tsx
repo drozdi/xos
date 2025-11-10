@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { parameterize } from '../../utils/request';
+import { config } from '../config-system';
 import { App, IAppPorps } from './App';
 import { AppProvider } from './context';
 
@@ -76,7 +77,10 @@ export const useAppManager = create(
 			},
 
 			constApp(conf: IAppPorps, pathName?: string): App {
-				const $app = new App(conf);
+				const $app = new App({
+					'WINDOW.parent': config.get('parentWindow'),
+					...conf,
+				});
 				$app.pathName = pathName;
 
 				$app.on('activated', () => {
@@ -123,7 +127,12 @@ export const useAppManager = create(
 
 					if (!generatedPath) {
 						return providerApp(processedComponent, {
-							app: constApp({ smKey: _conf.smKey }, generatedPath),
+							app: constApp(
+								{
+									smKey: _conf.smKey,
+								},
+								generatedPath,
+							),
 							...conf,
 						});
 					}

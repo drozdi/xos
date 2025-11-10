@@ -2,7 +2,7 @@ import api from '../api';
 
 // API методы
 export const authAPI = {
-	login: async (username: string, password: string | number) => {
+	login: async (username: string, password: string): Promise<ResponseAuthLogin> => {
 		return (await api.post('/login', { username, password })).data;
 	},
 	check: async () => {

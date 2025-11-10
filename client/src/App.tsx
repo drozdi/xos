@@ -1,61 +1,23 @@
+import { useEffect, useRef } from 'react';
 import { AuthForm } from './components/auth-form';
 import { Layout } from './components/layout';
 import { StartMenu } from './components/start-menu';
 import { WindowManager } from './components/window-manager';
+import { core } from './core';
 import { useAuthSystem } from './core/auth-system';
 function App() {
-	// const [style, setStyle] = useState<{ left: number; top: number }>({
-	// 	left: 0,
-	// 	top: 0,
-	// });
-	// const dnd = useDraggable({
-	// 	id: 'test',
-	// });
-	// const { setActivatorNodeRef, setNodeRef, listeners, attributes, transform } = dnd;
-	// console.log({ ...dnd });
-
-	// useEffect(() => {
-	// 	setStyle((prev) => {
-	// 		const nesStyle = { ...prev };
-	// 		if (transform?.x) {
-	// 			nesStyle.left = (dnd.activeNodeRect?.left || 0) + transform.x;
-	// 		}
-	// 		if (transform?.y) {
-	// 			nesStyle.top = (dnd.activeNodeRect?.top || 0) + transform.y;
-	// 		}
-	// 		return nesStyle;
-	// 	});
-	// }, [transform]);
-	// //activeNodeRect
-	// return (
-	// 	<div
-	// 		{...attributes}
-	// 		ref={setNodeRef}
-	// 		style={{
-	// 			...style,
-	// 			position: 'absolute',
-	// 			width: 300,
-	// 			height: 300,
-	// 			background: '#ff000088',
-	// 		}}
-	// 	>
-	// 		<div
-	// 			ref={setActivatorNodeRef}
-	// 			{...listeners}
-	// 			style={{
-	// 				width: 100,
-	// 				height: 100,
-	// 				background: '#0000ff88',
-	// 			}}
-	// 		></div>
-	// 	</div>
-	// );
-
 	const isAuth = useAuthSystem((state) => state.isAuth);
+	const ref = useRef(null);
+	useEffect(() => {
+		if (ref.current?.refs?.main) {
+			core.$config.set('parentWindow', ref.current.refs.main);
+		}
+		console.log(core.$sm.WINDOW);
+	}, [ref.current]);
 	return (
 		<>
 			{isAuth && (
-				<Layout container toggle>
+				<Layout container toggle ref={ref}>
 					<Layout.Header>
 						<div>header</div>
 					</Layout.Header>

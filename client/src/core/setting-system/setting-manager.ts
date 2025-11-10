@@ -37,6 +37,7 @@ export const settingManager = new SettingManager({
 				active: false,
 				def: true,
 			},
+			parent: document.body,
 		},
 		{},
 		'HKEY_WINDOWS',

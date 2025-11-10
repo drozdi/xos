@@ -32,9 +32,10 @@ export class App extends EventBus {
 	__history: { current: any } = { current: null };
 	__config: ConfigObject = {};
 	__instance: ConfigObject = {};
-	constructor({ smKey }: IAppPorps) {
+	constructor({ smKey, ...props }: IAppPorps) {
 		super();
 		this.smKey = smKey;
+		this.default(props);
 		'remove close reload'.split(/\s+/).forEach((evt: string) => {
 			this[evt] = (...args: any[]) => this.emit(evt, ...args);
 		});
@@ -53,7 +54,7 @@ export class App extends EventBus {
 		}
 	}
 	default(config: ConfigObject = {}) {
-		this.__config = config;
+		this.__config = { ...this.__config, ...config };
 	}
 	config(key: string = ''): any {
 		const conf: ConfigObject = {};
