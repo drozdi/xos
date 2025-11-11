@@ -3,7 +3,6 @@ import { v4 as uuid } from 'uuid';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { parameterize } from '../../utils/request';
-import { config } from '../config-system';
 import { App, IAppPorps } from './App';
 import { AppProvider } from './context';
 
@@ -77,10 +76,7 @@ export const useAppManager = create(
 			},
 
 			constApp(conf: IAppPorps, pathName?: string): App {
-				const $app = new App({
-					'WINDOW.parent': config.get('parentWindow'),
-					...conf,
-				});
+				const $app = new App(conf);
 				$app.pathName = pathName;
 
 				$app.on('activated', () => {

@@ -1,3 +1,10 @@
+import {
+	KeyboardSensor,
+	MouseSensor,
+	TouchSensor,
+	useSensor,
+	useSensors,
+} from '@dnd-kit/core';
 import { useEffect, useRef } from 'react';
 import { AuthForm } from './components/auth-form';
 import { Layout } from './components/layout';
@@ -10,10 +17,15 @@ function App() {
 	const ref = useRef(null);
 	useEffect(() => {
 		if (ref.current?.refs?.main) {
-			core.$config.set('parentWindow', ref.current.refs.main);
+			ref.current?.refs?.main?.setAttribute('id', 'windows_parent');
+			core.$sm.WINDOW.set('parent', '#windows_parent');
 		}
-		console.log(core.$sm.WINDOW);
-	}, [ref.current]);
+		//console.log(core.$sm.WINDOW);
+	}, [ref.current, ref.current?.refs, ref.current?.refs?.main]);
+	const mouseSensor = useSensor(MouseSensor);
+	const touchSensor = useSensor(TouchSensor);
+	const keyboardSensor = useSensor(KeyboardSensor);
+	const sensors = useSensors(mouseSensor, touchSensor, keyboardSensor);
 	return (
 		<>
 			{isAuth && (
@@ -27,6 +39,7 @@ function App() {
 							<WindowManager />
 						</>
 					</Layout.Footer>
+
 					<div>main</div>
 				</Layout>
 			)}

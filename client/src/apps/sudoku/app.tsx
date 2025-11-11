@@ -1,5 +1,4 @@
 import { Button, Group, SegmentedControl, SimpleGrid, Stack } from '@mantine/core';
-
 import { Window } from '../../components/window';
 import { Cell } from './components/Cell';
 import store from './store';
@@ -16,13 +15,11 @@ export function AppSudoku() {
 					<Button>Создать</Button>
 				</Group>
 				<SimpleGrid cols={size}>
-					{cells.map((value, row) => (
-						<>
-							{value.map((value, col) => (
-								<Cell row={row} col={col} />
-							))}
-						</>
-					))}
+					{cells.map((value, row) =>
+						value.map((value, col) => (
+							<Cell key={`${row}-${col}`} row={row} col={col} />
+						)),
+					)}
 				</SimpleGrid>
 				<SegmentedControl
 					value={value}

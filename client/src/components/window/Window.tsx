@@ -21,7 +21,6 @@ import {
 	TbX,
 } from 'react-icons/tb';
 import { useApp } from '../../core/app-system';
-import { config as $config } from '../../core/config-system';
 import { setZIndex, useWmStore, zIndex } from '../../core/window-system';
 import { getComputedSize } from '../../utils/domFns';
 import { minMax } from '../../utils/fns';
@@ -76,20 +75,19 @@ export const Window = forwardRef(
 		);
 
 		const $app = useApp();
-		const config = useMemo(() => $app.config('WINDOW'), [$app]);
+		const $sm = $app?.sm('WINDOW');
 
 		const parent = useMemo(() => {
 			let parent = parentProps;
-			if (config.parent) {
-				parent = config.parent;
-			} else if ($config.get('parentWindow')) {
-				parent = $config.get('parentWindow');
+			if (!parent && $sm.get('parent')) {
+				parent = $sm.get('parent');
+			}
+			if (typeof parent === 'string') {
+				parent = document.querySelector(parent);
 			}
 			return parent;
-		}, [parentProps, config.parent]);
+		}, [parentProps, $sm]);
 
-		const $sm = $app?.sm('WINDOW');
-		console.log(parent, $sm.get('parent'));
 		const positionRef = useRef<PositionState>({
 			left: x,
 			top: y,
@@ -356,7 +354,6 @@ export const Window = forwardRef(
 				isFullscreen,
 				isCollapse,
 				updateState,
-				parent,
 				aspectFactor,
 				focus,
 				handleDeActive,
@@ -466,7 +463,7 @@ export const Window = forwardRef(
 				]),
 			);
 		}, [listeners]);
-
+		//console.log(parent);
 		return (
 			<WindowProvider value={winAPI}>
 				<Portal target={parent}>
