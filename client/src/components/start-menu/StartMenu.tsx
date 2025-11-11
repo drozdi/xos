@@ -1,6 +1,6 @@
 import { Button, Group, Popover, Stack } from '@mantine/core';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
 	TbBrandWindows,
 	TbCalculator,
@@ -28,9 +28,6 @@ export const StartMenu = () => {
 	const onSudoku = () => {
 		appManager.createApp('apps/sudoku/app', {});
 	};
-	useEffect(() => {
-		isAuth && appManager.reloadApps();
-	}, [isAuth]);
 
 	return (
 		<Popover

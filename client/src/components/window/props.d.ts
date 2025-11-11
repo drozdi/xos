@@ -36,7 +36,7 @@ interface WindowProviderProps {
 }
 
 interface IWindowProps {
-	parent?: HTMLElement;
+	parent?: HTMLElement | string;
 	aspectFactor?: number;
 	className?: string;
 	children: React.ReactNode;

@@ -68,7 +68,7 @@ export const Storage = cached(function StorageFn(type: string, key: string) {
 			const [state, setState] = useState<T>(this.get(name, initial));
 			useEffect(() => {
 				this.set(name, state);
-			}, [state, name]);
+			}, [state]);
 			return [state as T, setState];
 		},
 		useSetState<T extends Record<string, any>>(

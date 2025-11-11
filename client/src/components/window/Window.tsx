@@ -32,13 +32,13 @@ const isBrowser = typeof window !== 'undefined';
 export const Window = forwardRef(
 	(
 		{
-			parent: parentProps,
+			parent: parentProps = 'body',
 			aspectFactor,
 			children,
 			className,
 			x = 'center',
 			y = 'center',
-			z,
+			z = zIndex - 1,
 			w = '50%',
 			h = '50%',
 			title,
@@ -79,12 +79,15 @@ export const Window = forwardRef(
 
 		const parent = useMemo(() => {
 			let parent = parentProps;
-			if (!parent && $sm.get('parent')) {
+
+			if ($sm.get('parent')) {
 				parent = $sm.get('parent');
 			}
+
 			if (typeof parent === 'string') {
-				parent = document.querySelector(parent);
+				return document.querySelector(parent) ?? parent;
 			}
+
 			return parent;
 		}, [parentProps, $sm]);
 
@@ -406,6 +409,9 @@ export const Window = forwardRef(
 				if (x) winAPI.x = x;
 				if (y) winAPI.y = y;
 			});
+			// ?????????????????????
+			updatePosition(position);
+			// ?????????????????????
 			return () => {
 				wm?.disable?.();
 				wm?.del?.(winAPI);
@@ -463,7 +469,7 @@ export const Window = forwardRef(
 				]),
 			);
 		}, [listeners]);
-		//console.log(parent);
+
 		return (
 			<WindowProvider value={winAPI}>
 				<Portal target={parent}>

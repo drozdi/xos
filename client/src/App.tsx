@@ -11,17 +11,20 @@ import { Layout } from './components/layout';
 import { StartMenu } from './components/start-menu';
 import { WindowManager } from './components/window-manager';
 import { core } from './core';
+import { appManager } from './core/app-system';
 import { useAuthSystem } from './core/auth-system';
 function App() {
 	const isAuth = useAuthSystem((state) => state.isAuth);
 	const ref = useRef(null);
+
 	useEffect(() => {
-		if (ref.current?.refs?.main) {
-			ref.current?.refs?.main?.setAttribute('id', 'windows_parent');
-			core.$sm.WINDOW.set('parent', '#windows_parent');
-		}
-		//console.log(core.$sm.WINDOW);
-	}, [ref.current, ref.current?.refs, ref.current?.refs?.main]);
+		core.$sm.WINDOW.set('parent', '#windows_parent');
+	}, []);
+
+	useEffect(() => {
+		isAuth && appManager.reloadApps();
+	}, [isAuth]);
+
 	const mouseSensor = useSensor(MouseSensor);
 	const touchSensor = useSensor(TouchSensor);
 	const keyboardSensor = useSensor(KeyboardSensor);
@@ -39,8 +42,18 @@ function App() {
 							<WindowManager />
 						</>
 					</Layout.Footer>
-
 					<div>main</div>
+					<div
+						id="windows_parent"
+						style={{
+							width: '100%',
+							height: '100%',
+							top: 0,
+							left: 0,
+							position: 'absolute',
+							overflow: 'hidden',
+						}}
+					></div>
 				</Layout>
 			)}
 			<AuthForm />
