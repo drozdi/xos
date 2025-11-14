@@ -74,7 +74,6 @@ export const useAppManager = create(
 					apps: { ...state.apps, [name]: conf },
 				}));
 			},
-
 			constApp(conf: IAppPorps, pathName?: string): App {
 				const $app = new App(conf);
 				$app.pathName = pathName;
@@ -96,7 +95,6 @@ export const useAppManager = create(
 
 				return $app;
 			},
-
 			providerApp(
 				Component: any,
 				{ app, ...conf }: { app: App; [key: string]: any },
@@ -107,7 +105,6 @@ export const useAppManager = create(
 					</AppProvider>
 				));
 			},
-
 			buildApp(Component: any, _conf: IConfig = {}, mount: boolean = true) {
 				try {
 					const { apps, providerApp, constApp } = get();
@@ -154,7 +151,6 @@ export const useAppManager = create(
 					throw error;
 				}
 			},
-
 			createApp(Component: any, conf: IConfig = {}, save: boolean = true) {
 				try {
 					conf.smKey = conf.smKey ?? genId();
@@ -203,7 +199,6 @@ export const useAppManager = create(
 					throw error;
 				}
 			},
-
 			// Закрытие всех приложений
 			closeAll() {
 				try {
@@ -227,7 +222,6 @@ export const useAppManager = create(
 				get().activeApp = appName;
 				console.log(`App ${appName} activated`);
 			},
-
 			deactivate(appName) {
 				if (get().activeApp === appName) {
 					get().activeApp = null;

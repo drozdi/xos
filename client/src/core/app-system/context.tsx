@@ -27,7 +27,15 @@ export const AppProvider = ({
 	const sensors = useSensors(mouseSensor, touchSensor, keyboardSensor);
 	return (
 		<AppContext.Provider value={app}>
-			<DndContext sensors={sensors} modifiers={[restrictToParentElement]}>
+			<DndContext
+				sensors={sensors}
+				modifiers={[
+					(...args) => {
+						console.log(args);
+						return restrictToParentElement(...args);
+					},
+				]}
+			>
 				<MantineProvider defaultColorScheme="dark">{children}</MantineProvider>
 			</DndContext>
 		</AppContext.Provider>

@@ -8,4 +8,6 @@ export const appManager = {
 	removeApp: useAppManager.getState().removeApp,
 	reloadApps: useAppManager.getState().reloadApps,
 	closeAll: useAppManager.getState().closeAll,
+	unMountRoot: useAppManager.getState().unMountRoot,
+	mountRoot: useAppManager.getState().mountRoot,
 };
