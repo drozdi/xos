@@ -31,7 +31,7 @@ export const AppProvider = ({
 				sensors={sensors}
 				modifiers={[
 					(...args) => {
-						console.log(args);
+						//console.log(args);
 						return restrictToParentElement(...args);
 					},
 				]}
