@@ -452,7 +452,7 @@ export const Window = forwardRef(
 			if (Object.keys(newPosition).length > 0) {
 				updatePosition(newPosition);
 			}
-		}, [transform]);
+		}, [transform, position]);
 
 		const handleRef = useMergedRef(innerRef, setNodeRef);
 
