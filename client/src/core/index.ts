@@ -23,13 +23,11 @@ export const core: {
 	$scopes: coreScopes,
 	$roles: coreRoles,
 	list: {},
-	app(proto: any, conf = {}, root: any): any {
-		root = root ?? appManager.createRoot();
+	app(proto: any, conf = {}, root?: any): any {
 		if (!this.list[proto.displayName]) {
-			root.render(
-				(this.list[proto.displayName] = appManager.buildApp(proto, conf, false)),
-			);
+			this.list[proto.displayName] = appManager.buildApp(proto, conf, false);
 		}
+		root?.render(this.list[proto.displayName]);
 		return this.list[proto.displayName];
 	},
 
