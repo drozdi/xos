@@ -24,7 +24,7 @@ use Device\Repository\License\SoftwareRepository as LicenseSoftwareRepository;
 use Device\Service\SoftwareManager;
 use Device\Service\LicenseManager;
 
-#[Route('/device/license/key')]
+#[Route('/api/device/license/key')]
 #[Access('device.license')]
 class LicenseKeyController extends AbstractController {
     #[Route('/list', methods: ['POST'])]

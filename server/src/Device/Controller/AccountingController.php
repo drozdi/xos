@@ -25,7 +25,7 @@ use Device\Repository\Device\LocationRepository;
 
 use Main\Service\FileManager;
 
-#[Route('/device/accounting')]
+#[Route('/api/device/accounting')]
 class AccountingController extends AbstractController {
     #[Route('/list/select', methods: ['POST'])]
     public function select (Request $request, AccountingRepository $AccountingRepository): JsonResponse {

@@ -1,64 +1,98 @@
-import {
-	KeyboardSensor,
-	MouseSensor,
-	TouchSensor,
-	useSensor,
-	useSensors,
-} from '@dnd-kit/core';
-import { useEffect, useRef } from 'react';
-import { AuthForm } from './components/auth-form';
-import { Layout } from './components/layout';
-import { StartMenu } from './components/start-menu';
-import { WindowManager } from './components/window-manager';
-import { core } from './core';
-import { appManager } from './core/app-system';
-import { useAuthSystem } from './core/auth-system';
-function App() {
-	const isAuth = useAuthSystem((state) => state.isAuth);
-	const ref = useRef(null);
+import { Center, Loader, MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
-	useEffect(() => {
-		core.$sm.WINDOW.set('parent', '#windows_parent');
-	}, []);
+import { setupInterceptors } from '@/core/api/interceptors';
+import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
+import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
+import { preloadSettings } from '@/core/settings/preloadSettings';
+import { settingManager } from '@/core/settings/SettingManager';
+import { theme } from '@/styles/theme';
 
-	useEffect(() => {
-		isAuth && appManager.reloadApps();
-	}, [isAuth]);
+const Desktop = lazy(() =>
+	import('@/core/desktop/Desktop').then((module) => ({ default: module.Desktop })),
+);
 
-	const mouseSensor = useSensor(MouseSensor);
-	const touchSensor = useSensor(TouchSensor);
-	const keyboardSensor = useSensor(KeyboardSensor);
-	const sensors = useSensors(mouseSensor, touchSensor, keyboardSensor);
+const LoginScreen = lazy(() =>
+	import('@/core/auth/LoginScreen').then((module) => ({ default: module.LoginScreen })),
+);
+
+const queryClient = new QueryClient();
+
+function AppShellFallback() {
 	return (
-		<>
-			{isAuth && (
-				<Layout container toggle ref={ref}>
-					<Layout.Header>
-						<div>header</div>
-					</Layout.Header>
-					<Layout.Footer px={0} py={0} slot="footer">
-						<>
-							<StartMenu />
-							<WindowManager />
-						</>
-					</Layout.Footer>
-					<div>main</div>
-					<div
-						id="windows_parent"
-						style={{
-							width: '100%',
-							height: '100%',
-							top: 0,
-							left: 0,
-							position: 'absolute',
-							overflow: 'hidden',
-						}}
-					></div>
-				</Layout>
-			)}
-			<AuthForm />
-		</>
+		<Center h="100vh">
+			<Loader size="lg" />
+		</Center>
 	);
 }
 
-export default App;
+export default function App() {
+	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const isLoading = useAuthStore((state) => state.isLoading);
+	const hydrate = useAuthStore((state) => state.hydrate);
+	const interceptorsReady = useRef(false);
+	const [settingsReady, setSettingsReady] = useState(false);
+
+	useEffect(() => {
+		if (!interceptorsReady.current) {
+			setupInterceptors(getAuthStoreActions());
+			interceptorsReady.current = true;
+		}
+
+		void hydrate();
+	}, [hydrate]);
+
+	useEffect(() => {
+		if (isLoading) {
+			setSettingsReady(false);
+			return;
+		}
+
+		let cancelled = false;
+
+		async function bootstrapSettings() {
+			settingManager.reset();
+
+			let preloaded;
+			if (isAuthenticated && useApiSettings()) {
+				try {
+					preloaded = await preloadSettings();
+				} catch {
+					preloaded = undefined;
+				}
+			}
+
+			if (cancelled) {
+				return;
+			}
+
+			settingManager.init(createSettingAdapter({ preloaded }));
+			setSettingsReady(true);
+		}
+
+		void bootstrapSettings();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [isLoading, isAuthenticated]);
+
+	const showLoader = isLoading || (isAuthenticated && !settingsReady);
+
+	return (
+		<QueryClientProvider client={queryClient}>
+			<MantineProvider theme={theme}>
+				<Notifications position="top-right" />
+				{showLoader ? (
+					<AppShellFallback />
+				) : (
+					<Suspense fallback={<AppShellFallback />}>
+						{isAuthenticated ? <Desktop /> : <LoginScreen />}
+					</Suspense>
+				)}
+			</MantineProvider>
+		</QueryClientProvider>
+	);
+}

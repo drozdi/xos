@@ -23,7 +23,7 @@ use Device\Repository\Software\TypeRepository;
 
 use Device\Service\SoftwareManager;
 
-#[Route('/device/software')]
+#[Route('/api/device/software')]
 #[Access('device.software')]
 class SoftwareController extends AbstractController {
     #[Route('/list', methods: ['POST'])]

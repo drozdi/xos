@@ -1,0 +1,641 @@
+# XOS — REST API Specification
+
+> Версия: 2026-07-14  
+> Base URL: `{SERVER_URL}` (dev: `http://localhost:8000`)  
+> Prefix: все эндпоинты ниже — **фактические пути** из кода + **планируемые** помечены `[NEW]`
+
+## Общие соглашения
+
+### Аутентификация
+
+- **Access JWT:** заголовок `Authorization: Bearer {token}`
+- **Refresh:** POST `/api/token/refresh` с телом `{ "refresh_token": "..." }` (Gesdinet)
+- **Login:** POST `/api/login` с телом `{ "username": "login", "password": "..." }` (поле `username`, не `login`)
+- TTL access: **15 мин** (`lexik_jwt_authentication.token_ttl`)
+- TTL refresh: **7200 с**, single-use
+
+### Формат ошибок
+
+```json
+{
+  "code": 401,
+  "message": "Invalid JWT Token"
+}
+```
+
+Валидация (400):
+
+```json
+{
+  "email": "Email не является валидным email.",
+  "password": "Пароли не совпадают"
+}
+```
+
+### Пагинация списков (legacy-паттерн)
+
+POST `/list` с телом:
+
+```json
+{
+  "t": "list",
+  "limit": 20,
+  "offset": 1,
+  "sortBy": [{ "key": "login", "order": "ASC" }],
+  "filters": {}
+}
+```
+
+Ответ: массив + заголовок `Content-Range: items {start}-{end}/{total}`.
+
+`t: "select"` → `{ value, label }[]`.
+
+---
+
+## Auth & Account (модуль App)
+
+### POST `/api/login`
+
+**Auth:** Public  
+**Реализация:** Symfony `json_login` + Lexik JWT (контроллер — заглушка, логика в firewall)
+
+**Request:**
+```json
+{ "username": "admin", "password": "secret" }
+```
+
+**Response 200 (Lexik default):**
+```json
+{
+  "token": "eyJ...",
+  "refresh_token": "abc123..."
+}
+```
+
+**Response 401:** `{ "code": 401, "message": "Invalid credentials." }`
+
+> **Рекомендация [TODO]:** кастомный `AuthenticationSuccessHandler` — добавить `user` с roles/scopes (см. LoginSuccessHandler.php).
+
+---
+
+### POST `/api/token/refresh`
+
+**Auth:** Public (refresh firewall)  
+**Request:**
+```json
+{ "refresh_token": "..." }
+```
+
+**Response 200:**
+```json
+{
+  "token": "eyJ...",
+  "refresh_token": "new_refresh..."
+}
+```
+
+> ТЗ указывает `/refresh-token` — **фактический путь `/api/token/refresh`**. Клиент использует этот путь.
+
+---
+
+### GET `/api/login-check`
+
+**Auth:** JWT  
+**Response 200:** `{ "status": "authenticated" }`  
+**Response 401:** `{ "error": "Unauthorized" }`
+
+---
+
+### GET `/api/logout`
+
+**Auth:** JWT  
+**Статус:** `[TODO]` — logout не активирован в security.yaml (throws Exception).  
+**Целевое поведение:** инвалидация refresh-токена, 200 `{ "status": "logged_out" }`.
+
+---
+
+### GET `/api/user`
+
+**Auth:** JWT  
+**Response 200:**
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "roles": ["ROLE_ADMIN", "ROLE_USER"]
+}
+```
+
+> **Рекомендация [TODO]:** расширить ответ полями `login`, `alias`, `scopes` (объект code→level).
+
+---
+
+### GET `/api/account`
+
+**Auth:** JWT  
+**Response 200:**
+```json
+{
+  "id": 1,
+  "email": "user@example.com",
+  "alias": "Admin",
+  "second_name": "Иванов",
+  "first_name": "Иван",
+  "patronymic": "Иванович",
+  "description": "",
+  "date_register": "2024-01-01 12:00:00",
+  "tutor": "mentor_alias",
+  "last_login": "2026-07-14 09:00:00",
+  "x_timestamp": "2026-07-14 09:00:00"
+}
+```
+
+---
+
+### PUT `/api/account`
+
+**Auth:** JWT  
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "alias": "Admin",
+  "second_name": "Иванов",
+  "first_name": "Иван",
+  "patronymic": "Иванович",
+  "description": "Bio",
+  "password": "newpass",
+  "confirm_password": "newpass"
+}
+```
+
+**Response 201:** `1` (id пользователя) — *текущее поведение*  
+**Response 400:** объект ошибок по полям
+
+---
+
+### GET `/api/account/map`
+
+**Auth:** JWT  
+**Response 200:** объект claimant_code → массив map-access
+
+```json
+{
+  "device": ["read", "write", "delete"],
+  "main": ["read"]
+}
+```
+
+---
+
+### GET `/api/account/accesses`
+
+**Auth:** JWT  
+**Response 200:** объект scope_code → int (битовая маска, OR пользователя и ролей)
+
+```json
+{
+  "device.read": 15,
+  "device.write": 7,
+  "main.user": 3
+}
+```
+
+---
+
+### GET `/api/account/roles`
+
+**Auth:** JWT  
+**Response 200:** `["ROLE_ADMIN", "ROLE_USER"]`
+
+---
+
+### GET `/api/account/options`
+
+**Auth:** JWT  
+**Response 200:** произвольный JSON из `User.options`
+
+---
+
+### PUT `/api/account/options`
+
+**Auth:** JWT  
+**Request:** JSON object (merge/replace — текущее: **replace** через `setOptions`)  
+**Response 200:** обновлённый объект options
+
+---
+
+### GET `/api/scope/map` · GET `/api/scope/accesses`
+
+Дубликаты `/api/account/map` и `/api/account/accesses`. Клиенту достаточно account-вариантов.
+
+---
+
+## Settings `[NEW]`
+
+Контроллер: `App\Controller\ApiSettingsController`  
+Сущность: `UserSetting` (см. DATABASE_SCHEMA.md)
+
+### GET `/api/settings`
+
+**Auth:** JWT  
+**Query:** `category?` (USER|APP|WIN|HKEY_CONFIG)
+
+**Response 200:**
+```json
+{
+  "items": [
+    {
+      "category": "WIN",
+      "key": "users",
+      "value": {
+        "position": { "x": 100, "y": 50, "width": 800, "height": 600 },
+        "state": { "minimized": false, "maximized": false },
+        "wmGroup": "admin",
+        "wmSort": 0
+      },
+      "updatedAt": "2026-07-14T09:00:00+00:00"
+    }
+  ]
+}
+```
+
+---
+
+### GET `/api/settings/{category}/{key}`
+
+**Auth:** JWT  
+**Params:** `category` — enum; `key` — dot-path (URL-encoded)
+
+**Response 200:**
+```json
+{
+  "category": "USER",
+  "key": "layout.panels.left.width",
+  "value": 280,
+  "updatedAt": "2026-07-14T09:00:00+00:00"
+}
+```
+
+**Response 404:** `{ "message": "Setting not found" }`
+
+---
+
+### POST `/api/settings`
+
+**Auth:** JWT  
+**Request (single):**
+```json
+{
+  "category": "WIN",
+  "key": "users",
+  "value": { "position": { "x": 0, "y": 0, "width": 1024, "height": 768 } }
+}
+```
+
+**Request (batch):**
+```json
+{
+  "items": [
+    { "category": "WIN", "key": "users", "value": {} },
+    { "category": "USER", "key": "layout.view", "value": "hhh lmr ffr" }
+  ]
+}
+```
+
+**Response 200/201:** сохранённые записи (upsert по user+category+key)
+
+---
+
+### DELETE `/api/settings/{category}/{key}`
+
+**Auth:** JWT  
+**Response 204**
+
+---
+
+## Main — Users, Groups, OU, Claimants, Files
+
+Prefix: `/api/main/`
+
+### Users — `/api/main/user`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/list` | Список/селект пользователей |
+| GET | `/filter` | Фильтры OU/Group для UI |
+| GET | `/{id}` | Детальная карточка |
+| POST | `/` | Создание |
+| PUT | `/{id}` | Обновление |
+| DELETE | `/{id}` | Удаление |
+
+**Detail Response (GET /{id}):** id, login, email, alias, ФИО, roles[], groups[], accesses[], ou, tutor, active, dates.
+
+---
+
+### Groups — `/api/main/group`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/list` | Список |
+| GET | `/filter` | Дерево групп |
+| GET | `/{id}` | Деталь |
+| POST | `/` | Создание |
+| PUT | `/{id}` | Обновление |
+| DELETE | `/{id}` | Удаление |
+
+---
+
+### OU — `/api/main/ou`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/list` | Список |
+| GET | `/{id}` | Деталь |
+| POST | `/` | Создание |
+| PUT | `/{id}` | Обновление |
+| DELETE | `/{id}` | Удаление |
+
+---
+
+### Claimants — `/api/main/claimant`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| GET | `/list` | Список |
+| POST | `/` | Создание |
+| GET | `/{id}` | Деталь |
+| PUT | `/{id}` | Обновление |
+| DELETE | `/{id}` | Удаление |
+
+---
+
+### Files — `/api/main/file`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/upload` | multipart/form-data, поле `file` |
+
+**Response 200:**
+```json
+{
+  "id": 42,
+  "originalName": "doc.pdf",
+  "url": "/uploads/..."
+}
+```
+
+---
+
+## Device
+
+> **Важно:** текущие маршруты **без префикса `/api`** (`/device/...`). JWT-firewall покрывает только `^/api`.  
+> **Рекомендация:** мигрировать на `/api/device/...` и добавить access_control.
+
+### Devices — `/device/device` → `[TARGET]` `/api/device/device`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| GET | `/filter` | Фильтры для списка |
+| POST | `/select` | Select-options |
+| POST | `/list` | Список с пагинацией |
+| GET | `/{id}` | Деталь устройства |
+| POST | `/` | Создание |
+| PUT | `/{id}` | Обновление |
+| DELETE | `/{id}` | Удаление |
+| GET | `/property/{id}` | Свойство |
+| GET | `/properties/{id}` | Все свойства |
+| POST | `/upload` | Загрузка файла |
+
+---
+
+### Types — `/device/types`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/select`, `/list` | |
+| GET/POST | `/components`, `/properties` | |
+| POST | `/` | Создание |
+| GET/PUT/DELETE | `/{id}` | CRUD |
+
+---
+
+### Properties — `/device/properties`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/select`, `/list`, `/props` | |
+| POST | `/` | Создание |
+| GET/PUT/DELETE | `/{id}` | CRUD |
+
+---
+
+### Components — `/device/components`
+
+CRUD + `/select`, `/list`.
+
+---
+
+### Software — `/device/software`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/list`, `/select` | |
+| GET | `/filter` | |
+| POST | `/` | |
+| GET/PUT/DELETE | `/{id}` | |
+
+---
+
+### Software Types — `/device/software/type`
+
+CRUD + `/list`, `/select`.
+
+---
+
+### Licenses — `/device/license`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/list` | |
+| POST | `/` | |
+| GET/PUT | `/{id}` | |
+| DELETE | `/remove/{id}` | |
+
+---
+
+### License Keys — `/device/license/key`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/list` | |
+| GET/PUT | `/{id}` | |
+
+---
+
+### Accounting — `/device/accounting`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| POST | `/list`, `/list/select` | |
+
+---
+
+### SubDevices — `/device/subDevices`
+
+| Method | Path | Описание |
+|--------|------|----------|
+| GET | `/filter`, `/form/{id}`, `/attach/{id}` | |
+| POST | `/select`, `/list`, `/` | |
+| GET/PUT/DELETE | `/{id}` | |
+
+---
+
+## IBlock `[NEW]`
+
+Контроллеры отсутствуют. Целевой prefix: `/api/iblock/`
+
+| Resource | Endpoints |
+|----------|-----------|
+| `/api/iblock/block` | CRUD + POST `/list` |
+| `/api/iblock/element` | CRUD + POST `/list` |
+| `/api/iblock/section` | CRUD |
+| `/api/iblock/property` | CRUD |
+| `/api/iblock/type` | CRUD |
+
+---
+
+## HTTP Status Codes
+
+| Code | Использование |
+|------|---------------|
+| 200 | Успешное чтение/обновление |
+| 201 | Создание (account update возвращает 201 с id) |
+| 204 | DELETE settings |
+| 400 | Валидация |
+| 401 | Не авторизован / истёк JWT |
+| 403 | Нет scope/role (Access attribute) |
+| 404 | Сущность/настройка не найдена |
+| 409 | Конфликт версии (@Version) |
+| 500 | Server error |
+
+---
+
+## Клиентские TypeScript-типы (reference)
+
+```typescript
+// types/api.types.ts
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  refresh_token: string;
+}
+
+export interface RefreshResponse {
+  token: string;
+  refresh_token: string;
+}
+
+export interface UserSummary {
+  id: number;
+  email: string | null;
+  login?: string;
+  alias?: string;
+  roles: string[];
+  scopes?: Record<string, number>;
+}
+
+export interface AccountDetail {
+  id: number;
+  email: string | null;
+  alias: string | null;
+  second_name: string | null;
+  first_name: string | null;
+  patronymic: string | null;
+  description: string | null;
+  date_register: string | null;
+  tutor: string;
+  last_login: string | null;
+  x_timestamp: string | null;
+}
+
+export type SettingCategory = 'USER' | 'APP' | 'WIN' | 'HKEY_CONFIG';
+
+export interface UserSettingDto {
+  category: SettingCategory;
+  key: string;
+  value: unknown;
+  updatedAt?: string;
+}
+
+export interface SettingsBatchRequest {
+  items: Array<{ category: SettingCategory; key: string; value: unknown }>;
+}
+
+export interface ListRequest {
+  t?: 'list' | 'select';
+  limit?: number;
+  offset?: number;
+  sortBy?: Array<{ key: string; order: 'ASC' | 'DESC' }>;
+  filters?: Record<string, unknown>;
+}
+
+export interface ApiError {
+  code?: number;
+  message?: string;
+  [field: string]: unknown;
+}
+```
+
+---
+
+## TanStack Query Keys (reference)
+
+```typescript
+export const queryKeys = {
+  auth: {
+    user: ['auth', 'user'] as const,
+    check: ['auth', 'check'] as const,
+  },
+  account: {
+    detail: ['account', 'detail'] as const,
+    map: ['account', 'map'] as const,
+    accesses: ['account', 'accesses'] as const,
+    roles: ['account', 'roles'] as const,
+    options: ['account', 'options'] as const,
+  },
+  settings: {
+    all: (category?: SettingCategory) => ['settings', category ?? 'all'] as const,
+    one: (category: SettingCategory, key: string) => ['settings', category, key] as const,
+  },
+  main: {
+    users: (filters: ListRequest) => ['main', 'users', filters] as const,
+    user: (id: number) => ['main', 'user', id] as const,
+    groups: (filters: ListRequest) => ['main', 'groups', filters] as const,
+  },
+  device: {
+    list: (filters: ListRequest) => ['device', 'list', filters] as const,
+    detail: (id: number) => ['device', 'detail', id] as const,
+  },
+} as const;
+```
+
+---
+
+## Axios Interceptors (reference)
+
+```typescript
+// Порядок: request → attach Bearer; response → 401 → refresh queue → retry
+// При неудачном refresh → logout + redirect to login screen
+// 403 → toast.error('Доступ запрещён')
+// Network error → toast + optional ApiAdapter fallback
+```
+
+Token storage keys (localStorage, dev):
+- `xos.access_token`
+- `xos.refresh_token`

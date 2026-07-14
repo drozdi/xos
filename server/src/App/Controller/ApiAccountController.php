@@ -14,6 +14,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
+use App\Security\UserScopeResolver;
 use Main\Entity\User;
 use Main\Service\ClaimantManager;
 
@@ -49,17 +50,8 @@ class ApiAccountController extends AbstractController {
         return $this->json($ret);
     }
     #[Route('/accesses', name: 'accesses', methods: ['GET'])]
-    public function accesses (#[CurrentUser] ?User $user, ClaimantManager $cm): JsonResponse {
-        $ret = [];
-        foreach ($user->getAccesses() as $access) {
-            $ret[$access->getCode()] = $access->getLevel();
-        }
-        foreach ($user->getRoles() as $role) {
-            foreach ($cm->getAccessesRole($role) as $k => $v) {
-                $ret[$k] = ($ret[$k] ?? 0) | $v;
-            }
-        }
-        return $this->json($ret);
+    public function accesses (#[CurrentUser] ?User $user, UserScopeResolver $userScopeResolver): JsonResponse {
+        return $this->json($userScopeResolver->resolve($user));
     }
     #[Route('/roles', name: 'roles', methods: ['GET'])]
     public function roles (#[CurrentUser] ?User $user): JsonResponse {

@@ -22,7 +22,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-#[Route('/device/subDevices')]
+#[Route('/api/device/subDevices')]
 #[Access('device.subDevice')]
 class SubDeviceController extends AbstractController {
     #[Route('/filter', methods: ['GET'])]

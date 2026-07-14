@@ -1,0 +1,11 @@
+@theme {
+	--breakpoint-window-sm: 640px;
+	--breakpoint-window-md: 768px;
+	--breakpoint-window-lg: 1024px;
+}
+
+/* Window content container queries — use with data-window-width on content root */
+[data-window-width] {
+	container-type: inline-size;
+	container-name: window;
+}

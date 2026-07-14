@@ -20,7 +20,7 @@ use Device\Entity\Type;
 use Device\Repository\TypeRepository;
 use Device\Repository\PropertyRepository;
 
-#[Route('/device/types')]
+#[Route('/api/device/types')]
 #[Access('device.type')]
 class TypeController extends AbstractController {
     #[Route('/select', methods: ['POST'])]

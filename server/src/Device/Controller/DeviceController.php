@@ -26,7 +26,7 @@ use Device\Repository\Device\LocationRepository;
 
 use Main\Service\FileManager;
 
-#[Route('/device/device')]
+#[Route('/api/device/device')]
 #[Access('device.device')]
 class DeviceController extends AbstractController {
     #[Route('/filter', methods: ['GET'])]

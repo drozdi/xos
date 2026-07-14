@@ -21,7 +21,7 @@ use Device\Repository\TypeRepository;
 use Device\Repository\PropertyRepository;
 use Device\Repository\PropertyEnumRepository;
 
-#[Route('/device/properties')]
+#[Route('/api/device/properties')]
 #[Access('device.property')]
 class PropertyController extends AbstractController {
     #[Route('/select', methods: ['POST'])]
