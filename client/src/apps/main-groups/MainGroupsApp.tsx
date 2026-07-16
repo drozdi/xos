@@ -1,13 +1,19 @@
-import { Select } from '@mantine/core';
+import { Alert, Select } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { DataTable } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
-import { mainGroupApi } from '@/core/api/endpoints/mainApi';
+import { mainGroupApi, type GroupListItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import {
+	useCanCreateMainGroup,
+	useCanDeleteMainGroup,
+	useCanReadMainGroup,
+	useCanUpdateMainGroup,
+} from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
 import type { ListRequest } from '@/types/api.types';
@@ -18,6 +24,10 @@ export default function MainGroupsApp() {
 	useWindowTitle('Группы');
 	const launchMainApp = useLaunchMainApp();
 	const queryClient = useQueryClient();
+	const canRead = useCanReadMainGroup();
+	const canCreate = useCanCreateMainGroup();
+	const canUpdate = useCanUpdateMainGroup();
+	const canDelete = useCanDeleteMainGroup();
 	const [ouFilter, setOuFilter] = useState<number>(ALL_FILTER);
 
 	const listRequest: ListRequest = useMemo(
@@ -32,11 +42,13 @@ export default function MainGroupsApp() {
 	const filterQuery = useQuery({
 		queryKey: queryKeys.main.groupFilter,
 		queryFn: () => mainGroupApi.filter(),
+		enabled: canRead,
 	});
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.groups(listRequest),
 		queryFn: () => mainGroupApi.list(listRequest),
+		enabled: canRead,
 	});
 
 	const deleteMutation = useMutation({
@@ -71,6 +83,14 @@ export default function MainGroupsApp() {
 
 	const openGroup = (id: number) => launchMainApp('main-group', id);
 
+	if (!canRead) {
+		return (
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр групп
+			</Alert>
+		);
+	}
+
 	return (
 		<MainListLayout
 			title="Группы"
@@ -84,7 +104,7 @@ export default function MainGroupsApp() {
 			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
-			onCreate={() => openGroup(0)}
+			onCreate={canCreate ? () => openGroup(0) : undefined}
 			filters={
 				<Select
 					label="Подразделение"
@@ -102,9 +122,11 @@ export default function MainGroupsApp() {
 				data={listQuery.data?.items ?? []}
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openGroup(row.id)}
-				onEdit={(row) => openGroup(row.id)}
-				onDelete={(row) => deleteMutation.mutateAsync(row.id)}
-				getRowLabel={(row) => row.name || row.code}
+				onEdit={canUpdate ? (row) => openGroup(row.id) : undefined}
+				onDelete={canDelete ? (row) => deleteMutation.mutateAsync(row.id) : undefined}
+				canEdit={canUpdate}
+				canDelete={canDelete}
+				getRowLabel={(row: GroupListItem) => row.name || row.code}
 			/>
 		</MainListLayout>
 	);

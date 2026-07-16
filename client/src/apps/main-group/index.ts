@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canCreateMainGroup, canReadMainGroup } from '@/features/main/mainAccess';
 import { createMainDetailManifestOptions } from '@/features/main/mainAppUtils';
 
 import { GroupsIcon } from '../shared/AppIcons';
@@ -16,6 +17,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 480, height: 520 },
 	minSize: { width: 360, height: 400 },
 	...createMainDetailManifestOptions('main-group', 2),
+	canAccess: () => canReadMainGroup() || canCreateMainGroup(),
 };
 
 export default manifest;

@@ -10,26 +10,30 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
+use App\Http\ApiResponse;
+use App\Security\UserScopeResolver;
 use Main\Entity\OU;
 use Main\Entity\User;
-use Main\Entity\Group;
-use Main\Entity\Claimant;
-
 use Main\Repository\OURepository;
-use Main\Repository\UserRepository;
 use Main\Repository\GroupRepository;
-use Main\Repository\ClaimantRepository;
-
+use Main\Security\MainGroupAccessMessages;
 use Main\Service\MainManager;
 
 #[Route('/api/main/group', name: 'api_main_group_')]
 class GroupController extends AbstractController {
     #[Route('/list', name: 'list')]
-    public function list (Request $request, GroupRepository $GroupRepository): JsonResponse {
+    public function list (
+        Request $request,
+        GroupRepository $GroupRepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadMainGroup($user)) {
+            return ApiResponse::forbidden(MainGroupAccessMessages::READ);
+        }
+
         $req = array_merge([
             't' => "list",
             'size' => -1,
@@ -87,7 +91,15 @@ class GroupController extends AbstractController {
         ]);
     }
     #[Route('/filter', name: 'filter')]
-    public function loadFilter(EntityManagerInterface $entityManager, OURepository $OURepository): JsonResponse {
+    public function loadFilter (
+        EntityManagerInterface $entityManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadMainGroup($user)) {
+            return ApiResponse::forbidden(MainGroupAccessMessages::READ);
+        }
+
         $items = [];
         foreach ($entityManager->createQuery('SELECT ou FROM ' . OU::class . ' ou ORDER BY ou.sort ASC, ou.code ASC')->execute() as $ou) {
             $items[] = [
@@ -100,7 +112,16 @@ class GroupController extends AbstractController {
         return $this->json($items);
     }
     #[Route('/', name: 'create', methods: ['POST'])]
-    public function create (Request $request, MainManager $mainManager): JsonResponse {
+    public function create (
+        Request $request,
+        MainManager $mainManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canCreateMainGroup($user)) {
+            return ApiResponse::forbidden(MainGroupAccessMessages::CREATE);
+        }
+
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
@@ -114,7 +135,22 @@ class GroupController extends AbstractController {
         return $this->json($group->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update (int $id, Request $request, MainManager $mainManager): JsonResponse {
+    public function update (
+        int $id,
+        Request $request,
+        MainManager $mainManager,
+        GroupRepository $GroupRepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canUpdateMainGroup($user)) {
+            return ApiResponse::forbidden(MainGroupAccessMessages::UPDATE);
+        }
+
+        if (null === $GroupRepository->find($id)) {
+            return ApiResponse::notFound(MainGroupAccessMessages::NOT_FOUND);
+        }
+
         $req = $request->toArray();
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
         try {
@@ -127,7 +163,22 @@ class GroupController extends AbstractController {
         return $this->json($group->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
-    public function detail (int $id, MainManager $mainManager): JsonResponse {
+    public function detail (
+        int $id,
+        MainManager $mainManager,
+        GroupRepository $GroupRepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadMainGroup($user)) {
+            return ApiResponse::forbidden(MainGroupAccessMessages::READ);
+        }
+
+        $group = $GroupRepository->find($id);
+        if (null === $group) {
+            return ApiResponse::notFound(MainGroupAccessMessages::NOT_FOUND);
+        }
+
         $group = $mainManager->group($id);
         $accesses = array();
         foreach ($group->getAccesses() as $access) {
@@ -168,8 +219,21 @@ class GroupController extends AbstractController {
         ]);
     }
     #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
-    public function remove(int $id, GroupRepository $GroupRepository): JsonResponse {
+    public function remove(
+        int $id,
+        GroupRepository $GroupRepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canDeleteMainGroup($user)) {
+            return ApiResponse::forbidden(MainGroupAccessMessages::DELETE);
+        }
+
         $group = $GroupRepository->find($id);
+        if (null === $group) {
+            return ApiResponse::notFound(MainGroupAccessMessages::NOT_FOUND);
+        }
+
         $arGroup = [
             'id' => $group->getId(),
             'code' => $group->getCode(),

@@ -109,3 +109,56 @@ export function useCanUpdateMainClaimant(): boolean {
 export function useCanDeleteMainClaimant(): boolean {
 	return useMainClaimantAccess(canDeleteMainClaimant);
 }
+
+const MAIN_GROUP_SCOPE = 'main.group';
+const READ_MAIN_GROUP_SCOPE = 'can_read.main.group';
+const CREATE_MAIN_GROUP_SCOPE = 'can_create.main.group';
+const UPDATE_MAIN_GROUP_SCOPE = 'can_update.main.group';
+const DELETE_MAIN_GROUP_SCOPE = 'can_delete.main.group';
+
+function canMainGroup(actionScope: string): boolean {
+	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_GROUP_SCOPE)) {
+		return true;
+	}
+
+	return Boolean(getLevelScope(MAIN_GROUP_SCOPE) & getCanScope(actionScope));
+}
+
+export function canReadMainGroup(): boolean {
+	return canMainGroup(READ_MAIN_GROUP_SCOPE);
+}
+
+export function canCreateMainGroup(): boolean {
+	return canMainGroup(CREATE_MAIN_GROUP_SCOPE);
+}
+
+export function canUpdateMainGroup(): boolean {
+	return canMainGroup(UPDATE_MAIN_GROUP_SCOPE);
+}
+
+export function canDeleteMainGroup(): boolean {
+	return canMainGroup(DELETE_MAIN_GROUP_SCOPE);
+}
+
+function useMainGroupAccess(check: () => boolean): boolean {
+	const scopes = useAuthStore((state) => state.scopes);
+	const roles = useAuthStore((state) => state.user?.roles);
+
+	return useMemo(() => check(), [scopes, roles]);
+}
+
+export function useCanReadMainGroup(): boolean {
+	return useMainGroupAccess(canReadMainGroup);
+}
+
+export function useCanCreateMainGroup(): boolean {
+	return useMainGroupAccess(canCreateMainGroup);
+}
+
+export function useCanUpdateMainGroup(): boolean {
+	return useMainGroupAccess(canUpdateMainGroup);
+}
+
+export function useCanDeleteMainGroup(): boolean {
+	return useMainGroupAccess(canDeleteMainGroup);
+}

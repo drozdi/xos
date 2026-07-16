@@ -90,6 +90,26 @@ final class UserScopeResolver
         return $this->canMainClaimant($user, 'can_delete.main.claimant');
     }
 
+    public function canCreateMainGroup(User $user): bool
+    {
+        return $this->canMainGroup($user, 'can_create.main.group');
+    }
+
+    public function canReadMainGroup(User $user): bool
+    {
+        return $this->canMainGroup($user, 'can_read.main.group');
+    }
+
+    public function canUpdateMainGroup(User $user): bool
+    {
+        return $this->canMainGroup($user, 'can_update.main.group');
+    }
+
+    public function canDeleteMainGroup(User $user): bool
+    {
+        return $this->canMainGroup($user, 'can_delete.main.group');
+    }
+
     private function canMainOu(User $user, string $scope): bool
     {
         if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_OU_ROOT'])) {
@@ -102,6 +122,15 @@ final class UserScopeResolver
     private function canMainClaimant(User $user, string $scope): bool
     {
         if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_CLAIMANT_ROOT'])) {
+            return true;
+        }
+
+        return $this->checkHasScope($user, $scope, false);
+    }
+
+    private function canMainGroup(User $user, string $scope): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_GROUP_ROOT'])) {
             return true;
         }
 
