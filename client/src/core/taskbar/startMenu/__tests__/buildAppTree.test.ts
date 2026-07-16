@@ -48,6 +48,16 @@ describe('buildAppTree', () => {
 		expect(tree[0]?.id).toBe('games');
 	});
 
+	it('excludes apps with startMenu false from tree', () => {
+		const tree = buildAppTree([
+			mockApp({ id: 'list', name: 'List', startMenuGroup: 'admin' }),
+			mockApp({ id: 'detail', name: 'Detail', startMenuGroup: 'admin', startMenu: false }),
+		]);
+
+		expect(tree.find((group) => group.id === 'admin')?.apps).toHaveLength(1);
+		expect(tree.find((group) => group.id === 'admin')?.apps[0]?.id).toBe('list');
+	});
+
 	it('resolves pinned apps in order', () => {
 		const apps = [
 			mockApp({ id: 'b', name: 'B' }),

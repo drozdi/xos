@@ -3,6 +3,10 @@ import type { AppManifest } from '@/core/appManager/types';
 import { START_MENU_GROUP_LABELS } from './defaults';
 import type { StartMenuAppGroup } from './types';
 
+export function isStartMenuApp(manifest: AppManifest): boolean {
+	return manifest.startMenu !== false;
+}
+
 function getGroupLabel(groupId: string): string {
 	return START_MENU_GROUP_LABELS[groupId] ?? groupId;
 }
@@ -12,9 +16,10 @@ export function resolveStartMenuGroup(app: AppManifest): string {
 }
 
 export function buildAppTree(apps: AppManifest[]): StartMenuAppGroup[] {
+	const visibleApps = apps.filter(isStartMenuApp);
 	const groups = new Map<string, AppManifest[]>();
 
-	for (const app of apps) {
+	for (const app of visibleApps) {
 		const groupId = resolveStartMenuGroup(app);
 		const current = groups.get(groupId) ?? [];
 		current.push(app);
@@ -36,7 +41,7 @@ export function resolvePinnedApps(
 	pinnedIds: string[],
 	availableApps: AppManifest[],
 ): AppManifest[] {
-	const byId = new Map(availableApps.map((app) => [app.id, app]));
+	const byId = new Map(availableApps.filter(isStartMenuApp).map((app) => [app.id, app]));
 	return pinnedIds.map((id) => byId.get(id)).filter((app): app is AppManifest => Boolean(app));
 }
 

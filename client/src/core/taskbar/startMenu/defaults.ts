@@ -14,8 +14,20 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	default: 'Приложения',
 };
 
-export const DEFAULT_PINNED_APPS = ['demo-calculator', 'tic-tac-toe', 'sudoku', 'settings'];
+export const DEFAULT_PINNED_APPS = [
+	'demo-calculator',
+	'tic-tac-toe',
+	'sudoku',
+	'settings',
+	'main-users',
+	'main-groups',
+	'main-ous',
+	'main-claimants',
+];
 
 export const DEFAULT_QUICK_ACTIONS: StartMenuQuickAction[] = [
-	{ id: 'quick-users', type: 'app', appId: 'users', label: 'Пользователи' },
+	{ id: 'quick-users', type: 'app', appId: 'main-users', label: 'Пользователи' },
+	{ id: 'quick-groups', type: 'app', appId: 'main-groups', label: 'Группы' },
+	{ id: 'quick-ous', type: 'app', appId: 'main-ous', label: 'Подразделения' },
+	{ id: 'quick-claimants', type: 'app', appId: 'main-claimants', label: 'Заявители' },
 ];

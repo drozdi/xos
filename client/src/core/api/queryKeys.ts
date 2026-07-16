@@ -19,7 +19,14 @@ export const queryKeys = {
 	main: {
 		users: (filters: ListRequest) => ['main', 'users', filters] as const,
 		user: (id: number) => ['main', 'user', id] as const,
+		userFilter: ['main', 'user', 'filter'] as const,
 		groups: (filters: ListRequest) => ['main', 'groups', filters] as const,
+		group: (id: number) => ['main', 'group', id] as const,
+		groupFilter: ['main', 'group', 'filter'] as const,
+		ous: (filters: ListRequest) => ['main', 'ous', filters] as const,
+		ou: (id: number) => ['main', 'ou', id] as const,
+		claimants: (filters: ListRequest) => ['main', 'claimants', filters] as const,
+		claimant: (id: number) => ['main', 'claimant', id] as const,
 	},
 	device: {
 		list: (filters: ListRequest) => ['device', 'list', filters] as const,

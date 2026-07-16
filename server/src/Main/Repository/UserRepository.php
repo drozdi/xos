@@ -66,7 +66,7 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
 
         return $entityManager->createQuery(
             'SELECT u
-                FROM App\Entity\Main\User u
+                FROM Main\Entity\User u
                 WHERE u.login = :query
                 OR u.email = :query'
         )

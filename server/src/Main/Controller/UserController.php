@@ -43,6 +43,9 @@ class UserController extends AbstractController {
                 'group' => -1
             ]
         ], $request->toArray());
+        if (!array_key_exists('limit', $req) && array_key_exists('size', $req)) {
+            $req['limit'] = (int)$req['size'];
+        }
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
         $totalItems = $UserRepository->cnt($req['filters']);
@@ -54,8 +57,8 @@ class UserController extends AbstractController {
                 foreach ($query->execute() as $user) {
                     $items[] = array(
                         'id' => $user->getId(),
-                        'login' => $user->getLogin(),
-                        'alias' => $user->getAlias(),
+                        'login' => $user->getLogin() ?? '',
+                        'alias' => $user->getAlias() ?? '',
                         'ou' => (string)$user->getOu(),
                         'tutor' => (string)$user->getParent(),
                     );

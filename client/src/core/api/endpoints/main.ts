@@ -10,10 +10,10 @@ export const mainEndpoints = {
 
 export const userListItemSchema = z.object({
 	id: z.number(),
-	login: z.string(),
-	alias: z.string(),
-	ou: z.string(),
-	tutor: z.string(),
+	login: z.string().nullable().transform((value) => value ?? ''),
+	alias: z.string().nullable().transform((value) => value ?? ''),
+	ou: z.string().nullable().transform((value) => value ?? ''),
+	tutor: z.string().nullable().transform((value) => value ?? ''),
 });
 
 export const userListResponseSchema = z.array(userListItemSchema);
