@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { AppRegistry } from '@/core/appManager/AppRegistry';
+import { resolveTaskbarGroup } from '@/core/taskbar/taskbarUtils';
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 
 import { removePersistedWindow, schedulePersistWindow } from './persistWindow';
@@ -59,6 +61,11 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			autoSize: payload.autoSize,
 		});
 
+		const manifest = AppRegistry.get(payload.appId);
+		const taskbarGroup =
+			payload.taskbarGroup ??
+			(manifest ? resolveTaskbarGroup(manifest) : payload.appId);
+
 		const windowState: WindowState = {
 			id,
 			appId: payload.appId,
@@ -73,6 +80,7 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			maximized: payload.maximized ?? false,
 			wmGroup: payload.wmGroup ?? 'default',
 			wmSort: payload.wmSort ?? 0,
+			taskbarGroup,
 			contentKey: 0,
 			dragHandles: payload.dragHandles,
 			dragCancel: payload.dragCancel,
@@ -212,20 +220,20 @@ export const useWmStore = create<WmStore>((set, get) => ({
 		get().updateWindow(id, { minimized: false });
 	},
 
-	getWindowsByGroup: (wmGroup) => {
-		return Object.values(get().windows).filter((window) => window.wmGroup === wmGroup);
+	getWindowsByGroup: (groupId) => {
+		return Object.values(get().windows).filter((window) => window.taskbarGroup === groupId);
 	},
 
-	minimizeGroup: (wmGroup) => {
-		for (const window of get().getWindowsByGroup(wmGroup)) {
+	minimizeGroup: (groupId) => {
+		for (const window of get().getWindowsByGroup(groupId)) {
 			if (!window.minimized) {
 				get().minimizeWindow(window.id);
 			}
 		}
 	},
 
-	restoreGroup: (wmGroup) => {
-		const groupWindows = get().getWindowsByGroup(wmGroup);
+	restoreGroup: (groupId) => {
+		const groupWindows = get().getWindowsByGroup(groupId);
 		const minimized = groupWindows.filter((window) => window.minimized);
 		if (minimized.length === 0) {return;}
 

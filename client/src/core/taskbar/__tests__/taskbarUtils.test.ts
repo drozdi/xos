@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import type { AppManifest } from '@/core/appManager/types';
 import type { WindowState } from '@/core/windowManager/types';
 
 import {
-	groupWindowsByWmGroup,
+	groupWindowsByTaskbarGroup,
 	isGroupActive,
+	resolveTaskbarGroup,
 	shouldMinimizeGroup,
 } from '../taskbarUtils';
 
@@ -25,20 +27,31 @@ function makeWindow(partial: Partial<WindowState> & Pick<WindowState, 'id' | 'wm
 		resizable: true,
 		positionFixed: false,
 		autoSize: false,
+		taskbarGroup: partial.taskbarGroup ?? partial.id,
 		...partial,
 	};
 }
 
 describe('taskbar group utils', () => {
-	it('groups windows by wmGroup and sorts by wmSort', () => {
-		const groups = groupWindowsByWmGroup([
-			makeWindow({ id: 'b', wmGroup: 'tools', wmSort: 2, title: 'B' }),
-			makeWindow({ id: 'a', wmGroup: 'tools', wmSort: 1, title: 'A' }),
-			makeWindow({ id: 'c', wmGroup: 'other', wmSort: 0, title: 'C' }),
+	it('resolves taskbarGroup from manifest with app id fallback', () => {
+		const app = {
+			id: 'sudoku',
+			taskbarGroup: 'games',
+		} as AppManifest;
+
+		expect(resolveTaskbarGroup(app)).toBe('games');
+		expect(resolveTaskbarGroup({ id: 'settings' } as AppManifest)).toBe('settings');
+	});
+
+	it('groups windows by taskbarGroup and sorts by wmSort', () => {
+		const groups = groupWindowsByTaskbarGroup([
+			makeWindow({ id: 'b', wmGroup: 'tools', taskbarGroup: 'tools', wmSort: 2, title: 'B' }),
+			makeWindow({ id: 'a', wmGroup: 'tools', taskbarGroup: 'tools', wmSort: 1, title: 'A' }),
+			makeWindow({ id: 'c', wmGroup: 'other', taskbarGroup: 'other', wmSort: 0, title: 'C' }),
 		]);
 
 		expect(groups).toHaveLength(2);
-		expect(groups[0]?.wmGroup).toBe('tools');
+		expect(groups[0]?.taskbarGroup).toBe('tools');
 		expect(groups[0]?.windows.map((window) => window.id)).toEqual(['a', 'b']);
 	});
 

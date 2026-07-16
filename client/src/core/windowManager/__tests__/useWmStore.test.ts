@@ -101,6 +101,7 @@ describe('useWmStore', () => {
 			instanceKey: 'a',
 			title: 'First',
 			wmGroup: 'tools',
+			taskbarGroup: 'tools',
 			wmSort: 1,
 		});
 		const secondId = useWmStore.getState().openWindow({
@@ -108,6 +109,7 @@ describe('useWmStore', () => {
 			instanceKey: 'b',
 			title: 'Second',
 			wmGroup: 'tools',
+			taskbarGroup: 'tools',
 			wmSort: 2,
 		});
 

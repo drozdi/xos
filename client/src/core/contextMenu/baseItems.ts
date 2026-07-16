@@ -142,6 +142,58 @@ export function applyWindowStateToBaseItems(
 	return Object.values(next).filter((item) => !item.hidden);
 }
 
+export function applyTaskbarWindowItemToBaseItems(
+	items: Record<BaseTaskbarMenuActionId, ContextMenuItemDef>,
+	ctx: ContextMenuContext,
+): ContextMenuItemDef[] {
+	const window = ctx.window;
+	if (!window) {
+		return applyTaskbarStateToBaseItems(items, ctx);
+	}
+
+	const next = { ...items };
+
+	if (window.minimized) {
+		next.restore = {
+			...next.restore,
+			label: 'Restore',
+			hidden: false,
+			onClick: (menuCtx) => {
+				if (!menuCtx.windowId) {return;}
+				getWindowApiOrThrow(menuCtx.windowId).restore();
+				useWmStore.getState().focusWindow(menuCtx.windowId);
+			},
+		};
+	} else {
+		next.restore = {
+			...next.restore,
+			label: 'Minimize',
+			hidden: false,
+			onClick: (menuCtx) => {
+				if (!menuCtx.windowId) {return;}
+				getWindowApiOrThrow(menuCtx.windowId).minimize();
+			},
+		};
+	}
+
+	next.minimize = { ...next.minimize, hidden: true };
+	next.close = {
+		...next.close,
+		hidden: false,
+		onClick: async (menuCtx) => {
+			if (!menuCtx.windowId) {return;}
+			await getWindowApiOrThrow(menuCtx.windowId).close();
+		},
+	};
+	next['close-all'] = { ...next['close-all'], hidden: true };
+	next['new-window'] = {
+		...next['new-window'],
+		hidden: Boolean(ctx.manifest.singleInstance),
+	};
+
+	return Object.values(next).filter((item) => !item.hidden);
+}
+
 export function applyTaskbarStateToBaseItems(
 	items: Record<BaseTaskbarMenuActionId, ContextMenuItemDef>,
 	ctx: ContextMenuContext,

@@ -25,6 +25,8 @@ export interface AppManifest {
 	wmGroup?: string;
 	/** Группа в меню «Пуск» (дерево приложений). По умолчанию — wmGroup */
 	startMenuGroup?: string;
+	/** Группа на панели задач (кнопка с hover-списком окон). По умолчанию — id приложения */
+	taskbarGroup?: string;
 	singleInstance?: boolean;
 	instanceKey?: string | ((params?: LaunchParams) => string);
 	contextMenu?: ContextMenuConfig;

@@ -7,6 +7,7 @@ export {
 	useAppWindowContextMenu,
 	useContextMenuItems,
 } from './useContextMenuItems';
+export { useContextMenuAnchor } from './useContextMenuAnchor';
 export type {
 	BaseTaskbarMenuActionId,
 	BaseWindowMenuActionId,

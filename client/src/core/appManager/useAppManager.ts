@@ -11,6 +11,7 @@ import {
 } from '@/core/windowManager/persistWindow';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 import { resolveWindowLayoutConfig } from '@/core/windowManager/windowLayout';
+import { resolveTaskbarGroup } from '@/core/taskbar/taskbarUtils';
 
 import { AppRegistry } from './AppRegistry';
 import {
@@ -161,6 +162,7 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			maximized: persisted?.maximized,
 			wmGroup: persisted?.wmGroup ?? manifest.wmGroup ?? 'default',
 			wmSort: persisted?.wmSort ?? 0,
+			taskbarGroup: resolveTaskbarGroup(manifest),
 			dragHandles: manifest.window?.dragHandles,
 			dragCancel: manifest.window?.dragCancel,
 			resizable: layout.resizable,

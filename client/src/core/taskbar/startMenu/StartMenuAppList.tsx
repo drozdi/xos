@@ -1,4 +1,4 @@
-import { Box, Collapse, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core';
+import { Box, Collapse, Group, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core';
 import { useState } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
@@ -31,10 +31,35 @@ function GroupSection({
 					borderRadius: 4,
 					color: 'var(--mantine-color-dimmed)',
 				}}
+				styles={{
+					root: {
+						'&:hover': {
+							background: 'var(--xos-shell-hover)',
+						},
+					},
+				}}
 			>
-				<Text size="xs" tt="uppercase" fw={700}>
-					{group.label}
-				</Text>
+				<Group gap={6} wrap="nowrap">
+					<Text
+						span
+						size="xs"
+						style={{
+							width: 12,
+							flexShrink: 0,
+							lineHeight: 1,
+							opacity: 0.8,
+						}}
+						aria-hidden
+					>
+						{opened ? '▾' : '▸'}
+					</Text>
+					<Text size="xs" tt="uppercase" fw={700}>
+						{group.label}
+					</Text>
+					<Text size="xs" c="dimmed" ml="auto">
+						{group.apps.length}
+					</Text>
+				</Group>
 			</UnstyledButton>
 			<Collapse expanded={opened}>
 				<Stack gap={2} pl="xs">

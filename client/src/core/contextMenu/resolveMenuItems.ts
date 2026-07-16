@@ -2,6 +2,7 @@ import type { AppManifest } from '@/core/appManager/types';
 
 import {
 	applyTaskbarStateToBaseItems,
+	applyTaskbarWindowItemToBaseItems,
 	applyWindowStateToBaseItems,
 	buildBaseTaskbarMenuItems,
 	buildBaseWindowMenuItems,
@@ -57,6 +58,9 @@ function appendCustomEntries(
 function buildBaseEntries(scope: ContextMenuScope, ctx: ContextMenuContext): ContextMenuItemDef[] {
 	if (scope === 'window') {
 		return applyWindowStateToBaseItems(buildBaseWindowMenuItems(), ctx);
+	}
+	if (scope === 'taskbar' && ctx.window && ctx.windows?.length === 1) {
+		return applyTaskbarWindowItemToBaseItems(buildBaseTaskbarMenuItems(), ctx);
 	}
 	return applyTaskbarStateToBaseItems(buildBaseTaskbarMenuItems(), ctx);
 }

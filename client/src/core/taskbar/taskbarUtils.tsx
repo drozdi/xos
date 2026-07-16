@@ -2,25 +2,33 @@ import type { ComponentType } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
 import type { WindowState } from '@/core/windowManager/types';
-
 export interface WindowGroup {
-	wmGroup: string;
+	taskbarGroup: string;
 	windows: WindowState[];
 }
 
-export function groupWindowsByWmGroup(windows: WindowState[]): WindowGroup[] {
+export function resolveTaskbarGroup(manifest: AppManifest): string {
+	return manifest.taskbarGroup ?? manifest.id;
+}
+
+export function groupWindowsByTaskbarGroup(windows: WindowState[]): WindowGroup[] {
 	const groups = new Map<string, WindowState[]>();
 
 	for (const window of windows) {
-		const current = groups.get(window.wmGroup) ?? [];
+		const current = groups.get(window.taskbarGroup) ?? [];
 		current.push(window);
-		groups.set(window.wmGroup, current);
+		groups.set(window.taskbarGroup, current);
 	}
 
-	return Array.from(groups.entries()).map(([wmGroup, groupWindows]) => ({
-		wmGroup,
+	return Array.from(groups.entries()).map(([taskbarGroup, groupWindows]) => ({
+		taskbarGroup,
 		windows: [...groupWindows].sort((a, b) => a.wmSort - b.wmSort || a.title.localeCompare(b.title)),
 	}));
+}
+
+/** @deprecated use groupWindowsByTaskbarGroup */
+export function groupWindowsByWmGroup(windows: WindowState[]): WindowGroup[] {
+	return groupWindowsByTaskbarGroup(windows);
 }
 
 export function shouldMinimizeGroup(windows: WindowState[]): boolean {

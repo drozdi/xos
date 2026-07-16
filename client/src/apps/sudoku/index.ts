@@ -17,6 +17,8 @@ const manifest: AppManifest = {
 	defaultSize: { width: 400, height: 560 },
 	minSize: { width: 300, height: 400 },
 	wmGroup: 'games',
+	startMenuGroup: 'games',
+	taskbarGroup: 'games',
 	singleInstance: true,
 	menu: () => import('./menu').then((module) => module.default),
 	contextMenu: {

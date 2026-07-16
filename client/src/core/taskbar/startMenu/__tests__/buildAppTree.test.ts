@@ -34,6 +34,20 @@ describe('buildAppTree', () => {
 		expect(tree[0]?.id).toBe('custom');
 	});
 
+	it('uses startMenuGroup independently from taskbarGroup', () => {
+		const tree = buildAppTree([
+			mockApp({
+				id: 'a',
+				name: 'App',
+				wmGroup: 'tools',
+				startMenuGroup: 'games',
+				taskbarGroup: 'tools',
+			}),
+		]);
+
+		expect(tree[0]?.id).toBe('games');
+	});
+
 	it('resolves pinned apps in order', () => {
 		const apps = [
 			mockApp({ id: 'b', name: 'B' }),

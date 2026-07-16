@@ -5,6 +5,7 @@ import type { WindowState } from '@/core/windowManager/types';
 
 import { resolveContextMenuItems } from '../resolveMenuItems';
 import type { ContextMenuContext } from '../types';
+import { isContextMenuItem } from '../types';
 
 function createManifest(overrides: Partial<AppManifest> = {}): AppManifest {
 	return {
@@ -37,6 +38,7 @@ function createWindow(overrides: Partial<WindowState> = {}): WindowState {
 		resizable: true,
 		positionFixed: false,
 		autoSize: false,
+		taskbarGroup: 'default',
 		...overrides,
 	};
 }
@@ -104,6 +106,9 @@ describe('resolveContextMenuItems', () => {
 			scope: 'taskbar',
 			appId: manifest.id,
 			manifest,
+			windowId: window.id,
+			instanceKey: window.instanceKey,
+			window,
 			windows: [window],
 			wmGroup: window.wmGroup,
 		};
@@ -114,5 +119,28 @@ describe('resolveContextMenuItems', () => {
 		expect(ids).toContain('custom-action');
 		expect(ids).not.toContain('new-window');
 		expect(ids).toContain('close');
+		expect(ids).not.toContain('close-all');
+	});
+
+	it('shows per-window minimize/restore in grouped taskbar item menu', () => {
+		const manifest = createManifest({ singleInstance: true });
+		const window = createWindow({ minimized: true });
+		const ctx: ContextMenuContext = {
+			scope: 'taskbar',
+			appId: manifest.id,
+			manifest,
+			windowId: window.id,
+			window,
+			windows: [window],
+			wmGroup: 'games',
+		};
+
+		const items = resolveContextMenuItems('taskbar', ctx, manifest);
+		const labels = items
+			.filter(isContextMenuItem)
+			.map((item) => item.label);
+
+		expect(labels).toContain('Restore');
+		expect(labels).not.toContain('Close all');
 	});
 });

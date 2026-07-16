@@ -17,6 +17,7 @@ export interface WindowState {
 	maximized: boolean;
 	wmGroup: string;
 	wmSort: number;
+	taskbarGroup: string;
 	contentKey: number;
 	dragHandles?: string[];
 	dragCancel?: string[];
@@ -44,6 +45,7 @@ export interface OpenWindowPayload {
 	maximized?: boolean;
 	wmGroup?: string;
 	wmSort?: number;
+	taskbarGroup?: string;
 	dragHandles?: string[];
 	dragCancel?: string[];
 	resizable?: boolean;

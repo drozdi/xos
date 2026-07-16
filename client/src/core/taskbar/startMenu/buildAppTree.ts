@@ -7,11 +7,15 @@ function getGroupLabel(groupId: string): string {
 	return START_MENU_GROUP_LABELS[groupId] ?? groupId;
 }
 
+export function resolveStartMenuGroup(app: AppManifest): string {
+	return app.startMenuGroup ?? app.wmGroup ?? 'default';
+}
+
 export function buildAppTree(apps: AppManifest[]): StartMenuAppGroup[] {
 	const groups = new Map<string, AppManifest[]>();
 
 	for (const app of apps) {
-		const groupId = app.startMenuGroup ?? app.wmGroup ?? 'default';
+		const groupId = resolveStartMenuGroup(app);
 		const current = groups.get(groupId) ?? [];
 		current.push(app);
 		groups.set(groupId, current);

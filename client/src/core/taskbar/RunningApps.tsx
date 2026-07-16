@@ -1,78 +1,173 @@
-import { ActionIcon, Button, Group, Menu, Text } from '@mantine/core';
-import { useMemo, type ReactNode } from 'react';
+import { ActionIcon, Box, Button, Group, Menu, Text } from '@mantine/core';
+import { useMemo } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
-import { ContextMenu, useContextMenuItems } from '@/core/contextMenu';
+import { useContextMenuAnchor, useContextMenuItems } from '@/core/contextMenu';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 import type { WindowState } from '@/core/windowManager/types';
 
+import { getTaskbarGroupLabel } from './groupLabels';
 import {
 	AppIcon,
-	groupWindowsByWmGroup,
+	groupWindowsByTaskbarGroup,
 	isGroupActive,
 	shouldMinimizeGroup,
 } from './taskbarUtils';
 
-function getGroupLabel(wmGroup: string, windows: WindowState[]): string {
-	const firstWindow = windows[0];
-	if (!firstWindow) {return wmGroup;}
+const TASKBAR_MENU_Z_INDEX = 1100;
 
-	const manifest = AppRegistry.get(firstWindow.appId);
-	if (manifest) {return manifest.name;}
+function getGroupLabel(taskbarGroup: string, windows: WindowState[]): string {
+	if (windows.length === 1) {
+		const firstWindow = windows[0];
+		if (!firstWindow) {
+			return taskbarGroup;
+		}
+		const manifest = AppRegistry.get(firstWindow.appId);
+		return manifest?.name ?? firstWindow.title ?? taskbarGroup;
+	}
 
-	return firstWindow.title || wmGroup;
+	return getTaskbarGroupLabel(taskbarGroup);
 }
 
 function getGroupIcon(windows: WindowState[]) {
 	const firstWindow = windows[0];
-	if (!firstWindow) {return null;}
+	if (!firstWindow) {
+		return null;
+	}
 
 	const manifest = AppRegistry.get(firstWindow.appId);
 	return manifest?.icon ?? null;
 }
 
-function TaskbarGroupContextMenu({
-	wmGroup,
-	groupWindows,
-	children,
+function TaskbarWindowMenuItem({
+	window,
+	taskbarGroup,
+	onActivate,
+	onClose,
 }: {
-	wmGroup: string;
+	window: WindowState;
+	taskbarGroup: string;
+	onActivate: () => void;
+	onClose: () => void;
+}) {
+	const manifest = AppRegistry.get(window.appId);
+	const items = useContextMenuItems({
+		scope: 'taskbar',
+		appId: window.appId,
+		windowId: window.id,
+		instanceKey: window.instanceKey,
+		window,
+		windows: [window],
+		wmGroup: taskbarGroup,
+	});
+
+	const { onContextMenu, menu } = useContextMenuAnchor(
+		items,
+		{
+			scope: 'taskbar',
+			appId: window.appId,
+			manifest: manifest!,
+			windowId: window.id,
+			instanceKey: window.instanceKey,
+			window,
+			windows: [window],
+			wmGroup: taskbarGroup,
+		},
+		{ position: 'top', zIndex: TASKBAR_MENU_Z_INDEX + 100 },
+	);
+
+	const icon = manifest?.icon;
+
+	return (
+		<>
+			<Menu.Item
+				leftSection={icon ? <AppIcon icon={icon} size={16} /> : undefined}
+				rightSection={
+					<ActionIcon
+						variant="subtle"
+						color="gray"
+						size="sm"
+						aria-label={`Close ${window.title}`}
+						onClick={(event) => {
+							event.stopPropagation();
+							onClose();
+						}}
+					>
+						×
+					</ActionIcon>
+				}
+				onClick={onActivate}
+				onContextMenu={manifest ? onContextMenu : undefined}
+			>
+				<Text size="sm" truncate maw={220}>
+					{window.title}
+					{window.minimized ? ' (свернуто)' : ''}
+				</Text>
+			</Menu.Item>
+			{manifest ? menu : null}
+		</>
+	);
+}
+
+function TaskbarGroupButton({
+	taskbarGroup,
+	groupWindows,
+	active,
+	label,
+	icon,
+	onClick,
+}: {
+	taskbarGroup: string;
 	groupWindows: WindowState[];
-	children: ReactNode;
+	active: boolean;
+	label: string;
+	icon: ReturnType<typeof getGroupIcon>;
+	onClick: () => void;
 }) {
 	const firstWindow = groupWindows[0];
 	const manifest = firstWindow ? AppRegistry.get(firstWindow.appId) : undefined;
 
 	const items = useContextMenuItems({
 		scope: 'taskbar',
-		appId: firstWindow?.appId ?? wmGroup,
+		appId: firstWindow?.appId ?? taskbarGroup,
 		windows: groupWindows,
-		wmGroup,
+		wmGroup: taskbarGroup,
 		windowId: firstWindow?.id,
 		instanceKey: firstWindow?.instanceKey,
 	});
 
-	if (!manifest || !firstWindow) {
-		return <>{children}</>;
-	}
+	const { onContextMenu, menu } = useContextMenuAnchor(
+		items,
+		{
+			scope: 'taskbar',
+			appId: firstWindow?.appId ?? taskbarGroup,
+			manifest: manifest!,
+			windowId: firstWindow?.id,
+			instanceKey: firstWindow?.instanceKey,
+			windows: groupWindows,
+			wmGroup: taskbarGroup,
+		},
+		{ position: 'top', zIndex: TASKBAR_MENU_Z_INDEX + 100 },
+	);
 
 	return (
-		<ContextMenu
-			items={items}
-			context={{
-				scope: 'taskbar',
-				appId: firstWindow.appId,
-				manifest,
-				windowId: firstWindow.id,
-				instanceKey: firstWindow.instanceKey,
-				windows: groupWindows,
-				wmGroup,
-			}}
-			position="top"
-			zIndex={1050}
-		>
-			{children}
-		</ContextMenu>
+		<>
+			<Button
+				variant={active ? 'light' : 'subtle'}
+				color={active ? 'blue' : 'gray'}
+				size="compact-sm"
+				leftSection={icon ? <AppIcon icon={icon} size={16} /> : undefined}
+				onClick={onClick}
+				onContextMenu={manifest && firstWindow ? onContextMenu : undefined}
+				style={{ maxWidth: 180 }}
+			>
+				<Text size="xs" truncate>
+					{label}
+					{groupWindows.length > 1 ? ` (${groupWindows.length})` : ''}
+				</Text>
+			</Button>
+			{manifest && firstWindow ? menu : null}
+		</>
 	);
 }
 
@@ -86,7 +181,7 @@ export function RunningApps() {
 	const restoreGroup = useWmStore((state) => state.restoreGroup);
 
 	const groups = useMemo(
-		() => groupWindowsByWmGroup(Object.values(windows)),
+		() => groupWindowsByTaskbarGroup(Object.values(windows)),
 		[windows],
 	);
 
@@ -96,17 +191,18 @@ export function RunningApps() {
 
 	return (
 		<Group gap={6} wrap="nowrap" style={{ overflow: 'hidden', flex: 1 }}>
-			{groups.map(({ wmGroup, windows: groupWindows }) => {
-				const label = getGroupLabel(wmGroup, groupWindows);
+			{groups.map(({ taskbarGroup, windows: groupWindows }) => {
+				const label = getGroupLabel(taskbarGroup, groupWindows);
 				const icon = getGroupIcon(groupWindows);
 				const active = isGroupActive(groupWindows, activeWindowId);
+				const showHoverMenu = groupWindows.length > 1;
 
 				const handleGroupClick = () => {
 					if (shouldMinimizeGroup(groupWindows)) {
-						minimizeGroup(wmGroup);
+						minimizeGroup(taskbarGroup);
 						return;
 					}
-					restoreGroup(wmGroup);
+					restoreGroup(taskbarGroup);
 				};
 
 				const handleActivate = (windowId: string) => {
@@ -114,60 +210,53 @@ export function RunningApps() {
 					focusWindow(windowId);
 				};
 
+				const button = (
+					<TaskbarGroupButton
+						taskbarGroup={taskbarGroup}
+						groupWindows={groupWindows}
+						active={active}
+						label={label}
+						icon={icon}
+						onClick={handleGroupClick}
+					/>
+				);
+
+				if (!showHoverMenu) {
+					return (
+						<Box key={taskbarGroup} component="span" style={{ display: 'inline-flex' }}>
+							{button}
+						</Box>
+					);
+				}
+
 				return (
 					<Menu
-						key={wmGroup}
+						key={taskbarGroup}
 						position="top"
-						offset={8}
-						zIndex={1050}
+						offset={0}
+						zIndex={TASKBAR_MENU_Z_INDEX}
 						withinPortal
-						trigger="hover"
+						floatingStrategy="fixed"
+						trigger="click-hover"
 						openDelay={100}
-						closeDelay={200}
+						closeDelay={400}
+						closeOnItemClick={false}
 					>
 						<Menu.Target>
-							<TaskbarGroupContextMenu wmGroup={wmGroup} groupWindows={groupWindows}>
-								<Button
-									variant={active ? 'light' : 'subtle'}
-									color={active ? 'blue' : 'gray'}
-									size="compact-sm"
-									leftSection={icon ? <AppIcon icon={icon} size={16} /> : undefined}
-									onClick={handleGroupClick}
-									style={{ maxWidth: 180 }}
-								>
-									<Text size="xs" truncate>
-										{label}
-										{groupWindows.length > 1 ? ` (${groupWindows.length})` : ''}
-									</Text>
-								</Button>
-							</TaskbarGroupContextMenu>
+							<Box component="span" style={{ display: 'inline-flex' }}>
+								{button}
+							</Box>
 						</Menu.Target>
 
 						<Menu.Dropdown>
 							{groupWindows.map((window) => (
-								<Menu.Item
+								<TaskbarWindowMenuItem
 									key={window.id}
-									rightSection={
-										<ActionIcon
-											variant="subtle"
-											color="gray"
-											size="sm"
-											aria-label={`Close ${window.title}`}
-											onClick={(event) => {
-												event.stopPropagation();
-												closeWindow(window.id);
-											}}
-										>
-											×
-										</ActionIcon>
-									}
-									onClick={() => handleActivate(window.id)}
-								>
-									<Text size="sm" truncate maw={220}>
-										{window.title}
-										{window.minimized ? ' (minimized)' : ''}
-									</Text>
-								</Menu.Item>
+									window={window}
+									taskbarGroup={taskbarGroup}
+									onActivate={() => handleActivate(window.id)}
+									onClose={() => closeWindow(window.id)}
+								/>
 							))}
 						</Menu.Dropdown>
 					</Menu>
