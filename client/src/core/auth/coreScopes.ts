@@ -1,3 +1,5 @@
+import { hasFullAppAccess } from '@/core/auth/coreRoles';
+
 type ScopeMap = Record<string, unknown>;
 
 let mapScopes: Record<string, ScopeMap> = {};
@@ -102,13 +104,30 @@ export function getLevelScope(scope: string): number {
 	return level;
 }
 
-export function checkHasScope(scope: string): boolean {
+/** Первый сегмент пути scope после can_*: can_read.main.user → main */
+export function extractRolePrefixFromScope(scope: string): string | undefined {
+	const parts = scope.split('.');
+	if (parts.length < 2) {
+		return undefined;
+	}
+	if (parts[0]?.startsWith('can_')) {
+		return parts[1];
+	}
+	return parts[0];
+}
+
+export function checkHasScope(scope: string, rolePrefix?: string): boolean {
 	let not = false;
 	let targetScope = scope;
 
 	if (targetScope.startsWith('!')) {
 		not = true;
 		targetScope = targetScope.slice(1);
+	}
+
+	const prefix = rolePrefix ?? extractRolePrefixFromScope(targetScope);
+	if (prefix && hasFullAppAccess(prefix)) {
+		return !not;
 	}
 
 	const result = Boolean(getLevelScope(targetScope) & getCanScope(targetScope));

@@ -1,18 +1,23 @@
 export { useAuthStore, getAuthStoreActions, type AuthStore } from './authStore';
 export {
 	CORE_ROLES,
+	canAccessApp,
 	getUserRoles,
+	hasFullAppAccess,
 	hasRole,
 	isAdmin,
+	isAppRoot,
 	isRole,
 	isRoot,
 	resetUserRoles,
 	setUserRoles,
+	toRolePrefix,
 	type CoreRole,
 } from './coreRoles';
 export {
 	CORE_SCOPES,
 	checkHasScope,
+	extractRolePrefixFromScope,
 	getCanScope,
 	getLevelScope,
 	hasScope,

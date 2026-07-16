@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
 	checkHasScope,
+	extractRolePrefixFromScope,
 	getCanScope,
 	getLevelScope,
 	joinLevel,
@@ -10,10 +11,12 @@ import {
 	setLevelScopes,
 	setMapScopes,
 } from '@/core/auth/coreScopes';
+import { resetUserRoles, setUserRoles } from '@/core/auth/coreRoles';
 
 describe('coreScopes', () => {
 	beforeEach(() => {
 		resetScopes();
+		resetUserRoles();
 	});
 
 	it('resolves level scopes with bitwise OR along path', () => {
@@ -63,6 +66,19 @@ describe('coreScopes', () => {
 		setMapScopes({ app: { can_read: 0 } });
 
 		expect(checkHasScope('!can_read.app')).toBe(true);
+	});
+
+	it('checkHasScope bypasses scope checks for full app access role', () => {
+		setUserRoles(['ROLE_MAIN_ADMIN']);
+		setLevelScopes({ 'read.main': 0 });
+		setMapScopes({ main: { can_read: 1 } });
+
+		expect(checkHasScope('can_read.main')).toBe(true);
+		resetUserRoles();
+	});
+
+	it('extractRolePrefixFromScope returns first path segment', () => {
+		expect(extractRolePrefixFromScope('can_read.main.user')).toBe('main');
 	});
 
 	it('resets scopes and cache on logout flow', () => {

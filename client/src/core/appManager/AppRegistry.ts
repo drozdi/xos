@@ -1,5 +1,5 @@
 import { checkHasScope } from '@/core/auth/coreScopes';
-import { isRole } from '@/core/auth/coreRoles';
+import { canAccessApp, hasFullAppAccess } from '@/core/auth/coreRoles';
 
 import type { AppManifest } from './types';
 
@@ -23,15 +23,21 @@ export const AppRegistry = {
 	},
 
 	getAvailable(): AppManifest[] {
-		return AppRegistry.getAll().filter((manifest) => {
-			if (manifest.requiredRole && !isRole(manifest.requiredRole)) {
-				return false;
-			}
-			if (manifest.requiredScope && !checkHasScope(manifest.requiredScope)) {
-				return false;
-			}
-			return true;
-		});
+		return AppRegistry.getAll().filter((manifest) => AppRegistry.canAccess(manifest));
+	},
+
+	canAccess(manifest: AppManifest): boolean {
+		if (manifest.requiredRole && !canAccessApp(manifest.requiredRole)) {
+			return false;
+		}
+		if (
+			manifest.requiredScope &&
+			!(manifest.requiredRole && hasFullAppAccess(manifest.requiredRole)) &&
+			!checkHasScope(manifest.requiredScope, manifest.requiredRole)
+		) {
+			return false;
+		}
+		return true;
 	},
 
 	clear(): void {

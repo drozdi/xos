@@ -2,7 +2,7 @@ import { notifications } from '@mantine/notifications';
 
 import { getApiClient } from '@/core/api/client';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
-import { isAdmin, isRole, isRoot } from '@/core/auth/coreRoles';
+import { isAdmin, isAppRoot, isRole, isRoot, canAccessApp, hasFullAppAccess } from '@/core/auth/coreRoles';
 import { checkHasScope, getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 import { settingManager } from '@/core/settings/SettingManager';
 import { getOrCreateWindowApi } from '@/core/windowManager/WindowApi';
@@ -52,6 +52,9 @@ export function createCoreApi(windowId: string, appId: string): CoreApi {
 			isRole,
 			isRoot,
 			isAdmin,
+			isAppRoot,
+			canAccessApp,
+			hasFullAppAccess,
 		},
 		scopes: {
 			checkHasScope,

@@ -24,7 +24,7 @@ export function createMainDetailManifestOptions(wmGroup: string, wmSort: number)
 		wmSort,
 		startMenu: false as const,
 		taskbarGroup: wmGroup,
-		requiredRole: 'admin' as const,
+		requiredRole: 'main' as const,
 	};
 }
 
@@ -35,6 +35,6 @@ export function createMainListManifestOptions(wmGroup: string, wmSort: number) {
 		wmSort,
 		startMenuGroup: 'admin',
 		taskbarGroup: wmGroup,
-		requiredRole: 'admin' as const,
+		requiredRole: 'main' as const,
 	};
 }

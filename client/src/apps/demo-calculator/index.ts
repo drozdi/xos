@@ -20,6 +20,7 @@ const manifest: AppManifest = {
 		autoSize: true,
 	},
 	wmGroup: 'tools',
+	requiredRole: 'user',
 	singleInstance: true,
 	contextMenu: {
 		window: (ctx) => [

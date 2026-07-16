@@ -26,9 +26,12 @@ export interface CoreApi {
 		isRole: (role: string) => boolean;
 		isRoot: () => boolean;
 		isAdmin: (mod?: string) => boolean;
+		isAppRoot: (mod: string) => boolean;
+		canAccessApp: (rolePrefix: string) => boolean;
+		hasFullAppAccess: (rolePrefix: string) => boolean;
 	};
 	scopes: {
-		checkHasScope: (scope: string) => boolean;
+		checkHasScope: (scope: string, rolePrefix?: string) => boolean;
 		getLevelScope: (scope: string) => number;
 		getCanScope: (scope: string) => number;
 	};

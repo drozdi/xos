@@ -15,6 +15,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 480, height: 560 },
 	minSize: { width: 360, height: 400 },
 	wmGroup: 'system',
+	requiredRole: 'user',
 	singleInstance: true,
 };
 

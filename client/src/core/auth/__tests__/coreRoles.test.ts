@@ -2,13 +2,17 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
 	CORE_ROLES,
+	canAccessApp,
 	getUserRoles,
+	hasFullAppAccess,
 	hasRole,
 	isAdmin,
+	isAppRoot,
 	isRole,
 	isRoot,
 	resetUserRoles,
 	setUserRoles,
+	toRolePrefix,
 } from '@/core/auth/coreRoles';
 
 describe('coreRoles', () => {
@@ -30,12 +34,41 @@ describe('coreRoles', () => {
 	it('detects root role', () => {
 		setUserRoles(['ROLE_ROOT']);
 		expect(isRoot()).toBe(true);
+		expect(canAccessApp('main')).toBe(true);
 	});
 
 	it('detects admin with optional module prefix', () => {
 		setUserRoles(['ROLE_MAIN_ADMIN']);
 		expect(isAdmin('main')).toBe(true);
 		expect(isAdmin()).toBe(false);
+		expect(hasFullAppAccess('main')).toBe(true);
+	});
+
+	it('detects app root role', () => {
+		setUserRoles(['ROLE_MAIN_ROOT']);
+		expect(isAppRoot('main')).toBe(true);
+		expect(hasFullAppAccess('main')).toBe(true);
+	});
+
+	it('canAccessApp accepts base, root and admin roles', () => {
+		setUserRoles(['ROLE_MAIN']);
+		expect(canAccessApp('main')).toBe(true);
+		expect(hasFullAppAccess('main')).toBe(false);
+
+		resetUserRoles();
+		setUserRoles(['ROLE_MAIN_ADMIN']);
+		expect(canAccessApp('main')).toBe(true);
+		expect(hasFullAppAccess('main')).toBe(true);
+
+		resetUserRoles();
+		setUserRoles(['ROLE_USER']);
+		expect(canAccessApp('user')).toBe(true);
+		expect(canAccessApp('main')).toBe(false);
+	});
+
+	it('toRolePrefix strips ROLE_ prefix', () => {
+		expect(toRolePrefix('main')).toBe('MAIN');
+		expect(toRolePrefix('ROLE_MAIN')).toBe('MAIN');
 	});
 
 	it('checks role membership in array via hasRole', () => {

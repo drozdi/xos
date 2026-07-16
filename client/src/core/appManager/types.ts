@@ -20,7 +20,12 @@ export interface AppManifest {
 	component: LazyExoticComponent<ComponentType>;
 	defaultSize: { width: number; height: number };
 	minSize?: { width: number; height: number };
+	/**
+	 * Префикс роли приложения (без ROLE_): main → ROLE_MAIN / ROLE_MAIN_ADMIN / ROLE_MAIN_ROOT.
+	 * ROLE_USER — приложения для всех авторизованных пользователей.
+	 */
 	requiredRole?: string;
+	/** Scope для запуска, если нет полного доступа по роли приложения */
 	requiredScope?: string;
 	wmGroup?: string;
 	/** Группа в меню «Пуск» (дерево приложений). По умолчанию — wmGroup */

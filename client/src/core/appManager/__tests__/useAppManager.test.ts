@@ -108,7 +108,7 @@ describe('useAppManager', () => {
 	});
 
 	it('blocks launch when required role is missing', async () => {
-		const manifest = createManifest({ requiredRole: 'ROLE_ADMIN' });
+		const manifest = createManifest({ requiredRole: 'main' });
 		useAppManager.getState().registerApps([manifest]);
 		setUserRoles(['ROLE_USER']);
 
@@ -119,6 +119,16 @@ describe('useAppManager', () => {
 		expect(notificationsShow).toHaveBeenCalledWith(
 			expect.objectContaining({ title: 'Access denied' }),
 		);
+	});
+
+	it('allows launch with app admin role', async () => {
+		const manifest = createManifest({ requiredRole: 'main' });
+		useAppManager.getState().registerApps([manifest]);
+		setUserRoles(['ROLE_MAIN_ADMIN']);
+
+		const windowId = await useAppManager.getState().launchApp('test-app');
+
+		expect(windowId).not.toBeNull();
 	});
 
 	it('adds and removes launch history entries', async () => {
