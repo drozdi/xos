@@ -116,7 +116,6 @@ export default function MainGroupApp() {
 						<Tabs.Panel value="users" pt="sm">
 							<GroupUsersTab
 								users={users}
-								ouId={data.ou_id}
 								readOnly={readOnlyUsers}
 								onChange={(nextUsers) => setField('users', nextUsers)}
 							/>

@@ -11,7 +11,7 @@ import type { GroupDetail } from '@/core/api/endpoints/mainApi';
 import { DateTimeField } from '@/core/dates';
 import { GroupSelect } from '@/features/main/GroupSelect';
 import { OuSelect } from '@/features/main/OuSelect';
-import { UserSelect } from '@/features/main/UserSelect';
+import { UserSelect, tutorOuUserFilters } from '@/features/main/UserSelect';
 
 interface GroupGeneralTabProps {
 	data: GroupDetail;
@@ -50,8 +50,8 @@ export function GroupGeneralTab({
 			/>
 			<UserSelect
 				value={data.user_id ?? null}
-				filters={data.ou_id ? { ou: data.ou_id } : undefined}
-				disabled={readOnly || !data.ou_id}
+				filters={tutorOuUserFilters}
+				disabled={readOnly}
 				onChange={(userId) => setField('user_id', userId)}
 			/>
 			<TextInput

@@ -4,7 +4,7 @@ import { mainOuApi, type OuDetail } from '@/core/api/endpoints/mainApi';
 import { canCreateMainOu, useCanDeleteMainOu, useCanReadMainOu, useCanUpdateMainOu } from '@/features/main/mainAccess';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 import { useEntityId } from '@/features/main/mainAppUtils';
-import { UserSelect } from '@/features/main/UserSelect';
+import { UserSelect, tutorOuUserFilters } from '@/features/main/UserSelect';
 
 import { validateOuForm } from './mainOuValidation';
 
@@ -102,6 +102,7 @@ export default function MainOuApp() {
 						withAsterisk
 						value={data.user_id ?? null}
 						error={errors.user_id}
+						filters={tutorOuUserFilters}
 						disabled={readOnly}
 						onChange={(userId) => setField('user_id', userId)}
 					/>

@@ -6,6 +6,11 @@ import { queryKeys } from '@/core/api/queryKeys';
 import { useAuthStore } from '@/core/auth/authStore';
 import type { ListRequest } from '@/types/api.types';
 
+/** Пользователи только из подразделений с флагом «Руководители». */
+export const tutorOuUserFilters: ListRequest['filters'] = {
+	ou: { isTutors: 1 },
+};
+
 interface UserSelectProps {
 	label?: string;
 	value: number | null | undefined;

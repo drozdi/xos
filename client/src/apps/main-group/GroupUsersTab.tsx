@@ -12,18 +12,17 @@ import { addGroupUser, removeGroupUser, updateGroupUser } from './groupFormUtils
 
 interface GroupUsersTabProps {
 	users: Record<string, GroupUserItem>;
-	ouId?: number | null;
 	readOnly: boolean;
 	onChange: (users: Record<string, GroupUserItem>) => void;
 }
 
-export function GroupUsersTab({ users, ouId, readOnly, onChange }: GroupUsersTabProps) {
+export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps) {
 	const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
 	const userSelectQuery = useQuery({
-		queryKey: queryKeys.main.userSelect(ouId ? { ou: ouId } : undefined),
-		queryFn: () => mainUserApi.select({ filters: ouId ? { ou: ouId } : undefined }),
-		enabled: Boolean(ouId) && !readOnly,
+		queryKey: queryKeys.main.userSelect(undefined),
+		queryFn: () => mainUserApi.select({}),
+		enabled: !readOnly,
 	});
 
 	const entries = useMemo(() => Object.entries(users), [users]);
@@ -45,8 +44,6 @@ export function GroupUsersTab({ users, ouId, readOnly, onChange }: GroupUsersTab
 					<UserSelect
 						label="Добавить пользователя"
 						value={selectedUserId}
-						filters={ouId ? { ou: ouId } : undefined}
-						disabled={!ouId}
 						onChange={(userId) => setSelectedUserId(userId)}
 					/>
 					<Button onClick={handleAdd} disabled={!selectedUserId}>
