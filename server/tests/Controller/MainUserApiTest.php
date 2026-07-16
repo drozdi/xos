@@ -3,6 +3,7 @@
 namespace App\Tests\Controller;
 
 use App\Tests\AuthWebTestCase;
+use Main\Entity\User;
 
 class MainUserApiTest extends AuthWebTestCase
 {
@@ -61,5 +62,56 @@ class MainUserApiTest extends AuthWebTestCase
         self::assertArrayHasKey('login', $items[0]);
         self::assertArrayHasKey('alias', $items[0]);
         self::assertSame(self::TEST_LOGIN, $items[0]['login']);
+    }
+
+    public function testUserSelectRequiresAuthentication(): void
+    {
+        $client = static::createClient();
+
+        $client->request(
+            'POST',
+            '/api/main/user/select',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['limit' => 20, 'offset' => 1], JSON_THROW_ON_ERROR)
+        );
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testUserSelectAvailableForAuthenticatedUserWithoutMainRole(): void
+    {
+        $client = static::createClient();
+        $this->prepareAuthDatabase($client);
+        $this->createTestUser($client, 'basic_user', 'basic_password', [User::ROLE_USER]);
+
+        $loginPayload = $this->login($client, 'basic_user', 'basic_password');
+
+        $client->request(
+            'POST',
+            '/api/main/user/select',
+            [],
+            [],
+            array_merge($this->authHeaders($loginPayload['token']), [
+                'CONTENT_TYPE' => 'application/json',
+            ]),
+            json_encode([
+                'limit' => 20,
+                'offset' => 1,
+                'sortBy' => [['key' => 'login', 'order' => 'ASC']],
+                'filters' => ['ou' => -1, 'group' => -1],
+            ], JSON_THROW_ON_ERROR)
+        );
+
+        self::assertResponseIsSuccessful();
+
+        /** @var list<array{value: int, label: string}> $items */
+        $items = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        self::assertIsArray($items);
+        self::assertGreaterThanOrEqual(2, count($items));
+        self::assertArrayHasKey('value', $items[0]);
+        self::assertArrayHasKey('label', $items[0]);
     }
 }

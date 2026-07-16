@@ -92,13 +92,30 @@ export const userDetailSchema = z
 	})
 	.passthrough();
 
+export const userSelectItemSchema = z.object({
+	value: z.number(),
+	label: z.string(),
+});
+
 export type UserListItem = z.infer<typeof userListItemSchema>;
 export type UserFilterOu = z.infer<typeof userFilterOuSchema>;
 export type UserDetail = z.infer<typeof userDetailSchema>;
+export type UserSelectItem = z.infer<typeof userSelectItemSchema>;
 
 export const mainUserApi = {
 	list: (request?: ListRequest) =>
 		postList('/api/main/user/list', request ?? {}, z.array(userListItemSchema)),
+	select: (request?: ListRequest) =>
+		postList(
+			'/api/main/user/select',
+			{
+				limit: -1,
+				offset: 1,
+				sortBy: [{ key: 'login', order: 'ASC' }],
+				...request,
+			},
+			z.array(userSelectItemSchema),
+		),
 	filter: async () => {
 		const { data } = await apiClient.get<unknown>('/api/main/user/filter');
 		return z.array(userFilterOuSchema).parse(data);

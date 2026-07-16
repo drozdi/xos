@@ -56,6 +56,16 @@ export function isAppRoot(mod: string): boolean {
 	return isRole(`${toRolePrefix(mod)}_ROOT`);
 }
 
+/** main.ou → MAIN_OU */
+export function scopePathToRolePrefix(scopePath: string): string {
+	return scopePath.trim().toUpperCase().replace(/\./g, '_');
+}
+
+/** ROLE_{scope}_ROOT, например main.ou → ROLE_MAIN_OU_ROOT */
+export function isScopeRoot(scopePath: string): boolean {
+	return isRole(`${scopePathToRolePrefix(scopePath)}_ROOT`);
+}
+
 export function hasRole(roles: string[], role: CoreRole): boolean {
 	return roles.includes(role);
 }

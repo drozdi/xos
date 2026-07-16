@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canReadMainOu } from '@/features/main/mainAccess';
 import { createMainListManifestOptions } from '@/features/main/mainAppUtils';
 
 import { OuIcon } from '../shared/AppIcons';
@@ -16,6 +17,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 800, height: 520 },
 	minSize: { width: 560, height: 360 },
 	...createMainListManifestOptions('main-ou', 1),
+	canAccess: canReadMainOu,
 };
 
 export default manifest;

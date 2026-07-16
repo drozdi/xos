@@ -40,6 +40,9 @@ class OU {
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
+    #[Assert\NotNull(
+        message: 'Ответственный должен быть указан'
+    )]
     private ?User $user = null;
 
     public function getId(): ?int

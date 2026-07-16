@@ -1,4 +1,5 @@
 import { apiBaseURL, apiClient } from '@/core/api/client';
+import { extractApiErrorMessage } from '@/core/api/apiError';
 import { refreshResponseSchema } from '@/core/api/endpoints/auth';
 import * as tokenStorage from '@/core/auth/tokenStorage';
 import { notifications } from '@mantine/notifications';
@@ -53,21 +54,7 @@ function isAuthBypassUrl(url: string | undefined): boolean {
 
 
 function getErrorMessage(error: AxiosError): string {
-	if (error.response?.data && typeof error.response.data === 'object') {
-		const data = error.response.data as Record<string, unknown>;
-		if (typeof data.message === 'string') {
-			return data.message;
-		}
-		if (typeof data.error === 'string') {
-			return data.error;
-		}
-	}
-
-	if (error.message) {
-		return error.message;
-	}
-
-	return 'Произошла ошибка сети';
+	return extractApiErrorMessage(error, 'Произошла ошибка сети');
 }
 
 
@@ -84,8 +71,17 @@ function showErrorToast(error: AxiosError, config: RetryableRequestConfig | unde
 	if (error.response?.status === 403) {
 		notifications.show({
 			color: 'red',
-			title: 'Ошибка',
-			message: 'Доступ запрещён',
+			title: 'Доступ запрещён',
+			message: getErrorMessage(error),
+		});
+		return;
+	}
+
+	if (error.response?.status === 404) {
+		notifications.show({
+			color: 'red',
+			title: 'Не найдено',
+			message: getErrorMessage(error),
 		});
 		return;
 	}

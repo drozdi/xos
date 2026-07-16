@@ -47,4 +47,17 @@ describe('AppRegistry', () => {
 		setUserRoles(['ROLE_ROOT']);
 		expect(AppRegistry.getAvailable().map((app) => app.id)).toEqual(['main-app', 'user-app']);
 	});
+
+	it('uses custom canAccess when provided', () => {
+		AppRegistry.register(
+			createManifest({
+				id: 'ou-app',
+				requiredRole: 'main',
+				canAccess: () => false,
+			}),
+		);
+
+		setUserRoles(['ROLE_MAIN']);
+		expect(AppRegistry.canAccess(AppRegistry.get('ou-app')!)).toBe(false);
+	});
 });

@@ -65,12 +65,12 @@ class UserController extends AbstractController {
                 }
                 break;
             case 'select':
-                foreach ($query->execute() as $user) {
-                    $items[] = array(
-                        'value' => $user->getId(),
-                        'label' => (string)$user
-                    );
-                }
+                $items = $UserRepository->findSelectItems(
+                    $req['filters'],
+                    $req['sortBy'],
+                    $req['limit'],
+                    $req['offset'],
+                );
                 break;
             default:
                 $query->getResult(\Doctrine\ORM\Query::HYDRATE_ARRAY);

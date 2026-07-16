@@ -119,6 +119,38 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
         return $query;
     }
 
+    /**
+     * @return list<array{value: int, label: string}>
+     */
+    public function findSelectItems(
+        array $filters = [],
+        array $sort = [['key' => 'login', 'order' => 'ASC']],
+        int $limit = -1,
+        int $offset = 1,
+    ): array {
+        $items = [];
+        $query = $this->getQueryBuilder($filters, $sort, $limit, $offset)->getQuery();
+        foreach ($query->execute() as $user) {
+            if (!$user instanceof User) {
+                continue;
+            }
+            $items[] = [
+                'value' => $user->getId(),
+                'label' => self::formatSelectLabel($user),
+            ];
+        }
+
+        return $items;
+    }
+
+    public static function formatSelectLabel(User $user): string
+    {
+        $alias = $user->getAlias() ?: $user->getLogin() ?: '';
+        $email = $user->getEmail() ?? '';
+
+        return '' !== $email ? sprintf('%s - %s', $alias, $email) : $alias;
+    }
+
 //    /**
 //     * @return User[] Returns an array of User objects
 //     */

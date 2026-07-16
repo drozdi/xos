@@ -43,8 +43,12 @@ abstract class AuthWebTestCase extends WebTestCase
         $schemaTool->createSchema($metadata);
     }
 
-    protected function createTestUser(KernelBrowser $client, string $login = self::TEST_LOGIN, string $password = self::TEST_PASSWORD): User
-    {
+    protected function createTestUser(
+        KernelBrowser $client,
+        string $login = self::TEST_LOGIN,
+        string $password = self::TEST_PASSWORD,
+        array $roles = [User::ROLE_ADMIN],
+    ): User {
         /** @var EntityManagerInterface $entityManager */
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
         /** @var UserPasswordHasherInterface $passwordHasher */
@@ -54,7 +58,7 @@ abstract class AuthWebTestCase extends WebTestCase
         $user->setLogin($login);
         $user->setEmail(self::TEST_EMAIL);
         $user->setAlias(self::TEST_ALIAS);
-        $user->setRoles([User::ROLE_ADMIN]);
+        $user->setRoles($roles);
         $user->setPassword($passwordHasher->hashPassword($user, $password));
 
         $entityManager->persist($user);

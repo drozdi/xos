@@ -10,6 +10,7 @@ import {
 	isAppRoot,
 	isRole,
 	isRoot,
+	isScopeRoot,
 	resetUserRoles,
 	setUserRoles,
 	toRolePrefix,
@@ -48,6 +49,12 @@ describe('coreRoles', () => {
 		setUserRoles(['ROLE_MAIN_ROOT']);
 		expect(isAppRoot('main')).toBe(true);
 		expect(hasFullAppAccess('main')).toBe(true);
+	});
+
+	it('detects scope root role', () => {
+		setUserRoles(['ROLE_MAIN_OU_ROOT']);
+		expect(isScopeRoot('main.ou')).toBe(true);
+		expect(isAppRoot('main')).toBe(false);
 	});
 
 	it('canAccessApp accepts base, root and admin roles', () => {

@@ -36,20 +36,7 @@ export function joinLevel(key: Record<string, number> | string, level = 0): void
 }
 
 export function joinScopes(app: string, map: ScopeMap): void {
-	const flattened: ScopeMap = {};
-
-	function enumeration(sub: ScopeMap): void {
-		Object.entries(sub).forEach(([key, value]) => {
-			if (key.startsWith('can_')) {
-				flattened[key] = value;
-			} else if (value && typeof value === 'object') {
-				enumeration(value as ScopeMap);
-			}
-		});
-	}
-
-	enumeration(map);
-	mapScopes[app] = flattened;
+	mapScopes[app] = map;
 }
 
 export function setMapScopes(map: Record<string, ScopeMap>): void {

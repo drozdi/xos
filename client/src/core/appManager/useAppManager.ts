@@ -1,8 +1,6 @@
 import { notifications } from '@mantine/notifications';
 import { create } from 'zustand';
 
-import { checkHasScope } from '@/core/auth/coreScopes';
-import { canAccessApp, hasFullAppAccess } from '@/core/auth/coreRoles';
 import { settingManager } from '@/core/settings/SettingManager';
 import {
 	fromPersistedState,
@@ -108,16 +106,8 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			return null;
 		}
 
-		if (manifest.requiredRole && !canAccessApp(manifest.requiredRole)) {
-			return denyLaunch(`Role "${manifest.requiredRole}" is required.`);
-		}
-
-		if (
-			manifest.requiredScope &&
-			!(manifest.requiredRole && hasFullAppAccess(manifest.requiredRole)) &&
-			!checkHasScope(manifest.requiredScope, manifest.requiredRole)
-		) {
-			return denyLaunch(`Scope "${manifest.requiredScope}" is required.`);
+		if (!AppRegistry.canAccess(manifest)) {
+			return denyLaunch('Access denied.');
 		}
 
 		const instanceKey = resolveInstanceKey(manifest, params);

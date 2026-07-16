@@ -27,6 +27,8 @@ export interface AppManifest {
 	requiredRole?: string;
 	/** Scope для запуска, если нет полного доступа по роли приложения */
 	requiredScope?: string;
+	/** Проверка доступа (заменяет requiredRole/requiredScope, если задана) */
+	canAccess?: () => boolean;
 	wmGroup?: string;
 	/** Группа в меню «Пуск» (дерево приложений). По умолчанию — wmGroup */
 	startMenuGroup?: string;

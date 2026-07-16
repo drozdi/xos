@@ -27,6 +27,10 @@ export const AppRegistry = {
 	},
 
 	canAccess(manifest: AppManifest): boolean {
+		if (manifest.canAccess) {
+			return manifest.canAccess();
+		}
+
 		if (manifest.requiredRole && !canAccessApp(manifest.requiredRole)) {
 			return false;
 		}

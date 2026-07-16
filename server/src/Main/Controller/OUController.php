@@ -14,10 +14,13 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
+use App\Http\ApiResponse;
+use App\Security\UserScopeResolver;
 use Main\Entity\OU;
 use Main\Entity\User;
 use Main\Entity\Group;
 use Main\Entity\Claimant;
+use Main\Security\MainOuAccessMessages;
 
 use Main\Repository\OURepository;
 use Main\Repository\UserRepository;
@@ -29,7 +32,16 @@ use Main\Service\MainManager;
 #[Route('/api/main/ou', name: 'api_main_ou_')]
 class OUController extends AbstractController {
     #[Route('/list', name: 'list')]
-    public function дшые (Request $request, OURepository $OURepository): JsonResponse {
+    public function list (
+        Request $request,
+        OURepository $OURepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadMainOu($user)) {
+            return ApiResponse::forbidden(MainOuAccessMessages::READ);
+        }
+
         $req = array_merge([
             't' => "list",
             'size' => -1,
@@ -87,7 +99,16 @@ class OUController extends AbstractController {
         ]);
     }
     #[Route('/', name: 'create', methods: ['POST'])]
-    public function create (Request $request, MainManager $mainManager): JsonResponse {
+    public function create (
+        Request $request,
+        MainManager $mainManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canCreateMainOu($user)) {
+            return ApiResponse::forbidden(MainOuAccessMessages::CREATE);
+        }
+
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
@@ -101,7 +122,22 @@ class OUController extends AbstractController {
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update (int $id, Request $request, MainManager $mainManager): JsonResponse {
+    public function update (
+        int $id,
+        Request $request,
+        MainManager $mainManager,
+        OURepository $OURepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canUpdateMainOu($user)) {
+            return ApiResponse::forbidden(MainOuAccessMessages::UPDATE);
+        }
+
+        if (null === $OURepository->find($id)) {
+            return ApiResponse::notFound(MainOuAccessMessages::NOT_FOUND);
+        }
+
         $req = $request->toArray();
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
         try {
@@ -114,28 +150,54 @@ class OUController extends AbstractController {
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
-    public function detail (int $id, MainManager $mainManager): JsonResponse {
-        $ou = $mainManager->ou($id);
+    public function detail (
+        int $id,
+        MainManager $mainManager,
+        OURepository $OURepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadMainOu($user)) {
+            return ApiResponse::forbidden(MainOuAccessMessages::READ);
+        }
+
+        $ou = $OURepository->find($id);
+        if (null === $ou) {
+            return ApiResponse::notFound(MainOuAccessMessages::NOT_FOUND);
+        }
+
         return $this->json([
             'id' => $ou->getId(),
             'name' => $ou->getName(),
             'code' => $ou->getCode(),
             'description' => $ou->getDescription(),
             'sort' => $ou->getSort(),
-            'x_timestamp' => $ou->getXTimestamp(),
+            'x_timestamp' => $ou->getXTimestamp('Y-m-d H:m:s'),
             'is_tutors' => $ou->isIsTutors(),
             'user_id' => $ou->getUser()? $ou->getUser()->getId(): null,
         ]);
     }
     #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
-    public function remove (int $id, OURepository $OURepository): JsonResponse {
+    public function remove (
+        int $id,
+        OURepository $OURepository,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canDeleteMainOu($user)) {
+            return ApiResponse::forbidden(MainOuAccessMessages::DELETE);
+        }
+
         $ou = $OURepository->find($id);
+        if (null === $ou) {
+            return ApiResponse::notFound(MainOuAccessMessages::NOT_FOUND);
+        }
         $arOu = [
             'id' => $ou->getId(),
             'code' => $ou->getCode(),
             'description' => $ou->getDescription(),
             'sort' => $ou->getSort(),
-            'x_timestamp' => $ou->getXTimestamp(),
+            'x_timestamp' => $ou->getXTimestamp('Y-m-d H:m:s'),
             'is_tutors' => $ou->isIsTutors(),
             'user_id' => $ou->getUser()? $ou->getUser()->getId(): null,
         ];

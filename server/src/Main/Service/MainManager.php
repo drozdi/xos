@@ -133,8 +133,8 @@ class MainManager extends AbstractManager  {
         }
         if (array_key_exists('user', $arOu) && $arOu['user'] instanceof User) {
             $ou->setUser($arOu['user']);
-        } elseif (array_key_exists('user_id', $arOu)  && (int)$arOu['user_id'] > 0) {
-            $ou->setUser($this->user((int)$arOu['user_id']));
+        } elseif (array_key_exists('user_id', $arOu)) {
+            $ou->setUser((int)$arOu['user_id'] > 0 ? $this->user((int)$arOu['user_id']) : null);
         }
         $errors = $this->getValidator()->validate($ou);
         if (count($errors) > 0) {

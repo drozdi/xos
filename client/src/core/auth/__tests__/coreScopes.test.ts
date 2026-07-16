@@ -35,7 +35,7 @@ describe('coreScopes', () => {
 		expect(getLevelScope('app.write')).toBe(5);
 	});
 
-	it('resolves can_ scopes from flattened app map', () => {
+	it('resolves can_ scopes from nested app map', () => {
 		setMapScopes({
 			main: {
 				users: {
@@ -45,8 +45,8 @@ describe('coreScopes', () => {
 			},
 		});
 
-		expect(getCanScope('can_read.main')).toBe(1);
-		expect(getCanScope('can_write.main')).toBe(2);
+		expect(getCanScope('can_read.main.users')).toBe(1);
+		expect(getCanScope('can_write.main.users')).toBe(2);
 	});
 
 	it('checkHasScope requires both level and can flags', () => {
@@ -57,8 +57,8 @@ describe('coreScopes', () => {
 			},
 		});
 
-		expect(checkHasScope('can_read.app')).toBe(true);
-		expect(checkHasScope('can_write.app')).toBe(false);
+		expect(checkHasScope('can_read.app.users')).toBe(true);
+		expect(checkHasScope('can_write.app.users')).toBe(false);
 	});
 
 	it('checkHasScope supports negation prefix', () => {
@@ -90,7 +90,7 @@ describe('coreScopes', () => {
 		expect(getCanScope('can_read.app')).toBe(0);
 	});
 
-	it('joinScopes flattens nested can_ keys per app', () => {
+	it('joinScopes stores nested can_ keys per app', () => {
 		joinScopes('settings', {
 			profile: {
 				can_edit: 1,
@@ -98,7 +98,7 @@ describe('coreScopes', () => {
 			},
 		});
 
-		expect(getCanScope('can_edit.settings')).toBe(1);
-		expect(getCanScope('can_view.settings')).toBe(2);
+		expect(getCanScope('can_edit.settings.profile')).toBe(1);
+		expect(getCanScope('can_view.settings.profile.nested')).toBe(2);
 	});
 });

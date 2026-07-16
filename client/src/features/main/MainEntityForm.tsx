@@ -13,36 +13,60 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import {
+	extractApiErrorMessage,
+	extractApiFieldErrors,
+	notifyApiError,
+} from '@/core/api/apiError';
+import { useAppContext } from '@/core/context/AppContext';
+import { useWmStore } from '@/core/windowManager/useWmStore';
 
 import { useEntityId } from './mainAppUtils';
 
 interface MainEntityFormProps<T> {
 	title: string;
 	queryKey: readonly unknown[];
+	listQueryKey?: readonly unknown[];
 	load: (id: number) => Promise<T>;
 	save: (id: number, data: T) => Promise<number>;
 	create: (data: T) => Promise<number>;
+	remove?: (id: number) => Promise<unknown>;
 	children: (props: {
 		data: T;
 		setField: <K extends keyof T>(key: K, value: T[K]) => void;
 		isNew: boolean;
+		readOnly: boolean;
+		errors: Partial<Record<keyof T & string, string>>;
 	}) => ReactNode;
+	headerNote?: (props: { data: T; isNew: boolean }) => ReactNode;
 	initialData: T;
+	validate?: (data: T) => Partial<Record<keyof T & string, string>>;
+	canSave?: boolean;
+	canDelete?: boolean;
 }
 
 export function MainEntityForm<T extends Record<string, unknown>>({
 	title,
 	queryKey,
+	listQueryKey,
 	load,
 	save,
 	create,
+	remove,
 	children,
+	headerNote,
 	initialData,
+	validate,
+	canSave = true,
+	canDelete = false,
 }: MainEntityFormProps<T>) {
+	const { windowId } = useAppContext();
+	const closeWindow = useWmStore((state) => state.closeWindow);
 	const entityId = useEntityId();
 	const isNew = entityId === 0;
 	const queryClient = useQueryClient();
 	const [form, setForm] = useState<T>(initialData);
+	const [errors, setErrors] = useState<Partial<Record<keyof T & string, string>>>({});
 
 	useWindowTitle(isNew ? `${title} (новый)` : `${title} #${entityId}`);
 
@@ -59,6 +83,14 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 
 	const mutation = useMutation({
 		mutationFn: async () => {
+			if (validate) {
+				const nextErrors = validate(form);
+				if (Object.keys(nextErrors).length > 0) {
+					setErrors(nextErrors);
+					throw new Error('Заполните обязательные поля');
+				}
+			}
+			setErrors({});
 			if (isNew) {
 				return create({ ...form, id: 0 });
 			}
@@ -67,10 +99,35 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 		onSuccess: () => {
 			notifications.show({ message: 'Сохранено', color: 'green' });
 			void queryClient.invalidateQueries({ queryKey });
+			if (listQueryKey) {
+				void queryClient.invalidateQueries({ queryKey: listQueryKey });
+			}
 		},
 		onError: (err: unknown) => {
-			const message = err instanceof Error ? err.message : 'Ошибка сохранения';
-			notifications.show({ message, color: 'red' });
+			const fieldErrors = extractApiFieldErrors(err);
+			if (Object.keys(fieldErrors).length > 0) {
+				setErrors(fieldErrors as Partial<Record<keyof T & string, string>>);
+			}
+			notifyApiError(err, 'Ошибка сохранения');
+		},
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: () => {
+			if (!remove) {
+				throw new Error('Удаление недоступно');
+			}
+			return remove(entityId);
+		},
+		onSuccess: () => {
+			notifications.show({ message: 'Удалено', color: 'green' });
+			if (listQueryKey) {
+				void queryClient.invalidateQueries({ queryKey: listQueryKey });
+			}
+			closeWindow(windowId);
+		},
+		onError: (err: unknown) => {
+			notifyApiError(err, 'Ошибка удаления');
 		},
 	});
 
@@ -85,25 +142,57 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	if (isError) {
 		return (
 			<Alert color="red" title="Ошибка" m="md">
-				{error instanceof Error ? error.message : 'Не удалось загрузить'}
+				{extractApiErrorMessage(error, 'Не удалось загрузить')}
 			</Alert>
 		);
 	}
 
 	const setField = <K extends keyof T>(key: K, value: T[K]) => {
 		setForm((current) => ({ ...current, [key]: value }));
+		setErrors((current) => {
+			if (!current[key as keyof T & string]) {
+				return current;
+			}
+			const next = { ...current };
+			delete next[key as keyof T & string];
+			return next;
+		});
 	};
+
+	const readOnly = !isNew && !canSave;
 
 	return (
 		<ScrollArea h="100%" p="md">
 			<Stack gap="md">
-				<Group justify="space-between">
-					<Text fw={600}>{isNew ? `${title} — новый` : `${title} #${entityId}`}</Text>
-					<Button size="xs" loading={mutation.isPending} onClick={() => mutation.mutate()}>
-						Сохранить
-					</Button>
+				<Group justify="space-between" align="flex-start">
+					<Stack gap={2}>
+						<Text fw={600}>{isNew ? `${title} — новый` : `${title} #${entityId}`}</Text>
+						{headerNote?.({ data: form, isNew })}
+					</Stack>
+					<Group gap="xs">
+						{canDelete && !isNew && remove ? (
+							<Button
+								size="xs"
+								color="red"
+								variant="light"
+								loading={deleteMutation.isPending}
+								onClick={() => {
+									if (window.confirm('Удалить запись?')) {
+										deleteMutation.mutate();
+									}
+								}}
+							>
+								Удалить
+							</Button>
+						) : null}
+						{canSave ? (
+							<Button size="xs" loading={mutation.isPending} onClick={() => mutation.mutate()}>
+								Сохранить
+							</Button>
+						) : null}
+					</Group>
 				</Group>
-				<Box>{children({ data: form, setField, isNew })}</Box>
+				<Box>{children({ data: form, setField, isNew, readOnly, errors })}</Box>
 			</Stack>
 		</ScrollArea>
 	);
