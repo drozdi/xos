@@ -66,7 +66,6 @@ export function Layout({ children, view: viewProp, mobileView: mobileViewProp }:
 	return (
 		<LayoutProvider value={contextValue}>
 			<Box
-				bg="dark.8"
 				style={{
 					display: 'grid',
 					width: '100vw',
@@ -75,6 +74,7 @@ export function Layout({ children, view: viewProp, mobileView: mobileViewProp }:
 					gridTemplateAreas: parsed.templateAreas,
 					gridTemplateColumns: parsed.templateColumns,
 					gridTemplateRows: parsed.templateRows,
+					backgroundColor: 'var(--mantine-color-body)',
 				}}
 			>
 				{children}

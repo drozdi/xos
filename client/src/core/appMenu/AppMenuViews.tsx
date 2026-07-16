@@ -106,7 +106,7 @@ export function AppMenuDropdownBar({ entries, context }: AppMenuDropdownBarProps
 						<Menu key={entry.id} trigger="click" withinPortal>
 							<Menu.Target>
 								<Button
-									variant="subtle"
+									variant="default"
 									size="compact-xs"
 									color="gray"
 									disabled={isMenuEntryDisabled(entry, context)}
@@ -125,7 +125,7 @@ export function AppMenuDropdownBar({ entries, context }: AppMenuDropdownBarProps
 					return (
 						<Button
 							key={entry.id}
-							variant="subtle"
+							variant="default"
 							size="compact-xs"
 							color="gray"
 							leftSection={entry.icon}
@@ -158,7 +158,7 @@ export function AppMenuToolbar({ entries, context }: AppMenuToolbarProps) {
 							key={entry.id ?? `divider-${index}`}
 							w={1}
 							h={20}
-							bg="gray.3"
+							style={{ backgroundColor: 'var(--xos-window-titlebar-border)' }}
 							mx={4}
 						/>
 					);
@@ -169,7 +169,7 @@ export function AppMenuToolbar({ entries, context }: AppMenuToolbarProps) {
 						<Menu key={entry.id} trigger="click" withinPortal>
 							<Menu.Target>
 								<ActionIcon
-									variant="subtle"
+									variant="default"
 									color="gray"
 									aria-label={entry.label}
 									disabled={isMenuEntryDisabled(entry, context)}
@@ -189,7 +189,7 @@ export function AppMenuToolbar({ entries, context }: AppMenuToolbarProps) {
 						return (
 							<ActionIcon
 								key={entry.id}
-								variant="subtle"
+								variant="default"
 								color="gray"
 								aria-label={entry.label}
 								disabled={isMenuEntryDisabled(entry, context)}
@@ -203,7 +203,7 @@ export function AppMenuToolbar({ entries, context }: AppMenuToolbarProps) {
 					return (
 						<Button
 							key={entry.id}
-							variant="subtle"
+							variant="default"
 							size="compact-xs"
 							color="gray"
 							disabled={isMenuEntryDisabled(entry, context)}

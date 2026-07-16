@@ -1,2 +1,15 @@
 @import 'tailwindcss';
 @import './window-breakpoints.css';
+@import './shell.css';
+
+@custom-variant dark (&:where([data-mantine-color-scheme="dark"], [data-mantine-color-scheme="dark"] *));
+
+@theme {
+	--color-body: var(--mantine-color-body);
+	--color-surface: var(--mantine-color-default);
+	--color-surface-elevated: var(--mantine-color-body);
+	--color-surface-hover: var(--mantine-color-default-hover);
+	--color-border: var(--mantine-color-default-border);
+	--color-text: var(--mantine-color-text);
+	--color-dimmed: var(--mantine-color-dimmed);
+}

@@ -61,13 +61,13 @@ class ApiAccountController extends AbstractController {
     public function options (#[CurrentUser] ?User $user): JsonResponse {
         return $this->json($user->getOptions());
     }
-    #[Route('/options', name: 'options_update', methods: ['PUT'])]
+    #[Route('/options', name: 'options_update', methods: ['PUT', 'PATCH'])]
     public function updateOptions (#[CurrentUser] ?User $user, Request $request, EntityManagerInterface $entityManager): JsonResponse {
         $user->setOptions($request->toArray());
         $entityManager->flush();
         return $this->json($user->getOptions());
     }
-    #[Route('', name: 'update', methods: ['PUT'])]
+    #[Route('', name: 'update', methods: ['PUT', 'PATCH'])]
     public function update (Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, UserPasswordHasherInterface $passwordHasher, #[CurrentUser] ?User $user): JsonResponse {
         $ar = $request->toArray();
         $entityManager->getConnection()->beginTransaction();

@@ -372,12 +372,13 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		>
 			<Box
 				ref={shellRef}
-				bg="gray.0"
 				style={{
 					display: 'flex',
 					flexDirection: 'column',
 					height: '100%',
-					border: '1px solid var(--mantine-color-gray-4)',
+					backgroundColor: 'var(--xos-window-bg)',
+					color: 'var(--xos-window-text)',
+					border: '1px solid var(--xos-window-border)',
 					borderRadius: isMobile ? 0 : 8,
 					boxShadow: 'var(--mantine-shadow-md)',
 					overflow: 'hidden',
@@ -392,13 +393,14 @@ function WindowComponent({ windowId, children }: WindowProps) {
 						flexShrink: 0,
 						height: isMobile ? 44 : 36,
 						cursor: isMaximizedLayout ? 'default' : 'move',
-						background: 'var(--mantine-color-gray-1)',
-						borderBottom: '1px solid var(--mantine-color-gray-3)',
+						background: 'var(--xos-window-titlebar-bg)',
+						borderBottom: '1px solid var(--xos-window-titlebar-border)',
+						color: 'var(--xos-window-text)',
 						userSelect: 'none',
 					}}
 					onMouseDown={handleFocus}
 				>
-					<Text size="sm" fw={500} truncate style={{ flex: 1 }}>
+					<Text size="sm" fw={500} truncate style={{ flex: 1 }} c="inherit">
 						{windowState.title}
 					</Text>
 					<Group gap={4} wrap="nowrap">
@@ -472,7 +474,7 @@ const WindowControl = memo(({
 		<ActionIcon
 			aria-label={label}
 			className={XOS_WINDOW_NO_DRAG_CLASS}
-			variant="subtle"
+			variant={variant === 'close' ? 'subtle' : 'default'}
 			color={variant === 'close' ? 'red' : 'gray'}
 			size={size}
 			onClick={onClick}

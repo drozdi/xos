@@ -71,8 +71,9 @@ function AppTopMenuContent({
 				h={36}
 				style={{
 					flexShrink: 0,
-					borderBottom: '1px solid var(--mantine-color-gray-3)',
-					background: 'var(--mantine-color-gray-0)',
+					borderBottom: '1px solid var(--xos-window-titlebar-border)',
+					background: 'var(--xos-window-titlebar-bg)',
+					color: 'var(--xos-window-text)',
 				}}
 			>
 				<AppMenuToolbar entries={items} context={context} />
@@ -86,8 +87,9 @@ function AppTopMenuContent({
 			<Box
 				style={{
 					flexShrink: 0,
-					borderBottom: '1px solid var(--mantine-color-gray-3)',
-					background: 'var(--mantine-color-gray-0)',
+					borderBottom: '1px solid var(--xos-window-titlebar-border)',
+					background: 'var(--xos-window-titlebar-bg)',
+					color: 'var(--xos-window-text)',
 				}}
 			>
 				<Box h={28}>
@@ -95,7 +97,7 @@ function AppTopMenuContent({
 				</Box>
 				<Box
 					h={36}
-					style={{ borderTop: '1px solid var(--mantine-color-gray-2)' }}
+					style={{ borderTop: '1px solid var(--xos-window-titlebar-border)' }}
 				>
 					<AppMenuToolbar entries={toolbarItems} context={context} />
 				</Box>
@@ -108,8 +110,9 @@ function AppTopMenuContent({
 			h={28}
 			style={{
 				flexShrink: 0,
-				borderBottom: '1px solid var(--mantine-color-gray-3)',
-				background: 'var(--mantine-color-gray-0)',
+				borderBottom: '1px solid var(--xos-window-titlebar-border)',
+				background: 'var(--xos-window-titlebar-bg)',
+				color: 'var(--xos-window-text)',
 			}}
 		>
 			<AppMenuDropdownBar entries={groupMenuBarEntries(items)} context={context} />

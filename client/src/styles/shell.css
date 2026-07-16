@@ -1,0 +1,14 @@
+[data-mantine-color-scheme] {
+	--xos-shell-bg: var(--mantine-color-default);
+	--xos-shell-bg-elevated: var(--mantine-color-body);
+	--xos-shell-border: var(--mantine-color-default-border);
+	--xos-shell-hover: var(--mantine-color-default-hover);
+	--xos-shell-text: var(--mantine-color-text);
+
+	--xos-window-bg: var(--mantine-color-body);
+	--xos-window-titlebar-bg: var(--mantine-color-default);
+	--xos-window-border: var(--mantine-color-default-border);
+	--xos-window-titlebar-border: var(--mantine-color-default-border);
+	--xos-window-chrome-hover: var(--mantine-color-default-hover);
+	--xos-window-text: var(--mantine-color-text);
+}

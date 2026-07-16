@@ -33,15 +33,8 @@ export function LayoutArea({ area, children }: LayoutAreaProps) {
 				minHeight: 0,
 				minWidth: 0,
 				overflow: area === 'm' ? 'hidden' : undefined,
-				backgroundColor:
-					area === 'h'
-						? 'var(--mantine-color-dark-7)'
-						: area === 'f'
-							? 'transparent'
-							: undefined,
-				borderBottom: area === 'h'
-					? '1px solid var(--mantine-color-dark-5)'
-					: undefined,
+				backgroundColor: area === 'h' ? 'var(--xos-shell-bg)' : area === 'f' ? 'transparent' : undefined,
+				borderBottom: area === 'h' ? '1px solid var(--xos-shell-border)' : undefined,
 			}}
 		>
 			{children}

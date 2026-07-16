@@ -5,6 +5,22 @@
 		<link rel="icon" type="image/svg+xml" href="/vite.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>XOS</title>
+		<script>
+			try {
+				var raw = localStorage.getItem('xos.settings.USER.theme');
+				var theme = raw ? JSON.parse(raw) : 'dark';
+				if (theme !== 'light' && theme !== 'dark' && theme !== 'auto') theme = 'dark';
+				var resolved =
+					theme !== 'auto'
+						? theme
+						: matchMedia('(prefers-color-scheme: dark)').matches
+							? 'dark'
+							: 'light';
+				document.documentElement.setAttribute('data-mantine-color-scheme', resolved);
+			} catch (e) {
+				document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
+			}
+		</script>
 	</head>
 	<body>
 		<div id="root"></div>

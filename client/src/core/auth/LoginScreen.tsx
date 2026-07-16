@@ -40,7 +40,7 @@ export function LoginScreen() {
 	});
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-gray-50">
+		<div className="flex min-h-screen items-center justify-center bg-body text-text">
 			<Paper shadow="md" p="xl" radius="md" w={360}>
 				<Title order={2} ta="center" mb="lg">
 					XOS Login

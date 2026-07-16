@@ -108,12 +108,12 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 					minWidth: 0,
 					width: gridWidth,
 					overflow: 'hidden',
-					backgroundColor: showCollapsedStrip ? 'transparent' : 'var(--mantine-color-dark-7)',
+					backgroundColor: showCollapsedStrip ? 'transparent' : 'var(--xos-shell-bg)',
 					borderRight: side === 'left' && !showCollapsedStrip
-						? '1px solid var(--mantine-color-dark-5)'
+						? '1px solid var(--xos-shell-border)'
 						: undefined,
 					borderLeft: side === 'right' && !showCollapsedStrip
-						? '1px solid var(--mantine-color-dark-5)'
+						? '1px solid var(--xos-shell-border)'
 						: undefined,
 				}}
 			>
@@ -175,12 +175,12 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 						[side]: HAMBURGER_STRIP_WIDTH,
 						width: Math.max(lastExpandedWidth.current, MIN_PANEL_WIDTH),
 						zIndex: 900,
-						backgroundColor: 'var(--mantine-color-dark-7)',
+						backgroundColor: 'var(--xos-shell-bg)',
 						borderRight: side === 'left'
-							? '1px solid var(--mantine-color-dark-5)'
+							? '1px solid var(--xos-shell-border)'
 							: undefined,
 						borderLeft: side === 'right'
-							? '1px solid var(--mantine-color-dark-5)'
+							? '1px solid var(--xos-shell-border)'
 							: undefined,
 						boxShadow: '0 0 24px rgba(0, 0, 0, 0.45)',
 					}}

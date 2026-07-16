@@ -8,7 +8,10 @@ import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
 import { preloadSettings } from '@/core/settings/preloadSettings';
 import { settingManager } from '@/core/settings/SettingManager';
+import { DEFAULT_THEME, ThemeProvider, xosColorSchemeManager } from '@/core/theme';
 import { theme } from '@/styles/theme';
+
+const colorSchemeManager = xosColorSchemeManager();
 
 const Desktop = lazy(() =>
 	import('@/core/desktop/Desktop').then((module) => ({ default: module.Desktop })),
@@ -85,9 +88,23 @@ export default function App() {
 
 	return (
 		<QueryClientProvider client={queryClient}>
-			<MantineProvider theme={theme}>
+			<MantineProvider
+				theme={theme}
+				defaultColorScheme={DEFAULT_THEME}
+				colorSchemeManager={colorSchemeManager}
+			>
 				<Notifications position="top-right" />
-				{showLoader ? (
+				{settingsReady ? (
+					<ThemeProvider>
+						{showLoader ? (
+							<AppShellFallback />
+						) : (
+							<Suspense fallback={<AppShellFallback />}>
+								{isAuthenticated ? <Desktop /> : <LoginScreen />}
+							</Suspense>
+						)}
+					</ThemeProvider>
+				) : showLoader ? (
 					<AppShellFallback />
 				) : (
 					<Suspense fallback={<AppShellFallback />}>

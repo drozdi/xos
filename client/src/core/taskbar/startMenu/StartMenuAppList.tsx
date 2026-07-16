@@ -29,7 +29,7 @@ function GroupSection({
 					width: '100%',
 					padding: '6px 8px',
 					borderRadius: 4,
-					color: 'var(--mantine-color-gray-4)',
+					color: 'var(--mantine-color-dimmed)',
 				}}
 			>
 				<Text size="xs" tt="uppercase" fw={700}>
@@ -53,12 +53,12 @@ function GroupSection({
 									gap: 10,
 									padding: '8px 10px',
 									borderRadius: 4,
-									color: 'var(--mantine-color-gray-0)',
+									color: 'var(--xos-shell-text)',
 								}}
 								styles={{
 									root: {
 										'&:hover': {
-											background: 'var(--mantine-color-dark-6)',
+											background: 'var(--xos-shell-hover)',
 										},
 									},
 								}}
@@ -88,12 +88,12 @@ export function StartMenuAppList({ onClose }: StartMenuAppListProps) {
 			style={{
 				flex: 1,
 				minWidth: 0,
-				borderRight: '1px solid var(--mantine-color-dark-5)',
-				background: 'var(--mantine-color-dark-7)',
+				borderRight: '1px solid var(--xos-shell-border)',
+				background: 'var(--xos-shell-bg)',
 			}}
 		>
 			<Box px="md" pt="md" pb="xs">
-				<Text size="sm" fw={600} c="gray.3">
+				<Text size="sm" fw={600} c="dimmed">
 					Все приложения
 				</Text>
 			</Box>

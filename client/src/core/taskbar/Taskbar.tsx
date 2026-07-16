@@ -23,8 +23,8 @@ export function Taskbar() {
 				display: 'flex',
 				alignItems: 'center',
 				padding: '0 12px',
-				backgroundColor: 'var(--mantine-color-dark-7)',
-				borderTop: '1px solid var(--mantine-color-dark-5)',
+				backgroundColor: 'var(--xos-shell-bg)',
+				borderTop: '1px solid var(--xos-shell-border)',
 				position: 'relative',
 				zIndex: 1000,
 			}}

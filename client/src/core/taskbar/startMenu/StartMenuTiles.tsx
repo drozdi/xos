@@ -24,11 +24,11 @@ export function StartMenuTiles({ apps, onClose }: StartMenuTilesProps) {
 			w={START_MENU_TILES_WIDTH}
 			style={{
 				flexShrink: 0,
-				background: 'var(--mantine-color-dark-7)',
+				background: 'var(--xos-shell-bg)',
 			}}
 		>
 			<Box px="md" pt="md" pb="xs">
-				<Text size="sm" fw={600} c="gray.3">
+				<Text size="sm" fw={600} c="dimmed">
 					Быстрый доступ
 				</Text>
 			</Box>
@@ -50,13 +50,13 @@ export function StartMenuTiles({ apps, onClose }: StartMenuTilesProps) {
 									gap: 6,
 									padding: '10px 6px',
 									borderRadius: 6,
-									color: 'var(--mantine-color-gray-0)',
+									color: 'var(--xos-shell-text)',
 									minHeight: 88,
 								}}
 								styles={{
 									root: {
 										'&:hover': {
-											background: 'var(--mantine-color-dark-6)',
+											background: 'var(--xos-shell-hover)',
 										},
 									},
 								}}
