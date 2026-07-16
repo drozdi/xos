@@ -2,7 +2,7 @@ import { Alert } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { VirtualTable } from '@/components/tables';
+import { DataTable } from '@/components/table';
 import { mainOuApi, type OuListItem } from '@/core/api/endpoints/mainApi';
 import { extractApiErrorMessage } from '@/core/api/apiError';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -28,11 +28,11 @@ export default function MainOusApp() {
 
 	const columns = useMemo(
 		() => [
-			{ key: 'code', header: 'Код', width: 120, render: (row: OuListItem) => row.code },
-			{ key: 'name', header: 'Название', render: (row: OuListItem) => row.name },
-			{ key: 'sort', header: 'Сорт.', width: 80, render: (row: OuListItem) => row.sort },
+			{ field: 'code' as const, header: 'Код', width: 120 },
+			{ field: 'name' as const, header: 'Название' },
+			{ field: 'sort' as const, header: 'Сорт.', width: 80 },
 			{
-				key: 'description',
+				field: 'description' as const,
 				header: 'Описание',
 				render: (row: OuListItem) => row.description ?? '',
 			},
@@ -65,11 +65,11 @@ export default function MainOusApp() {
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate ? () => openOu(0) : undefined}
 		>
-			<VirtualTable
+			<DataTable
+				storageKey="main-ous"
 				columns={columns}
-				rows={listQuery.data?.items ?? []}
-				height={360}
-				getRowKey={(row) => row.id}
+				data={listQuery.data?.items ?? []}
+				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openOu(row.id)}
 			/>
 		</MainListLayout>

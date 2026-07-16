@@ -1,3 +1,4 @@
+export * from './DataTable';
 export * from './context';
 export * from './DataColumn';
 export * from './hooks';

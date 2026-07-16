@@ -1,7 +1,5 @@
 import { ActionIcon } from '@mantine/core';
-import {
-	TbGripVertical
-} from 'react-icons/tb';
+import { IconGripVertical } from '@tabler/icons-react';
 import { isColumnReorderTarget } from '../../utils/column-fields';
 import type { TableHeaderCellDragerProps } from '../type';
 
@@ -25,7 +23,7 @@ export function TableHeaderCellDrager<T = object>({
 				cursor: 'move',
 			}}
 		>
-			<TbGripVertical />
+			<IconGripVertical size={16} />
 		</ActionIcon>
 	);
 }

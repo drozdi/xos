@@ -1,6 +1,6 @@
 import { type TableProps } from '@mantine/core';
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type { TableDataProps, TableNode } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableDataContext<T = object> {
 	breakpoint: boolean;

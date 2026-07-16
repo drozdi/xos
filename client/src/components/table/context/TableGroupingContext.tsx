@@ -1,5 +1,5 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type { ColumnEntity, TableDataProps, TableGroupLayout } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableGroupingContext<T = object> {
 	groupAt: TableDataProps['groupAt'];

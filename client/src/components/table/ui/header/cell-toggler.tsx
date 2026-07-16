@@ -1,8 +1,6 @@
 import { ActionIcon } from '@mantine/core';
 import { useCallback } from 'react';
-import {
-	TbX
-} from 'react-icons/tb';
+import { IconX } from '@tabler/icons-react';
 import { useTableColumnMetaContext } from '../../context/TableColumnMetaContext';
 import type { TableHeaderCellTogglerProps } from '../type';
 
@@ -42,7 +40,7 @@ export function TableHeaderCellToggler<T = object>({
 			{...props}
 			onClick={handleClick}
 		>
-			<TbX />
+			<IconX size={16} />
 		</ActionIcon>
 	);
 }

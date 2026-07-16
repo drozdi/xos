@@ -1,4 +1,3 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type {
 	TableBulkAction,
 	TableBulkActionsPanelProps,
@@ -6,6 +5,7 @@ import type {
 	TableRowAction,
 	TableRowActionsPanelProps,
 } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableRowActionsContext<T = object> {
 	rowActions?: TableRowAction<T>[];

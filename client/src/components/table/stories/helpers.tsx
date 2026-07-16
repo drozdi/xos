@@ -1,6 +1,6 @@
 import { Badge, Group, TextInput } from '@mantine/core';
 import { useCallback, useMemo, useState } from 'react';
-import { TbPencil, TbTrash } from 'react-icons/tb';
+import { IconPencil, IconTrash } from '@tabler/icons-react';
 import type { ColumnEntity, TableBulkAction, TableRowAction, TableRowActionsPanelProps } from '../type';
 import { TableRowActionsPanel } from '../ui/row-actions/panel';
 import {
@@ -102,13 +102,13 @@ export function useActionDemoState() {
             {
                 id: 'edit',
                 label: 'Редактировать',
-                icon: <TbPencil size={16} />,
+                icon: <IconPencil size={16} />,
                 onClick: (item, node) => onEdit(item, node.index),
             },
             {
                 id: 'delete',
                 label: 'Удалить',
-                icon: <TbTrash size={16} />,
+                icon: <IconTrash size={16} />,
                 color: 'red',
                 onClick: (_, node) => {
                     setActionData((rows) => rows.filter((__, index) => index !== Number(node.index)));
@@ -137,7 +137,7 @@ export function useActionDemoState() {
             {
                 id: 'delete-selected',
                 label: 'Удалить выбранные',
-                icon: <TbTrash size={16} />,
+                icon: <IconTrash size={16} />,
                 color: 'red',
                 onClick: ({ selectedIndexes }) => {
                     setActionData((rows) => rows.filter((_, index) => !selectedIndexes.includes(index)));

@@ -1,5 +1,5 @@
 import { ActionIcon } from "@mantine/core";
-import { TbCircleChevronLeft, TbCircleChevronRight } from 'react-icons/tb';
+import { IconCircleChevronLeft, IconCircleChevronRight } from '@tabler/icons-react';
 import { useTableGroupingContext, useTableExpandContext } from '../../context';
 import type { ExpandKind } from '../../type';
 import { getNodeExpandKey } from '../../utils/group-by';
@@ -54,7 +54,7 @@ export function TableBodyExpander<T = object>({
 					toggleExpand(expandKey, kind);
 				}}
 			>
-				{groupAt === 'end' ? <TbCircleChevronLeft /> : <TbCircleChevronRight />}
+				{groupAt === 'end' ? <IconCircleChevronLeft size={16} /> : <IconCircleChevronRight size={16} />}
 			</ActionIcon>
 	);
 }

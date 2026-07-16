@@ -1,9 +1,9 @@
 import { ActionIcon, Badge, Group } from '@mantine/core';
 import {
-	TbChevronDown,
-	TbChevronUp,
-	TbSelector
-} from 'react-icons/tb';
+	IconChevronDown,
+	IconChevronUp,
+	IconSelector,
+} from '@tabler/icons-react';
 import { useTableSortContext } from '../../context/TableSortContext';
 import { resolveColumnSortField } from '../../utils/column-fields';
 import type { TableHeaderCellSorterProps } from '../type';
@@ -57,7 +57,7 @@ export function TableHeaderCellSorter<T = object>({
 				title={ariaLabel}
 				aria-label={ariaLabel}
 			>
-				{isSorted ? isDescending ? <TbChevronDown /> : <TbChevronUp /> : <TbSelector />}
+				{isSorted ? isDescending ? <IconChevronDown size={16} /> : <IconChevronUp size={16} /> : <IconSelector size={16} />}
 			</ActionIcon>
 		</Group>
 	);

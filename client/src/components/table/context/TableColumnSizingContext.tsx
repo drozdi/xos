@@ -1,5 +1,5 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type { ColumnEntity } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableColumnSizingContext<T = object> {
 	columnWidths?: Partial<Record<keyof T, number>>;

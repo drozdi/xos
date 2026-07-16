@@ -2,8 +2,9 @@ import { Select, Stack } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { VirtualTable } from '@/components/tables';
+import { DataTable } from '@/components/table';
 import { mainUserApi, type UserListItem } from '@/core/api/endpoints/mainApi';
+import { extractApiErrorMessage } from '@/core/api/apiError';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { MainListLayout } from '@/features/main/MainListLayout';
@@ -69,11 +70,11 @@ export default function MainUsersApp() {
 
 	const columns = useMemo(
 		() => [
-			{ key: 'id', header: 'ID', width: 70, render: (row: UserListItem) => row.id },
-			{ key: 'login', header: 'Логин', render: (row: UserListItem) => row.login },
-			{ key: 'alias', header: 'Псевдоним', render: (row: UserListItem) => row.alias },
-			{ key: 'ou', header: 'Подразделение', render: (row: UserListItem) => row.ou },
-			{ key: 'tutor', header: 'Руководитель', render: (row: UserListItem) => row.tutor },
+			{ field: 'id' as const, header: 'ID', width: 70 },
+			{ field: 'login' as const, header: 'Логин' },
+			{ field: 'alias' as const, header: 'Псевдоним' },
+			{ field: 'ou' as const, header: 'Подразделение' },
+			{ field: 'tutor' as const, header: 'Руководитель' },
 		],
 		[],
 	);
@@ -86,7 +87,11 @@ export default function MainUsersApp() {
 			total={listQuery.data?.total}
 			isLoading={listQuery.isLoading}
 			isError={listQuery.isError}
-			errorMessage={listQuery.error instanceof Error ? listQuery.error.message : undefined}
+			errorMessage={
+				listQuery.error
+					? extractApiErrorMessage(listQuery.error, 'Не удалось загрузить данные')
+					: undefined
+			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={() => openUser(0)}
@@ -116,11 +121,11 @@ export default function MainUsersApp() {
 				</Stack>
 			}
 		>
-			<VirtualTable
+			<DataTable
+				storageKey="main-users"
 				columns={columns}
-				rows={listQuery.data?.items ?? []}
-				height={360}
-				getRowKey={(row) => row.id}
+				data={listQuery.data?.items ?? []}
+				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openUser(row.id)}
 			/>
 		</MainListLayout>

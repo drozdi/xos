@@ -1,4 +1,5 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
+import { createSafeContext } from '../utils/create-safe-context';
+
 import type { ColumnEntity } from '../type';
 
 export interface TableColumnMetaContext<T = object> {

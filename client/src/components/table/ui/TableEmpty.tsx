@@ -1,8 +1,8 @@
 import { Center, Stack, Text } from '@mantine/core';
-import { TbDatabaseOff } from 'react-icons/tb';
+import { IconDatabaseOff } from '@tabler/icons-react';
 import type { TableEmptyProps } from './type';
 
-export function TableEmpty({ Icon = TbDatabaseOff, text, children }: TableEmptyProps) {
+export function TableEmpty({ Icon = IconDatabaseOff, text, children }: TableEmptyProps) {
 	return (
 		<Center w="100%" h="100%" p="lg">
 			{children || (

@@ -1,7 +1,7 @@
 import { ActionIcon, Group, TextInput, type TextInputProps } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useEffect, useState } from 'react';
-import { TbSearch, TbX } from 'react-icons/tb';
+import { IconSearch, IconX } from '@tabler/icons-react';
 
 export interface TableSearchProps extends Omit<TextInputProps, 'value' | 'onChange'> {
 	value?: string;
@@ -32,7 +32,7 @@ export function TableSearch({
 			placeholder={placeholder}
 			value={value}
 			onChange={(e) => setValue(e.currentTarget.value)}
-			leftSection={<TbSearch size={16} />}
+			leftSection={<IconSearch size={16} />}
 			rightSection={
 				value ? (
 					<ActionIcon
@@ -41,7 +41,7 @@ export function TableSearch({
 						onClick={handleClear}
 						size="sm"
 					>
-						<TbX size={16} />
+						<IconX size={16} />
 					</ActionIcon>
 				) : null
 			}

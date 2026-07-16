@@ -2,8 +2,9 @@ import { Select } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { VirtualTable } from '@/components/tables';
+import { DataTable } from '@/components/table';
 import { mainGroupApi, type GroupListItem } from '@/core/api/endpoints/mainApi';
+import { extractApiErrorMessage } from '@/core/api/apiError';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { MainListLayout } from '@/features/main/MainListLayout';
@@ -49,10 +50,10 @@ export default function MainGroupsApp() {
 
 	const columns = useMemo(
 		() => [
-			{ key: 'code', header: 'Код', width: 120, render: (row: GroupListItem) => row.code },
-			{ key: 'name', header: 'Название', render: (row: GroupListItem) => row.name },
-			{ key: 'ou', header: 'Подразделение', render: (row: GroupListItem) => row.ou },
-			{ key: 'sort', header: 'Сорт.', width: 80, render: (row: GroupListItem) => row.sort },
+			{ field: 'code' as const, header: 'Код', width: 120 },
+			{ field: 'name' as const, header: 'Название' },
+			{ field: 'ou' as const, header: 'Подразделение' },
+			{ field: 'sort' as const, header: 'Сорт.', width: 80 },
 		],
 		[],
 	);
@@ -65,7 +66,11 @@ export default function MainGroupsApp() {
 			total={listQuery.data?.total}
 			isLoading={listQuery.isLoading}
 			isError={listQuery.isError}
-			errorMessage={listQuery.error instanceof Error ? listQuery.error.message : undefined}
+			errorMessage={
+				listQuery.error
+					? extractApiErrorMessage(listQuery.error, 'Не удалось загрузить данные')
+					: undefined
+			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={() => openGroup(0)}
@@ -80,11 +85,11 @@ export default function MainGroupsApp() {
 				/>
 			}
 		>
-			<VirtualTable
+			<DataTable
+				storageKey="main-groups"
 				columns={columns}
-				rows={listQuery.data?.items ?? []}
-				height={360}
-				getRowKey={(row) => row.id}
+				data={listQuery.data?.items ?? []}
+				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openGroup(row.id)}
 			/>
 		</MainListLayout>

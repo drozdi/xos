@@ -1,5 +1,5 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type { ExpandKind, TableExpandablesState, TableExpandsState, ToggleExpandOptions } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableExpandedSets {
 	group: Set<string>;

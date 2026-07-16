@@ -1,7 +1,6 @@
 import { Card, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useMounted } from '@mantine/hooks';
 import { Children, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useBreakpoint } from '../../hooks';
 import { Loading } from '../loading';
 import { TableColumnMetaProvider } from './context/TableColumnMetaContext';
 import { TableColumnSizingProvider } from './context/TableColumnSizingContext';
@@ -13,6 +12,7 @@ import { TableRowActionsProvider } from './context/TableRowActionsContext';
 import { TableSelectionProvider } from './context/TableSelectionContext';
 import { TableSortProvider } from './context/TableSortContext';
 import { useColumnHidden, useColumnOrder, useColumnSort, useNodeSelect } from './hooks';
+import { useBreakpoint } from './hooks/use-breakpoint';
 import type {
 	ColumnEntity,
 	DataColumnProps,

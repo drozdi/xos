@@ -1,5 +1,5 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type { TableDataProps, TableNode } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableSelectionContext<T = object> {
 	selectedRows: TableNode<T>['index'][];

@@ -1,5 +1,5 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type { TableSortState } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableSortContext<T = object> {
 	sort: TableSortState<T>;

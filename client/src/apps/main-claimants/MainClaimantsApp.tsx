@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { VirtualTable } from '@/components/tables';
+import { DataTable } from '@/components/table';
 import { mainClaimantApi, type ClaimantListItem } from '@/core/api/endpoints/mainApi';
+import { extractApiErrorMessage } from '@/core/api/apiError';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { MainListLayout } from '@/features/main/MainListLayout';
@@ -22,8 +23,8 @@ export default function MainClaimantsApp() {
 
 	const columns = useMemo(
 		() => [
-			{ key: 'code', header: 'Код', width: 120, render: (row: ClaimantListItem) => row.code },
-			{ key: 'name', header: 'Название', render: (row: ClaimantListItem) => row.name },
+			{ field: 'code' as const, header: 'Код', width: 120 },
+			{ field: 'name' as const, header: 'Название' },
 		],
 		[],
 	);
@@ -36,16 +37,20 @@ export default function MainClaimantsApp() {
 			total={listQuery.data?.total}
 			isLoading={listQuery.isLoading}
 			isError={listQuery.isError}
-			errorMessage={listQuery.error instanceof Error ? listQuery.error.message : undefined}
+			errorMessage={
+				listQuery.error
+					? extractApiErrorMessage(listQuery.error, 'Не удалось загрузить данные')
+					: undefined
+			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={() => openClaimant(0)}
 		>
-			<VirtualTable
+			<DataTable
+				storageKey="main-claimants"
 				columns={columns}
-				rows={listQuery.data?.items ?? []}
-				height={360}
-				getRowKey={(row) => row.id}
+				data={listQuery.data?.items ?? []}
+				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openClaimant(row.id)}
 			/>
 		</MainListLayout>

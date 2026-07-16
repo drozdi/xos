@@ -1,5 +1,5 @@
 import { ActionIcon, Group, Menu, Tooltip } from '@mantine/core';
-import { TbDots } from 'react-icons/tb';
+import { IconDots } from '@tabler/icons-react';
 import type { TableBulkActionsPanelProps, TableRowActionsPanelProps } from '../../type';
 import { isBulkActionDisabled, isRowActionDisabled } from '../../utils/row-actions';
 
@@ -48,7 +48,7 @@ export function TableRowActionsMenu<T = object>({ node, actions }: TableRowActio
 					aria-label="Действия со строкой"
 					onClick={(event) => event.stopPropagation()}
 				>
-					<TbDots size={16} />
+					<IconDots size={16} />
 				</ActionIcon>
 			</Menu.Target>
 			<Menu.Dropdown>
@@ -127,7 +127,7 @@ export function TableBulkActionsMenu<T = object>({
 					aria-label="Массовые действия"
 					onClick={(event) => event.stopPropagation()}
 				>
-					<TbDots size={16} />
+					<IconDots size={16} />
 				</ActionIcon>
 			</Menu.Target>
 			<Menu.Dropdown>

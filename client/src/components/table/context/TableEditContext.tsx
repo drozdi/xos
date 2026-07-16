@@ -1,5 +1,5 @@
-import { createSafeContext } from '../../../internal/utils/create-safe-context';
 import type { ColumnEntity, TableDataProps, TableNode } from '../type';
+import { createSafeContext } from '../utils/create-safe-context';
 
 export interface TableEditContext<T = object> {
 	editMode: TableDataProps<T>['editMode'];

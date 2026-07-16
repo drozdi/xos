@@ -1,7 +1,7 @@
 import { ActionIcon, Box, Button, Group, Select } from "@mantine/core";
 import { usePagination } from "@mantine/hooks";
 import { useCallback } from "react";
-import { TbChevronsLeft, TbChevronsRight } from "react-icons/tb";
+import { IconChevronsLeft, IconChevronsRight } from '@tabler/icons-react';
 import type { TablePaginationProps } from './type';
 
 export function TablePagination<T = object>({ 
@@ -37,7 +37,7 @@ export function TablePagination<T = object>({
 		<Group justify="space-between" align="start">
 			<Group flex='1'>
 				{showed && <ActionIcon loading={loading} variant="default" onClick={pagination.first} disabled={pagination.active === 1}>
-					<TbChevronsLeft />
+					<IconChevronsLeft size={16} />
 				</ActionIcon>}
 				{(showed || showedSibling) && <Button size="compact-md" loading={loading} variant="default" onClick={handlePprevious} disabled={disabledPrevious}>
 					{previousLabel}
@@ -60,7 +60,7 @@ export function TablePagination<T = object>({
 					{nextLabel}
 				</Button>}
 				{showed && <ActionIcon loading={loading} variant="default" onClick={pagination.last} disabled={pagination.active === total}>
-					<TbChevronsRight />
+					<IconChevronsRight size={16} />
 				</ActionIcon>}
 			</Group>
 			<Box flex='0'>
