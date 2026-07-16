@@ -6,6 +6,7 @@ import { useAppManager } from '@/core/appManager/useAppManager';
 
 import { AppIcon } from '../taskbarUtils';
 import { buildAppTree } from './buildAppTree';
+import { ChevronIcon } from './startMenuIcons';
 import type { StartMenuAppGroup } from './types';
 
 interface StartMenuAppListProps {
@@ -25,6 +26,8 @@ function GroupSection({
 		<Box>
 			<UnstyledButton
 				onClick={() => setOpened((value) => !value)}
+				aria-expanded={opened}
+				aria-label={`${opened ? 'Свернуть' : 'Развернуть'} группу ${group.label}`}
 				style={{
 					width: '100%',
 					padding: '6px 8px',
@@ -39,20 +42,8 @@ function GroupSection({
 					},
 				}}
 			>
-				<Group gap={6} wrap="nowrap">
-					<Text
-						span
-						size="xs"
-						style={{
-							width: 12,
-							flexShrink: 0,
-							lineHeight: 1,
-							opacity: 0.8,
-						}}
-						aria-hidden
-					>
-						{opened ? '▾' : '▸'}
-					</Text>
+				<Group gap={8} wrap="nowrap">
+					<ChevronIcon size={18} expanded={opened} />
 					<Text size="xs" tt="uppercase" fw={700}>
 						{group.label}
 					</Text>

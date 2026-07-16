@@ -1,4 +1,3 @@
-import { Text } from '@mantine/core';
 import { useEffect, useRef } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
@@ -24,11 +23,6 @@ export function Desktop() {
 			view={HKEY_CONFIG_DEFAULTS.layout.view}
 			mobileView={HKEY_CONFIG_DEFAULTS.layout.mobileView}
 		>
-			<LayoutArea area="h">
-				<Text fw={600} size="sm" p="sm" c="gray.3">
-					XOS
-				</Text>
-			</LayoutArea>
 			<LayoutArea area="m">
 				<WindowManager />
 			</LayoutArea>

@@ -53,3 +53,32 @@ export function AutoThemeIcon({ size = 20 }: { size?: number }) {
 		</svg>
 	);
 }
+
+export function ChevronIcon({
+	size = 16,
+	expanded = false,
+}: {
+	size?: number;
+	expanded?: boolean;
+}) {
+	return (
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2.5"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden
+			style={{
+				flexShrink: 0,
+				transition: 'transform 150ms ease',
+				transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+			}}
+		>
+			<path d="M6 9l6 6 6-6" />
+		</svg>
+	);
+}
