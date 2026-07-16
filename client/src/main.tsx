@@ -1,8 +1,7 @@
-import './process-shim';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import './process-shim';
 
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
@@ -15,7 +14,5 @@ if (!rootElement) {
 }
 
 createRoot(rootElement).render(
-	<StrictMode>
-		<App />
-	</StrictMode>,
+	<App />,
 );
