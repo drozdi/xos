@@ -1,10 +1,11 @@
 import { Select } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
+import { notifications } from '@mantine/notifications';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { DataTable } from '@/components/table';
-import { mainGroupApi, type GroupListItem } from '@/core/api/endpoints/mainApi';
-import { extractApiErrorMessage } from '@/core/api/apiError';
+import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
+import { mainGroupApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { MainListLayout } from '@/features/main/MainListLayout';
@@ -16,6 +17,7 @@ const ALL_FILTER = -1;
 export default function MainGroupsApp() {
 	useWindowTitle('Группы');
 	const launchMainApp = useLaunchMainApp();
+	const queryClient = useQueryClient();
 	const [ouFilter, setOuFilter] = useState<number>(ALL_FILTER);
 
 	const listRequest: ListRequest = useMemo(
@@ -35,6 +37,15 @@ export default function MainGroupsApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.groups(listRequest),
 		queryFn: () => mainGroupApi.list(listRequest),
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: (id: number) => mainGroupApi.remove(id),
+		onSuccess: () => {
+			notifications.show({ message: 'Удалено', color: 'green' });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.main.groups(listRequest) });
+		},
+		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
 
 	const ouOptions = useMemo(
@@ -91,6 +102,9 @@ export default function MainGroupsApp() {
 				data={listQuery.data?.items ?? []}
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openGroup(row.id)}
+				onEdit={(row) => openGroup(row.id)}
+				onDelete={(row) => deleteMutation.mutateAsync(row.id)}
+				getRowLabel={(row) => row.name || row.code}
 			/>
 		</MainListLayout>
 	);

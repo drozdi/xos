@@ -1,8 +1,12 @@
+import { IconPencil, IconTrash } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
+import { confirmAction } from '@/core/confirm/confirmAction';
+
 import { DataColumn } from './DataColumn';
 import { TableData } from './TableData';
+import type { TableRowAction } from './type';
 
 export interface DataTableColumn<T> {
 	field: keyof T;
@@ -19,12 +23,29 @@ export interface DataTableProps<T extends object> {
 	data: T[];
 	storageKey: string;
 	onRowClick?: (row: T) => void;
+	onEdit?: (row: T) => void | Promise<void>;
+	onDelete?: (row: T) => void | Promise<void>;
+	canEdit?: boolean;
+	canDelete?: boolean;
+	getRowLabel?: (row: T) => string;
 	loading?: boolean;
 	error?: ReactNode;
 	minHeight?: number;
 	noDataText?: string;
 	withPagination?: boolean;
 	limit?: number;
+}
+
+function defaultRowLabel<T extends object>(row: T): string {
+	const record = row as Record<string, unknown>;
+	const name = record.name ?? record.code ?? record.login ?? record.alias;
+	if (typeof name === 'string' && name.length > 0) {
+		return name;
+	}
+	if (typeof record.id === 'number') {
+		return `#${record.id}`;
+	}
+	return 'запись';
 }
 
 function renderCellValue<T extends object>(row: T, column: DataTableColumn<T>): ReactNode {
@@ -78,6 +99,11 @@ export function DataTable<T extends object>({
 	data,
 	storageKey,
 	onRowClick,
+	onEdit,
+	onDelete,
+	canEdit = true,
+	canDelete = true,
+	getRowLabel = defaultRowLabel,
 	loading = false,
 	error,
 	minHeight = 360,
@@ -85,6 +111,44 @@ export function DataTable<T extends object>({
 	withPagination = false,
 	limit = 50,
 }: DataTableProps<T>) {
+	const showEdit = Boolean(onEdit && canEdit);
+	const showDelete = Boolean(onDelete && canDelete);
+	const hasActions = showEdit || showDelete;
+
+	const rowActions = useMemo<TableRowAction<T>[]>(() => {
+		const actions: TableRowAction<T>[] = [];
+
+		if (showEdit && onEdit) {
+			actions.push({
+				id: 'edit',
+				label: 'Редактировать',
+				icon: <IconPencil size={16} />,
+				onClick: (item) => onEdit(item),
+			});
+		}
+
+		if (showDelete && onDelete) {
+			actions.push({
+				id: 'delete',
+				label: 'Удалить',
+				color: 'red',
+				icon: <IconTrash size={16} />,
+				onClick: (item) => {
+					const label = getRowLabel(item);
+					confirmAction({
+						title: 'Удаление',
+						message: `Удалить «${label}»? Это действие нельзя отменить.`,
+						confirmLabel: 'Удалить',
+						confirmColor: 'red',
+						onConfirm: () => onDelete(item),
+					});
+				},
+			});
+		}
+
+		return actions;
+	}, [getRowLabel, onDelete, onEdit, showDelete, showEdit]);
+
 	const bodyStyle = useMemo(
 		() => (onRowClick ? { cursor: 'pointer' as const } : undefined),
 		[onRowClick],
@@ -100,6 +164,8 @@ export function DataTable<T extends object>({
 			noDataText={noDataText}
 			withPagination={withPagination}
 			limit={limit}
+			rowActions={hasActions ? rowActions : undefined}
+			rowActionsOnHover={false}
 		>
 			{columns.map((column) => (
 				<DataColumn<T>
@@ -108,7 +174,7 @@ export function DataTable<T extends object>({
 					header={column.header}
 					width={column.width}
 					sortable={column.sortable ?? true}
-					resizable={column.resizable ?? true}
+					resizable={column.resizable ?? false}
 					align={column.align}
 					bodyStyle={bodyStyle}
 					body={(row: T) => (
@@ -116,6 +182,20 @@ export function DataTable<T extends object>({
 					)}
 				/>
 			))}
+			{hasActions ? (
+				<DataColumn<T>
+					field={'_actions' as keyof T}
+					header="Действия"
+					align="center"
+					actions
+					actionsAt="end"
+					width={88}
+					sortable={false}
+					resizable={false}
+					toggleable={false}
+					draggable={false}
+				/>
+			) : null}
 		</TableData>
 	);
 }

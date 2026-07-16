@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { notifications } from '@mantine/notifications';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { DataTable } from '@/components/table';
-import { mainClaimantApi, type ClaimantListItem } from '@/core/api/endpoints/mainApi';
-import { extractApiErrorMessage } from '@/core/api/apiError';
+import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
+import { mainClaimantApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { MainListLayout } from '@/features/main/MainListLayout';
@@ -15,10 +16,20 @@ const listRequest: ListRequest = { limit: 50, offset: 1 };
 export default function MainClaimantsApp() {
 	useWindowTitle('Заявители');
 	const launchMainApp = useLaunchMainApp();
+	const queryClient = useQueryClient();
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.claimants(listRequest),
 		queryFn: () => mainClaimantApi.list(listRequest),
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: (id: number) => mainClaimantApi.remove(id),
+		onSuccess: () => {
+			notifications.show({ message: 'Удалено', color: 'green' });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.main.claimants(listRequest) });
+		},
+		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
 
 	const columns = useMemo(
@@ -52,6 +63,9 @@ export default function MainClaimantsApp() {
 				data={listQuery.data?.items ?? []}
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openClaimant(row.id)}
+				onEdit={(row) => openClaimant(row.id)}
+				onDelete={(row) => deleteMutation.mutateAsync(row.id)}
+				getRowLabel={(row) => row.name || row.code}
 			/>
 		</MainListLayout>
 	);

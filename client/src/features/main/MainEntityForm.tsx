@@ -18,6 +18,7 @@ import {
 	extractApiFieldErrors,
 	notifyApiError,
 } from '@/core/api/apiError';
+import { confirmAction } from '@/core/confirm/confirmAction';
 import { useAppContext } from '@/core/context/AppContext';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 
@@ -177,16 +178,35 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 								variant="light"
 								loading={deleteMutation.isPending}
 								onClick={() => {
-									if (window.confirm('Удалить запись?')) {
-										deleteMutation.mutate();
-									}
+									confirmAction({
+										title: 'Удаление',
+										message: 'Удалить запись? Это действие нельзя отменить.',
+										confirmLabel: 'Удалить',
+										confirmColor: 'red',
+										onConfirm: () => deleteMutation.mutate(),
+									});
 								}}
 							>
 								Удалить
 							</Button>
 						) : null}
 						{canSave ? (
-							<Button size="xs" loading={mutation.isPending} onClick={() => mutation.mutate()}>
+							<Button
+								size="xs"
+								loading={mutation.isPending}
+								onClick={() => {
+									if (isNew) {
+										mutation.mutate();
+										return;
+									}
+									confirmAction({
+										title: 'Сохранение',
+										message: 'Сохранить изменения?',
+										confirmLabel: 'Сохранить',
+										onConfirm: () => mutation.mutate(),
+									});
+								}}
+							>
 								Сохранить
 							</Button>
 						) : null}

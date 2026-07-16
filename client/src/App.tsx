@@ -1,4 +1,5 @@
 import { Center, Loader, MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
@@ -93,7 +94,8 @@ export default function App() {
 				defaultColorScheme={DEFAULT_THEME}
 				colorSchemeManager={colorSchemeManager}
 			>
-				<Notifications position="top-right" />
+				<ModalsProvider>
+					<Notifications position="top-right" />
 				{settingsReady ? (
 					<ThemeProvider>
 						{showLoader ? (
@@ -111,6 +113,7 @@ export default function App() {
 						{isAuthenticated ? <Desktop /> : <LoginScreen />}
 					</Suspense>
 				)}
+				</ModalsProvider>
 			</MantineProvider>
 		</QueryClientProvider>
 	);
