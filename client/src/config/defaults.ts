@@ -26,6 +26,10 @@ export const HKEY_CONFIG_DEFAULTS = {
 	taskbar: {
 		height: 48,
 	},
+	date: {
+		locale: 'ru',
+		timeFormat: 'DD.MM.YYYY HH:mm',
+	},
 } as const;
 
 export type HkeyConfigDefaults = typeof HKEY_CONFIG_DEFAULTS;

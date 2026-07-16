@@ -1,5 +1,7 @@
 import '@mantine/core/styles.css';
-import '@mantine/notifications/styles.css';import './process-shim';
+import '@mantine/dates/styles.css';
+import '@mantine/notifications/styles.css';
+import './process-shim';
 
 import { createRoot } from 'react-dom/client';
 

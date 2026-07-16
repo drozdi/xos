@@ -10,6 +10,7 @@ import { createSettingAdapter, useApiSettings } from '@/core/settings/createSett
 import { preloadSettings } from '@/core/settings/preloadSettings';
 import { settingManager } from '@/core/settings/SettingManager';
 import { DEFAULT_THEME, ThemeProvider, xosColorSchemeManager } from '@/core/theme';
+import { DatesSettingsProvider } from '@/core/dates';
 import { theme } from '@/styles/theme';
 
 const colorSchemeManager = xosColorSchemeManager();
@@ -98,13 +99,15 @@ export default function App() {
 					<Notifications position="top-right" />
 				{settingsReady ? (
 					<ThemeProvider>
-						{showLoader ? (
-							<AppShellFallback />
-						) : (
-							<Suspense fallback={<AppShellFallback />}>
-								{isAuthenticated ? <Desktop /> : <LoginScreen />}
-							</Suspense>
-						)}
+						<DatesSettingsProvider>
+							{showLoader ? (
+								<AppShellFallback />
+							) : (
+								<Suspense fallback={<AppShellFallback />}>
+									{isAuthenticated ? <Desktop /> : <LoginScreen />}
+								</Suspense>
+							)}
+						</DatesSettingsProvider>
 					</ThemeProvider>
 				) : showLoader ? (
 					<AppShellFallback />

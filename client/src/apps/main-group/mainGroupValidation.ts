@@ -9,6 +9,9 @@ export function validateGroupForm(data: GroupDetail): Partial<Record<keyof Group
 	if (!data.name?.trim()) {
 		errors.name = 'Обязательное поле';
 	}
+	if (!data.ou_id) {
+		errors.ou_id = 'Обязательное поле';
+	}
 
 	return errors;
 }

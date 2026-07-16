@@ -156,6 +156,8 @@ export const groupDetailSchema = z
 		active: z.boolean().optional(),
 		anonymous: z.boolean().optional(),
 		description: z.string().nullable().optional(),
+		activeFrom: z.string().nullable().optional(),
+		activeTo: z.string().nullable().optional(),
 	})
 	.passthrough();
 
