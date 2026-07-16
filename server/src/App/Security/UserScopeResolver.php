@@ -70,9 +70,38 @@ final class UserScopeResolver
         return $this->canMainOu($user, 'can_delete.main.ou');
     }
 
+    public function canCreateMainClaimant(User $user): bool
+    {
+        return $this->canMainClaimant($user, 'can_create.main.claimant');
+    }
+
+    public function canReadMainClaimant(User $user): bool
+    {
+        return $this->canMainClaimant($user, 'can_read.main.claimant');
+    }
+
+    public function canUpdateMainClaimant(User $user): bool
+    {
+        return $this->canMainClaimant($user, 'can_update.main.claimant');
+    }
+
+    public function canDeleteMainClaimant(User $user): bool
+    {
+        return $this->canMainClaimant($user, 'can_delete.main.claimant');
+    }
+
     private function canMainOu(User $user, string $scope): bool
     {
         if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_OU_ROOT'])) {
+            return true;
+        }
+
+        return $this->checkHasScope($user, $scope, false);
+    }
+
+    private function canMainClaimant(User $user, string $scope): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_CLAIMANT_ROOT'])) {
             return true;
         }
 

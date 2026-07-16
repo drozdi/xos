@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canReadMainClaimant } from '@/features/main/mainAccess';
 import { createMainListManifestOptions } from '@/features/main/mainAppUtils';
 
 import { ClaimantIcon } from '../shared/AppIcons';
@@ -16,6 +17,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 640, height: 480 },
 	minSize: { width: 480, height: 320 },
 	...createMainListManifestOptions('main-claimant', 1),
+	canAccess: canReadMainClaimant,
 };
 
 export default manifest;

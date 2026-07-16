@@ -1,12 +1,19 @@
+import { Alert } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { DataTable } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
-import { mainClaimantApi } from '@/core/api/endpoints/mainApi';
+import { mainClaimantApi, type ClaimantListItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import {
+	useCanCreateMainClaimant,
+	useCanDeleteMainClaimant,
+	useCanReadMainClaimant,
+	useCanUpdateMainClaimant,
+} from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
 import type { ListRequest } from '@/types/api.types';
@@ -17,10 +24,15 @@ export default function MainClaimantsApp() {
 	useWindowTitle('Заявители');
 	const launchMainApp = useLaunchMainApp();
 	const queryClient = useQueryClient();
+	const canRead = useCanReadMainClaimant();
+	const canCreate = useCanCreateMainClaimant();
+	const canUpdate = useCanUpdateMainClaimant();
+	const canDelete = useCanDeleteMainClaimant();
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.claimants(listRequest),
 		queryFn: () => mainClaimantApi.list(listRequest),
+		enabled: canRead,
 	});
 
 	const deleteMutation = useMutation({
@@ -42,6 +54,14 @@ export default function MainClaimantsApp() {
 
 	const openClaimant = (id: number) => launchMainApp('main-claimant', id);
 
+	if (!canRead) {
+		return (
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр заявителей
+			</Alert>
+		);
+	}
+
 	return (
 		<MainListLayout
 			title="Заявители"
@@ -55,7 +75,7 @@ export default function MainClaimantsApp() {
 			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
-			onCreate={() => openClaimant(0)}
+			onCreate={canCreate ? () => openClaimant(0) : undefined}
 		>
 			<DataTable
 				storageKey="main-claimants"
@@ -63,9 +83,11 @@ export default function MainClaimantsApp() {
 				data={listQuery.data?.items ?? []}
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openClaimant(row.id)}
-				onEdit={(row) => openClaimant(row.id)}
-				onDelete={(row) => deleteMutation.mutateAsync(row.id)}
-				getRowLabel={(row) => row.name || row.code}
+				onEdit={canUpdate ? (row) => openClaimant(row.id) : undefined}
+				onDelete={canDelete ? (row) => deleteMutation.mutateAsync(row.id) : undefined}
+				canEdit={canUpdate}
+				canDelete={canDelete}
+				getRowLabel={(row: ClaimantListItem) => row.name || row.code}
 			/>
 		</MainListLayout>
 	);

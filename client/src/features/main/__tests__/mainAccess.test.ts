@@ -10,7 +10,16 @@ import {
 } from '@/core/auth/coreRoles';
 import { joinScopes, resetScopes, setLevelScopes } from '@/core/auth/coreScopes';
 
-import { canCreateMainOu, canReadMainOu, canUpdateMainOu, canDeleteMainOu } from '@/features/main/mainAccess';
+import {
+	canCreateMainClaimant,
+	canCreateMainOu,
+	canDeleteMainClaimant,
+	canDeleteMainOu,
+	canReadMainClaimant,
+	canReadMainOu,
+	canUpdateMainClaimant,
+	canUpdateMainOu,
+} from '@/features/main/mainAccess';
 
 describe('mainAccess', () => {
 	beforeEach(() => {
@@ -21,7 +30,7 @@ describe('mainAccess', () => {
 			user: { can_create: 1 },
 			group: { can_create: 1 },
 			ou: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
-			claimant: { can_create: 1 },
+			claimant: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
 		});
 	});
 
@@ -104,8 +113,49 @@ describe('mainAccess', () => {
 	});
 });
 
+describe('mainClaimantAccess', () => {
+	beforeEach(() => {
+		resetUserRoles();
+		resetScopes();
+		setLevelScopes({});
+		joinScopes('main', {
+			claimant: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
+		});
+	});
+
+	it('allows read for ROLE_MAIN_CLAIMANT_ROOT', () => {
+		setUserRoles(['ROLE_MAIN_CLAIMANT_ROOT']);
+		expect(isScopeRoot('main.claimant')).toBe(true);
+		expect(canReadMainClaimant()).toBe(true);
+	});
+
+	it('allows create with can_create.main.claimant scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.claimant': 1 });
+		expect(canCreateMainClaimant()).toBe(true);
+	});
+
+	it('denies read for ROLE_MAIN_ADMIN without scope', () => {
+		setUserRoles(['ROLE_MAIN_ADMIN']);
+		expect(canReadMainClaimant()).toBe(false);
+	});
+
+	it('allows update with can_update.main.claimant scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.claimant': 4 });
+		expect(canUpdateMainClaimant()).toBe(true);
+	});
+
+	it('allows delete with can_delete.main.claimant scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.claimant': 8 });
+		expect(canDeleteMainClaimant()).toBe(true);
+	});
+});
+
 describe('scopePathToRolePrefix', () => {
 	it('converts dotted scope path to role prefix', () => {
 		expect(scopePathToRolePrefix('main.ou')).toBe('MAIN_OU');
+		expect(scopePathToRolePrefix('main.claimant')).toBe('MAIN_CLAIMANT');
 	});
 });
