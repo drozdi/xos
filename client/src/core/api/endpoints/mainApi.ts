@@ -144,6 +144,65 @@ export const groupFilterOuSchema = z.object({
 	description: z.string().nullable().optional(),
 });
 
+export const groupUserItemSchema = z.object({
+	id: z.number().optional(),
+	user_id: z.number(),
+	group_id: z.number().optional(),
+	name: z.string().optional(),
+	activeFrom: z.string().nullable().optional(),
+	activeTo: z.string().nullable().optional(),
+});
+
+export const groupAccessItemSchema = z.object({
+	id: z.number().optional(),
+	claimant_id: z.number(),
+	name: z.string().optional(),
+	level: z.number(),
+});
+
+function normalizeIdRecord(
+	value: unknown,
+	fallbackKey: (item: Record<string, unknown>, index: number) => string | number,
+): Record<string, unknown> {
+	if (value === null || value === undefined) {
+		return {};
+	}
+	if (Array.isArray(value)) {
+		const record: Record<string, unknown> = {};
+		value.forEach((item, index) => {
+			if (typeof item !== 'object' || item === null) {
+				return;
+			}
+			const entry = item as Record<string, unknown>;
+			const key = entry.id ?? fallbackKey(entry, index);
+			record[String(key)] = item;
+		});
+		return record;
+	}
+	if (typeof value === 'object') {
+		return value as Record<string, unknown>;
+	}
+	return {};
+}
+
+const groupUsersRecordSchema = z.preprocess(
+	(value) =>
+		normalizeIdRecord(value, (item, index) => {
+			const userId = item.user_id;
+			return typeof userId === 'number' || typeof userId === 'string' ? userId : index;
+		}),
+	z.record(z.string(), groupUserItemSchema),
+).optional();
+
+const groupAccessesRecordSchema = z.preprocess(
+	(value) =>
+		normalizeIdRecord(value, (item, index) => {
+			const claimantId = item.claimant_id;
+			return typeof claimantId === 'number' || typeof claimantId === 'string' ? claimantId : index;
+		}),
+	z.record(z.string(), groupAccessItemSchema),
+).optional();
+
 export const groupDetailSchema = z
 	.object({
 		id: z.number(),
@@ -158,8 +217,13 @@ export const groupDetailSchema = z
 		description: z.string().nullable().optional(),
 		activeFrom: z.string().nullable().optional(),
 		activeTo: z.string().nullable().optional(),
+		users: groupUsersRecordSchema,
+		accesses: groupAccessesRecordSchema,
 	})
 	.passthrough();
+
+export type GroupUserItem = z.infer<typeof groupUserItemSchema>;
+export type GroupAccessItem = z.infer<typeof groupAccessItemSchema>;
 
 export type GroupListItem = z.infer<typeof groupListItemSchema>;
 export type GroupDetail = z.infer<typeof groupDetailSchema>;

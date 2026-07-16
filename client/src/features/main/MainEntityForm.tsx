@@ -42,6 +42,7 @@ interface MainEntityFormProps<T> {
 	headerNote?: (props: { data: T; isNew: boolean }) => ReactNode;
 	initialData: T;
 	validate?: (data: T) => Partial<Record<keyof T & string, string>>;
+	transformBeforeSave?: (data: T) => T;
 	canSave?: boolean;
 	canDelete?: boolean;
 }
@@ -58,6 +59,7 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	headerNote,
 	initialData,
 	validate,
+	transformBeforeSave,
 	canSave = true,
 	canDelete = false,
 }: MainEntityFormProps<T>) {
@@ -92,10 +94,11 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 				}
 			}
 			setErrors({});
+			const payload = transformBeforeSave ? transformBeforeSave(form) : form;
 			if (isNew) {
-				return create({ ...form, id: 0 });
+				return create({ ...payload, id: 0 });
 			}
-			return save(entityId, form);
+			return save(entityId, payload);
 		},
 		onSuccess: () => {
 			notifications.show({ message: 'Сохранено', color: 'green' });

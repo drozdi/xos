@@ -115,6 +115,8 @@ const READ_MAIN_GROUP_SCOPE = 'can_read.main.group';
 const CREATE_MAIN_GROUP_SCOPE = 'can_create.main.group';
 const UPDATE_MAIN_GROUP_SCOPE = 'can_update.main.group';
 const DELETE_MAIN_GROUP_SCOPE = 'can_delete.main.group';
+const USER_MAIN_GROUP_SCOPE = 'can_user.main.group';
+const ACCESS_MAIN_GROUP_SCOPE = 'can_access.main.group';
 
 function canMainGroup(actionScope: string): boolean {
 	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_GROUP_SCOPE)) {
@@ -140,6 +142,14 @@ export function canDeleteMainGroup(): boolean {
 	return canMainGroup(DELETE_MAIN_GROUP_SCOPE);
 }
 
+export function canUserMainGroup(): boolean {
+	return canMainGroup(USER_MAIN_GROUP_SCOPE);
+}
+
+export function canAccessMainGroup(): boolean {
+	return canMainGroup(ACCESS_MAIN_GROUP_SCOPE);
+}
+
 function useMainGroupAccess(check: () => boolean): boolean {
 	const scopes = useAuthStore((state) => state.scopes);
 	const roles = useAuthStore((state) => state.user?.roles);
@@ -161,4 +171,12 @@ export function useCanUpdateMainGroup(): boolean {
 
 export function useCanDeleteMainGroup(): boolean {
 	return useMainGroupAccess(canDeleteMainGroup);
+}
+
+export function useCanUserMainGroup(): boolean {
+	return useMainGroupAccess(canUserMainGroup);
+}
+
+export function useCanAccessMainGroup(): boolean {
+	return useMainGroupAccess(canAccessMainGroup);
 }

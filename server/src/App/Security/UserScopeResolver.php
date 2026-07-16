@@ -110,6 +110,16 @@ final class UserScopeResolver
         return $this->canMainGroup($user, 'can_delete.main.group');
     }
 
+    public function canUserMainGroup(User $user): bool
+    {
+        return $this->canMainGroup($user, 'can_user.main.group');
+    }
+
+    public function canAccessMainGroup(User $user): bool
+    {
+        return $this->canMainGroup($user, 'can_access.main.group');
+    }
+
     private function canMainOu(User $user, string $scope): bool
     {
         if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_OU_ROOT'])) {

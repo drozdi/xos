@@ -124,6 +124,7 @@ class GroupController extends AbstractController {
 
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
+        $req = $this->filterGroupCreatePayload($req, $userScopeResolver, $user);
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
         try {
             $group = $mainManager->group($req['id'], $req);
@@ -143,7 +144,10 @@ class GroupController extends AbstractController {
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        if (!$userScopeResolver->canUpdateMainGroup($user)) {
+        if (!$userScopeResolver->canUpdateMainGroup($user)
+            && !$userScopeResolver->canUserMainGroup($user)
+            && !$userScopeResolver->canAccessMainGroup($user)
+        ) {
             return ApiResponse::forbidden(MainGroupAccessMessages::UPDATE);
         }
 
@@ -151,7 +155,7 @@ class GroupController extends AbstractController {
             return ApiResponse::notFound(MainGroupAccessMessages::NOT_FOUND);
         }
 
-        $req = $request->toArray();
+        $req = $this->filterGroupUpdatePayload($request->toArray(), $userScopeResolver, $user);
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
         try {
             $group = $mainManager->group($id, $req);
@@ -214,8 +218,8 @@ class GroupController extends AbstractController {
             'code' => $group->getCode(),
             'anonymous' => $group->isAnonymous(),
             'description' => $group->getDescription(),
-            'accesses' => $accesses,
-            'users' => $users
+            'accesses' => (object) $accesses,
+            'users' => (object) $users
         ]);
     }
     #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
@@ -241,5 +245,59 @@ class GroupController extends AbstractController {
         ];
         $GroupRepository->remove($group, true);
         return $this->json($arGroup);
+    }
+
+    /**
+     * @param array<string, mixed> $req
+     *
+     * @return array<string, mixed>
+     */
+    private function filterGroupUpdatePayload(array $req, UserScopeResolver $userScopeResolver, User $user): array
+    {
+        if (!$userScopeResolver->canUpdateMainGroup($user)) {
+            foreach ([
+                'code',
+                'name',
+                'sort',
+                'description',
+                'active',
+                'anonymous',
+                'activeFrom',
+                'activeTo',
+                'ou_id',
+                'parent_id',
+                'user_id',
+            ] as $field) {
+                unset($req[$field]);
+            }
+        }
+
+        if (!$userScopeResolver->canUserMainGroup($user)) {
+            unset($req['users']);
+        }
+
+        if (!$userScopeResolver->canAccessMainGroup($user)) {
+            unset($req['accesses']);
+        }
+
+        return $req;
+    }
+
+    /**
+     * @param array<string, mixed> $req
+     *
+     * @return array<string, mixed>
+     */
+    private function filterGroupCreatePayload(array $req, UserScopeResolver $userScopeResolver, User $user): array
+    {
+        if (!$userScopeResolver->canUserMainGroup($user)) {
+            unset($req['users']);
+        }
+
+        if (!$userScopeResolver->canAccessMainGroup($user)) {
+            unset($req['accesses']);
+        }
+
+        return $req;
     }
 }

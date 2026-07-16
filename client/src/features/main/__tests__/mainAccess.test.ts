@@ -23,6 +23,8 @@ import {
 	canUpdateMainClaimant,
 	canUpdateMainGroup,
 	canUpdateMainOu,
+	canUserMainGroup,
+	canAccessMainGroup,
 } from '@/features/main/mainAccess';
 
 describe('mainAccess', () => {
@@ -163,7 +165,7 @@ describe('mainGroupAccess', () => {
 		resetScopes();
 		setLevelScopes({});
 		joinScopes('main', {
-			group: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
+			group: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8, can_access: 16, can_user: 32 },
 		});
 	});
 
@@ -194,6 +196,20 @@ describe('mainGroupAccess', () => {
 		setUserRoles(['ROLE_MAIN']);
 		setLevelScopes({ 'main.group': 8 });
 		expect(canDeleteMainGroup()).toBe(true);
+	});
+
+	it('allows users tab edit with can_user.main.group scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.group': 32 });
+		expect(canUserMainGroup()).toBe(true);
+		expect(canUpdateMainGroup()).toBe(false);
+	});
+
+	it('allows access tab edit with can_access.main.group scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.group': 16 });
+		expect(canAccessMainGroup()).toBe(true);
+		expect(canUpdateMainGroup()).toBe(false);
 	});
 });
 
