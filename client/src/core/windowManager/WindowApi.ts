@@ -7,10 +7,13 @@ import type {
 	WindowEventHandler,
 } from './types';
 import type { WindowDragConfig } from './windowDrag';
+import { fitWindowToContent } from './useWindowAutoSize';
+import type { WindowAutoSizeMode } from './windowLayout';
 import { useChildWindowStore } from './childWindowStore';
 import { useWmStore } from './useWmStore';
 import { getWindowApi, registerWindowApi, unregisterWindowApi } from './windowApiRegistry';
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
+import { AppRegistry } from '@/core/appManager/AppRegistry';
 
 const DEFAULT_CHILD_WIDTH = 400;
 const DEFAULT_CHILD_HEIGHT = 300;
@@ -84,6 +87,45 @@ export function createWindowApi(windowId: string): WindowApi {
 				dragHandles: options.dragHandles ?? current.dragHandles,
 				dragCancel: options.dragCancel ?? current.dragCancel,
 			});
+		},
+
+		setResizable: (resizable: boolean) => {
+			useWmStore.getState().updateWindow(windowId, { resizable });
+		},
+
+		setPositionFixed: (fixed: boolean) => {
+			useWmStore.getState().updateWindow(windowId, { positionFixed: fixed });
+		},
+
+		setAutoSize: (mode: WindowAutoSizeMode) => {
+			useWmStore.getState().updateWindow(windowId, { autoSize: mode });
+		},
+
+		fitToContent: () => {
+			const current = useWmStore.getState().windows[windowId];
+			if (!current) {
+				return;
+			}
+
+			const contentRoot = document.querySelector(
+				`[data-xos-window-id="${windowId}"] [data-xos-window-content]`,
+			) as HTMLElement | null;
+			if (!contentRoot) {
+				return;
+			}
+
+			const manifest = AppRegistry.get(current.appId);
+			const { minWidth, minHeight } = HKEY_CONFIG_DEFAULTS.window;
+
+			fitWindowToContent(windowId, contentRoot, 36, {
+				minWidth: manifest?.minSize?.width ?? minWidth,
+				minHeight: manifest?.minSize?.height ?? minHeight,
+				maxWidth: window.innerWidth,
+				maxHeight: window.innerHeight,
+			});
+			for (const handler of resizeHandlers) {
+				handler();
+			}
 		},
 
 		on: ((event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => {

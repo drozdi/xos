@@ -25,3 +25,16 @@ export type {
 	ChildWindowOptions,
 	ChildWindowHandle,
 } from './types';
+export type {
+	WindowLayoutConfig,
+	WindowAutoSizeMode,
+	WindowPositionFixed,
+	ResolvedWindowLayoutConfig,
+	WindowLayoutBounds,
+} from './windowLayout';
+export {
+	resolveWindowLayoutConfig,
+	resolveInitialWindowPosition,
+	clampWindowSize,
+} from './windowLayout';
+export { useWindowAutoSize, fitWindowToContent } from './useWindowAutoSize';

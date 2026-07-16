@@ -15,6 +15,10 @@ const manifest: AppManifest = {
 	component: CalculatorApp,
 	defaultSize: { width: 320, height: 480 },
 	minSize: { width: 280, height: 400 },
+	window: {
+		resizable: false,
+		autoSize: true,
+	},
 	wmGroup: 'tools',
 	singleInstance: true,
 	contextMenu: {

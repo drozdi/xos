@@ -122,4 +122,20 @@ describe('useWmStore', () => {
 		expect(useWmStore.getState().windows[secondId]?.minimized).toBe(false);
 		expect(useWmStore.getState().activeWindowId).toBe(secondId);
 	});
+
+	it('initializes layout flags from openWindow payload', () => {
+		const windowId = useWmStore.getState().openWindow({
+			appId: 'demo',
+			instanceKey: 'layout',
+			title: 'Layout',
+			resizable: false,
+			positionFixed: true,
+			autoSize: true,
+		});
+
+		const windowState = useWmStore.getState().windows[windowId];
+		expect(windowState?.resizable).toBe(false);
+		expect(windowState?.positionFixed).toBe(true);
+		expect(windowState?.autoSize).toBe(true);
+	});
 });

@@ -20,6 +20,7 @@ import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { WindowContextMenu } from '@/core/contextMenu';
 
 import { getOrCreateWindowApi, destroyWindowApi } from './WindowApi';
+import { useWindowAutoSize } from './useWindowAutoSize';
 import { useChildWindowStore } from './childWindowStore';
 import { emitWindowFocus, emitWindowResize, getWindowApi } from './windowApiRegistry';
 import { getWindowDragBounds } from './windowDragBounds';
@@ -74,6 +75,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const rndRef = useRef<Rnd>(null);
 	const shellRef = useRef<HTMLDivElement>(null);
+	const contentRef = useRef<HTMLDivElement>(null);
 	const titlebarHeight = isMobile ? 44 : 36;
 	const contentSizeValue = useMemo(() => {
 		if (!windowState) {
@@ -165,6 +167,29 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const desktopMaxBounds = mobileBounds;
 
 	const isMaximizedLayout = Boolean(isMobile || windowState?.maximized);
+	const resizable = windowState?.resizable ?? true;
+	const positionFixed = windowState?.positionFixed ?? false;
+	const autoSize = windowState?.autoSize ?? false;
+
+	useWindowAutoSize({
+		windowId,
+		appId: windowState?.appId ?? '',
+		contentRef,
+		titlebarHeight,
+		autoSize: isMaximizedLayout || windowState?.minimized ? false : autoSize,
+		contentKey: windowState?.contentKey,
+	});
+
+	useEffect(() => {
+		if (!autoSize || isMaximizedLayout || !windowState) {
+			return;
+		}
+		rndRef.current?.updateSize({
+			width: windowState.width,
+			height: windowState.height,
+		});
+	}, [autoSize, isMaximizedLayout, windowState?.height, windowState?.width]);
+
 	const boundsReady = viewport.width > 0 && viewport.height > 0;
 	const dragBounds = useMemo(() => {
 		if (!windowState || isMaximizedLayout || !boundsReady) {
@@ -209,7 +234,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const handleDragStop = useCallback(
 		(_event: unknown, data: { x: number; y: number }) => {
 			setIsDragging(false);
-			if (isMobile || windowState?.maximized) {return;}
+			if (isMobile || windowState?.maximized || windowState?.positionFixed) {return;}
 			const nextPosition = clampDragPosition(data.x, data.y);
 			if (
 				nextPosition.x !== data.x ||
@@ -238,7 +263,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			_delta: unknown,
 			position: { x: number; y: number },
 		) => {
-			if (isMobile || windowState?.maximized) {return;}
+			if (isMobile || windowState?.maximized || !windowState?.resizable) {return;}
 			const nextWidth = ref.offsetWidth;
 			const nextHeight = ref.offsetHeight;
 			const nextPosition = clampDragPosition(position.x, position.y);
@@ -345,6 +370,8 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	if (!windowState) {return null;}
 
 	const controlSize = isMobile ? 36 : 28;
+	const canDrag = !isMaximizedLayout && !positionFixed;
+	const canResize = !isMaximizedLayout && resizable;
 
 	return (
 		<Rnd
@@ -355,8 +382,8 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			minHeight={isMobile ? mobileBounds.height : minHeight}
 			dragHandleClassName={XOS_WINDOW_DRAG_HANDLE_CLASS}
 			cancel={dragCancelSelector}
-			disableDragging={isMaximizedLayout}
-			enableResizing={!isMaximizedLayout}
+			disableDragging={!canDrag}
+			enableResizing={canResize}
 			enableUserSelectHack={false}
 			style={{
 				zIndex: windowState.zIndex,
@@ -372,6 +399,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		>
 			<Box
 				ref={shellRef}
+				data-xos-window-id={windowId}
 				style={{
 					display: 'flex',
 					flexDirection: 'column',
@@ -392,7 +420,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 					style={{
 						flexShrink: 0,
 						height: isMobile ? 44 : 36,
-						cursor: isMaximizedLayout ? 'default' : 'move',
+						cursor: canDrag ? 'move' : 'default',
 						background: 'var(--xos-window-titlebar-bg)',
 						borderBottom: '1px solid var(--xos-window-titlebar-border)',
 						color: 'var(--xos-window-text)',
@@ -411,13 +439,15 @@ function WindowComponent({ windowId, children }: WindowProps) {
 						>
 							−
 						</WindowControl>
-						<WindowControl
-							label={windowState.maximized && !isMobile ? 'Restore' : 'Maximize'}
-							size={controlSize}
-							onClick={handleMaximizeToggle}
-						>
-							{windowState.maximized && !isMobile ? '⧉' : '□'}
-						</WindowControl>
+						{!positionFixed ? (
+							<WindowControl
+								label={windowState.maximized && !isMobile ? 'Restore' : 'Maximize'}
+								size={controlSize}
+								onClick={handleMaximizeToggle}
+							>
+								{windowState.maximized && !isMobile ? '⧉' : '□'}
+							</WindowControl>
+						) : null}
 						<WindowControl
 							label="Close"
 							size={controlSize}
@@ -431,19 +461,20 @@ function WindowComponent({ windowId, children }: WindowProps) {
 
 				<WindowSizeContext.Provider value={contentSizeValue}>
 					<Box
+						ref={contentRef}
 						data-window-width={contentSizeValue.width}
 						data-window-height={contentSizeValue.height}
 						style={{
 							position: 'relative',
-							flex: 1,
-							minHeight: 0,
-							overflow: 'auto',
+							flex: autoSize ? '0 0 auto' : 1,
+							minHeight: autoSize ? undefined : 0,
+							overflow: autoSize ? 'hidden' : 'auto',
 							['--window-width' as string]: `${contentSizeValue.width}px`,
 							['--window-height' as string]: `${contentSizeValue.height}px`,
 						}}
 					>
 						<WindowContextMenu windowId={windowId} windowState={windowState}>
-							<Box style={{ minHeight: '100%' }}>
+							<Box data-xos-window-content style={{ minHeight: autoSize ? undefined : '100%' }}>
 								{children}
 								<ChildWindowPortalGate windowId={windowId} />
 							</Box>

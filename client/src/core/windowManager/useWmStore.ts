@@ -4,6 +4,7 @@ import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 
 import { removePersistedWindow, schedulePersistWindow } from './persistWindow';
 import type { OpenWindowPayload, WindowState } from './types';
+import { resolveWindowLayoutConfig } from './windowLayout';
 
 const BASE_Z_INDEX = 100;
 
@@ -52,6 +53,12 @@ export const useWmStore = create<WmStore>((set, get) => ({
 		const defaults = defaultWindowBounds();
 		const zIndex = get().nextZIndex;
 
+		const layout = resolveWindowLayoutConfig({
+			resizable: payload.resizable,
+			positionFixed: payload.positionFixed,
+			autoSize: payload.autoSize,
+		});
+
 		const windowState: WindowState = {
 			id,
 			appId: payload.appId,
@@ -69,6 +76,9 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			contentKey: 0,
 			dragHandles: payload.dragHandles,
 			dragCancel: payload.dragCancel,
+			resizable: layout.resizable,
+			positionFixed: layout.positionFixed,
+			autoSize: layout.autoSize,
 		};
 
 		if (windowState.maximized) {

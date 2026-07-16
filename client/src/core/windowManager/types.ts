@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import type { WindowDragConfig } from './windowDrag';
+import type { WindowAutoSizeMode } from './windowLayout';
 
 export interface WindowState {
 	id: string;
@@ -19,6 +20,9 @@ export interface WindowState {
 	contentKey: number;
 	dragHandles?: string[];
 	dragCancel?: string[];
+	resizable: boolean;
+	positionFixed: boolean;
+	autoSize: WindowAutoSizeMode;
 	preMaximize?: {
 		x: number;
 		y: number;
@@ -42,6 +46,9 @@ export interface OpenWindowPayload {
 	wmSort?: number;
 	dragHandles?: string[];
 	dragCancel?: string[];
+	resizable?: boolean;
+	positionFixed?: boolean;
+	autoSize?: WindowAutoSizeMode;
 }
 
 export interface PersistedWindowState {
@@ -87,6 +94,10 @@ export interface WindowApi {
 	setSize: (width: number, height: number) => void;
 	setPosition: (x: number, y: number) => void;
 	setDragOptions: (options: WindowDragConfig) => void;
+	setResizable: (resizable: boolean) => void;
+	setPositionFixed: (fixed: boolean) => void;
+	setAutoSize: (mode: WindowAutoSizeMode) => void;
+	fitToContent: () => void;
 	on: (event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => () => void;
 	off: (event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => void;
 	createChildWindow: (options: ChildWindowOptions) => ChildWindowHandle;

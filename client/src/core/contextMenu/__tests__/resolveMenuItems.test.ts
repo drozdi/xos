@@ -34,6 +34,9 @@ function createWindow(overrides: Partial<WindowState> = {}): WindowState {
 		wmGroup: 'default',
 		wmSort: 0,
 		contentKey: 0,
+		resizable: true,
+		positionFixed: false,
+		autoSize: false,
 		...overrides,
 	};
 }

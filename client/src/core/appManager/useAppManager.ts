@@ -10,6 +10,7 @@ import {
 	makeWinSettingKey,
 } from '@/core/windowManager/persistWindow';
 import { useWmStore } from '@/core/windowManager/useWmStore';
+import { resolveWindowLayoutConfig } from '@/core/windowManager/windowLayout';
 
 import { AppRegistry } from './AppRegistry';
 import {
@@ -133,13 +134,27 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			: null;
 
 		const openWindow = useWmStore.getState().openWindow;
+		const layout = resolveWindowLayoutConfig(manifest.window);
+		let launchX = persisted?.x;
+		let launchY = persisted?.y;
+		let positionFixed = layout.positionFixed;
+
+		if (
+			manifest.window?.positionFixed &&
+			typeof manifest.window.positionFixed === 'object'
+		) {
+			launchX = manifest.window.positionFixed.x;
+			launchY = manifest.window.positionFixed.y;
+			positionFixed = true;
+		}
+
 		const openedId = openWindow({
 			id: windowId,
 			appId,
 			instanceKey,
 			title: params?.title ?? persisted?.title ?? manifest.name,
-			x: persisted?.x,
-			y: persisted?.y,
+			x: launchX,
+			y: launchY,
 			width: persisted?.width ?? manifest.defaultSize.width,
 			height: persisted?.height ?? manifest.defaultSize.height,
 			minimized: persisted?.minimized,
@@ -148,6 +163,9 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			wmSort: persisted?.wmSort ?? 0,
 			dragHandles: manifest.window?.dragHandles,
 			dragCancel: manifest.window?.dragCancel,
+			resizable: layout.resizable,
+			positionFixed,
+			autoSize: layout.autoSize,
 		});
 
 		set((state) => ({

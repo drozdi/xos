@@ -22,6 +22,9 @@ function makeWindow(partial: Partial<WindowState> & Pick<WindowState, 'id' | 'wm
 		maximized: false,
 		wmSort: 0,
 		contentKey: 0,
+		resizable: true,
+		positionFixed: false,
+		autoSize: false,
 		...partial,
 	};
 }
