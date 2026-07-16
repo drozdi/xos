@@ -6,6 +6,7 @@ import type {
 	WindowEvent,
 	WindowEventHandler,
 } from './types';
+import type { WindowDragConfig } from './windowDrag';
 import { useChildWindowStore } from './childWindowStore';
 import { useWmStore } from './useWmStore';
 import { getWindowApi, registerWindowApi, unregisterWindowApi } from './windowApiRegistry';
@@ -72,6 +73,17 @@ export function createWindowApi(windowId: string): WindowApi {
 		setPosition: (x: number, y: number) => {
 			useWmStore.getState().updateWindow(windowId, { x, y });
 			for (const handler of resizeHandlers) {handler();}
+		},
+
+		setDragOptions: (options: WindowDragConfig) => {
+			const current = useWmStore.getState().windows[windowId];
+			if (!current) {
+				return;
+			}
+			useWmStore.getState().updateWindow(windowId, {
+				dragHandles: options.dragHandles ?? current.dragHandles,
+				dragCancel: options.dragCancel ?? current.dragCancel,
+			});
 		},
 
 		on: ((event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => {

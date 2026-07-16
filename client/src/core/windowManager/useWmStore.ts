@@ -67,6 +67,8 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			wmGroup: payload.wmGroup ?? 'default',
 			wmSort: payload.wmSort ?? 0,
 			contentKey: 0,
+			dragHandles: payload.dragHandles,
+			dragCancel: payload.dragCancel,
 		};
 
 		if (windowState.maximized) {

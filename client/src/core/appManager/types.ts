@@ -2,6 +2,7 @@ import type { LazyExoticComponent, ComponentType } from 'react';
 
 import type { ContextMenuConfig } from '@/core/contextMenu/types';
 import type { AppMenuSource } from '@/core/appMenu/types';
+import type { WindowDragConfig } from '@/core/windowManager/windowDrag';
 
 export interface LaunchParams {
 	instanceKey?: string;
@@ -26,6 +27,8 @@ export interface AppManifest {
 	contextMenu?: ContextMenuConfig;
 	/** Верхнее меню: inline-конфиг или lazy loader из отдельного файла */
 	menu?: AppMenuSource;
+	/** Настройки перетаскивания окна */
+	window?: WindowDragConfig;
 }
 
 export interface RunningApp {

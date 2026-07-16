@@ -18,6 +18,10 @@ export const HKEY_CONFIG_DEFAULTS = {
 		minHeight: 300,
 		/** Минимальная видимая часть окна у края рабочей области (px) */
 		dragMargin: 50,
+		/** Зоны перетаскивания по умолчанию */
+		defaultDragHandles: ['.xos-window-titlebar'],
+		/** Зоны без перетаскивания по умолчанию (приоритет над dragHandles) */
+		defaultDragCancel: ['.xos-window-no-drag'],
 	},
 	taskbar: {
 		height: 48,

@@ -26,6 +26,13 @@ import { getWindowDragBounds } from './windowDragBounds';
 import { useWindowManagerViewport } from './WindowManagerContext';
 import { WindowSizeContext } from './useWindowSize';
 import { useWmStore } from './useWmStore';
+import {
+	buildDragCancelSelector,
+	resolveWindowDragConfig,
+	XOS_WINDOW_DRAG_HANDLE_CLASS,
+	XOS_WINDOW_NO_DRAG_CLASS,
+	XOS_WINDOW_TITLEBAR_CLASS,
+} from './windowDrag';
 
 const ChildWindowPortal = lazy(() =>
 	import('./ChildWindowPortal').then((module) => ({ default: module.ChildWindowPortal })),
@@ -66,6 +73,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const isMobile = useMediaQuery(MOBILE_BREAKPOINT, false, { getInitialValueInEffect: true });
 	const [isDragging, setIsDragging] = useState(false);
 	const rndRef = useRef<Rnd>(null);
+	const shellRef = useRef<HTMLDivElement>(null);
 	const titlebarHeight = isMobile ? 44 : 36;
 	const contentSizeValue = useMemo(() => {
 		if (!windowState) {
@@ -76,6 +84,40 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			height: Math.max(0, windowState.height - titlebarHeight),
 		};
 	}, [titlebarHeight, windowState?.height, windowState?.width]);
+
+	const dragConfig = useMemo(
+		() =>
+			resolveWindowDragConfig({
+				dragHandles: windowState?.dragHandles,
+				dragCancel: windowState?.dragCancel,
+			}),
+		[windowState?.dragCancel, windowState?.dragHandles],
+	);
+	const dragCancelSelector = useMemo(
+		() => buildDragCancelSelector(dragConfig.dragCancel),
+		[dragConfig.dragCancel],
+	);
+
+	useEffect(() => {
+		const root = shellRef.current;
+		if (!root) {
+			return undefined;
+		}
+
+		const marked = new Set<Element>();
+		for (const selector of dragConfig.dragHandles) {
+			root.querySelectorAll(selector).forEach((element) => {
+				element.classList.add(XOS_WINDOW_DRAG_HANDLE_CLASS);
+				marked.add(element);
+			});
+		}
+
+		return () => {
+			marked.forEach((element) => {
+				element.classList.remove(XOS_WINDOW_DRAG_HANDLE_CLASS);
+			});
+		};
+	}, [dragConfig.dragHandles, windowState?.contentKey]);
 
 	useEffect(() => {
 		getOrCreateWindowApi(windowId);
@@ -311,7 +353,8 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			default={defaultBounds}
 			minWidth={isMobile ? mobileBounds.width : minWidth}
 			minHeight={isMobile ? mobileBounds.height : minHeight}
-			dragHandleClassName="xos-window-titlebar"
+			dragHandleClassName={XOS_WINDOW_DRAG_HANDLE_CLASS}
+			cancel={dragCancelSelector}
 			disableDragging={isMaximizedLayout}
 			enableResizing={!isMaximizedLayout}
 			enableUserSelectHack={false}
@@ -328,6 +371,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			onResizeStop={handleResizeStop}
 		>
 			<Box
+				ref={shellRef}
 				bg="gray.0"
 				style={{
 					display: 'flex',
@@ -340,7 +384,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 				}}
 			>
 				<Group
-					className="xos-window-titlebar"
+					className={`${XOS_WINDOW_TITLEBAR_CLASS} ${XOS_WINDOW_DRAG_HANDLE_CLASS}`}
 					gap="xs"
 					px="sm"
 					justify="space-between"
@@ -427,6 +471,7 @@ const WindowControl = memo(({
 	return (
 		<ActionIcon
 			aria-label={label}
+			className={XOS_WINDOW_NO_DRAG_CLASS}
 			variant="subtle"
 			color={variant === 'close' ? 'red' : 'gray'}
 			size={size}

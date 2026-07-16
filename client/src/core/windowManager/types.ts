@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import type { WindowDragConfig } from './windowDrag';
+
 export interface WindowState {
 	id: string;
 	appId: string;
@@ -15,6 +17,8 @@ export interface WindowState {
 	wmGroup: string;
 	wmSort: number;
 	contentKey: number;
+	dragHandles?: string[];
+	dragCancel?: string[];
 	preMaximize?: {
 		x: number;
 		y: number;
@@ -36,6 +40,8 @@ export interface OpenWindowPayload {
 	maximized?: boolean;
 	wmGroup?: string;
 	wmSort?: number;
+	dragHandles?: string[];
+	dragCancel?: string[];
 }
 
 export interface PersistedWindowState {
@@ -80,6 +86,7 @@ export interface WindowApi {
 	setTitle: (title: string) => void;
 	setSize: (width: number, height: number) => void;
 	setPosition: (x: number, y: number) => void;
+	setDragOptions: (options: WindowDragConfig) => void;
 	on: (event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => () => void;
 	off: (event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => void;
 	createChildWindow: (options: ChildWindowOptions) => ChildWindowHandle;
