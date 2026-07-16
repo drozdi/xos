@@ -22,6 +22,8 @@ export interface AppManifest {
 	requiredRole?: string;
 	requiredScope?: string;
 	wmGroup?: string;
+	/** Группа в меню «Пуск» (дерево приложений). По умолчанию — wmGroup */
+	startMenuGroup?: string;
 	singleInstance?: boolean;
 	instanceKey?: string | ((params?: LaunchParams) => string);
 	contextMenu?: ContextMenuConfig;

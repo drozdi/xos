@@ -1,15 +1,13 @@
-import { Box, Button, Group, Text } from '@mantine/core';
+import { Box, Group, Text } from '@mantine/core';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
-import { useAuthStore } from '@/core/auth/authStore';
 
 import { RunningApps } from './RunningApps';
 import { StartMenu } from './StartMenu';
 
 export function Taskbar() {
-	const logout = useAuthStore((state) => state.logout);
 	const [now, setNow] = useState(() => dayjs());
 
 	useEffect(() => {
@@ -38,9 +36,6 @@ export function Taskbar() {
 					<Text size="xs" c="dimmed">
 						{now.format('HH:mm')}
 					</Text>
-					<Button variant="subtle" color="gray" size="compact-sm" onClick={() => void logout()}>
-						Logout
-					</Button>
 				</Group>
 			</Group>
 		</Box>
