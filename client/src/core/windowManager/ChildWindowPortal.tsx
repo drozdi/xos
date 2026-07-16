@@ -1,7 +1,13 @@
 import { Box, Loader } from '@mantine/core';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
+
+import { AppRegistry } from '@/core/appManager/AppRegistry';
+import { AppProvider } from '@/core/context/AppContext';
+import { CoreApiProvider } from '@/core/context/CoreApiContext';
+import { getOrCreateCoreApi } from '@/core/context/coreApiRegistry';
 
 import { useChildWindowStore } from './childWindowStore';
+import { useWmStore } from './useWmStore';
 
 const LazyModal = lazy(() =>
 	import('@mantine/core').then((module) => ({ default: module.Modal })),
@@ -39,6 +45,36 @@ interface ChildWindowDialogProps {
 
 function ChildWindowDialog({ parentWindowId, child }: ChildWindowDialogProps) {
 	const removeChild = useChildWindowStore((state) => state.removeChild);
+	const parentWindow = useWmStore((state) => state.windows[parentWindowId]);
+	const manifest = parentWindow ? AppRegistry.get(parentWindow.appId) : undefined;
+	const coreApi = useMemo(
+		() =>
+			parentWindow
+				? getOrCreateCoreApi(parentWindowId, parentWindow.appId)
+				: null,
+		[parentWindow, parentWindowId],
+	);
+	const appContextValue = useMemo(
+		() =>
+			parentWindow && manifest
+				? {
+						appId: parentWindow.appId,
+						windowId: parentWindowId,
+						instanceKey: parentWindow.instanceKey,
+						manifest,
+					}
+				: null,
+		[manifest, parentWindow, parentWindowId],
+	);
+
+	const content =
+		coreApi && appContextValue ? (
+			<CoreApiProvider coreApi={coreApi}>
+				<AppProvider value={appContextValue}>{child.content}</AppProvider>
+			</CoreApiProvider>
+		) : (
+			child.content
+		);
 
 	return (
 		<Suspense fallback={<Loader size="xs" />}>
@@ -63,7 +99,7 @@ function ChildWindowDialog({ parentWindowId, child }: ChildWindowDialogProps) {
 					},
 				}}
 			>
-				<Box>{child.content}</Box>
+				<Box>{content}</Box>
 			</LazyModal>
 		</Suspense>
 	);

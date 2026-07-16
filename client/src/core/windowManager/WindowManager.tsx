@@ -4,6 +4,7 @@ import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
+import { AppShell } from '@/core/appMenu';
 import { AppProvider } from '@/core/context/AppContext';
 import { CoreApiProvider } from '@/core/context/CoreApiContext';
 import { getOrCreateCoreApi } from '@/core/context/coreApiRegistry';
@@ -47,7 +48,9 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 						</Box>
 					}
 				>
-					<AppComponent />
+					<AppShell>
+						<AppComponent />
+					</AppShell>
 				</Suspense>
 			</AppProvider>
 		</CoreApiProvider>

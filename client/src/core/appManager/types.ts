@@ -1,6 +1,7 @@
 import type { LazyExoticComponent, ComponentType } from 'react';
 
 import type { ContextMenuConfig } from '@/core/contextMenu/types';
+import type { AppMenuSource } from '@/core/appMenu/types';
 
 export interface LaunchParams {
 	instanceKey?: string;
@@ -23,6 +24,8 @@ export interface AppManifest {
 	singleInstance?: boolean;
 	instanceKey?: string | ((params?: LaunchParams) => string);
 	contextMenu?: ContextMenuConfig;
+	/** Верхнее меню: inline-конфиг или lazy loader из отдельного файла */
+	menu?: AppMenuSource;
 }
 
 export interface RunningApp {

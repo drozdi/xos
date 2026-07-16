@@ -1,8 +1,11 @@
 import { Box, Button, Stack } from '@mantine/core';
 import { useEffect } from 'react';
 
+import { useCoreApi } from '@/core/hooks/useCoreApi';
+
 import { Field, Information } from './components';
 import { checkGameResult } from './gameLogic';
+import { openNewGameDialog } from './openNewGameDialog';
 import { useTicTacToeStore } from './store';
 
 function ReloadIcon() {
@@ -27,18 +30,19 @@ function ReloadIcon() {
 }
 
 export default function TicTacToeApp() {
+	const coreApi = useCoreApi();
 	const field = useTicTacToeStore((state) => state.field);
+	const winLines = useTicTacToeStore((state) => state.winLines);
 	const isEnd = useTicTacToeStore((state) => state.isEnd);
 	const setWinner = useTicTacToeStore((state) => state.setWinner);
 	const draw = useTicTacToeStore((state) => state.draw);
-	const restart = useTicTacToeStore((state) => state.restart);
 
 	useEffect(() => {
 		if (isEnd) {
 			return;
 		}
 
-		const result = checkGameResult(field);
+		const result = checkGameResult(field, winLines);
 		if (result.status === 'win') {
 			setWinner(result.player);
 			return;
@@ -46,7 +50,7 @@ export default function TicTacToeApp() {
 		if (result.status === 'draw') {
 			draw();
 		}
-	}, [draw, field, isEnd, setWinner]);
+	}, [draw, field, isEnd, setWinner, winLines]);
 
 	return (
 		<Box p="md" h="100%">
@@ -56,7 +60,7 @@ export default function TicTacToeApp() {
 				<Button
 					variant="light"
 					leftSection={<ReloadIcon />}
-					onClick={restart}
+					onClick={() => openNewGameDialog(coreApi)}
 				>
 					Новая игра
 				</Button>

@@ -1,10 +1,10 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { getOrCreateCoreApi } from '@/core/context/coreApiRegistry';
 
+import { openNewGameDialog } from './openNewGameDialog';
 import { TicTacToeIcon } from './TicTacToeIcon';
-import { useTicTacToeStore } from './store';
-
 const TicTacToeApp = lazy(() => import('./TicTacToeApp'));
 
 const manifest: AppManifest = {
@@ -13,17 +13,19 @@ const manifest: AppManifest = {
 	version: '1.0.0',
 	icon: TicTacToeIcon,
 	component: TicTacToeApp,
-	defaultSize: { width: 360, height: 420 },
+	defaultSize: { width: 360, height: 480 },
 	minSize: { width: 300, height: 360 },
 	wmGroup: 'games',
 	singleInstance: true,
+	menu: () => import('./menu').then((module) => module.default),
 	contextMenu: {
 		windowOverrides: {
 			refresh: {
 				id: 'refresh',
 				label: 'Новая игра',
-				onClick: () => {
-					useTicTacToeStore.getState().restart();
+				onClick: (ctx) => {
+					if (!ctx.windowId) {return;}
+					openNewGameDialog(getOrCreateCoreApi(ctx.windowId, ctx.appId));
 				},
 			},
 		},

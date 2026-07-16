@@ -8,4 +8,5 @@ export * from './taskbar';
 export * from './desktop';
 export * from './context';
 export * from './contextMenu';
+export * from './appMenu';
 export * from './hooks';
