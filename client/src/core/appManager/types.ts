@@ -1,5 +1,7 @@
 import type { LazyExoticComponent, ComponentType } from 'react';
 
+import type { ContextMenuConfig } from '@/core/contextMenu/types';
+
 export interface LaunchParams {
 	instanceKey?: string;
 	title?: string;
@@ -20,6 +22,7 @@ export interface AppManifest {
 	wmGroup?: string;
 	singleInstance?: boolean;
 	instanceKey?: string | ((params?: LaunchParams) => string);
+	contextMenu?: ContextMenuConfig;
 }
 
 export interface RunningApp {

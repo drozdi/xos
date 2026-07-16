@@ -1,5 +1,5 @@
 import { Box, Button, Grid, Text } from '@mantine/core';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useCoreApi } from '@/core/hooks/useCoreApi';
 
@@ -24,8 +24,13 @@ export default function CalculatorApp() {
 	const [storedValue, setStoredValue] = useState<number | null>(null);
 	const [pendingOperator, setPendingOperator] = useState<Operator | null>(null);
 	const [resetNext, setResetNext] = useState(false);
+	const titleAppliedRef = useRef(false);
 
 	useEffect(() => {
+		if (titleAppliedRef.current) {
+			return;
+		}
+		titleAppliedRef.current = true;
 		const user = coreApi.auth.getUser();
 		const displayName = user?.alias ?? user?.login ?? 'Guest';
 		coreApi.window.setTitle(`Calculator — ${displayName}`);
@@ -117,7 +122,7 @@ export default function CalculatorApp() {
 	];
 
 	return (
-		<Box p="md" h="100%">
+		<Box h="100%">
 			<Text
 				ta="right"
 				size="xl"

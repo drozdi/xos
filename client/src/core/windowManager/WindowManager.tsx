@@ -1,26 +1,37 @@
 import { Box, Loader } from '@mantine/core';
+import { useElementSize } from '@mantine/hooks';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { AppProvider } from '@/core/context/AppContext';
 import { CoreApiProvider } from '@/core/context/CoreApiContext';
-import { createCoreApi } from '@/core/context/createCoreApi';
+import { getOrCreateCoreApi } from '@/core/context/coreApiRegistry';
 
 import { DemoWindowContent } from './DemoWindowContent';
 import { Window } from './Window';
 import { WindowErrorBoundary } from './WindowErrorBoundary';
+import { WindowManagerViewportContext } from './WindowManagerContext';
 import { useWmStore } from './useWmStore';
 import type { WindowState } from './types';
 
 const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 	const manifest = AppRegistry.get(window.appId);
-	const coreApi = useMemo(
-		() => createCoreApi(window.id, window.appId),
-		[window.id, window.appId],
+	const coreApi = getOrCreateCoreApi(window.id, window.appId);
+	const appContextValue = useMemo(
+		() =>
+			manifest
+				? {
+						appId: window.appId,
+						windowId: window.id,
+						instanceKey: window.instanceKey,
+						manifest,
+					}
+				: null,
+		[manifest, window.appId, window.id, window.instanceKey],
 	);
 
-	if (!manifest) {
+	if (!manifest || !appContextValue) {
 		return <DemoWindowContent window={window} />;
 	}
 
@@ -28,14 +39,7 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 
 	return (
 		<CoreApiProvider coreApi={coreApi}>
-			<AppProvider
-				value={{
-					appId: window.appId,
-					windowId: window.id,
-					instanceKey: window.instanceKey,
-					manifest,
-				}}
-			>
+			<AppProvider value={appContextValue}>
 				<Suspense
 					fallback={
 						<Box p="md">
@@ -51,6 +55,12 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 });
 
 export function WindowManager() {
+	const { ref: containerRef, width, height } = useElementSize<HTMLDivElement>();
+	const viewport = useMemo(
+		() => ({ width: width ?? 0, height: height ?? 0 }),
+		[width, height],
+	);
+
 	const visibleWindows = useWmStore(
 		useShallow((state) =>
 			Object.values(state.windows).filter((window) => !window.minimized),
@@ -66,22 +76,23 @@ export function WindowManager() {
 	}, []);
 
 	return (
-		<Box
-			style={{
-				position: 'absolute',
-				inset: 0,
-				pointerEvents: 'none',
-			}}
-		>
-			{visibleWindows.map((window) => (
-				<Box key={window.id} style={{ pointerEvents: 'auto' }}>
-					<Window windowId={window.id}>
+		<WindowManagerViewportContext.Provider value={viewport}>
+			<Box
+				ref={containerRef}
+				style={{
+					position: 'absolute',
+					inset: 0,
+					pointerEvents: 'none',
+				}}
+			>
+				{visibleWindows.map((window) => (
+					<Window key={window.id} windowId={window.id}>
 						<WindowErrorBoundary onReset={() => resetWindowContent(window.id)}>
 							<AppWindowContent key={window.contentKey} window={window} />
 						</WindowErrorBoundary>
 					</Window>
-				</Box>
-			))}
-		</Box>
+				))}
+			</Box>
+		</WindowManagerViewportContext.Provider>
 	);
 }

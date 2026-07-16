@@ -1,8 +1,11 @@
 /** HKEY_CONFIG defaults — system-wide fallback values */
 export const HKEY_CONFIG_DEFAULTS = {
 	layout: {
-		view: 'hhh lmr ffr',
+		/** Desktop shell: header + main + taskbar, без боковых панелей */
+		view: 'h m f',
 		mobileView: 'h m f',
+		/** Макет с resizable left/main/right — для экранов с панелями */
+		panelView: 'hhh lmr fff',
 		panels: {
 			left: { width: 280 },
 			right: { width: 280 },
@@ -13,6 +16,8 @@ export const HKEY_CONFIG_DEFAULTS = {
 		defaultHeight: 600,
 		minWidth: 400,
 		minHeight: 300,
+		/** Минимальная видимая часть окна у края рабочей области (px) */
+		dragMargin: 50,
 	},
 	taskbar: {
 		height: 48,

@@ -31,9 +31,8 @@ function AppShellFallback() {
 export default function App() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 	const isLoading = useAuthStore((state) => state.isLoading);
-	const hydrate = useAuthStore((state) => state.hydrate);
 	const interceptorsReady = useRef(false);
-	const [settingsReady, setSettingsReady] = useState(false);
+	const [settingsKey, setSettingsKey] = useState<'guest' | 'auth' | null>(null);
 
 	useEffect(() => {
 		if (!interceptorsReady.current) {
@@ -41,15 +40,15 @@ export default function App() {
 			interceptorsReady.current = true;
 		}
 
-		void hydrate();
-	}, [hydrate]);
+		void useAuthStore.getState().hydrate();
+	}, []);
 
 	useEffect(() => {
 		if (isLoading) {
-			setSettingsReady(false);
 			return;
 		}
 
+		const targetKey = isAuthenticated ? 'auth' : 'guest';
 		let cancelled = false;
 
 		async function bootstrapSettings() {
@@ -69,7 +68,7 @@ export default function App() {
 			}
 
 			settingManager.init(createSettingAdapter({ preloaded }));
-			setSettingsReady(true);
+			setSettingsKey(targetKey);
 		}
 
 		void bootstrapSettings();
@@ -78,6 +77,9 @@ export default function App() {
 			cancelled = true;
 		};
 	}, [isLoading, isAuthenticated]);
+
+	const expectedSettingsKey = isLoading ? null : isAuthenticated ? 'auth' : 'guest';
+	const settingsReady = settingsKey === expectedSettingsKey;
 
 	const showLoader = isLoading || (isAuthenticated && !settingsReady);
 

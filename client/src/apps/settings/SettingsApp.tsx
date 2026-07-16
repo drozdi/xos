@@ -2,11 +2,12 @@ import { Alert, Button, Loader, PasswordInput, Stack, TextInput } from '@mantine
 import { useForm } from '@mantine/form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { updateAccount } from '@/core/api/endpoints/account';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useCoreApi } from '@/core/hooks/useCoreApi';
+import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import type { AccountUpdateRequest, ApiError } from '@/types/api.types';
 
 import { useAccount } from './hooks/useAccount';
@@ -79,15 +80,17 @@ export default function SettingsApp() {
 		},
 	});
 
-	useEffect(() => {
-		coreApi.window.setTitle('Settings');
-	}, [coreApi]);
+	useWindowTitle('Settings');
+
+	const syncedAccountIdRef = useRef<number | null>(null);
 
 	useEffect(() => {
-		if (account) {
-			form.setValues(toFormValues(account));
+		if (!account || syncedAccountIdRef.current === account.id) {
+			return;
 		}
-	}, [account]);
+		syncedAccountIdRef.current = account.id;
+		form.setValues(toFormValues(account));
+	}, [account, form]);
 
 	const saveMutation = useMutation({
 		mutationFn: (values: ProfileFormValues) => updateAccount(toUpdatePayload(values)),

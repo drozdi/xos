@@ -25,8 +25,9 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 	const width = side === 'left' ? leftWidth : rightWidth;
 	const setWidth = side === 'left' ? setLeftWidth : setRightWidth;
 
-	const [collapsed, setCollapsed] = useState(width < COLLAPSE_THRESHOLD);
 	const [overlayOpen, setOverlayOpen] = useState(false);
+	const widthCollapsed = width < COLLAPSE_THRESHOLD;
+	const showCollapsedStrip = widthCollapsed && !overlayOpen;
 	const lastExpandedWidth = useRef(
 		width >= COLLAPSE_THRESHOLD ? width : DEFAULT_PANEL_WIDTH,
 	);
@@ -37,11 +38,11 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 	useEffect(() => {
 		if (width >= COLLAPSE_THRESHOLD) {
 			lastExpandedWidth.current = width;
-			setCollapsed(false);
-		} else {
-			setCollapsed(true);
-			setOverlayOpen(false);
+			setOverlayOpen((open) => (open ? false : open));
+			return;
 		}
+
+		setOverlayOpen((open) => (open ? false : open));
 	}, [width]);
 
 	const applyWidth = useCallback(
@@ -50,14 +51,12 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 			const clamped = Math.max(0, Math.min(nextWidth, maxWidth));
 
 			if (clamped < COLLAPSE_THRESHOLD) {
-				setCollapsed(true);
 				setOverlayOpen(false);
 				setWidth(0);
 				return;
 			}
 
 			lastExpandedWidth.current = clamped;
-			setCollapsed(false);
 			setWidth(clamped);
 		},
 		[setWidth],
@@ -68,10 +67,10 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 			event.preventDefault();
 			dragging.current = true;
 			dragStartX.current = event.clientX;
-			dragStartWidth.current = collapsed ? 0 : width;
+			dragStartWidth.current = widthCollapsed ? 0 : width;
 			event.currentTarget.setPointerCapture(event.pointerId);
 		},
-		[collapsed, width],
+		[widthCollapsed, width],
 	);
 
 	const handlePointerMove = useCallback(
@@ -93,12 +92,11 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 
 	const expandFromCollapsed = useCallback(() => {
 		const restored = Math.max(lastExpandedWidth.current, MIN_PANEL_WIDTH);
-		setCollapsed(false);
 		setOverlayOpen(true);
 		setWidth(restored);
 	}, [setWidth]);
 
-	const gridWidth = collapsed ? `${HAMBURGER_STRIP_WIDTH}px` : undefined;
+	const gridWidth = showCollapsedStrip ? `${HAMBURGER_STRIP_WIDTH}px` : undefined;
 
 	return (
 		<>
@@ -110,16 +108,16 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 					minWidth: 0,
 					width: gridWidth,
 					overflow: 'hidden',
-					backgroundColor: collapsed ? 'transparent' : 'var(--mantine-color-dark-7)',
-					borderRight: side === 'left' && !collapsed
+					backgroundColor: showCollapsedStrip ? 'transparent' : 'var(--mantine-color-dark-7)',
+					borderRight: side === 'left' && !showCollapsedStrip
 						? '1px solid var(--mantine-color-dark-5)'
 						: undefined,
-					borderLeft: side === 'right' && !collapsed
+					borderLeft: side === 'right' && !showCollapsedStrip
 						? '1px solid var(--mantine-color-dark-5)'
 						: undefined,
 				}}
 			>
-				{collapsed ? (
+				{showCollapsedStrip ? (
 					<Box
 						style={{
 							display: 'flex',
@@ -168,7 +166,7 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 				)}
 			</Box>
 
-			{collapsed && overlayOpen && (
+			{widthCollapsed && overlayOpen && (
 				<Box
 					style={{
 						position: 'fixed',
@@ -200,7 +198,6 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 							aria-label={`Collapse ${side} panel`}
 							onClick={() => {
 								setOverlayOpen(false);
-								setCollapsed(true);
 								setWidth(0);
 							}}
 						>

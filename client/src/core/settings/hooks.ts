@@ -44,7 +44,8 @@ export function useSetting<T>(
 			setIsLoading(true);
 			const stored = (await settingManager.get(category, key)) as T | undefined;
 			if (!active) {return;}
-			setValueState(stored ?? defaultValue);
+			const resolved = stored ?? defaultValue;
+			setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 			setIsLoading(false);
 		})();
 
@@ -57,7 +58,8 @@ export function useSetting<T>(
 		return settingManager.subscribe((changedCategory, changedKey) => {
 			if (changedCategory === category && changedKey === key) {
 				void settingManager.get(category, key).then((next) => {
-					setValueState((next ?? defaultValue) as T | undefined);
+					const resolved = (next ?? defaultValue) as T | undefined;
+					setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 				});
 			}
 		});
@@ -65,8 +67,17 @@ export function useSetting<T>(
 
 	const setValue = useCallback(
 		(next: T) => {
-			setValueState(next);
-			void settingManager.set(category, key, next);
+			let changed = false;
+			setValueState((current) => {
+				if (Object.is(current, next)) {
+					return current;
+				}
+				changed = true;
+				return next;
+			});
+			if (changed) {
+				void settingManager.set(category, key, next);
+			}
 		},
 		[category, key],
 	);
@@ -94,7 +105,8 @@ export function useSetState<T>(
 			setIsLoading(true);
 			const stored = (await settingManager.get(category, key)) as T | undefined;
 			if (!active) {return;}
-			setValueState(stored ?? initial);
+			const resolved = stored ?? initial;
+			setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 			setIsLoading(false);
 		})();
 
@@ -107,7 +119,8 @@ export function useSetState<T>(
 		return settingManager.subscribe((changedCategory, changedKey) => {
 			if (changedCategory === category && changedKey === key) {
 				void settingManager.get(category, key).then((next) => {
-					setValueState((next ?? initial) as T);
+					const resolved = (next ?? initial) as T;
+					setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 				});
 			}
 		});
@@ -119,14 +132,16 @@ export function useSetState<T>(
 
 	const setValue = useCallback(
 		(next: T | ((prev: T) => T)) => {
-			setValueState((prev) => {
-				const resolved = typeof next === 'function' ? (next as (p: T) => T)(prev) : next;
-				valueRef.current = resolved;
-				persist(resolved);
-				return resolved;
-			});
+			const resolved =
+				typeof next === 'function' ? (next as (p: T) => T)(valueRef.current) : next;
+			if (Object.is(valueRef.current, resolved)) {
+				return;
+			}
+			valueRef.current = resolved;
+			setValueState(resolved);
+			persist(resolved);
 		},
-		[category, key, persist],
+		[persist],
 	);
 
 	return [value, setValue, isLoading];

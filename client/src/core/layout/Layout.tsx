@@ -10,16 +10,23 @@ import { parseView } from './parseView';
 
 interface LayoutProps {
 	children: React.ReactNode;
+	/** Явный view (перекрывает USER layout.view из settings) */
+	view?: string;
+	mobileView?: string;
 }
 
-export function Layout({ children }: LayoutProps) {
-	const isMobile = useMediaQuery('(max-width: 767px)') ?? false;
-	const [view] = useSetting('USER', 'layout.view', HKEY_CONFIG_DEFAULTS.layout.view);
-	const [mobileView] = useSetting(
+export function Layout({ children, view: viewProp, mobileView: mobileViewProp }: LayoutProps) {
+	const isMobile = useMediaQuery('(max-width: 767px)', false, {
+		getInitialValueInEffect: true,
+	});
+	const [storedView] = useSetting('USER', 'layout.view', HKEY_CONFIG_DEFAULTS.layout.view);
+	const [storedMobileView] = useSetting(
 		'USER',
 		'layout.mobileView',
 		HKEY_CONFIG_DEFAULTS.layout.mobileView,
 	);
+	const view = viewProp ?? storedView;
+	const mobileView = mobileViewProp ?? storedMobileView;
 	const [leftWidth, setLeftWidth] = useSetState<number>(
 		'USER',
 		'layout.panels.left.width',
@@ -32,16 +39,17 @@ export function Layout({ children }: LayoutProps) {
 	);
 
 	const activeView = isMobile ? (mobileView ?? view) : view;
+	const usesSidePanels = /[lr]/i.test(activeView?.replace(/\s/g, '') ?? '');
 	const parsed = useMemo(() => {
 		const collapsedStrip = 40;
-		const effectiveLeft = leftWidth < 50 ? collapsedStrip : leftWidth;
-		const effectiveRight = rightWidth < 50 ? collapsedStrip : rightWidth;
+		const effectiveLeft = usesSidePanels && leftWidth < 50 ? collapsedStrip : leftWidth;
+		const effectiveRight = usesSidePanels && rightWidth < 50 ? collapsedStrip : rightWidth;
 
 		return parseView(activeView ?? HKEY_CONFIG_DEFAULTS.layout.view, {
 			left: effectiveLeft,
 			right: effectiveRight,
 		});
-	}, [activeView, leftWidth, rightWidth]);
+	}, [activeView, leftWidth, rightWidth, usesSidePanels]);
 
 	const contextValue = useMemo(
 		() => ({

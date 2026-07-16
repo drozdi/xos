@@ -18,6 +18,10 @@ export default defineConfig(({ mode }) => ({
 			}),
 	].filter(Boolean),
 	resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+	define: {
+		'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
+		'process.env.DRAGGABLE_DEBUG': JSON.stringify(''),
+	},
 	test: {
 		globals: false,
 		environment: 'node',

@@ -57,6 +57,10 @@ export function createWindowApi(windowId: string): WindowApi {
 		},
 
 		setTitle: (title: string) => {
+			const current = useWmStore.getState().windows[windowId]?.title;
+			if (current === title) {
+				return;
+			}
 			useWmStore.getState().updateWindow(windowId, { title });
 		},
 

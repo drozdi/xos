@@ -122,17 +122,20 @@ export const useWmStore = create<WmStore>((set, get) => ({
 	},
 
 	updateWindow: (id, patch) => {
-		set((state) => {
-			const current = state.windows[id];
-			if (!current) {return state;}
+		const current = get().windows[id];
+		if (!current) {return;}
 
-			return {
-				windows: {
-					...state.windows,
-					[id]: { ...current, ...patch },
-				},
-			};
-		});
+		const hasChanges = Object.entries(patch).some(
+			([key, value]) => current[key as keyof WindowState] !== value,
+		);
+		if (!hasChanges) {return;}
+
+		set((state) => ({
+			windows: {
+				...state.windows,
+				[id]: { ...current, ...patch },
+			},
+		}));
 
 		if (shouldPersist(patch)) {
 			schedulePersistWindow(id);

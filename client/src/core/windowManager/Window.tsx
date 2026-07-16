@@ -14,16 +14,38 @@ import {
 } from 'react';
 import { Rnd } from 'react-rnd';
 
+import { getOrCreateCoreApi, destroyCoreApi } from '@/core/context/coreApiRegistry';
+
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
+import { WindowContextMenu } from '@/core/contextMenu';
 
 import { getOrCreateWindowApi, destroyWindowApi } from './WindowApi';
+import { useChildWindowStore } from './childWindowStore';
 import { emitWindowFocus, emitWindowResize, getWindowApi } from './windowApiRegistry';
-import { useObserveWindowSize, WindowSizeContext } from './useWindowSize';
+import { getWindowDragBounds } from './windowDragBounds';
+import { useWindowManagerViewport } from './WindowManagerContext';
+import { WindowSizeContext } from './useWindowSize';
 import { useWmStore } from './useWmStore';
 
 const ChildWindowPortal = lazy(() =>
 	import('./ChildWindowPortal').then((module) => ({ default: module.ChildWindowPortal })),
 );
+
+function ChildWindowPortalGate({ windowId }: { windowId: string }) {
+	const hasChildren = useChildWindowStore(
+		(state) => (state.byParent[windowId]?.length ?? 0) > 0,
+	);
+
+	if (!hasChildren) {
+		return null;
+	}
+
+	return (
+		<Suspense fallback={null}>
+			<ChildWindowPortal windowId={windowId} />
+		</Suspense>
+	);
+}
 
 interface WindowProps {
 	windowId: string;
@@ -43,18 +65,28 @@ function WindowComponent({ windowId, children }: WindowProps) {
 
 	const isMobile = useMediaQuery(MOBILE_BREAKPOINT, false, { getInitialValueInEffect: true });
 	const [isDragging, setIsDragging] = useState(false);
-	const contentRef = useRef<HTMLDivElement>(null);
-	const contentSize = useObserveWindowSize(contentRef);
+	const rndRef = useRef<Rnd>(null);
+	const titlebarHeight = isMobile ? 44 : 36;
+	const contentSizeValue = useMemo(() => {
+		if (!windowState) {
+			return { width: 0, height: 0 };
+		}
+		return {
+			width: windowState.width,
+			height: Math.max(0, windowState.height - titlebarHeight),
+		};
+	}, [titlebarHeight, windowState?.height, windowState?.width]);
 
 	useEffect(() => {
 		getOrCreateWindowApi(windowId);
 		return () => {
 			destroyWindowApi(windowId);
+			destroyCoreApi(windowId);
 		};
 	}, [windowId]);
 
 	useEffect(() => {
-		if (contentSize.width === 0 && contentSize.height === 0) {return;}
+		if (contentSizeValue.width === 0 && contentSizeValue.height === 0) {return;}
 
 		const timer = window.setTimeout(() => {
 			emitWindowResize(windowId);
@@ -63,7 +95,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		return () => {
 			window.clearTimeout(timer);
 		};
-	}, [contentSize.width, contentSize.height, windowId]);
+	}, [contentSizeValue.width, contentSizeValue.height, windowId]);
 
 	useEffect(() => {
 		if (activeWindowId === windowId) {
@@ -72,7 +104,8 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	}, [activeWindowId, windowId]);
 
 	const taskbarHeight = HKEY_CONFIG_DEFAULTS.taskbar.height;
-	const { minWidth, minHeight } = HKEY_CONFIG_DEFAULTS.window;
+	const { minWidth, minHeight, dragMargin } = HKEY_CONFIG_DEFAULTS.window;
+	const viewport = useWindowManagerViewport();
 
 	const mobileBounds = useMemo(
 		() => ({
@@ -87,17 +120,39 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		[taskbarHeight],
 	);
 
-	const desktopMaxBounds = useMemo(
-		() => ({
-			x: 0,
-			y: 0,
-			width: typeof window !== 'undefined' ? window.innerWidth : 0,
-			height:
-				typeof window !== 'undefined'
-					? Math.max(0, window.innerHeight - taskbarHeight)
-					: 0,
-		}),
-		[taskbarHeight],
+	const desktopMaxBounds = mobileBounds;
+
+	const isMaximizedLayout = Boolean(isMobile || windowState?.maximized);
+	const boundsReady = viewport.width > 0 && viewport.height > 0;
+	const dragBounds = useMemo(() => {
+		if (!windowState || isMaximizedLayout || !boundsReady) {
+			return undefined;
+		}
+		return getWindowDragBounds(
+			viewport,
+			{ width: windowState.width, height: windowState.height },
+			dragMargin,
+		);
+	}, [
+		boundsReady,
+		dragMargin,
+		isMaximizedLayout,
+		viewport.height,
+		viewport.width,
+		windowState?.height,
+		windowState?.width,
+	]);
+	const clampDragPosition = useCallback(
+		(x: number, y: number) => {
+			if (!dragBounds) {
+				return { x, y };
+			}
+			return {
+				x: Math.min(dragBounds.right, Math.max(dragBounds.left, x)),
+				y: Math.min(dragBounds.bottom, Math.max(dragBounds.top, y)),
+			};
+		},
+		[dragBounds],
 	);
 
 	const handleFocus = useCallback(() => {
@@ -113,10 +168,24 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		(_event: unknown, data: { x: number; y: number }) => {
 			setIsDragging(false);
 			if (isMobile || windowState?.maximized) {return;}
-			updateWindow(windowId, { x: data.x, y: data.y });
+			const nextPosition = clampDragPosition(data.x, data.y);
+			if (
+				nextPosition.x !== data.x ||
+				nextPosition.y !== data.y
+			) {
+				rndRef.current?.updatePosition(nextPosition);
+			}
+			if (
+				windowState &&
+				nextPosition.x === windowState.x &&
+				nextPosition.y === windowState.y
+			) {
+				return;
+			}
+			updateWindow(windowId, nextPosition);
 			emitWindowResize(windowId);
 		},
-		[isMobile, updateWindow, windowId, windowState?.maximized],
+		[clampDragPosition, isMobile, updateWindow, windowId, windowState],
 	);
 
 	const handleResizeStop = useCallback(
@@ -128,15 +197,33 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			position: { x: number; y: number },
 		) => {
 			if (isMobile || windowState?.maximized) {return;}
+			const nextWidth = ref.offsetWidth;
+			const nextHeight = ref.offsetHeight;
+			const nextPosition = clampDragPosition(position.x, position.y);
+			if (
+				nextPosition.x !== position.x ||
+				nextPosition.y !== position.y
+			) {
+				rndRef.current?.updatePosition(nextPosition);
+			}
+			if (
+				windowState &&
+				nextPosition.x === windowState.x &&
+				nextPosition.y === windowState.y &&
+				nextWidth === windowState.width &&
+				nextHeight === windowState.height
+			) {
+				return;
+			}
 			updateWindow(windowId, {
-				x: position.x,
-				y: position.y,
-				width: ref.offsetWidth,
-				height: ref.offsetHeight,
+				x: nextPosition.x,
+				y: nextPosition.y,
+				width: nextWidth,
+				height: nextHeight,
 			});
 			emitWindowResize(windowId);
 		},
-		[isMobile, updateWindow, windowId, windowState?.maximized],
+		[clampDragPosition, isMobile, updateWindow, windowId, windowState],
 	);
 
 	const handleMinimize = useCallback(
@@ -175,32 +262,62 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		[windowId],
 	);
 
+	const rndKey = windowState
+		? `${windowState.contentKey}-${isMaximizedLayout ? 'max' : 'free'}-${isMobile ? 'mob' : 'desk'}`
+		: 'missing';
+	const defaultBounds = useMemo(
+		() => {
+			if (!windowState) {
+				return { x: 0, y: 0, width: 0, height: 0 };
+			}
+			if (isMaximizedLayout) {
+				return {
+					x: 0,
+					y: 0,
+					width: isMobile ? mobileBounds.width : desktopMaxBounds.width,
+					height: isMobile ? mobileBounds.height : desktopMaxBounds.height,
+				};
+			}
+			return {
+				x: windowState.x,
+				y: windowState.y,
+				width: windowState.width,
+				height: windowState.height,
+			};
+		},
+		[
+			desktopMaxBounds.height,
+			desktopMaxBounds.width,
+			isMaximizedLayout,
+			isMobile,
+			mobileBounds.height,
+			mobileBounds.width,
+			rndKey,
+			windowState?.height,
+			windowState?.width,
+			windowState?.x,
+			windowState?.y,
+		],
+	);
+
 	if (!windowState) {return null;}
 
 	const controlSize = isMobile ? 36 : 28;
-	const isMaximizedLayout = isMobile || windowState.maximized;
-	const position = isMobile || windowState.maximized
-		? { x: 0, y: 0 }
-		: { x: windowState.x, y: windowState.y };
-	const size = isMobile
-		? { width: mobileBounds.width, height: mobileBounds.height }
-		: windowState.maximized
-			? { width: desktopMaxBounds.width, height: desktopMaxBounds.height }
-			: { width: windowState.width, height: windowState.height };
 
 	return (
 		<Rnd
-			position={position}
-			size={size}
+			ref={rndRef}
+			key={rndKey}
+			default={defaultBounds}
 			minWidth={isMobile ? mobileBounds.width : minWidth}
 			minHeight={isMobile ? mobileBounds.height : minHeight}
-			bounds="parent"
 			dragHandleClassName="xos-window-titlebar"
 			disableDragging={isMaximizedLayout}
 			enableResizing={!isMaximizedLayout}
 			enableUserSelectHack={false}
 			style={{
 				zIndex: windowState.zIndex,
+				pointerEvents: 'auto',
 				display: 'flex',
 				flexDirection: 'column',
 				willChange: isDragging ? 'transform' : undefined,
@@ -209,7 +326,6 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			onResizeStart={handleFocus}
 			onDragStop={handleDragStop}
 			onResizeStop={handleResizeStop}
-			onMouseDown={handleFocus}
 		>
 			<Box
 				bg="gray.0"
@@ -267,25 +383,25 @@ function WindowComponent({ windowId, children }: WindowProps) {
 					</Group>
 				</Group>
 
-				<WindowSizeContext.Provider value={contentSize}>
+				<WindowSizeContext.Provider value={contentSizeValue}>
 					<Box
-						ref={contentRef}
-						p="md"
-						data-window-width={contentSize.width}
-						data-window-height={contentSize.height}
+						data-window-width={contentSizeValue.width}
+						data-window-height={contentSizeValue.height}
 						style={{
 							position: 'relative',
 							flex: 1,
+							minHeight: 0,
 							overflow: 'auto',
-							['--window-width' as string]: `${contentSize.width}px`,
-							['--window-height' as string]: `${contentSize.height}px`,
+							['--window-width' as string]: `${contentSizeValue.width}px`,
+							['--window-height' as string]: `${contentSizeValue.height}px`,
 						}}
-						onMouseDown={handleFocus}
 					>
-						{children}
-						<Suspense fallback={null}>
-							<ChildWindowPortal windowId={windowId} />
-						</Suspense>
+						<WindowContextMenu windowId={windowId} windowState={windowState}>
+							<Box style={{ minHeight: '100%' }}>
+								{children}
+								<ChildWindowPortalGate windowId={windowId} />
+							</Box>
+						</WindowContextMenu>
 					</Box>
 				</WindowSizeContext.Provider>
 			</Box>

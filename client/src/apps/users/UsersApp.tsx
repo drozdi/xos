@@ -1,26 +1,22 @@
 import { Alert, Button, Group, Loader, ScrollArea, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { VirtualTable } from '@/components/tables';
 import { queryKeys } from '@/core/api/queryKeys';
-import { useCoreApi } from '@/core/hooks/useCoreApi';
+import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
 import type { UserListItem } from '@/types/api.types';
 
 import { fetchUsersList } from './services/usersApi';
 
 export default function UsersApp() {
-	const coreApi = useCoreApi();
+	useWindowTitle('Users');
 
 	const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
 		queryKey: queryKeys.main.users({ limit: 50, offset: 1 }),
 		queryFn: () => fetchUsersList({ limit: 50, offset: 1 }),
 	});
-
-	useEffect(() => {
-		coreApi.window.setTitle('Users');
-	}, [coreApi]);
 
 	const columns = useMemo(
 		() => [

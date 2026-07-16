@@ -30,18 +30,25 @@ export function useObserveWindowSize(elementRef: RefObject<HTMLElement | null>):
 		const element = elementRef.current;
 		if (!element) {return;}
 
+		const updateSize = (width: number, height: number) => {
+			const nextWidth = Math.round(width);
+			const nextHeight = Math.round(height);
+			setSize((current) =>
+				current.width === nextWidth && current.height === nextHeight
+					? current
+					: { width: nextWidth, height: nextHeight },
+			);
+		};
+
 		const observer = new ResizeObserver((entries) => {
 			const entry = entries[0];
 			if (!entry) {return;}
 			const { width, height } = entry.contentRect;
-			setSize({ width: Math.round(width), height: Math.round(height) });
+			updateSize(width, height);
 		});
 
 		observer.observe(element);
-		setSize({
-			width: Math.round(element.clientWidth),
-			height: Math.round(element.clientHeight),
-		});
+		updateSize(element.clientWidth, element.clientHeight);
 
 		return () => {
 			observer.disconnect();

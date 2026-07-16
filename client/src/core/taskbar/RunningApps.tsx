@@ -1,7 +1,8 @@
 import { ActionIcon, Button, Group, Menu, Text } from '@mantine/core';
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
+import { ContextMenu, useContextMenuItems } from '@/core/contextMenu';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 import type { WindowState } from '@/core/windowManager/types';
 
@@ -28,6 +29,51 @@ function getGroupIcon(windows: WindowState[]) {
 
 	const manifest = AppRegistry.get(firstWindow.appId);
 	return manifest?.icon ?? null;
+}
+
+function TaskbarGroupContextMenu({
+	wmGroup,
+	groupWindows,
+	children,
+}: {
+	wmGroup: string;
+	groupWindows: WindowState[];
+	children: ReactNode;
+}) {
+	const firstWindow = groupWindows[0];
+	const manifest = firstWindow ? AppRegistry.get(firstWindow.appId) : undefined;
+
+	const items = useContextMenuItems({
+		scope: 'taskbar',
+		appId: firstWindow?.appId ?? wmGroup,
+		windows: groupWindows,
+		wmGroup,
+		windowId: firstWindow?.id,
+		instanceKey: firstWindow?.instanceKey,
+	});
+
+	if (!manifest || !firstWindow) {
+		return <>{children}</>;
+	}
+
+	return (
+		<ContextMenu
+			items={items}
+			context={{
+				scope: 'taskbar',
+				appId: firstWindow.appId,
+				manifest,
+				windowId: firstWindow.id,
+				instanceKey: firstWindow.instanceKey,
+				windows: groupWindows,
+				wmGroup,
+			}}
+			position="top"
+			zIndex={1050}
+		>
+			{children}
+		</ContextMenu>
+	);
 }
 
 export function RunningApps() {
@@ -80,19 +126,21 @@ export function RunningApps() {
 						closeDelay={200}
 					>
 						<Menu.Target>
-							<Button
-								variant={active ? 'light' : 'subtle'}
-								color={active ? 'blue' : 'gray'}
-								size="compact-sm"
-								leftSection={icon ? <AppIcon icon={icon} size={16} /> : undefined}
-								onClick={handleGroupClick}
-								style={{ maxWidth: 180 }}
-							>
-								<Text size="xs" truncate>
-									{label}
-									{groupWindows.length > 1 ? ` (${groupWindows.length})` : ''}
-								</Text>
-							</Button>
+							<TaskbarGroupContextMenu wmGroup={wmGroup} groupWindows={groupWindows}>
+								<Button
+									variant={active ? 'light' : 'subtle'}
+									color={active ? 'blue' : 'gray'}
+									size="compact-sm"
+									leftSection={icon ? <AppIcon icon={icon} size={16} /> : undefined}
+									onClick={handleGroupClick}
+									style={{ maxWidth: 180 }}
+								>
+									<Text size="xs" truncate>
+										{label}
+										{groupWindows.length > 1 ? ` (${groupWindows.length})` : ''}
+									</Text>
+								</Button>
+							</TaskbarGroupContextMenu>
 						</Menu.Target>
 
 						<Menu.Dropdown>

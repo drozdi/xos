@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250616104423 extends AbstractMigration
+final class Version20260715131045 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -24,7 +24,7 @@ final class Version20250616104423 extends AbstractMigration
             CREATE TABLE d_accounting (id INT AUTO_INCREMENT NOT NULL, parent_id INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_created DATETIME NOT NULL, name LONGTEXT DEFAULT NULL, in_no VARCHAR(255) DEFAULT NULL, invoice VARCHAR(255) DEFAULT NULL, date_invoice DATETIME DEFAULT NULL, date_discarded DATETIME DEFAULT NULL, discarded TINYINT(1) DEFAULT 0 NOT NULL, INDEX IDX_3588D169727ACA70 (parent_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
-            CREATE TABLE d_device (id INT AUTO_INCREMENT NOT NULL, parent_id INT DEFAULT NULL, type_id INT DEFAULT NULL, group_id INT DEFAULT NULL, accounting_id INT DEFAULT NULL, created_by INT DEFAULT NULL, modified_by INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_created DATETIME DEFAULT NULL, code VARCHAR(191) NOT NULL, name VARCHAR(255) DEFAULT NULL, sn VARCHAR(191) DEFAULT NULL, sort INT DEFAULT 100 NOT NULL, description LONGTEXT DEFAULT NULL, log LONGTEXT DEFAULT NULL, INDEX IDX_5CF3FF5B727ACA70 (parent_id), INDEX IDX_5CF3FF5BC54C8C93 (type_id), INDEX IDX_5CF3FF5BFE54D947 (group_id), UNIQUE INDEX UNIQ_5CF3FF5B3B7DD068 (accounting_id), INDEX IDX_5CF3FF5BDE12AB56 (created_by), INDEX IDX_5CF3FF5B25F94802 (modified_by), UNIQUE INDEX UNIQ_5CF3FF5BFE54D94777153098 (group_id, code), UNIQUE INDEX UNIQ_5CF3FF5BC54C8C93EFC17495 (type_id, sn), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+            CREATE TABLE d_device (id INT AUTO_INCREMENT NOT NULL, parent_id INT DEFAULT NULL, type_id INT DEFAULT NULL, group_id INT DEFAULT NULL, accounting_id INT DEFAULT NULL, created_by INT DEFAULT NULL, modified_by INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_created DATETIME DEFAULT NULL, code VARCHAR(191) NOT NULL, name VARCHAR(255) DEFAULT NULL, sn VARCHAR(191) DEFAULT NULL, sort INT DEFAULT 100 NOT NULL, description LONGTEXT DEFAULT NULL, `log` LONGTEXT DEFAULT NULL, INDEX IDX_5CF3FF5B727ACA70 (parent_id), INDEX IDX_5CF3FF5BC54C8C93 (type_id), INDEX IDX_5CF3FF5BFE54D947 (group_id), UNIQUE INDEX UNIQ_5CF3FF5B3B7DD068 (accounting_id), INDEX IDX_5CF3FF5BDE12AB56 (created_by), INDEX IDX_5CF3FF5B25F94802 (modified_by), UNIQUE INDEX UNIQ_5CF3FF5BFE54D94777153098 (group_id, code), UNIQUE INDEX UNIQ_5CF3FF5BC54C8C93EFC17495 (type_id, sn), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
             CREATE TABLE d_device_image (device_id INT NOT NULL, file_id INT NOT NULL, INDEX IDX_125DB9E694A4C7D4 (device_id), INDEX IDX_125DB9E693CB796C (file_id), PRIMARY KEY(device_id, file_id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
@@ -75,6 +75,27 @@ final class Version20250616104423 extends AbstractMigration
             CREATE TABLE d_type_property (type_id INT NOT NULL, property_id INT NOT NULL, INDEX IDX_277721ACC54C8C93 (type_id), INDEX IDX_277721AC549213EC (property_id), PRIMARY KEY(type_id, property_id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
+            CREATE TABLE iblock_block (id INT AUTO_INCREMENT NOT NULL, type_id INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_created DATETIME DEFAULT NULL, active TINYINT(1) DEFAULT 1 NOT NULL, sections TINYINT(1) DEFAULT 1 NOT NULL, property TINYINT(1) DEFAULT 0 NOT NULL, active_from DATETIME DEFAULT NULL, active_to DATETIME DEFAULT NULL, code VARCHAR(191) NOT NULL, name VARCHAR(255) NOT NULL, sort INT DEFAULT 100 NOT NULL, description LONGTEXT DEFAULT NULL, UNIQUE INDEX UNIQ_E1A370DE77153098 (code), INDEX IDX_E1A370DEC54C8C93 (type_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE iblock_element (id INT AUTO_INCREMENT NOT NULL, block_id INT DEFAULT NULL, section_id INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_created DATETIME DEFAULT NULL, active TINYINT(1) DEFAULT 1 NOT NULL, active_from DATETIME DEFAULT NULL, active_to DATETIME DEFAULT NULL, code VARCHAR(191) NOT NULL, name VARCHAR(255) NOT NULL, sort INT DEFAULT 100 NOT NULL, description LONGTEXT DEFAULT NULL, preview_text LONGTEXT DEFAULT NULL, detail_text LONGTEXT DEFAULT NULL, UNIQUE INDEX UNIQ_C727E5EB77153098 (code), INDEX IDX_C727E5EBE9ED820C (block_id), INDEX IDX_C727E5EBD823E37A (section_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE iblock_property (id INT AUTO_INCREMENT NOT NULL, parent_id INT DEFAULT NULL, type_id INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_created DATETIME DEFAULT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(191) NOT NULL, active TINYINT(1) DEFAULT 1 NOT NULL, active_from DATETIME DEFAULT NULL, active_to DATETIME DEFAULT NULL, required TINYINT(1) DEFAULT 0 NOT NULL, multiple TINYINT(1) DEFAULT 0 NOT NULL, field_type VARCHAR(255) DEFAULT 's' NOT NULL, list_type VARCHAR(255) DEFAULT 's' NOT NULL, default_value VARCHAR(255) DEFAULT NULL, postfix VARCHAR(255) DEFAULT NULL, prefix VARCHAR(255) DEFAULT NULL, sort INT DEFAULT 100 NOT NULL, description LONGTEXT DEFAULT NULL, UNIQUE INDEX UNIQ_E3A9C89D77153098 (code), INDEX IDX_E3A9C89D727ACA70 (parent_id), UNIQUE INDEX UNIQ_E3A9C89DC54C8C93 (type_id), UNIQUE INDEX UNIQ_E3A9C89D727ACA7077153098 (parent_id, code), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE iblock_property_enum (id INT AUTO_INCREMENT NOT NULL, property_id INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, name VARCHAR(255) NOT NULL, code VARCHAR(191) NOT NULL, `default` TINYINT(1) DEFAULT 0 NOT NULL, sort INT DEFAULT 100 NOT NULL, INDEX IDX_6A0E3DC2549213EC (property_id), UNIQUE INDEX UNIQ_6A0E3DC2549213EC77153098 (property_id, code), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE iblock_section (id INT AUTO_INCREMENT NOT NULL, parent_id INT DEFAULT NULL, block_id INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, date_created DATETIME DEFAULT NULL, active TINYINT(1) DEFAULT 1 NOT NULL, active_from DATETIME DEFAULT NULL, active_to DATETIME DEFAULT NULL, code VARCHAR(191) NOT NULL, name VARCHAR(255) NOT NULL, sort INT DEFAULT 100 NOT NULL, level INT DEFAULT 0 NOT NULL, description LONGTEXT DEFAULT NULL, UNIQUE INDEX UNIQ_AB14C13D77153098 (code), INDEX IDX_AB14C13D727ACA70 (parent_id), INDEX IDX_AB14C13DE9ED820C (block_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE iblock_type (id INT AUTO_INCREMENT NOT NULL, parent_id INT DEFAULT NULL, property_id INT DEFAULT NULL, x_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, active TINYINT(1) DEFAULT 1 NOT NULL, sections TINYINT(1) DEFAULT 1 NOT NULL, active_from DATETIME DEFAULT NULL, active_to DATETIME DEFAULT NULL, code VARCHAR(191) NOT NULL, name VARCHAR(255) NOT NULL, sort INT DEFAULT 100 NOT NULL, description LONGTEXT DEFAULT NULL, UNIQUE INDEX UNIQ_E924747577153098 (code), INDEX IDX_E9247475727ACA70 (parent_id), UNIQUE INDEX UNIQ_E9247475549213EC (property_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE iblock_type_property (type_id INT NOT NULL, property_id INT NOT NULL, INDEX IDX_3DA5178BC54C8C93 (type_id), INDEX IDX_3DA5178B549213EC (property_id), PRIMARY KEY(type_id, property_id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
             CREATE TABLE main_claimant (id INT AUTO_INCREMENT NOT NULL, name VARCHAR(255) NOT NULL, code VARCHAR(191) NOT NULL, UNIQUE INDEX UNIQ_D5B7FBD377153098 (code), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
@@ -103,6 +124,12 @@ final class Version20250616104423 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             CREATE TABLE main_user_group (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, group_id INT NOT NULL, active_from DATETIME DEFAULT NULL, active_to DATETIME DEFAULT NULL, INDEX IDX_B7FACBFEA76ED395 (user_id), INDEX IDX_B7FACBFEFE54D947 (group_id), UNIQUE INDEX UNIQ_B7FACBFEA76ED395FE54D947 (user_id, group_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE refresh_tokens (id INT AUTO_INCREMENT NOT NULL, refresh_token VARCHAR(128) NOT NULL, username VARCHAR(255) NOT NULL, valid DATETIME NOT NULL, UNIQUE INDEX UNIQ_9BACE7E1C74F2195 (refresh_token), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE TABLE user_settings (id INT AUTO_INCREMENT NOT NULL, user_id INT NOT NULL, category VARCHAR(32) NOT NULL, setting_key VARCHAR(512) NOT NULL, value JSON NOT NULL, updated_at DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)', INDEX IDX_5C844C5A76ED395 (user_id), INDEX idx_user_category (user_id, category), UNIQUE INDEX uniq_user_category_key (user_id, category, setting_key), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE d_accounting ADD CONSTRAINT FK_3588D169727ACA70 FOREIGN KEY (parent_id) REFERENCES d_accounting (id) ON DELETE SET NULL
@@ -213,6 +240,42 @@ final class Version20250616104423 extends AbstractMigration
             ALTER TABLE d_type_property ADD CONSTRAINT FK_277721AC549213EC FOREIGN KEY (property_id) REFERENCES d_property (id) ON DELETE CASCADE
         SQL);
         $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_block ADD CONSTRAINT FK_E1A370DEC54C8C93 FOREIGN KEY (type_id) REFERENCES iblock_type (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_element ADD CONSTRAINT FK_C727E5EBE9ED820C FOREIGN KEY (block_id) REFERENCES iblock_block (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_element ADD CONSTRAINT FK_C727E5EBD823E37A FOREIGN KEY (section_id) REFERENCES iblock_section (id) ON DELETE SET NULL
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_property ADD CONSTRAINT FK_E3A9C89D727ACA70 FOREIGN KEY (parent_id) REFERENCES iblock_property (id) ON DELETE SET NULL
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_property ADD CONSTRAINT FK_E3A9C89DC54C8C93 FOREIGN KEY (type_id) REFERENCES iblock_type (id) ON DELETE SET NULL
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_property_enum ADD CONSTRAINT FK_6A0E3DC2549213EC FOREIGN KEY (property_id) REFERENCES iblock_property (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_section ADD CONSTRAINT FK_AB14C13D727ACA70 FOREIGN KEY (parent_id) REFERENCES iblock_section (id) ON DELETE SET NULL
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_section ADD CONSTRAINT FK_AB14C13DE9ED820C FOREIGN KEY (block_id) REFERENCES iblock_block (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type ADD CONSTRAINT FK_E9247475727ACA70 FOREIGN KEY (parent_id) REFERENCES iblock_type (id) ON DELETE SET NULL
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type ADD CONSTRAINT FK_E9247475549213EC FOREIGN KEY (property_id) REFERENCES iblock_property (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type_property ADD CONSTRAINT FK_3DA5178BC54C8C93 FOREIGN KEY (type_id) REFERENCES iblock_type (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type_property ADD CONSTRAINT FK_3DA5178B549213EC FOREIGN KEY (property_id) REFERENCES iblock_property (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
             ALTER TABLE main_file ADD CONSTRAINT FK_6C2C0472DE12AB56 FOREIGN KEY (created_by) REFERENCES main_user (id) ON DELETE SET NULL
         SQL);
         $this->addSql(<<<'SQL'
@@ -256,6 +319,9 @@ final class Version20250616104423 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE main_user_group ADD CONSTRAINT FK_B7FACBFEFE54D947 FOREIGN KEY (group_id) REFERENCES main_group (id) ON DELETE CASCADE
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE user_settings ADD CONSTRAINT FK_5C844C5A76ED395 FOREIGN KEY (user_id) REFERENCES main_user (id) ON DELETE CASCADE
         SQL);
     }
 
@@ -371,6 +437,42 @@ final class Version20250616104423 extends AbstractMigration
             ALTER TABLE d_type_property DROP FOREIGN KEY FK_277721AC549213EC
         SQL);
         $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_block DROP FOREIGN KEY FK_E1A370DEC54C8C93
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_element DROP FOREIGN KEY FK_C727E5EBE9ED820C
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_element DROP FOREIGN KEY FK_C727E5EBD823E37A
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_property DROP FOREIGN KEY FK_E3A9C89D727ACA70
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_property DROP FOREIGN KEY FK_E3A9C89DC54C8C93
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_property_enum DROP FOREIGN KEY FK_6A0E3DC2549213EC
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_section DROP FOREIGN KEY FK_AB14C13D727ACA70
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_section DROP FOREIGN KEY FK_AB14C13DE9ED820C
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type DROP FOREIGN KEY FK_E9247475727ACA70
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type DROP FOREIGN KEY FK_E9247475549213EC
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type_property DROP FOREIGN KEY FK_3DA5178BC54C8C93
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE iblock_type_property DROP FOREIGN KEY FK_3DA5178B549213EC
+        SQL);
+        $this->addSql(<<<'SQL'
             ALTER TABLE main_file DROP FOREIGN KEY FK_6C2C0472DE12AB56
         SQL);
         $this->addSql(<<<'SQL'
@@ -414,6 +516,9 @@ final class Version20250616104423 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE main_user_group DROP FOREIGN KEY FK_B7FACBFEFE54D947
+        SQL);
+        $this->addSql(<<<'SQL'
+            ALTER TABLE user_settings DROP FOREIGN KEY FK_5C844C5A76ED395
         SQL);
         $this->addSql(<<<'SQL'
             DROP TABLE d_accounting
@@ -470,6 +575,27 @@ final class Version20250616104423 extends AbstractMigration
             DROP TABLE d_type_property
         SQL);
         $this->addSql(<<<'SQL'
+            DROP TABLE iblock_block
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE iblock_element
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE iblock_property
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE iblock_property_enum
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE iblock_section
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE iblock_type
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE iblock_type_property
+        SQL);
+        $this->addSql(<<<'SQL'
             DROP TABLE main_claimant
         SQL);
         $this->addSql(<<<'SQL'
@@ -498,6 +624,12 @@ final class Version20250616104423 extends AbstractMigration
         SQL);
         $this->addSql(<<<'SQL'
             DROP TABLE main_user_group
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE refresh_tokens
+        SQL);
+        $this->addSql(<<<'SQL'
+            DROP TABLE user_settings
         SQL);
     }
 }
