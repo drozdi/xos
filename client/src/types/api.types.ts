@@ -19,8 +19,8 @@ export interface RefreshResponse {
 export interface UserSummary {
 	id: number;
 	email: string | null;
-	login?: string;
-	alias?: string;
+	login?: string | null;
+	alias?: string | null;
 	roles: string[];
 	scopes?: Record<string, number>;
 }

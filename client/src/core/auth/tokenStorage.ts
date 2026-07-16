@@ -30,3 +30,11 @@ export function clearTokens(): void {
 export function hasAccessToken(): boolean {
 	return getAccessToken() !== null;
 }
+
+export function hasRefreshToken(): boolean {
+	return getRefreshToken() !== null;
+}
+
+export function hasStoredSession(): boolean {
+	return hasAccessToken() || hasRefreshToken();
+}

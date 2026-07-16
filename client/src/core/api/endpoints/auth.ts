@@ -28,8 +28,8 @@ export const loginRequestSchema = z.object({
 export const userSummarySchema = z.object({
 	id: z.number(),
 	email: z.string().nullable().default(null),
-	login: z.string().optional(),
-	alias: z.string().optional(),
+	login: z.string().nullish(),
+	alias: z.string().nullish(),
 	roles: z.array(z.string()).default([]),
 	scopes: z.record(z.string(), z.number()).optional(),
 });

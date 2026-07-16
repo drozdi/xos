@@ -14,6 +14,8 @@ import { resetSettingAdapterState } from '@/core/settings/createSettingAdapter';
 import { settingManager } from '@/core/settings/SettingManager';
 import type { LoginRequest, UserSummary } from '@/types/api.types';
 
+let hydrateGeneration = 0;
+
 export interface AuthStore {
 	user: UserSummary | null;
 	scopes: Record<string, number>;
@@ -105,21 +107,36 @@ export const useAuthStore = create<AuthStore>((set) => ({
 	},
 
 	hydrate: async () => {
+		const generation = ++hydrateGeneration;
 		set({ isLoading: true });
 
-		if (!tokenStorage.hasAccessToken()) {
-			set({ isLoading: false, isAuthenticated: false });
+		if (!tokenStorage.hasStoredSession()) {
+			if (generation === hydrateGeneration) {
+				set({ isLoading: false, isAuthenticated: false });
+			}
 			return;
 		}
 
 		try {
-			await loginCheck();
+			const check = await loginCheck();
+			if (check.status !== 'authenticated') {
+				throw new Error('Session is not authenticated');
+			}
+
 			const user = await fetchUser();
+			if (generation !== hydrateGeneration) {
+				return;
+			}
+
 			await applyUserSession(user);
 		} catch {
-			clearSession();
+			if (generation === hydrateGeneration) {
+				clearSession();
+			}
 		} finally {
-			set({ isLoading: false });
+			if (generation === hydrateGeneration) {
+				set({ isLoading: false });
+			}
 		}
 	},
 }));

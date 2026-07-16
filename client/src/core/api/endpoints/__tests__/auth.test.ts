@@ -51,14 +51,17 @@ describe('auth endpoints schemas', () => {
 			expect(user.roles).toEqual([]);
 		});
 
-		it('accepts empty roles array from server', () => {
+		it('accepts null alias and login from /api/user', () => {
 			const user = userSummarySchema.parse({
-				id: 3,
-				email: 'user@example.com',
-				roles: [],
+				id: 4,
+				email: null,
+				login: null,
+				alias: null,
+				roles: ['ROLE_USER'],
 			});
 
-			expect(user.roles).toEqual([]);
+			expect(user.alias).toBeNull();
+			expect(user.login).toBeNull();
 		});
 	});
 
