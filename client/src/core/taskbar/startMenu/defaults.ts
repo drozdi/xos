@@ -17,6 +17,7 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 
 export const DEFAULT_PINNED_APPS = [
 	'demo-calculator',
+	'browser',
 	'tic-tac-toe',
 	'sudoku',
 	'settings',

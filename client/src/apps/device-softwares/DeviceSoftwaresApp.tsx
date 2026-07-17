@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { deviceSoftwareApi } from '@/core/api/endpoints/deviceApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,9 +16,6 @@ import {
 } from '@/features/device/deviceAccess';
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
-import type { ListRequest } from '@/types/api.types';
-
-const listRequest: ListRequest = { limit: -1, offset: 1 };
 
 export default function DeviceSoftwaresApp() {
 	useWindowTitle('Программы');
@@ -28,10 +25,11 @@ export default function DeviceSoftwaresApp() {
 	const canCreate = useCanCreateDeviceSoftware();
 	const canUpdate = useCanUpdateDeviceSoftware();
 	const canDelete = useCanDeleteDeviceSoftware();
+	const pagination = usePaginatedList();
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.device.software(listRequest),
-		queryFn: () => deviceSoftwareApi.list(listRequest),
+		queryKey: queryKeys.device.software(pagination.listRequest),
+		queryFn: () => deviceSoftwareApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -39,7 +37,7 @@ export default function DeviceSoftwaresApp() {
 		mutationFn: (id: number) => deviceSoftwareApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.device.software(listRequest) });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.device.software(pagination.listRequest) });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
@@ -82,6 +80,12 @@ export default function DeviceSoftwaresApp() {
 				storageKey="device-softwares"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openSoftware(row.id)}
 				onEdit={canUpdate ? (row) => openSoftware(row.id) : undefined}

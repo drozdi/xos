@@ -34,6 +34,11 @@ export interface DataTableProps<T extends object> {
 	noDataText?: string;
 	withPagination?: boolean;
 	limit?: number;
+	page?: number;
+	total?: number;
+	serverPagination?: boolean;
+	onPageChange?: (page: number) => void;
+	onLimitChange?: (limit: number) => void;
 }
 
 function defaultRowLabel<T extends object>(row: T): string {
@@ -108,8 +113,13 @@ export function DataTable<T extends object>({
 	error,
 	minHeight = 360,
 	noDataText = 'Нет записей',
-	withPagination = false,
+	withPagination = true,
 	limit = 50,
+	page = 1,
+	total,
+	serverPagination = false,
+	onPageChange,
+	onLimitChange,
 }: DataTableProps<T>) {
 	const showEdit = Boolean(onEdit && canEdit);
 	const showDelete = Boolean(onDelete && canDelete);
@@ -164,6 +174,11 @@ export function DataTable<T extends object>({
 			noDataText={noDataText}
 			withPagination={withPagination}
 			limit={limit}
+			page={page}
+			total={total}
+			serverPagination={serverPagination}
+			onPageChange={onPageChange}
+			onLimitChange={onLimitChange}
 			rowActions={hasActions ? rowActions : undefined}
 			rowActionsOnHover={false}
 		>

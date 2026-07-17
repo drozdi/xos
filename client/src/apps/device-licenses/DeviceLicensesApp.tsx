@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { deviceLicenseApi } from '@/core/api/endpoints/deviceApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,9 +16,6 @@ import {
 } from '@/features/device/deviceAccess';
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
-import type { ListRequest } from '@/types/api.types';
-
-const listRequest: ListRequest = { limit: -1, offset: 1 };
 
 export default function DeviceLicensesApp() {
 	useWindowTitle('Лицензии');
@@ -28,10 +25,11 @@ export default function DeviceLicensesApp() {
 	const canCreate = useCanCreateDeviceLicense();
 	const canUpdate = useCanUpdateDeviceLicense();
 	const canDelete = useCanDeleteDeviceLicense();
+	const pagination = usePaginatedList();
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.device.licenses(listRequest),
-		queryFn: () => deviceLicenseApi.list(listRequest),
+		queryKey: queryKeys.device.licenses(pagination.listRequest),
+		queryFn: () => deviceLicenseApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -39,7 +37,7 @@ export default function DeviceLicensesApp() {
 		mutationFn: (id: number) => deviceLicenseApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.device.licenses(listRequest) });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.device.licenses(pagination.listRequest) });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
@@ -83,6 +81,12 @@ export default function DeviceLicensesApp() {
 				storageKey="device-licenses"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openLicense(row.id)}
 				onEdit={canUpdate ? (row) => openLicense(row.id) : undefined}

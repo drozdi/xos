@@ -141,6 +141,9 @@ export function TableData<T = object>({
 	limits: initialLimits = [15, 30, 50, 75, 100],
 	limit: initialLimit = initialLimits[0] || 15,
 	page: initialPage = 1,
+	onPageChange: onExternalPageChange,
+	onLimitChange: onExternalLimitChange,
+	serverPagination = false,
 
 	columnOrder: initialColumnOrder,
 	onColumnOrder: onInitialColumnOrder,
@@ -756,7 +759,7 @@ export function TableData<T = object>({
 			nextNodes = groupByFirstKey<T>(nextNodes, groupKeys, initialGroupLevel);
 		}
 
-		if (!fetcher && limit > 0) {
+		if (!fetcher && limit > 0 && !serverPagination) {
 			nextNodes = limitBy(nextNodes, limit, page as number);
 		}
 		if (sort.rules.length) {
@@ -764,7 +767,7 @@ export function TableData<T = object>({
 		}
 		nodesRef.current = nextNodes;
 		return nextNodes;
-	}, [data, sort.rules, groupKeys, groupLayout, initialGroupLevel, limit, page, fetcher]);
+	}, [data, sort.rules, groupKeys, groupLayout, initialGroupLevel, limit, page, fetcher, serverPagination]);
 
 	useEffect(() => {
 		if (initialTotal !== undefined) {
@@ -817,8 +820,18 @@ export function TableData<T = object>({
 		(val: number) => {
 			setPage(initialPage);
 			setLimit(val);
+			onExternalPageChange?.(typeof initialPage === 'number' ? initialPage : 1);
+			onExternalLimitChange?.(val);
 		},
-		[initialPage],
+		[initialPage, onExternalLimitChange, onExternalPageChange],
+	);
+
+	const handleChangePage = useCallback(
+		(nextPage: number) => {
+			setPage(nextPage);
+			onExternalPageChange?.(nextPage);
+		},
+		[onExternalPageChange],
 	);
 	const handlerPprevious = useCallback(
 		function () {
@@ -853,7 +866,7 @@ export function TableData<T = object>({
 	}, [initialData]);
 
 	useEffect(() => {
-		setTotalPage(Math.ceil(total / limit));
+		setTotalPage(Math.max(1, Math.ceil(total / limit) || 1));
 	}, [total, limit]);
 
 	const { selectedRows, toggleRow, selectAll, isRowSelected, someSelected, allSelected } =
@@ -1037,7 +1050,7 @@ export function TableData<T = object>({
 														total={totalPage}
 														limit={limit}
 														limits={initialLimits}
-														onChangePage={setPage}
+														onChangePage={handleChangePage}
 														onChangeLimit={handlerChangeLimit}
 													/>
 												)}

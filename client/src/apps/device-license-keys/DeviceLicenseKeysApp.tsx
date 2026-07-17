@@ -2,7 +2,7 @@ import { Alert } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage } from '@/core/api/apiError';
 import { deviceLicenseKeyApi } from '@/core/api/endpoints/deviceApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -10,18 +10,16 @@ import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { useCanReadDeviceLicenseKey } from '@/features/device/deviceAccess';
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
-import type { ListRequest } from '@/types/api.types';
-
-const listRequest: ListRequest = { limit: -1, offset: 1 };
 
 export default function DeviceLicenseKeysApp() {
 	useWindowTitle('Ключи лицензий');
 	const launchApp = useLaunchDeviceApp();
 	const canRead = useCanReadDeviceLicenseKey();
+	const pagination = usePaginatedList();
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.device.licenseKeys(listRequest),
-		queryFn: () => deviceLicenseKeyApi.list(listRequest),
+		queryKey: queryKeys.device.licenseKeys(pagination.listRequest),
+		queryFn: () => deviceLicenseKeyApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -61,6 +59,12 @@ export default function DeviceLicenseKeysApp() {
 				storageKey="device-license-keys"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openKey(row.id)}
 				getRowLabel={(row) => row.name || String(row.id)}

@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { notifyApiError, extractApiErrorMessage } from '@/core/api/apiError';
 import { mainOuApi, type OuListItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,9 +16,6 @@ import {
 } from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
-import type { ListRequest } from '@/types/api.types';
-
-const listRequest: ListRequest = { limit: 50, offset: 1 };
 
 export default function MainOusApp() {
 	useWindowTitle('Подразделения');
@@ -28,10 +25,11 @@ export default function MainOusApp() {
 	const canCreate = useCanCreateMainOu();
 	const canUpdate = useCanUpdateMainOu();
 	const canDelete = useCanDeleteMainOu();
+	const pagination = usePaginatedList();
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.main.ous(listRequest),
-		queryFn: () => mainOuApi.list(listRequest),
+		queryKey: queryKeys.main.ous(pagination.listRequest),
+		queryFn: () => mainOuApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -39,7 +37,7 @@ export default function MainOusApp() {
 		mutationFn: (id: number) => mainOuApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.main.ous(listRequest) });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.main.ous(pagination.listRequest) });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
@@ -87,6 +85,12 @@ export default function MainOusApp() {
 				storageKey="main-ous"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openOu(row.id)}
 				onEdit={canUpdate ? (row) => openOu(row.id) : undefined}

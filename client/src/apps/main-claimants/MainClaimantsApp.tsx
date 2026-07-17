@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { mainClaimantApi, type ClaimantListItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,9 +16,6 @@ import {
 } from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
-import type { ListRequest } from '@/types/api.types';
-
-const listRequest: ListRequest = { limit: 50, offset: 1 };
 
 export default function MainClaimantsApp() {
 	useWindowTitle('Заявители');
@@ -28,10 +25,11 @@ export default function MainClaimantsApp() {
 	const canCreate = useCanCreateMainClaimant();
 	const canUpdate = useCanUpdateMainClaimant();
 	const canDelete = useCanDeleteMainClaimant();
+	const pagination = usePaginatedList();
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.main.claimants(listRequest),
-		queryFn: () => mainClaimantApi.list(listRequest),
+		queryKey: queryKeys.main.claimants(pagination.listRequest),
+		queryFn: () => mainClaimantApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -39,7 +37,7 @@ export default function MainClaimantsApp() {
 		mutationFn: (id: number) => mainClaimantApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.main.claimants(listRequest) });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.main.claimants(pagination.listRequest) });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
@@ -81,6 +79,12 @@ export default function MainClaimantsApp() {
 				storageKey="main-claimants"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openClaimant(row.id)}
 				onEdit={canUpdate ? (row) => openClaimant(row.id) : undefined}

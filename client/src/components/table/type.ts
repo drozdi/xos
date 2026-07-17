@@ -97,6 +97,10 @@ export interface TableDataProps<T = object> extends Omit<TableProps, 'layout' | 
 	limits?: number[];
 	limit?: number;
 	page?: number | string;
+	onPageChange?: (page: number) => void;
+	onLimitChange?: (limit: number) => void;
+	/** Данные уже от paginated API — не резать limitBy на клиенте. */
+	serverPagination?: boolean;
 
 	columnOrder?: (keyof T)[];
 	onColumnOrder?: (columnOrder: (keyof T)[]) => void;

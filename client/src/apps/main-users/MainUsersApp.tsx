@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { mainUserApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,7 +16,6 @@ import {
 } from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
-import type { ListRequest } from '@/types/api.types';
 
 const ALL_FILTER = -1;
 
@@ -31,15 +30,10 @@ export default function MainUsersApp() {
 	const [ouFilter, setOuFilter] = useState<number>(ALL_FILTER);
 	const [groupFilter, setGroupFilter] = useState<number>(ALL_FILTER);
 
-	const listRequest: ListRequest = useMemo(
-		() => ({
-			limit: -1,
-			offset: 1,
-			sortBy: [{ key: 'login', order: 'ASC' }],
-			filters: { ou: ouFilter, group: groupFilter },
-		}),
-		[ouFilter, groupFilter],
-	);
+	const pagination = usePaginatedList({
+		sortBy: [{ key: 'login', order: 'ASC' }],
+		filters: { ou: ouFilter, group: groupFilter },
+	});
 
 	const filterQuery = useQuery({
 		queryKey: queryKeys.main.userFilter,
@@ -47,15 +41,15 @@ export default function MainUsersApp() {
 	});
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.main.users(listRequest),
-		queryFn: () => mainUserApi.list(listRequest),
+		queryKey: queryKeys.main.users(pagination.listRequest),
+		queryFn: () => mainUserApi.list(pagination.listRequest),
 	});
 
 	const deleteMutation = useMutation({
 		mutationFn: (id: number) => mainUserApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.main.users(listRequest) });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.main.users(pagination.listRequest) });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
@@ -104,7 +98,7 @@ export default function MainUsersApp() {
 
 	if (!canRead) {
 		return (
-			<MainListLayout title="Пользователи" isLoading={false} isError={false}>
+			<MainListLayout title="Пользователи" isLoading={false} isError={false} onRefresh={() => {}}>
 				<Alert color="red" title="Доступ запрещён">
 					Нет прав на просмотр пользователей
 				</Alert>
@@ -156,6 +150,12 @@ export default function MainUsersApp() {
 				storageKey="main-users"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openUser(row.id)}
 				onEdit={canUpdate ? (row) => openUser(row.id) : undefined}

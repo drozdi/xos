@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { subDeviceApi } from '@/core/api/endpoints/deviceApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,9 +16,6 @@ import {
 } from '@/features/device/deviceAccess';
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
-import type { ListRequest } from '@/types/api.types';
-
-const listRequest: ListRequest = { limit: -1, offset: 1 };
 
 export default function DeviceSubDevicesApp() {
 	useWindowTitle('Комплектующие');
@@ -28,10 +25,11 @@ export default function DeviceSubDevicesApp() {
 	const canCreate = useCanCreateSubDevice();
 	const canUpdate = useCanUpdateSubDevice();
 	const canDelete = useCanDeleteSubDevice();
+	const pagination = usePaginatedList();
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.device.subDevices(listRequest),
-		queryFn: () => subDeviceApi.list(listRequest),
+		queryKey: queryKeys.device.subDevices(pagination.listRequest),
+		queryFn: () => subDeviceApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -39,7 +37,7 @@ export default function DeviceSubDevicesApp() {
 		mutationFn: (id: number) => subDeviceApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.device.subDevices(listRequest) });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.device.subDevices(pagination.listRequest) });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
@@ -83,6 +81,12 @@ export default function DeviceSubDevicesApp() {
 				storageKey="device-sub-devices"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openSubDevice(row.id)}
 				onEdit={canUpdate ? (row) => openSubDevice(row.id) : undefined}

@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { deviceApi } from '@/core/api/endpoints/deviceApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,7 +16,6 @@ import {
 } from '@/features/device/deviceAccess';
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
-import type { ListRequest } from '@/types/api.types';
 
 const ALL_FILTER = -1;
 
@@ -30,15 +29,10 @@ export default function DeviceDevicesApp() {
 	const canDelete = useCanDeleteDevice();
 	const [typeFilter, setTypeFilter] = useState<number>(ALL_FILTER);
 
-	const listRequest: ListRequest = useMemo(
-		() => ({
-			limit: -1,
-			offset: 1,
-			sortBy: [{ key: 'sort', order: 'ASC' }],
-			filters: typeFilter === ALL_FILTER ? {} : { type: typeFilter },
-		}),
-		[typeFilter],
-	);
+	const pagination = usePaginatedList({
+		sortBy: [{ key: 'sort', order: 'ASC' }],
+		filters: typeFilter === ALL_FILTER ? {} : { type: typeFilter },
+	});
 
 	const filterQuery = useQuery({
 		queryKey: queryKeys.device.filter,
@@ -46,8 +40,8 @@ export default function DeviceDevicesApp() {
 	});
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.device.devices(listRequest),
-		queryFn: () => deviceApi.list(listRequest),
+		queryKey: queryKeys.device.devices(pagination.listRequest),
+		queryFn: () => deviceApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -55,7 +49,7 @@ export default function DeviceDevicesApp() {
 		mutationFn: (id: number) => deviceApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.device.devices(listRequest) });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.device.devices(pagination.listRequest) });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
@@ -128,6 +122,12 @@ export default function DeviceDevicesApp() {
 				storageKey="device-devices"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openDevice(row.id)}
 				onEdit={canUpdate ? (row) => openDevice(row.id) : undefined}

@@ -3,7 +3,7 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { DataTable } from '@/components/table';
+import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { deviceSoftwareTypeApi } from '@/core/api/endpoints/deviceApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -16,9 +16,6 @@ import {
 } from '@/features/device/deviceAccess';
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
-import type { ListRequest } from '@/types/api.types';
-
-const listRequest: ListRequest = { limit: -1, offset: 1 };
 
 export default function DeviceSoftwareTypesApp() {
 	useWindowTitle('Типы программ');
@@ -28,10 +25,11 @@ export default function DeviceSoftwareTypesApp() {
 	const canCreate = useCanCreateDeviceSoftwareType();
 	const canUpdate = useCanUpdateDeviceSoftwareType();
 	const canDelete = useCanDeleteDeviceSoftwareType();
+	const pagination = usePaginatedList();
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.device.softwareTypes(listRequest),
-		queryFn: () => deviceSoftwareTypeApi.list(listRequest),
+		queryKey: queryKeys.device.softwareTypes(pagination.listRequest),
+		queryFn: () => deviceSoftwareTypeApi.list(pagination.listRequest),
 		enabled: canRead,
 	});
 
@@ -40,7 +38,7 @@ export default function DeviceSoftwareTypesApp() {
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
 			void queryClient.invalidateQueries({
-				queryKey: queryKeys.device.softwareTypes(listRequest),
+				queryKey: queryKeys.device.softwareTypes(pagination.listRequest),
 			});
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
@@ -84,6 +82,12 @@ export default function DeviceSoftwareTypesApp() {
 				storageKey="device-software-types"
 				columns={columns}
 				data={listQuery.data?.items ?? []}
+				total={listQuery.data?.total}
+				page={pagination.page}
+				limit={pagination.limit}
+				onPageChange={pagination.onPageChange}
+				onLimitChange={pagination.onLimitChange}
+				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openType(row.id)}
 				onEdit={canUpdate ? (row) => openType(row.id) : undefined}
