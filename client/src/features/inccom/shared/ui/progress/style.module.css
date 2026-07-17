@@ -1,0 +1,329 @@
+@reference "@style";
+
+.progress_bar {
+	position: relative;
+	width: 100%;
+	overflow: hidden;
+	transform: scale3d(1, 1, 1);
+	min-height: 2px;
+}
+
+.progress_bar__track,
+.progress_bar__value,
+.progress_bar__label {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	bottom: 0px;
+	transition-property: width;
+	transition-duration: 500ms;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress_bar__track {
+	z-index: -10;
+	width: 100%;
+	background-color: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.progress_bar__value {
+	background-color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+.progress_bar.text-gradient {
+	.progress_bar__track,
+	.progress_bar__value {
+		background: linear-gradient(
+			45deg,
+			var(--color-primary),
+			var(--color-accent),
+			var(--color-info),
+			var(--color-success),
+			var(--color-secondary)
+		);
+	}
+	.progress_bar__track {
+		opacity: 0.2;
+	}
+	.progress_bar__value {
+		opacity: 0.5;
+	}
+}
+
+.progress_bar__label {
+	z-index: 10;
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: center;
+}
+
+.progress_bar_stripe .progress_bar__value::after {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	bottom: 0px;
+	right: 0px;
+	background-size: 2.5rem 2.5rem;
+	content: ' ';
+	background-image: linear-gradient(
+		45deg,
+		rgba(255, 255, 255, 0.15) 25%,
+		rgba(255, 255, 255, 0) 25%,
+		rgba(255, 255, 255, 0) 50%,
+		rgba(255, 255, 255, 0.15) 50%,
+		rgba(255, 255, 255, 0.15) 75%,
+		rgba(255, 255, 255, 0) 75%,
+		rgba(255, 255, 255, 0)
+	);
+}
+
+.progress_bar_animation .progress_bar__value::after {
+	animation: 1s linear infinite x-linear-progress-stripes;
+}
+
+.progress_bar_indeterminate .progress_bar__value {
+	position: static;
+	height: 0px;
+	width: 100%;
+}
+
+.progress_bar_indeterminate .progress_bar__value::before,
+.progress_bar_indeterminate .progress_bar__value::after {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	bottom: 0px;
+	background-color: inherit;
+	content: '';
+}
+
+.text-gradient.progress_bar_indeterminate .progress_bar__value::before,
+.text-gradient.progress_bar_indeterminate .progress_bar__value::after {
+	background: linear-gradient(
+		45deg,
+		var(--color-primary),
+		var(--color-accent),
+		var(--color-info),
+		var(--color-success),
+		var(--color-secondary)
+	);
+}
+
+.progress_bar_indeterminate .progress_bar__value::before {
+	animation: 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite x-linear-progress-indeterminate;
+}
+
+.progress_bar_indeterminate .progress_bar__value::after {
+	animation: 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite x-linear-progress-indeterminate-short;
+	animation-delay: 1.15s;
+}
+
+.progress_bar_reverse .progress_bar__track,
+.progress_bar_reverse .progress_bar__value,
+.progress_bar_reverse .progress_bar__label {
+	left: auto;
+	right: 0px;
+}
+
+.progress_bar_reverse.progress_bar_animation .progress_bar__value::after {
+	animation: 1s linear infinite x-linear-progress-stripes-reverse;
+}
+
+.progress_bar_reverse.progress_bar_indeterminate .progress_bar__value::before,
+.progress_bar_reverse.progress_bar_indeterminate .progress_bar__value::after {
+	left: auto;
+	right: 0px;
+	content: '';
+}
+
+.progress_bar_reverse.progress_bar_indeterminate .progress_bar__value::before {
+	animation: 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite x-linear-progress-indeterminate-reverse;
+}
+
+.progress_bar_reverse.progress_bar_indeterminate .progress_bar__value::after {
+	animation: 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite x-linear-progress-indeterminate-short-reverse;
+	animation-delay: 1.15s;
+}
+@keyframes x-linear-progress-stripes {
+	100% {
+		background-position-x: 2.5rem;
+	}
+}
+@keyframes x-linear-progress-stripes-reverse {
+	0% {
+		background-position-x: 2.5rem;
+	}
+}
+@keyframes x-linear-progress-indeterminate {
+	0% {
+		left: -35%;
+		right: 100%;
+	}
+	60% {
+		left: 100%;
+		right: -90%;
+	}
+	100% {
+		left: 100%;
+		right: -90%;
+	}
+}
+@keyframes x-linear-progress-indeterminate-reverse {
+	0% {
+		left: 100%;
+		right: -35%;
+	}
+	60% {
+		left: -90%;
+		right: 100%;
+	}
+	100% {
+		left: -90%;
+		right: 100%;
+	}
+}
+@keyframes x-linear-progress-indeterminate-short {
+	0% {
+		left: -200%;
+		right: 100%;
+	}
+	60% {
+		left: 107%;
+		right: -8%;
+	}
+	100% {
+		left: 107%;
+		right: -8%;
+	}
+}
+@keyframes x-linear-progress-indeterminate-short-reverse {
+	0% {
+		left: 100%;
+		right: -200%;
+	}
+	60% {
+		left: -8%;
+		right: 107%;
+	}
+	100% {
+		left: -8%;
+		right: 107%;
+	}
+}
+
+.progress_circular {
+	align-items: center;
+	display: inline-flex;
+	justify-content: center;
+	position: relative;
+	vertical-align: middle;
+
+	> svg {
+		width: 100%;
+		height: 100%;
+		margin: auto;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 0;
+	}
+
+	.progress_circular__content {
+		align-items: center;
+		display: flex;
+		justify-content: center;
+	}
+
+	.progress_circular__underlay {
+		color: color-mix(in srgb, currentColor 20%, transparent);
+		stroke: currentColor;
+		z-index: 1;
+	}
+
+	.progress_circular__overlay {
+		stroke: currentColor;
+		transition: all 0.2s ease-in-out, stroke-width 0s;
+		z-index: 2;
+	}
+}
+
+.progress_circular.text-gradient {
+	.progress_circular__overlay {
+		stroke: url(#gradient);
+	}
+}
+
+.progress_circular_indeterminate {
+	> svg {
+		animation: 2s linear infinite x-progress-circular-rotate;
+		transform-origin: center center;
+		transition: all 0.2s ease-in-out;
+	}
+
+	.progress_circular__overlay {
+		animation: 2s ease-in-out infinite x-progress-circular-dash, 2s linear infinite x-progress-circular-rotate;
+		stroke-dasharray: 25, 200;
+		stroke-dashoffset: 0;
+		stroke-linecap: round;
+		transform-origin: center center;
+		transform: rotate(-90deg);
+	}
+}
+.progress_circular_indeterminate.progress_circular_reverse {
+	> svg {
+		animation: 2s linear infinite x-progress-circular-rotate-reverse;
+	}
+
+	.progress_circular__overlay {
+		animation: 2s ease-in-out infinite x-progress-circular-dash-reverse,
+			2s linear infinite x-progress-circular-rotate-reverse;
+		transform: rotate(-90deg);
+	}
+}
+@keyframes x-progress-circular-dash {
+	0% {
+		stroke-dasharray: 1, 200;
+		stroke-dashoffset: 0px;
+	}
+
+	50% {
+		stroke-dasharray: 100, 200;
+		stroke-dashoffset: -15px;
+	}
+
+	100% {
+		stroke-dasharray: 100, 200;
+		stroke-dashoffset: -124px;
+	}
+}
+
+@keyframes x-progress-circular-rotate {
+	100% {
+		transform: rotate(270deg);
+	}
+}
+
+@keyframes x-progress-circular-dash-reverse {
+	0% {
+		stroke-dasharray: 100, 200;
+		stroke-dashoffset: -124px;
+	}
+	50% {
+		stroke-dasharray: 100, 200;
+		stroke-dashoffset: -15px;
+	}
+
+	100% {
+		stroke-dasharray: 1, 200;
+		stroke-dashoffset: 0px;
+	}
+}
+
+@keyframes x-progress-circular-rotate-reverse {
+	0% {
+		transform: rotate(270deg);
+	}
+}

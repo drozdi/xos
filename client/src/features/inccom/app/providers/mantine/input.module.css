@@ -1,0 +1,17 @@
+.input {
+	&[data-variant='underline'] {
+		--input-bg: var(--mantine-color-gray-1);
+		border-bottom: 3px solid;
+		border-radius: 0;
+		border-color: var(--mantine-color-gray-3);
+
+		[data-mantine-color-scheme='dark'] & {
+			--input-bg: var(--mantine-color-dark-5);
+			border-color: var(--mantine-color-dark-3);
+		}
+
+		&:focus {
+			border-color: var(--mantine-primary-color-filled);
+		}
+	}
+}

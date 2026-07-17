@@ -1,0 +1,28 @@
+.row {
+	border: 1px solid transparent;
+	border-radius: var(--mantine-radius-sm);
+	padding: 2px 4px;
+	transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.rowDragging {
+	opacity: 0.45;
+}
+
+.rowDropTarget {
+	border-color: var(--mantine-color-blue-5);
+	background-color: light-dark(
+		var(--mantine-color-blue-0),
+		var(--mantine-color-dark-5)
+	);
+}
+
+.dragHandle {
+	cursor: grab;
+	color: var(--mantine-color-dimmed);
+	flex-shrink: 0;
+}
+
+.dragHandle:active {
+	cursor: grabbing;
+}

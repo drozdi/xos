@@ -48,6 +48,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/SchoolTask/Entity'
                 prefix: 'SchoolTask\Entity'
                 alias: SchoolTask
+            IncCom:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/IncCom/Entity'
+                prefix: 'IncCom\Entity'
+                alias: IncCom
         controller_resolver:
             auto_mapping: false
 

@@ -1,0 +1,10 @@
+{
+  "name": "IncCom",
+  "claimant": {
+    "inccom": "Учёт доходов и расходов"
+  },
+  "map-access": {
+    "can_read": 1,
+    "can_write": 2
+  }
+}

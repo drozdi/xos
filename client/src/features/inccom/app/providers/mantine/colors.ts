@@ -1,0 +1,15 @@
+export const DEFAULT_COLORS = [
+	{ id: 'blue', title: 'Blue', color: '#3B82F6' },
+	{ id: 'gray', title: 'Gray', color: '#6B7280' },
+	{ id: 'red', title: 'Red', color: '#EF4444' },
+	{ id: 'pink', title: 'Pink', color: '#F43F5E' },
+	{ id: 'grape', title: 'Grape', color: '#8B5CF6' },
+	{ id: 'violet', title: 'Violet', color: '#8B5CF6' },
+	{ id: 'indigo', title: 'Indigo', color: '#6366F1' },
+	{ id: 'cyan', title: 'Cyan', color: '#22D3EE' },
+	{ id: 'teal', title: 'Teal', color: '#14B8A6' },
+	{ id: 'green', title: 'Green', color: '#10B981' },
+	{ id: 'lime', title: 'Lime', color: '#65A30D' },
+	{ id: 'yellow', title: 'Yellow', color: '#F59E0B' },
+	{ id: 'orange', title: 'Orange', color: '#F97316' },
+]

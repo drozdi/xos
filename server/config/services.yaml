@@ -66,6 +66,17 @@ services:
         calls:
             - setContainer: ['@service_container']
 
+    IncCom\:
+        resource: '../src/IncCom/'
+        exclude:
+            - '../src/IncCom/Entity/'
+
+    IncCom\Service\IncComManager:
+        public: true
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
     Main\Controller\FileServeController:
         arguments:
             $uploadDir: '%upload_dir%'

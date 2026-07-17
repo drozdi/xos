@@ -1,0 +1,32 @@
+@reference "@style";
+
+.list {
+	@apply flex flex-col overflow-auto;
+	--indent-padding: 0rem;
+}
+.list_visible {
+	@apply overflow-visible;
+}
+.list-items {
+	--parent-padding: var(--indent-padding, 0rem);
+}
+.list-items .list {
+	--indent-padding: calc(
+		var(--parent-padding, 0rem) + var(--mantine-spacing-base, 0.25rem) * var(--padding-multiplier, 3)
+	);
+}
+.list_bordered {
+	@apply border border-(--mantine-color-default-border);
+	//border: 1px solid var(--mantine-color-default-border);
+}
+.list_separator > *:not(:first-child) {
+	@apply border-t border-t-(--mantine-color-default-border);
+	//border-top: 1px solid var(--mantine-color-default-border);;;
+}
+
+.list_striped > *:nth-of-type(odd) {
+	@apply bg-gray-200;
+	@mixin dark {
+		@apply bg-dark-600;
+	}
+}

@@ -13,6 +13,7 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	admin: 'Администрирование',
 	device: 'Устройства',
 	schooltask: 'Школа',
+	inccom: 'Финансы',
 	default: 'Приложения',
 };
 
@@ -34,6 +35,7 @@ export const DEFAULT_PINNED_APPS = [
 	'device-softwares',
 	'device-licenses',
 	'device-license-keys',
+	'inccom',
 ];
 
 export const DEFAULT_QUICK_ACTIONS: StartMenuQuickAction[] = [

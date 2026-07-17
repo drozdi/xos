@@ -1,0 +1,45 @@
+.row {
+	border: 1px solid transparent;
+	border-radius: var(--mantine-radius-sm);
+	padding: 4px 6px;
+	transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.rowDragging {
+	opacity: 0.45;
+}
+
+.rowDropTarget {
+	border-color: var(--mantine-color-blue-5);
+	background-color: light-dark(
+		var(--mantine-color-blue-0),
+		var(--mantine-color-dark-5)
+	);
+}
+
+.rootDropZone {
+	border: 1px dashed light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+	border-radius: var(--mantine-radius-sm);
+	padding: 8px 12px;
+	color: var(--mantine-color-dimmed);
+	font-size: var(--mantine-font-size-sm);
+	transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.rootDropZoneActive {
+	border-color: var(--mantine-color-blue-5);
+	background-color: light-dark(
+		var(--mantine-color-blue-0),
+		var(--mantine-color-dark-5)
+	);
+	color: var(--mantine-color-blue-7);
+}
+
+.dragHandle {
+	cursor: grab;
+	color: var(--mantine-color-dimmed);
+}
+
+.dragHandle:active {
+	cursor: grabbing;
+}

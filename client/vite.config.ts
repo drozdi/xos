@@ -17,7 +17,12 @@ export default defineConfig(({ mode }) => ({
 				open: false,
 			}),
 	].filter(Boolean),
-	resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+	resolve: {
+		alias: {
+			'@': path.resolve(__dirname, 'src'),
+			'@inccom': path.resolve(__dirname, 'src/features/inccom'),
+		},
+	},
 	define: {
 		'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
 		'process.env.DRAGGABLE_DEBUG': JSON.stringify(''),

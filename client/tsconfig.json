@@ -13,8 +13,27 @@
 		"skipLibCheck": true,
 		"noEmit": true,
 		"baseUrl": ".",
-		"paths": { "@/*": ["./src/*"] },
+		"paths": {
+			"@/*": ["./src/*"],
+			"@inccom/*": ["./src/features/inccom/*"]
+		},
 		"types": ["vite/client"]
 	},
-	"include": ["src"]
+	"include": ["src"],
+	"exclude": [
+		"**/__test__/**",
+		"**/*.stories.tsx",
+		"src/features/inccom/features/qr-scanner/**",
+		"src/features/inccom/app/providers/**",
+		"src/features/inccom/shared/internal/**",
+		"src/features/inccom/shared/ui/item/**",
+		"src/features/inccom/shared/ui/list/**",
+		"src/features/inccom/shared/ui/progress/**",
+		"src/features/inccom/shared/ui/table/**",
+		"src/features/inccom/shared/utils/Axios-Interceptor.ts",
+		"src/features/inccom/shared/utils/fns.ts",
+		"src/features/inccom/shared/utils/is.ts",
+		"src/features/inccom/shared/utils/factory-multi-select.tsx",
+		"src/features/inccom/shared/zustand/**"
+	]
 }
