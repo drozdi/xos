@@ -1,3 +1,4 @@
+import { Box } from '@mantine/core';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
@@ -165,7 +166,16 @@ export function DataTable<T extends object>({
 	);
 
 	return (
-		<TableData<T>
+		<Box
+			style={{
+				flex: 1,
+				minHeight: 0,
+				display: 'flex',
+				flexDirection: 'column',
+				overflow: 'hidden',
+			}}
+		>
+			<TableData<T>
 			data={data}
 			storage={storageKey}
 			loading={loading}
@@ -212,5 +222,6 @@ export function DataTable<T extends object>({
 				/>
 			) : null}
 		</TableData>
+		</Box>
 	);
 }

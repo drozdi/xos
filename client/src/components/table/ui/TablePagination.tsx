@@ -10,8 +10,8 @@ export function TablePagination<T = object>({
 	onNext, onPprevious, onChangeLimit, onChangePage,
 	nextLabel= 'Следующая', previousLabel= 'Предыдущая', ...props 
 }: TablePaginationProps<T>) {
-	const showedSibling = onNext && onPprevious
-	const showed = !(showedSibling) && total > 1
+	const isCursorMode = Boolean(onNext && onPprevious);
+	const showPageNumbers = !isCursorMode && total > 1;
 
 	const pagination = usePagination({
 		total: total,
@@ -30,19 +30,23 @@ export function TablePagination<T = object>({
 		(onNext || pagination.next)()
 	}, [onNext, pagination.next])
 
-	const disabledPrevious = (showed && pagination.active === 1) || (!showed && !activePprevious)
-	const disabledNext = (showed && pagination.active === total) || (!showed && !activeNext)
+	const disabledPrevious = isCursorMode
+		? !activePprevious
+		: pagination.active === 1;
+	const disabledNext = isCursorMode
+		? !activeNext
+		: pagination.active === total;
 
 	return <Box w='100%' {...props}>
 		<Group justify="space-between" align="start">
 			<Group flex='1'>
-				{showed && <ActionIcon loading={loading} variant="default" onClick={pagination.first} disabled={pagination.active === 1}>
+				{showPageNumbers && <ActionIcon loading={loading} variant="default" onClick={pagination.first} disabled={pagination.active === 1}>
 					<IconChevronsLeft size={16} />
 				</ActionIcon>}
-				{(showed || showedSibling) && <Button size="compact-md" loading={loading} variant="default" onClick={handlePprevious} disabled={disabledPrevious}>
+				<Button size="compact-md" loading={loading} variant="default" onClick={handlePprevious} disabled={disabledPrevious}>
 					{previousLabel}
-				</Button>}
-				{showed && pagination.range.map((pageNum, index) =>
+				</Button>
+				{showPageNumbers && pagination.range.map((pageNum, index) =>
 					pageNum === 'dots' ? (
 						<span key={index}>...</span>
 					) : (
@@ -56,10 +60,10 @@ export function TablePagination<T = object>({
 						</ActionIcon>
 					)
 				)}
-				{(showed || showedSibling) && <Button size="compact-md" loading={loading} variant="default" onClick={handleNext} disabled={disabledNext}>
+				<Button size="compact-md" loading={loading} variant="default" onClick={handleNext} disabled={disabledNext}>
 					{nextLabel}
-				</Button>}
-				{showed && <ActionIcon loading={loading} variant="default" onClick={pagination.last} disabled={pagination.active === total}>
+				</Button>
+				{showPageNumbers && <ActionIcon loading={loading} variant="default" onClick={pagination.last} disabled={pagination.active === total}>
 					<IconChevronsRight size={16} />
 				</ActionIcon>}
 			</Group>

@@ -1,4 +1,4 @@
-import { Card, Group, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Box, Card, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useMounted } from '@mantine/hooks';
 import { Children, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loading } from '../loading';
@@ -1031,8 +1031,20 @@ export function TableData<T = object>({
 								<TableEditProvider value={editContextValue}>
 									<TableRowActionsProvider value={rowActionsContextValue}>
 										<TableDataProvider value={tableContextValue}>
-											<Stack mih={minHeight} gap="md">
-												<Loading active={loading} keepMounted mih={minHeight}>
+											<Box
+												style={{
+													flex: 1,
+													minHeight: 0,
+													display: 'flex',
+													flexDirection: 'column',
+													overflow: 'hidden',
+												}}
+											>
+												<Loading
+													active={loading}
+													keepMounted
+													style={{ flex: 1, minHeight: 0, overflow: 'auto' }}
+												>
 													{error && <TableError>{error}</TableError>}
 													{!error &&
 														(nodes.length
@@ -1040,21 +1052,33 @@ export function TableData<T = object>({
 															: <TableEmpty text={noDataText} />)}
 												</Loading>
 												{withPagination && (
-													<Pagination
-														loading={loading}
-														onNext={fetcher ? handlerNext : undefined}
-														onPprevious={fetcher ? handlerPprevious : undefined}
-														activePprevious={history?.length > 1}
-														activeNext={!!next}
-														page={page as number}
-														total={totalPage}
-														limit={limit}
-														limits={initialLimits}
-														onChangePage={handleChangePage}
-														onChangeLimit={handlerChangeLimit}
-													/>
+													<Box
+														pos="sticky"
+														bottom={0}
+														pt="sm"
+														bg="var(--xos-window-bg)"
+														style={{
+															flexShrink: 0,
+															zIndex: 10,
+															borderTop: '1px solid var(--xos-shell-border)',
+														}}
+													>
+														<Pagination
+															loading={loading}
+															onNext={fetcher ? handlerNext : undefined}
+															onPprevious={fetcher ? handlerPprevious : undefined}
+															activePprevious={history?.length > 1}
+															activeNext={!!next}
+															page={page as number}
+															total={Math.max(1, totalPage)}
+															limit={limit}
+															limits={initialLimits}
+															onChangePage={handleChangePage}
+															onChangeLimit={handlerChangeLimit}
+														/>
+													</Box>
 												)}
-											</Stack>
+											</Box>
 										</TableDataProvider>
 									</TableRowActionsProvider>
 								</TableEditProvider>
