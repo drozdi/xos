@@ -180,3 +180,83 @@ export function useCanUserMainGroup(): boolean {
 export function useCanAccessMainGroup(): boolean {
 	return useMainGroupAccess(canAccessMainGroup);
 }
+
+const MAIN_USER_SCOPE = 'main.user';
+const READ_MAIN_USER_SCOPE = 'can_read.main.user';
+const CREATE_MAIN_USER_SCOPE = 'can_create.main.user';
+const UPDATE_MAIN_USER_SCOPE = 'can_update.main.user';
+const DELETE_MAIN_USER_SCOPE = 'can_delete.main.user';
+const GROUP_MAIN_USER_SCOPE = 'can_group.main.user';
+const ACCESS_MAIN_USER_SCOPE = 'can_access.main.user';
+const ROLE_MAIN_USER_SCOPE = 'can_role.main.user';
+
+function canMainUser(actionScope: string): boolean {
+	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_USER_SCOPE)) {
+		return true;
+	}
+
+	return Boolean(getLevelScope(MAIN_USER_SCOPE) & getCanScope(actionScope));
+}
+
+export function canReadMainUser(): boolean {
+	return canMainUser(READ_MAIN_USER_SCOPE);
+}
+
+export function canCreateMainUser(): boolean {
+	return canMainUser(CREATE_MAIN_USER_SCOPE);
+}
+
+export function canUpdateMainUser(): boolean {
+	return canMainUser(UPDATE_MAIN_USER_SCOPE);
+}
+
+export function canDeleteMainUser(): boolean {
+	return canMainUser(DELETE_MAIN_USER_SCOPE);
+}
+
+export function canGroupMainUser(): boolean {
+	return canMainUser(GROUP_MAIN_USER_SCOPE);
+}
+
+export function canAccessMainUser(): boolean {
+	return canMainUser(ACCESS_MAIN_USER_SCOPE);
+}
+
+export function canRoleMainUser(): boolean {
+	return canMainUser(ROLE_MAIN_USER_SCOPE);
+}
+
+function useMainUserAccess(check: () => boolean): boolean {
+	const scopes = useAuthStore((state) => state.scopes);
+	const roles = useAuthStore((state) => state.user?.roles);
+
+	return useMemo(() => check(), [scopes, roles]);
+}
+
+export function useCanReadMainUser(): boolean {
+	return useMainUserAccess(canReadMainUser);
+}
+
+export function useCanCreateMainUser(): boolean {
+	return useMainUserAccess(canCreateMainUser);
+}
+
+export function useCanUpdateMainUser(): boolean {
+	return useMainUserAccess(canUpdateMainUser);
+}
+
+export function useCanDeleteMainUser(): boolean {
+	return useMainUserAccess(canDeleteMainUser);
+}
+
+export function useCanGroupMainUser(): boolean {
+	return useMainUserAccess(canGroupMainUser);
+}
+
+export function useCanAccessMainUser(): boolean {
+	return useMainUserAccess(canAccessMainUser);
+}
+
+export function useCanRoleMainUser(): boolean {
+	return useMainUserAccess(canRoleMainUser);
+}

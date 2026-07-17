@@ -1,7 +1,30 @@
-import { Stack, Switch, TextInput } from '@mantine/core';
+import { Alert, Tabs, Text } from '@mantine/core';
+import { useState } from 'react';
 
 import { mainUserApi, type UserDetail } from '@/core/api/endpoints/mainApi';
+import {
+	canCreateMainUser,
+	useCanAccessMainUser,
+	useCanDeleteMainUser,
+	useCanGroupMainUser,
+	useCanReadMainUser,
+	useCanRoleMainUser,
+	useCanUpdateMainUser,
+} from '@/features/main/mainAccess';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
+import { useEntityId } from '@/features/main/mainAppUtils';
+
+import { UserAccessTab } from './UserAccessTab';
+import { UserGeneralTab } from './UserGeneralTab';
+import { UserGroupsTab } from './UserGroupsTab';
+import { UserRolesTab } from './UserRolesTab';
+import {
+	normalizeUserAccesses,
+	normalizeUserGroups,
+	normalizeUserRoles,
+	prepareUserSavePayload,
+} from './userFormUtils';
+import { validateUserForm } from './mainUserValidation';
 
 const initialData: UserDetail = {
 	id: 0,
@@ -14,67 +37,121 @@ const initialData: UserDetail = {
 	phone: '',
 	description: '',
 	active: true,
+	ou_id: null,
+	parent_id: null,
+	activeFrom: null,
+	activeTo: null,
+	groups: {},
+	accesses: {},
+	roles: [],
 };
 
 export default function MainUserApp() {
+	const entityId = useEntityId();
+	const canRead = useCanReadMainUser();
+	const canUpdate = useCanUpdateMainUser();
+	const canDelete = useCanDeleteMainUser();
+	const canGroup = useCanGroupMainUser();
+	const canAccess = useCanAccessMainUser();
+	const canRole = useCanRoleMainUser();
+	const canCreate = canCreateMainUser();
+	const isNew = entityId === 0;
+	const [activeTab, setActiveTab] = useState<string | null>('general');
+
+	const canSave =
+		(isNew ? canCreate : canUpdate) || canGroup || canAccess || canRole;
+
+	if (isNew && !canCreate) {
+		return (
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание пользователя
+			</Alert>
+		);
+	}
+
+	if (!isNew && !canRead) {
+		return (
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр пользователя
+			</Alert>
+		);
+	}
+
 	return (
 		<MainEntityForm
 			title="Пользователь"
 			queryKey={['main', 'user']}
+			listQueryKey={['main', 'users']}
 			load={mainUserApi.get}
 			save={mainUserApi.update}
 			create={mainUserApi.create}
+			remove={mainUserApi.remove}
 			initialData={initialData}
+			validate={validateUserForm}
+			transformBeforeSave={prepareUserSavePayload}
+			canSave={canSave}
+			canDelete={canDelete}
+			headerNote={({ data, isNew: isNewRecord }) =>
+				!isNewRecord && data.x_timestamp ? (
+					<Text size="sm" c="dimmed">
+						Последнее обновление: {String(data.x_timestamp)}
+					</Text>
+				) : null
+			}
 		>
-			{({ data, setField }) => (
-				<Stack gap="sm">
-					<TextInput
-						label="Логин"
-						value={data.login ?? ''}
-						onChange={(e) => setField('login', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Псевдоним"
-						value={data.alias ?? ''}
-						onChange={(e) => setField('alias', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Email"
-						value={data.email ?? ''}
-						onChange={(e) => setField('email', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Фамилия"
-						value={data.second_name ?? ''}
-						onChange={(e) => setField('second_name', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Имя"
-						value={data.first_name ?? ''}
-						onChange={(e) => setField('first_name', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Отчество"
-						value={data.patronymic ?? ''}
-						onChange={(e) => setField('patronymic', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Телефон"
-						value={data.phone ?? ''}
-						onChange={(e) => setField('phone', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Описание"
-						value={data.description ?? ''}
-						onChange={(e) => setField('description', e.currentTarget.value)}
-					/>
-					<Switch
-						label="Активен"
-						checked={Boolean(data.active)}
-						onChange={(e) => setField('active', e.currentTarget.checked)}
-					/>
-				</Stack>
-			)}
+			{({ data, setField, errors, isNew: isNewRecord }) => {
+				const readOnlyGeneral = isNewRecord ? !canCreate : !canUpdate;
+				const readOnlyGroups = !canGroup;
+				const readOnlyAccess = !canAccess;
+				const readOnlyRoles = !canRole;
+				const groups = normalizeUserGroups(data.groups);
+				const accesses = normalizeUserAccesses(data.accesses);
+				const roles = normalizeUserRoles(data.roles);
+
+				return (
+					<Tabs value={activeTab} onChange={setActiveTab}>
+						<Tabs.List>
+							<Tabs.Tab value="general">Общие</Tabs.Tab>
+							<Tabs.Tab value="groups">Группы</Tabs.Tab>
+							<Tabs.Tab value="access">Права</Tabs.Tab>
+							<Tabs.Tab value="roles">Роли</Tabs.Tab>
+						</Tabs.List>
+
+						<Tabs.Panel value="general" pt="sm">
+							<UserGeneralTab
+								data={data}
+								errors={errors}
+								readOnly={readOnlyGeneral}
+								setField={setField}
+							/>
+						</Tabs.Panel>
+
+						<Tabs.Panel value="groups" pt="sm">
+							<UserGroupsTab
+								groups={groups}
+								readOnly={readOnlyGroups}
+								onChange={(nextGroups) => setField('groups', nextGroups)}
+							/>
+						</Tabs.Panel>
+
+						<Tabs.Panel value="access" pt="sm">
+							<UserAccessTab
+								accesses={accesses}
+								readOnly={readOnlyAccess}
+								onChange={(nextAccesses) => setField('accesses', nextAccesses)}
+							/>
+						</Tabs.Panel>
+
+						<Tabs.Panel value="roles" pt="sm">
+							<UserRolesTab
+								roles={roles}
+								readOnly={readOnlyRoles}
+								onChange={(nextRoles) => setField('roles', nextRoles)}
+							/>
+						</Tabs.Panel>
+					</Tabs>
+				);
+			}}
 		</MainEntityForm>
 	);
 }

@@ -120,6 +120,41 @@ final class UserScopeResolver
         return $this->canMainGroup($user, 'can_access.main.group');
     }
 
+    public function canCreateMainUser(User $user): bool
+    {
+        return $this->canMainUser($user, 'can_create.main.user');
+    }
+
+    public function canReadMainUser(User $user): bool
+    {
+        return $this->canMainUser($user, 'can_read.main.user');
+    }
+
+    public function canUpdateMainUser(User $user): bool
+    {
+        return $this->canMainUser($user, 'can_update.main.user');
+    }
+
+    public function canDeleteMainUser(User $user): bool
+    {
+        return $this->canMainUser($user, 'can_delete.main.user');
+    }
+
+    public function canGroupMainUser(User $user): bool
+    {
+        return $this->canMainUser($user, 'can_group.main.user');
+    }
+
+    public function canAccessMainUser(User $user): bool
+    {
+        return $this->canMainUser($user, 'can_access.main.user');
+    }
+
+    public function canRoleMainUser(User $user): bool
+    {
+        return $this->canMainUser($user, 'can_role.main.user');
+    }
+
     private function canMainOu(User $user, string $scope): bool
     {
         if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_OU_ROOT'])) {
@@ -141,6 +176,15 @@ final class UserScopeResolver
     private function canMainGroup(User $user, string $scope): bool
     {
         if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_GROUP_ROOT'])) {
+            return true;
+        }
+
+        return $this->checkHasScope($user, $scope, false);
+    }
+
+    private function canMainUser(User $user, string $scope): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_USER_ROOT'])) {
             return true;
         }
 

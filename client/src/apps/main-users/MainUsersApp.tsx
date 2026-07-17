@@ -1,4 +1,4 @@
-import { Select, Stack } from '@mantine/core';
+import { Alert, Select, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -8,6 +8,12 @@ import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { mainUserApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import {
+	useCanCreateMainUser,
+	useCanDeleteMainUser,
+	useCanReadMainUser,
+	useCanUpdateMainUser,
+} from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
 import type { ListRequest } from '@/types/api.types';
@@ -18,6 +24,10 @@ export default function MainUsersApp() {
 	useWindowTitle('Пользователи');
 	const launchMainApp = useLaunchMainApp();
 	const queryClient = useQueryClient();
+	const canRead = useCanReadMainUser();
+	const canCreate = useCanCreateMainUser();
+	const canUpdate = useCanUpdateMainUser();
+	const canDelete = useCanDeleteMainUser();
 	const [ouFilter, setOuFilter] = useState<number>(ALL_FILTER);
 	const [groupFilter, setGroupFilter] = useState<number>(ALL_FILTER);
 
@@ -92,6 +102,16 @@ export default function MainUsersApp() {
 
 	const openUser = (id: number) => launchMainApp('main-user', id);
 
+	if (!canRead) {
+		return (
+			<MainListLayout title="Пользователи" isLoading={false} isError={false}>
+				<Alert color="red" title="Доступ запрещён">
+					Нет прав на просмотр пользователей
+				</Alert>
+			</MainListLayout>
+		);
+	}
+
 	return (
 		<MainListLayout
 			title="Пользователи"
@@ -105,7 +125,7 @@ export default function MainUsersApp() {
 			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
-			onCreate={() => openUser(0)}
+			onCreate={canCreate ? () => openUser(0) : undefined}
 			createLabel="Создать"
 			filters={
 				<Stack gap="xs">
@@ -138,8 +158,8 @@ export default function MainUsersApp() {
 				data={listQuery.data?.items ?? []}
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openUser(row.id)}
-				onEdit={(row) => openUser(row.id)}
-				onDelete={(row) => deleteMutation.mutateAsync(row.id)}
+				onEdit={canUpdate ? (row) => openUser(row.id) : undefined}
+				onDelete={canDelete ? (row) => deleteMutation.mutateAsync(row.id) : undefined}
 				getRowLabel={(row) => row.login || row.alias}
 			/>
 		</MainListLayout>

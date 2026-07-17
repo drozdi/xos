@@ -25,6 +25,13 @@ import {
 	canUpdateMainOu,
 	canUserMainGroup,
 	canAccessMainGroup,
+	canReadMainUser,
+	canCreateMainUser,
+	canUpdateMainUser,
+	canDeleteMainUser,
+	canGroupMainUser,
+	canAccessMainUser,
+	canRoleMainUser,
 } from '@/features/main/mainAccess';
 
 describe('mainAccess', () => {
@@ -33,7 +40,7 @@ describe('mainAccess', () => {
 		resetScopes();
 		setLevelScopes({});
 		joinScopes('main', {
-			user: { can_create: 1 },
+			user: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8, can_access: 16, can_group: 32, can_role: 64 },
 			group: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
 			ou: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
 			claimant: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
@@ -213,10 +220,55 @@ describe('mainGroupAccess', () => {
 	});
 });
 
+describe('main user access', () => {
+	beforeEach(() => {
+		resetUserRoles();
+		resetScopes();
+		setLevelScopes({});
+		joinScopes('main', {
+			user: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8, can_access: 16, can_group: 32, can_role: 64 },
+		});
+	});
+
+	it('allows read for ROLE_MAIN_USER_ROOT', () => {
+		setUserRoles(['ROLE_MAIN_USER_ROOT']);
+		expect(isScopeRoot('main.user')).toBe(true);
+		expect(canReadMainUser()).toBe(true);
+	});
+
+	it('allows read with can_read.main.user scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.user': 2 });
+		expect(canReadMainUser()).toBe(true);
+	});
+
+	it('allows groups tab edit with can_group.main.user scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.user': 32 });
+		expect(canGroupMainUser()).toBe(true);
+		expect(canUpdateMainUser()).toBe(false);
+	});
+
+	it('allows roles tab edit with can_role.main.user scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.user': 64 });
+		expect(canRoleMainUser()).toBe(true);
+		expect(canUpdateMainUser()).toBe(false);
+	});
+
+	it('allows access tab edit with can_access.main.user scope', () => {
+		setUserRoles(['ROLE_MAIN']);
+		setLevelScopes({ 'main.user': 16 });
+		expect(canAccessMainUser()).toBe(true);
+		expect(canUpdateMainUser()).toBe(false);
+	});
+});
+
 describe('scopePathToRolePrefix', () => {
 	it('converts dotted scope path to role prefix', () => {
 		expect(scopePathToRolePrefix('main.ou')).toBe('MAIN_OU');
 		expect(scopePathToRolePrefix('main.claimant')).toBe('MAIN_CLAIMANT');
 		expect(scopePathToRolePrefix('main.group')).toBe('MAIN_GROUP');
+		expect(scopePathToRolePrefix('main.user')).toBe('MAIN_USER');
 	});
 });

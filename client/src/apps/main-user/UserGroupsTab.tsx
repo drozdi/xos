@@ -3,6 +3,7 @@ import {
 	Button,
 	Group,
 	Paper,
+	Select,
 	Stack,
 	Table,
 	Text,
@@ -11,49 +12,48 @@ import { IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { mainUserApi, type GroupUserItem } from '@/core/api/endpoints/mainApi';
+import { mainGroupApi, type UserGroupItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { DateTimeField } from '@/core/dates';
-import { UserSelect } from '@/features/main/UserSelect';
 import { useWindowSize } from '@/core/windowManager';
 
-import { addGroupUser, removeGroupUser, updateGroupUser } from './groupFormUtils';
+import { addUserGroup, removeUserGroup, updateUserGroup } from './userFormUtils';
 
-interface GroupUsersTabProps {
-	users: Record<string, GroupUserItem>;
+interface UserGroupsTabProps {
+	groups: Record<string, UserGroupItem>;
 	readOnly: boolean;
-	onChange: (users: Record<string, GroupUserItem>) => void;
+	onChange: (groups: Record<string, UserGroupItem>) => void;
 }
 
 function useTableLayout(windowWidth: number): boolean {
 	return windowWidth >= 640;
 }
 
-interface GroupUserEntryProps {
+interface UserGroupEntryProps {
 	entryKey: string;
-	user: GroupUserItem;
-	users: Record<string, GroupUserItem>;
+	group: UserGroupItem;
+	groups: Record<string, UserGroupItem>;
 	readOnly: boolean;
 	layout: 'table' | 'card';
-	onChange: (users: Record<string, GroupUserItem>) => void;
+	onChange: (groups: Record<string, UserGroupItem>) => void;
 }
 
-function GroupUserEntry({
+function UserGroupEntry({
 	entryKey,
-	user,
-	users,
+	group,
+	groups,
 	readOnly,
 	layout,
 	onChange,
-}: GroupUserEntryProps) {
-	const label = user.name ?? `Пользователь #${user.user_id}`;
+}: UserGroupEntryProps) {
+	const label = group.name ?? `Группа #${group.group_id}`;
 
 	const removeButton = !readOnly ? (
 		<ActionIcon
 			variant="subtle"
 			color="red"
-			aria-label="Удалить пользователя из группы"
-			onClick={() => onChange(removeGroupUser(users, entryKey))}
+			aria-label="Удалить группу пользователя"
+			onClick={() => onChange(removeUserGroup(groups, entryKey))}
 		>
 			<IconTrash size={16} />
 		</ActionIcon>
@@ -62,18 +62,18 @@ function GroupUserEntry({
 	const activeFromField = (
 		<DateTimeField
 			label="С"
-			value={user.activeFrom}
+			value={group.activeFrom}
 			readOnly={readOnly}
-			onChange={(value) => onChange(updateGroupUser(users, entryKey, { activeFrom: value }))}
+			onChange={(value) => onChange(updateUserGroup(groups, entryKey, { activeFrom: value }))}
 		/>
 	);
 
 	const activeToField = (
 		<DateTimeField
 			label="По"
-			value={user.activeTo}
+			value={group.activeTo}
 			readOnly={readOnly}
-			onChange={(value) => onChange(updateGroupUser(users, entryKey, { activeTo: value }))}
+			onChange={(value) => onChange(updateUserGroup(groups, entryKey, { activeTo: value }))}
 		/>
 	);
 
@@ -106,27 +106,36 @@ function GroupUserEntry({
 	);
 }
 
-export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps) {
+export function UserGroupsTab({ groups, readOnly, onChange }: UserGroupsTabProps) {
 	const { width: windowWidth } = useWindowSize();
 	const isTableLayout = useTableLayout(windowWidth);
-	const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+	const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
-	const userSelectQuery = useQuery({
-		queryKey: queryKeys.main.userSelect(undefined),
-		queryFn: () => mainUserApi.select({}),
+	const groupSelectQuery = useQuery({
+		queryKey: queryKeys.main.groups({ limit: -1, offset: 1, filters: { ou: -1 } }),
+		queryFn: () => mainGroupApi.list({ limit: -1, offset: 1, filters: { ou: -1 } }),
 		enabled: !readOnly,
 	});
 
-	const entries = useMemo(() => Object.entries(users), [users]);
+	const groupOptions = useMemo(
+		() =>
+			(groupSelectQuery.data?.items ?? []).map((group) => ({
+				value: String(group.id),
+				label: `${group.name} - ${group.code}`,
+			})),
+		[groupSelectQuery.data?.items],
+	);
+
+	const entries = useMemo(() => Object.entries(groups), [groups]);
 
 	const handleAdd = () => {
-		if (!selectedUserId) {
+		if (!selectedGroupId) {
 			return;
 		}
 		const label =
-			userSelectQuery.data?.items.find((item) => item.value === selectedUserId)?.label ?? '';
-		onChange(addGroupUser(users, selectedUserId, label));
-		setSelectedUserId(null);
+			groupSelectQuery.data?.items.find((item) => item.id === selectedGroupId)?.name ?? '';
+		onChange(addUserGroup(groups, selectedGroupId, label));
+		setSelectedGroupId(null);
 	};
 
 	const layout = isTableLayout ? 'table' : 'card';
@@ -135,12 +144,16 @@ export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps)
 		<Stack gap="sm">
 			{!readOnly ? (
 				<Group align="flex-end" wrap="nowrap">
-					<UserSelect
-						label="Добавить пользователя"
-						value={selectedUserId}
-						onChange={(userId) => setSelectedUserId(userId)}
+					<Select
+						label="Добавить группу"
+						data={groupOptions}
+						value={selectedGroupId ? String(selectedGroupId) : null}
+						onChange={(value) => setSelectedGroupId(value ? Number(value) : null)}
+						searchable
+						clearable
+						nothingFoundMessage={groupSelectQuery.isLoading ? 'Загрузка…' : 'Ничего не найдено'}
 					/>
-					<Button onClick={handleAdd} disabled={!selectedUserId}>
+					<Button onClick={handleAdd} disabled={!selectedGroupId}>
 						Добавить
 					</Button>
 				</Group>
@@ -148,25 +161,25 @@ export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps)
 
 			{entries.length === 0 ? (
 				<Text size="sm" c="dimmed">
-					В группе нет пользователей
+					Пользователь не состоит в группах
 				</Text>
 			) : isTableLayout ? (
 				<Table highlightOnHover withTableBorder withColumnBorders>
 					<Table.Thead>
 						<Table.Tr>
-							<Table.Th>Пользователь</Table.Th>
+							<Table.Th>Группа</Table.Th>
 							<Table.Th>С</Table.Th>
 							<Table.Th>По</Table.Th>
 							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
 						</Table.Tr>
 					</Table.Thead>
 					<Table.Tbody>
-						{entries.map(([key, user]) => (
-							<GroupUserEntry
+						{entries.map(([key, group]) => (
+							<UserGroupEntry
 								key={key}
 								entryKey={key}
-								user={user}
-								users={users}
+								group={group}
+								groups={groups}
 								readOnly={readOnly}
 								layout={layout}
 								onChange={onChange}
@@ -175,12 +188,12 @@ export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps)
 					</Table.Tbody>
 				</Table>
 			) : (
-				entries.map(([key, user]) => (
-					<GroupUserEntry
+				entries.map(([key, group]) => (
+					<UserGroupEntry
 						key={key}
 						entryKey={key}
-						user={user}
-						users={users}
+						group={group}
+						groups={groups}
 						readOnly={readOnly}
 						layout={layout}
 						onChange={onChange}

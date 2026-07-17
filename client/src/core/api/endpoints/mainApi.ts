@@ -49,6 +49,65 @@ async function removeEntity(path: string, id: number): Promise<void> {
 	await apiClient.delete(`${path}/${id}`);
 }
 
+function normalizeIdRecord(
+	value: unknown,
+	fallbackKey: (item: Record<string, unknown>, index: number) => string | number,
+): Record<string, unknown> {
+	if (value === null || value === undefined) {
+		return {};
+	}
+	if (Array.isArray(value)) {
+		const record: Record<string, unknown> = {};
+		value.forEach((item, index) => {
+			if (typeof item !== 'object' || item === null) {
+				return;
+			}
+			const entry = item as Record<string, unknown>;
+			const key = entry.id ?? fallbackKey(entry, index);
+			record[String(key)] = item;
+		});
+		return record;
+	}
+	if (typeof value === 'object') {
+		return value as Record<string, unknown>;
+	}
+	return {};
+}
+
+export const groupAccessItemSchema = z.object({
+	id: z.number().optional(),
+	claimant_id: z.number(),
+	name: z.string().optional(),
+	level: z.number(),
+});
+
+export const userGroupItemSchema = z.object({
+	id: z.number().optional(),
+	group_id: z.number(),
+	user_id: z.number().optional(),
+	name: z.string().optional(),
+	activeFrom: z.string().nullable().optional(),
+	activeTo: z.string().nullable().optional(),
+});
+
+const userGroupsRecordSchema = z.preprocess(
+	(value) =>
+		normalizeIdRecord(value, (item, index) => {
+			const groupId = item.group_id;
+			return typeof groupId === 'number' || typeof groupId === 'string' ? groupId : index;
+		}),
+	z.record(z.string(), userGroupItemSchema),
+).optional();
+
+const userAccessesRecordSchema = z.preprocess(
+	(value) =>
+		normalizeIdRecord(value, (item, index) => {
+			const claimantId = item.claimant_id;
+			return typeof claimantId === 'number' || typeof claimantId === 'string' ? claimantId : index;
+		}),
+	z.record(z.string(), groupAccessItemSchema),
+).optional();
+
 // --- Users ---
 
 export const userListItemSchema = z.object({
@@ -88,7 +147,11 @@ export const userDetailSchema = z
 		description: z.string().nullable().optional(),
 		gender: z.string().nullable().optional(),
 		country: z.string().nullable().optional(),
+		activeFrom: z.string().nullable().optional(),
+		activeTo: z.string().nullable().optional(),
 		roles: z.array(z.string()).optional(),
+		groups: userGroupsRecordSchema,
+		accesses: userAccessesRecordSchema,
 	})
 	.passthrough();
 
@@ -100,6 +163,7 @@ export const userSelectItemSchema = z.object({
 export type UserListItem = z.infer<typeof userListItemSchema>;
 export type UserFilterOu = z.infer<typeof userFilterOuSchema>;
 export type UserDetail = z.infer<typeof userDetailSchema>;
+export type UserGroupItem = z.infer<typeof userGroupItemSchema>;
 export type UserSelectItem = z.infer<typeof userSelectItemSchema>;
 
 export const mainUserApi = {
@@ -119,6 +183,10 @@ export const mainUserApi = {
 	filter: async () => {
 		const { data } = await apiClient.get<unknown>('/api/main/user/filter');
 		return z.array(userFilterOuSchema).parse(data);
+	},
+	roleOptions: async () => {
+		const { data } = await apiClient.get<unknown>('/api/main/user/role-options');
+		return z.array(z.string()).parse(data);
 	},
 	get: (id: number) => getDetail(`/api/main/user/${id}`, userDetailSchema),
 	create: (body: unknown) => createEntity('/api/main/user/', body),
@@ -152,38 +220,6 @@ export const groupUserItemSchema = z.object({
 	activeFrom: z.string().nullable().optional(),
 	activeTo: z.string().nullable().optional(),
 });
-
-export const groupAccessItemSchema = z.object({
-	id: z.number().optional(),
-	claimant_id: z.number(),
-	name: z.string().optional(),
-	level: z.number(),
-});
-
-function normalizeIdRecord(
-	value: unknown,
-	fallbackKey: (item: Record<string, unknown>, index: number) => string | number,
-): Record<string, unknown> {
-	if (value === null || value === undefined) {
-		return {};
-	}
-	if (Array.isArray(value)) {
-		const record: Record<string, unknown> = {};
-		value.forEach((item, index) => {
-			if (typeof item !== 'object' || item === null) {
-				return;
-			}
-			const entry = item as Record<string, unknown>;
-			const key = entry.id ?? fallbackKey(entry, index);
-			record[String(key)] = item;
-		});
-		return record;
-	}
-	if (typeof value === 'object') {
-		return value as Record<string, unknown>;
-	}
-	return {};
-}
 
 const groupUsersRecordSchema = z.preprocess(
 	(value) =>

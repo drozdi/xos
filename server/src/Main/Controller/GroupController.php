@@ -30,7 +30,7 @@ class GroupController extends AbstractController {
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        if (!$userScopeResolver->canReadMainGroup($user)) {
+        if (!$userScopeResolver->canReadMainGroup($user) && !$userScopeResolver->canGroupMainUser($user)) {
             return ApiResponse::forbidden(MainGroupAccessMessages::READ);
         }
 

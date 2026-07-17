@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canCreateMainUser, canReadMainUser } from '@/features/main/mainAccess';
 import { createMainDetailManifestOptions } from '@/features/main/mainAppUtils';
 
 import { UsersIcon } from '../shared/AppIcons';
@@ -16,6 +17,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 480, height: 560 },
 	minSize: { width: 360, height: 400 },
 	...createMainDetailManifestOptions('main-user', 2),
+	canAccess: () => canReadMainUser() || canCreateMainUser(),
 };
 
 export default manifest;

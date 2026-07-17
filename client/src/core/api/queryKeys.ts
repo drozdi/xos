@@ -21,6 +21,7 @@ export const queryKeys = {
 		user: (id: number) => ['main', 'user', id] as const,
 		userFilter: ['main', 'user', 'filter'] as const,
 		userSelect: (filters?: ListRequest['filters']) => ['main', 'user', 'select', filters] as const,
+		userRoleOptions: ['main', 'user', 'role-options'] as const,
 		groups: (filters: ListRequest) => ['main', 'groups', filters] as const,
 		group: (id: number) => ['main', 'group', id] as const,
 		groupFilter: ['main', 'group', 'filter'] as const,
