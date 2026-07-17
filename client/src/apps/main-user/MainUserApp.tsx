@@ -1,4 +1,4 @@
-import { Alert, Tabs, Text } from '@mantine/core';
+import { Alert, Stack, Tabs, Text } from '@mantine/core';
 import { useState } from 'react';
 
 import { mainUserApi, type UserDetail } from '@/core/api/endpoints/mainApi';
@@ -91,13 +91,33 @@ export default function MainUserApp() {
 			transformBeforeSave={prepareUserSavePayload}
 			canSave={canSave}
 			canDelete={canDelete}
-			headerNote={({ data, isNew: isNewRecord }) =>
-				!isNewRecord && data.x_timestamp ? (
-					<Text size="sm" c="dimmed">
-						Последнее обновление: {String(data.x_timestamp)}
-					</Text>
-				) : null
-			}
+			headerNote={({ data, isNew: isNewRecord }) => {
+				if (isNewRecord) {
+					return null;
+				}
+
+				const notes: string[] = [];
+				if (data.x_timestamp) {
+					notes.push(`Последнее обновление: ${String(data.x_timestamp)}`);
+				}
+				if (data.last_login) {
+					notes.push(`Последний вход: ${data.last_login}`);
+				}
+
+				if (notes.length === 0) {
+					return null;
+				}
+
+				return (
+					<Stack gap={2}>
+						{notes.map((note) => (
+							<Text key={note} size="sm" c="dimmed">
+								{note}
+							</Text>
+						))}
+					</Stack>
+				);
+			}}
 		>
 			{({ data, setField, errors, isNew: isNewRecord }) => {
 				const readOnlyGeneral = isNewRecord ? !canCreate : !canUpdate;

@@ -149,6 +149,7 @@ export const userDetailSchema = z
 		country: z.string().nullable().optional(),
 		activeFrom: z.string().nullable().optional(),
 		activeTo: z.string().nullable().optional(),
+		last_login: z.string().nullable().optional(),
 		roles: z.array(z.string()).optional(),
 		groups: userGroupsRecordSchema,
 		accesses: userAccessesRecordSchema,
