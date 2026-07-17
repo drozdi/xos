@@ -7,8 +7,6 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
-use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\ArrayCollection;
 
 #[ORM\Table(name: 'd_accounting')]
 #[ORM\Entity(repositoryClass: AccountingRepository::class)]
@@ -17,109 +15,331 @@ class Accounting {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
+    private $id;
 
-    #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[ORM\OneToMany(targetEntity: Accounting::class, mappedBy: 'parent')]
+    private $children;
+
+    #[ORM\ManyToOne(targetEntity: Accounting::class, inversedBy: 'children')]
+    #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private $parent;
+
+    #[ORM\OneToOne(targetEntity: Device::class, mappedBy: 'accounting')]
+    private $device;
+
+    #[ORM\Column(name: 'x_timestamp', type: Types::DATETIME_MUTABLE, nullable: false, unique: false)]
     #[ORM\Version]
-    private ?\DateTimeInterface $xTimestamp = null;
+    private $xTimestamp;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
-    #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
-    private ?self $parent = null;
+    #[ORM\Column(name: 'date_created', type: Types::DATETIME_MUTABLE, nullable: false, unique: false)]
+    private $dateCreated;
 
-    /**
-     * One Accounting have Many Accountings.
-     * @var Collection<int, Accounting>
-     */
-    #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
-    private Collection $children;
+    #[ORM\Column(name: 'name', type: Types::TEXT, nullable: true, unique: false)]
+    private $name;
 
-    #[ORM\OneToOne(targetEntity: Device::class, mappedBy: "accounting")]
-    /*#[ORM\JoinColumn(name: 'device_id', referencedColumnName: 'id', nullable: true, onDelete: "CASCADE")]*/
-    private ?Device $device = null;
+    #[ORM\Column(name: 'in_no', length: 255, nullable: true, unique: false)]
+    private $inNo;
 
-    #[ORM\Column(name: "date_created", type: Types::DATETIME_MUTABLE, nullable: false)]
-    private \DateTimeInterface $dateCreated;
+    #[ORM\Column(name: 'invoice', length: 255, nullable: true, unique: false)]
+    private $invoice;
 
-    #[ORM\Column(name: 'name', type: Types::TEXT, nullable: true)]
-    private ?string $name = null;
+    #[ORM\Column(name: 'date_invoice', type: Types::DATETIME_MUTABLE, nullable: true, unique: false)]
+    private $dateInvoice;
 
-    #[ORM\Column(name: "in_no", length: 255, nullable: true)]
-    private ?string $inNo = null;
+    #[ORM\Column(name: 'date_discarded', type: Types::DATETIME_MUTABLE, nullable: true, unique: false)]
+    private $dateDiscarded;
 
-    #[ORM\Column(name: "invoice", length: 255, nullable: true)]
-    private ?string $invoice = null;
-
-    #[ORM\Column(name: "date_invoice", type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $dateInvoice = null;
-
-    #[ORM\Column(name: "date_discarded", type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $dateDiscarded = null;
-
-    #[ORM\Column(name: 'discarded', type: Types::BOOLEAN, options: ["default" => false])]
-    private bool $discarded = false;
+    #[ORM\Column(name: 'discarded', type: Types::BOOLEAN, nullable: false, unique: false, options: ['default' => false])]
+    private $discarded = 0;
 
     /**
      * Constructor
      */
     public function __construct () {
-        $this->children = new ArrayCollection();
-        $this->dateCreated = new \DateTime();
+        $this->children = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->setDateCreated(new \DateTime);
+        $this->setDateInvoice(new \DateTime);
     }
 
-    public function getId (): ?int {
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId () {
         return $this->id;
     }
 
-    public function getXTimestamp (?string $format = null): \DateTimeInterface|string|null {
-        if (null !== $format && null !== $this->xTimestamp) {
-            return $this->xTimestamp->format($format);
+    /**
+     * Add child
+     *
+     * @param \Device\Entity\Accounting $child
+     * @param boolean $setParent[true]
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function addChild (Accounting $child, $setParent = true) {
+        if (false === $this->children->indexOf($child)) {
+            $this->children[] = $child;
         }
+        if (true === $setParent) {
+            $child->setParent($this, false);
+        }
+        return $this;
+    }
+
+    /**
+     * Remove child
+     *
+     * @param \Device\Entity\Accounting $child
+     * @param boolean $removeParent[true]
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function removeChild (Accounting $child, $removeParent = true) {
+        $this->children->removeElement($child);
+        if (true === $removeParent) {
+            $child->setParent(null, false);
+        }
+        return $this;
+    }
+
+    /**
+     * New Child
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function newChild ()  {
+        $child = new Accounting;
+        $child->setInNo($this->getInNo());
+        $child->setName($this->getName());
+        $child->setInvoice($this->getInvoice());
+        $child->setDiscarded($this->getDiscarded());
+        $child->setDateInvoice($this->getDateInvoice());
+        $child->setDateDiscarded($this->getDateDiscarded());
+        $this->addChild($child);
+        return $child;
+    }
+
+    /**
+     * Get children
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getChildren () {
+        return $this->children;
+    }
+
+    /**
+     * Set parent
+     *
+     * @param \Device\Entity\Accounting $parent
+     * @param boolean $addChild[true]
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setParent (Accounting $parent = null, $addChild = true) {
+        if ((null === $parent || $this->parent !== $parent) && null !== $this->parent) {
+            $this->parent->removeChild($this, false);
+        }
+        $this->parent = $parent;
+        if (true === $addChild && null !== $this->parent) {
+            $this->parent->addChild($this, false);
+        }
+        return $this;
+    }
+
+    /**
+     * Get parent
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function getParent () {
+        return $this->parent;
+    }
+
+    /**
+     * Set device
+     *
+     * @param \Device\Entity\Device $device
+     * @param boolean $setAccounting[true]
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setDevice (Device $device = null, $setAccounting = true) {
+        if ((null === $device || $this->device !== $device) && null !== $this->device) {
+            $this->device->setAccounting(null, false);
+        }
+        $this->device = $device;
+        if (true === $setAccounting && null != $this->device) {
+            $this->device->setAccounting($this, false);
+        }
+        return $this;
+    }
+
+    /**
+     * Get device
+     *
+     * @return \Device\Entity\Device
+     */
+    public function getDevice () {
+        return $this->device;
+    }
+
+    /**
+     * Set xTimestamp
+     *
+     * @param \DateTime $xTimestamp
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setXTimestamp ($xTimestamp) {
+        $this->xTimestamp = $xTimestamp;
+        return $this;
+    }
+
+    /**
+     * Get xTimestamp
+     *
+     * @return \DateTime
+     */
+    public function getXTimestamp () {
         return $this->xTimestamp;
     }
-    public function setXTimestamp (\DateTimeInterface $xTimestamp): self {
-        $this->xTimestamp = $xTimestamp;
 
+    /**
+     * Set dateCreated
+     *
+     * @param \DateTime $dateCreated
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setDateCreated ($dateCreated) {
+        $this->dateCreated = $dateCreated;
         return $this;
     }
 
-    public function getDateCreated (?string $format = null): \DateTimeInterface|string|null {
-        if (null !== $format) {
-            return $this->dateCreated->format($format);
-        }
+    /**
+     * Get dateCreated
+     *
+     * @return \DateTime
+     */
+    public function getDateCreated () {
         return $this->dateCreated;
     }
-    public function setDateCreated (\DateTimeInterface $dateCreated): self {
-        $this->dateCreated = $dateCreated;
 
+    /**
+     * Set name
+     *
+     * @param string $name
+     *
+     * @return Accounting
+     */
+    public function setName ($name) {
+        $this->name = $name;
         return $this;
     }
 
-    public function getDateInvoice (?string $format = null, bool $getParent = true): \DateTimeInterface|string|null {
+    /**
+     * Get name
+     *
+     * @param string $getParent[true]
+     *
+     * @return string
+     */
+    public function getName ($getParent = true) {
         if ($getParent && null != $this->parent) {
-            return $this->parent->getDateInvoice($format);
+            return $this->parent->getName();
         }
-        if (null != $format && null != $this->dateInvoice) {
-            return $this->dateInvoice->format($format);
+        return $this->name;
+    }
+
+    /**
+     * Set inNo
+     *
+     * @param string $inNo
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setInNo ($inNo) {
+        $this->inNo = $inNo;
+        return $this;
+    }
+
+    /**
+     * Get inNo
+     *
+     * @param string $getParent[true]
+     *
+     * @return string
+     */
+    public function getInNo ($getParent = true) {
+        if ($getParent && null != $this->parent) {
+            return $this->parent->getInNo();
+        }
+        return $this->inNo;
+    }
+
+    /**
+     * Set invoice
+     *
+     * @param string $invoice
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setInvoice ($invoice) {
+        $this->invoice = $invoice;
+        return $this;
+    }
+
+    /**
+     * Get invoice
+     *
+     * @param string $getParent[true]
+     *
+     * @return string
+     */
+    public function getInvoice ($getParent = true) {
+        if ($getParent && null != $this->parent) {
+            return $this->parent->getInvoice();
+        }
+        return $this->invoice;
+    }
+
+    /**
+     * Set dateInvoice
+     *
+     * @param \DateTime $dateInvoice
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setDateInvoice ($dateInvoice) {
+        $this->dateInvoice = $dateInvoice;
+        return $this;
+    }
+
+    /**
+     * Get dateInvoice
+     *
+     * @param string $getParent[true]
+     *
+     * @return \DateTime
+     */
+    public function getDateInvoice ($getParent = true) {
+        if ($getParent && null != $this->parent) {
+            return $this->parent->getDateInvoice();
         }
         return $this->dateInvoice;
     }
-    public function setDateInvoice (?\DateTimeInterface $dateInvoice = null): self {
-        $this->dateInvoice = $dateInvoice;
 
-        return $this;
-    }
-
-    public function getDateDiscarded (?string$format = null, bool $getParent = true): \DateTimeInterface|string|null {
-        if ($getParent && null != $this->parent) {
-            return $this->parent->getDateDiscarded($format);
-        }
-        if (null != $format && null != $this->dateDiscarded) {
-            return $this->dateDiscarded->format($format);
-        }
-        return $this->dateDiscarded;
-    }
-    public function setDateDiscarded (?\DateTimeInterface $dateDiscarded = null): self {
+    /**
+     * Set dateDiscarded
+     *
+     * @param \DateTime $dateDiscarded
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setDateDiscarded ($dateDiscarded) {
         $this->dateDiscarded = $dateDiscarded;
         if (null != $dateDiscarded) {
             $this->setDiscarded(true);
@@ -130,102 +350,28 @@ class Accounting {
         return $this;
     }
 
-    public function getParent (): ?self {
-        return $this->parent;
-    }
-    public function setParent (?self $parent = null): self {
-        if ($this->parent && ($this->parent !== $parent)) {
-            $this->parent->removeChild($this);
-        }
-
-        $this->parent = $parent;
-
-        if ($this->parent) {
-            $this->parent->addChild($this);
-        }
-
-        return $this;
-    }
-
-    public function addChild (self $child): self {
-        if (!$this->children->contains($child)) {
-            $this->children->add($child);
-            $child->setParent($this);
-        }
-
-        return $this;
-    }
-    public function removeChild (self $child): self {
-        if ($this->children->removeElement($child)) {
-            if ($child->getParent() === $this) {
-                $child->setParent(null);
-            }
-        }
-        return $this;
-    }
     /**
-     * Get children
+     * Get dateDiscarded
      *
-     * @return Collection<int, self>
+     * @param string $getParent[true]
+     *
+     * @return \DateTime
      */
-    public function getChildren (): Collection {
-        return $this->children;
-    }
-    public function newChild (): self  {
-        $child = new self;
-        $child->setInNo($this->getInNo());
-        $child->setName($this->getName());
-        $child->setInvoice($this->getInvoice());
-        $child->setDiscarded($this->isDiscarded());
-        $child->setDateInvoice($this->getDateInvoice());
-        $child->setDateDiscarded($this->getDateDiscarded());
-        $this->addChild($child);
-        return $child;
-    }
-
-    public function getDevice (): Device {
-        return $this->device;
-    }
-    public function setDevice (Device $device = null): self {
-        if ($this->device && ($this->device !== $device)) {
-            $this->device->setAccounting(null);
-        }
-        $this->device = $device;
-        if ($this->device && $this->device->getAccounting() != $this) {
-            $this->device->setAccounting($this);
-        }
-        return $this;
-    }
-
-    public function getName (bool $getParent = true): ?string {
+    public function getDateDiscarded ($getParent = true) {
         if ($getParent && null != $this->parent) {
-            return $this->parent->getName();
+            return $this->parent->getDateDiscarded();
         }
-        return $this->name;
-    }
-    public function setName (?string $name = null): self {
-        $this->name = $name;
-        return $this;
+        return $this->dateDiscarded;
     }
 
-    public function getInNo (bool $getParent = true): ?string {
-        if ($getParent && null != $this->parent) {
-            return $this->parent->getInNo();
-        }
-        return $this->inNo;
-    }
-    public function setInNo (?string $inNo = null): self {
-        $this->inNo = $inNo;
-        return $this;
-    }
-
-    public function isDiscarded (bool $getParent = true): bool {
-        if ($getParent && null != $this->parent) {
-            return $this->parent->isDiscarded();
-        }
-        return $this->discarded;
-    }
-    public function setDiscarded (bool $discarded): self {
+    /**
+     * Set discarded
+     *
+     * @param boolean $discarded
+     *
+     * @return \Device\Entity\Accounting
+     */
+    public function setDiscarded ($discarded) {
         $this->discarded = $discarded;
         foreach ($this->children as $child) {
             $child->setDiscarded($discarded);
@@ -233,39 +379,78 @@ class Accounting {
         return $this;
     }
 
-    public function getInvoice (bool $getParent = true): ?string {
+    /**
+     * Get discarded
+     *
+     * @param string $getParent[true]
+     *
+     * @return boolean
+     */
+    public function getDiscarded ($getParent = true) {
         if ($getParent && null != $this->parent) {
-            return $this->parent->getInvoice();
+            return $this->parent->getDiscarded();
         }
-        return $this->invoice;
-    }
-    public function setInvoice (?string $invoice = null): self {
-        $this->invoice = $invoice;
-        return $this;
+        return $this->discarded;
     }
 
-    public function isRoot (): bool {
-        return null === $this->parent && $this->children->count() > 0;
+    /**
+     * Check whether the root property
+     *
+     * @return boolean
+     */
+    public function isRoot () {
+        return null == $this->parent && $this->children->count() > 0;
     }
-    public function isChild (): bool {
-        return null !== $this->parent;
+
+    /**
+     * Is children
+     *
+     * @return  boolean
+     */
+    public function isChild () {
+        return null != $this->parent;
+    }
+
+    /**
+     * Check whether the device is decommissioned
+     *
+     * @return boolean
+     */
+    public function isDiscarded () {
+        if ($this->parent) {
+            return $this->parent->isDiscarded();
+        }
+        return $this->discarded || $this->discarded instanceof \DateTime;
     }
 
     #[ORM\PrePersist]
-    public function prePersist (): void {
-        $this->setDateCreated(new \DateTime());
-    }
     #[ORM\PreUpdate]
-    public function preUpdate (): void {
+    public function preUpdate (LifecycleEventArgs $event) {
+        $errors = array();
 
-    }
-    #[ORM\PreFlush]
-    public function preFlush (): void {
+        if (null == $this->device) {
+            $errors[] = 'Не выбрано устройство!';
+        }
+        if (null == $this->inNo && null == $this->dateInvoice) {
+            $errors[] = 'Не указана информация о постановке на учет (инвентарный номер или дата постановки на учет)!';
+        }
 
+        if (count($errors) > 0) {
+            throw new \Exception(implode('<br />', $errors));
+        }
     }
+
     #[ORM\PreRemove]
-    public function preRemove (): void {
+    public function preRemove (LifecycleEventArgs $event) {
+        $errors = array();
 
+        if ($this->device) {
+            $errors[] = 'Нельзя удалить информацию о учете, пока есть устройство!';
+        }
+
+        if (count($errors) > 0) {
+            throw new \Exception(implode('<br />', $errors));
+        }
     }
 }
 

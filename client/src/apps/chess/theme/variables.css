@@ -1,0 +1,73 @@
+/* Общие токены (не зависят от темы) */
+:root {
+	--accent-color-hue: 236;
+	--accent-color-saturation: 100%;
+	--primary: #1976d2;
+	--secondary: #5cbbf6;
+	--accent: #9c27b0;
+	--positive: #4caf50;
+	--negative: #dc3545;
+	--info: #2196f3;
+	--warning: #fb8c00;
+	--success: #4caf50;
+	--error: #d40000;
+	--error-color: #d40000;
+}
+
+/* Тёмная тема — текущий фон проекта */
+[data-mantine-color-scheme='dark'] {
+	color-scheme: dark;
+
+	--app-bg: #002650;
+	--app-text: rgba(255, 255, 255, 0.7);
+	--app-text-strong: #fff;
+	--app-text-muted: rgba(255, 255, 255, 0.3);
+	--app-selection-color: #eee;
+	--app-selection-bg: #006a9b;
+	--app-sidebar-bg: rgba(0, 0, 0, 0.25);
+	--app-surface: #1d1d1d;
+	--app-surface-muted: #333;
+	--app-border: rgba(255, 255, 255, 0.15);
+	--dimmed-bg: rgba(0, 0, 0, 0.4);
+	--separator-color: rgba(255, 255, 255, 0.15);
+	--disabled-color: #cfcfcf;
+	--link-color: #00aeff;
+	--link-hover: #fff;
+	--cell-dark: #333;
+	--cell-light: #eee;
+	--board-legend: rgba(255, 255, 255, 0.7);
+	--dark: #1d1d1d;
+	--white: #fff;
+	--black: #000;
+	--hint-last-move-bg: rgba(255, 235, 59, 0.35);
+	--hint-sample-bg: #555;
+}
+
+/* Светлая тема */
+[data-mantine-color-scheme='light'] {
+	color-scheme: light;
+
+	--app-bg: #e8eef5;
+	--app-text: rgba(29, 29, 29, 0.85);
+	--app-text-strong: #1d1d1d;
+	--app-text-muted: rgba(29, 29, 29, 0.45);
+	--app-selection-color: #fff;
+	--app-selection-bg: #1976d2;
+	--app-sidebar-bg: rgba(255, 255, 255, 0.92);
+	--app-surface: #ffffff;
+	--app-surface-muted: #f0f4f8;
+	--app-border: rgba(0, 0, 0, 0.12);
+	--dimmed-bg: rgba(0, 0, 0, 0.25);
+	--separator-color: rgba(0, 0, 0, 0.1);
+	--disabled-color: #9e9e9e;
+	--link-color: #1565c0;
+	--link-hover: #0d47a1;
+	--cell-dark: #769656;
+	--cell-light: #eeeed2;
+	--board-legend: rgba(29, 29, 29, 0.65);
+	--dark: #f5f5f5;
+	--white: #fff;
+	--black: #000;
+	--hint-last-move-bg: rgba(255, 235, 59, 0.5);
+	--hint-sample-bg: #c5cbd3;
+}

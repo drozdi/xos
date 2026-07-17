@@ -5,8 +5,6 @@ namespace Device\Entity\Device;
 use Device\Entity\Device;
 use Device\Repository\Device\RepairRepository;
 use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\Event\PrePersistEventArgs;
-use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
@@ -18,109 +16,154 @@ class Repair {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
+    private $id;
 
-    #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[ORM\Version]
-    private ?\DateTimeInterface $xTimestamp = null;
+    #[ORM\Column(name: 'put_into', type: Types::DATE_MUTABLE, nullable: false, unique: false)]
+    private $putInto;
 
-    #[ORM\Column(name: "put_into", type: Types::DATETIME_MUTABLE, nullable: false)]
-    private ?\DateTimeInterface $putInto;
+    #[ORM\Column(name: 'received_from', type: Types::DATE_MUTABLE, nullable: true, unique: false)]
+    private $receivedFrom;
 
-    #[ORM\Column(name: "received_from", type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $receivedFrom;
+    #[ORM\Column(name: 'closed', type: Types::BOOLEAN, nullable: false, unique: false, options: ['default' => false])]
+    private $closed = 0;
 
-    #[ORM\Column(name: 'closed', type: Types::BOOLEAN, options: ["default" => false])]
-    private bool $closed = false;
+    #[ORM\Column(name: 'reason', type: Types::TEXT, nullable: false, unique: false)]
+    private $reason;
 
-    #[ORM\Column(name: 'reason', type: Types::TEXT, nullable: false)]
-    private string $reason;
+    #[ORM\Column(name: 'repairman', length: 255, nullable: false, unique: false)]
+    private $repairman;
 
-    #[ORM\Column(name: 'repairman', length: 255)]
-    private string $repairman;
-
-    #[ORM\Column(name: 'description', type: Types::TEXT, nullable: true)]
-    private ?string $description = null;
+    #[ORM\Column(name: 'description', type: Types::TEXT, nullable: true, unique: false)]
+    private $description;
 
     #[ORM\ManyToOne(targetEntity: Device::class, inversedBy: 'repairs')]
-    #[ORM\JoinColumn(name: 'device_id', referencedColumnName: 'id', nullable: false, onDelete: "CASCADE")]
-    private Device $device;
+    #[ORM\JoinColumn(name: 'device_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    private $device;
 
+    /**
+     * Constructor
+     */
     public function __construct () {
         $this->setPutInto(new \DateTime);
     }
 
-    public function getId (): ?int {
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId()
+    {
         return $this->id;
     }
 
-    public function getXTimestamp (?string $format = null): \DateTimeInterface|string|null {
-        if (null != $format && null != $this->xTimestamp) {
-            return $this->xTimestamp->format($format);
-        }
-        return $this->xTimestamp;
-    }
-    public function setXTimestamp (\DateTimeInterface $xTimestamp): self {
-        $this->xTimestamp = $xTimestamp;
-
-        return $this;
-    }
-
-    public function getPutInto (?string $format = null): \DateTimeInterface|string|null {
-        if (null != $format && null != $this->putInto) {
-            return $this->putInto->format($format);
-        }
-        return $this->putInto;
-    }
-    public function setPutInto (\DateTimeInterface $putInto): self {
+    /**
+     * Set putInto
+     *
+     * @param \DateTime $putInto
+     *
+     * @return \Device\Entity\Device\Repair
+     */
+    public function setPutInto($putInto)
+    {
         $this->putInto = $putInto;
 
         return $this;
     }
 
-    public function getReceivedFrom (?string $format = null): \DateTimeInterface|string|null {
-        if (null != $format && null != $this->receivedFrom) {
-            return $this->receivedFrom->format($format);
-        }
-        return $this->receivedFrom;
+    /**
+     * Get putInto
+     *
+     * @return \DateTime
+     */
+    public function getPutInto()
+    {
+        return $this->putInto;
     }
-    public function setReceivedFrom (\DateTimeInterface $receivedFrom): self {
+
+    /**
+     * Set receivedFrom
+     *
+     * @param \DateTime $receivedFrom
+     *
+     * @return \Device\Entity\Device\Repair
+     */
+    public function setReceivedFrom($receivedFrom)
+    {
         $this->receivedFrom = $receivedFrom;
+
+        $this->setClosed(null != $this->receivedFrom);
 
         return $this;
     }
 
-    public function isClosed (): bool {
-        return $this->closed;
+    /**
+     * Get receivedFrom
+     *
+     * @return \DateTime
+     */
+    public function getReceivedFrom()
+    {
+        return $this->receivedFrom;
     }
-    public function setClosed (bool $closed): self {
+
+    /**
+     * Set closed
+     *
+     * @param boolean $closed
+     *
+     * @return \Device\Entity\Device\Repair
+     */
+    public function setClosed($closed)
+    {
         $this->closed = $closed;
 
         return $this;
     }
 
-    public function getReason (): string {
-        return $this->reason;
+    /**
+     * Get closed
+     *
+     * @return boolean
+     */
+    public function getClosed()
+    {
+        return $this->closed;
     }
-    public function setReason (string $reason): self {
+
+    /**
+     * Set reason
+     *
+     * @param string $reason
+     *
+     * @return \Device\Entity\Device\Repair
+     */
+    public function setReason($reason)
+    {
         $this->reason = $reason;
 
         return $this;
     }
 
-    public function getRepairman ():string {
-        return $this->repairman;
+    /**
+     * Get reason
+     *
+     * @return string
+     */
+    public function getReason()
+    {
+        return $this->reason;
     }
-    public function setRepairman (string $repairman): self {
-        $this->repairman = $repairman;
 
-        return $this;
-    }
-
-    public function getDescription (): ?string {
-        return $this->description;
-    }
-    public function setDescription (?string $description = null): self {
+    /**
+     * Set description
+     *
+     * @param string $description
+     *
+     * @return \Device\Entity\Device\Repair
+     */
+    public function setDescription($description)
+    {
         $this->description = $description = trim($description);
 
         if (!empty($description)) {
@@ -133,55 +176,79 @@ class Repair {
         return $this;
     }
 
-    public function getDevice (): Device {
-        return $this->device;
+    /**
+     * Get description
+     *
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->description;
     }
-    public function setDevice (Device $device): self {
-        if ($this->device && ($this->device != $device)) {
-            $this->device->removeRepair($this);
+
+    /**
+     * Set device
+     *
+     * @param \Device\Entity\Device $device
+     * @param boolean $addRepair[true]
+     *
+     * @return \Device\Entity\Device\Repair
+     */
+    public function setDevice(\Device\Entity\Device $device = null, $addRepair = true)
+    {
+        if ((null === $device || $this->device !== $device) && null !== $this->device) {
+            $this->device->removeRepair($this, false);
         }
 
         $this->device = $device;
 
-        if ($this->device) {
-            $this->device->addRepair($this);
+        if (true === $addRepair && null !== $this->device) {
+            $this->device->addRepair($this, false);
         }
+
+        $this->device = $device;
 
         return $this;
     }
 
+    /**
+     * Get device
+     *
+     * @return \Device\Entity\Device
+     */
+    public function getDevice()
+    {
+        return $this->device;
+    }
+
+    /**
+     * Set repairman
+     *
+     * @param string $repairman
+     *
+     * @return \Device\Entity\Device\Repair
+     */
+    public function setRepairman($repairman)
+    {
+        $this->repairman = $repairman;
+
+        return $this;
+    }
+
+    /**
+     * Get repairman
+     *
+     * @return string
+     */
+    public function getRepairman()
+    {
+        return $this->repairman;
+    }
 
     #[ORM\PrePersist]
-    public function prePersist(PrePersistEventArgs $event): void {
-        $errors = array();
-
-        if (null == $this->device) {
-            $errors[] = 'Не выбрано устройство!';
-        }
-        if (null == $this->putInto) {
-            $errors[] = 'Не указана дата сдачи в ремонт!';
-        }
-        if (null == $this->reason) {
-            $errors[] = 'Не указана причина ремонта!';
-        }
-        if (null == $this->repairman) {
-            $errors[] = 'Не указан кто ремонтник!';
-        }
-        if ($this->closed) {
-            if (null == $this->receivedFrom) {
-                $errors[] = 'Не указана дата получения из ремонта!';
-            }
-            if (null == $this->description) {
-                $errors[] = 'Не указаны сведенья о ремонте!';
-            }
-        }
-
-        if (count($errors) > 0) {
-            throw new \Exception(implode('<br />', $errors));
-        }
-    }
     #[ORM\PreUpdate]
-    public function preUpdate(PreUpdateEventArgs $event): void {
+    public function preUpdate(LifecycleEventArgs $event)
+    {
         $errors = array();
 
         if (null == $this->device) {

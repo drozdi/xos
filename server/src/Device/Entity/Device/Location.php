@@ -12,95 +12,196 @@ use Doctrine\Common\Collections\Criteria;
 #[ORM\Table(name: 'd_device_location')]
 #[ORM\Entity(repositoryClass: LocationRepository::class)]
 #[ORM\HasLifecycleCallbacks]
-class Location {
+class Location
+{
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
+    private $id;
 
-    #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[ORM\Column(name: 'x_timestamp', type: Types::DATETIME_MUTABLE, nullable: false, unique: false)]
     #[ORM\Version]
-    private ?\DateTimeInterface $xTimestamp = null;
+    private $xTimestamp;
 
-    #[ORM\Column(name: "date", type: Types::DATETIME_MUTABLE, nullable: false)]
-    private \DateTimeInterface $date;
+    #[ORM\Column(name: 'date', type: Types::DATE_MUTABLE, nullable: false, unique: false)]
+    private $date;
 
-    #[ORM\Column(name: "place", length: 255)]
-    private string $place;
+    #[ORM\Column(name: 'place', length: 255, nullable: false, unique: false)]
+    private $place;
 
-    #[ORM\Column(name: "responsible", length: 255)]
-    private string $responsible;
+    #[ORM\Column(name: 'responsible', length: 255, nullable: false, unique: false)]
+    private $responsible;
 
     #[ORM\ManyToOne(targetEntity: Device::class, inversedBy: 'locations')]
-    #[ORM\JoinColumn(name: 'device_id', referencedColumnName: 'id', nullable: false, onDelete: "CASCADE")]
-    private Device $device;
+    #[ORM\JoinColumn(name: 'device_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    private $device;
 
-    public function __construct () {
+    /**
+     * Constructor
+     */
+    public function __construct()
+    {
         $this->setDate(new \DateTime);
     }
 
-    public function getId (): ?int {
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId()
+    {
         return $this->id;
     }
 
-    public function getXTimestamp (?string $format = null): \DateTimeInterface|string|null {
-        if (null != $format && null != $this->xTimestamp) {
-            return $this->xTimestamp->format($format);
-        }
-        return $this->xTimestamp;
-    }
-    public function setXTimestamp (\DateTimeInterface $xTimestamp): self {
+    /**
+     * Set xTimestamp
+     *
+     * @param \DateTime $xTimestamp
+     *
+     * @return Device
+     */
+    public function setXTimestamp($xTimestamp)
+    {
         $this->xTimestamp = $xTimestamp;
 
         return $this;
     }
 
-    public function getDate (?string $format = null): \DateTimeInterface|string|null {
-        if (null != $format && null != $this->date) {
-            return $this->date->format($format);
-        }
-        return $this->date;
+    /**
+     * Get xTimestamp
+     *
+     * @return \DateTime
+     */
+    public function getXTimestamp()
+    {
+        return $this->xTimestamp;
     }
-    public function setDate (\DateTimeInterface $date): self {
+
+    /**
+     * Set date
+     *
+     * @param \DateTime $date
+     *
+     * @return \Device\Entity\Device\Location
+     */
+    public function setDate($date)
+    {
         $this->date = $date;
 
         return $this;
     }
 
-    public function getPlace(): string {
-        return $this->place;
+    /**
+     * Get date
+     *
+     * @return \DateTime
+     */
+    public function getDate()
+    {
+        return $this->date;
     }
-    public function setPlace (string $place): self {
+
+    /**
+     * Set place
+     *
+     * @param string $place
+     *
+     * @return \Device\Entity\Device\Location
+     */
+    public function setPlace($place)
+    {
         $this->place = $place;
 
         return $this;
     }
 
-    public function getResponsible (): string {
-        return $this->responsible;
+    /**
+     * Get place
+     *
+     * @return string
+     */
+    public function getPlace()
+    {
+        return $this->place;
     }
-    public function setResponsible (string $responsible): self {
+
+    /**
+     * Set responsible
+     *
+     * @param string $responsible
+     *
+     * @return \Device\Entity\Device\Location
+     */
+    public function setResponsible($responsible)
+    {
         $this->responsible = $responsible;
 
         return $this;
     }
 
-    public function getDevice (): Device {
-        return $this->device;
+    /**
+     * Get responsible
+     *
+     * @return string
+     */
+    public function getResponsible()
+    {
+        return $this->responsible;
     }
-    public function setDevice (Device $device): self {
-        if (isset($this->device) && ($this->device != $device)) {
-            $this->device->removeLocation($this);
+
+    /**
+     * Set device
+     *
+     * @param \Device\Entity\Device $device
+     * @param boolean $addLocation[true]
+     *
+     * @return \Device\Entity\Device\Location
+     */
+    public function setDevice(\Device\Entity\Device $device = null, $addLocation = true)
+    {
+        if ((null === $device || $this->device !== $device) && null !== $this->device) {
+            $this->device->removeLocation($this, false);
         }
 
         $this->device = $device;
 
-        if ($this->device) {
-            $this->device->addLocation($this);
+        if (true === $addLocation && null !== $this->device) {
+            $this->device->addLocation($this, false);
         }
 
         return $this;
     }
 
+    /**
+     * Get device
+     *
+     * @return \Device\Entity\Device
+     */
+    public function getDevice()
+    {
+        return $this->device;
+    }
+
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
+    public function preUpdate(LifecycleEventArgs $event)
+    {
+        $errors = array();
+
+        if (null == $this->device) {
+            $errors[] = 'Не выбрано устройство!';
+        }
+        if (null == $this->place) {
+            $errors[] = 'Не указано где располагается!';
+        }
+        if (null == $this->responsible) {
+            $errors[] = 'Не указан ответственный!';
+        }
+
+        if (count($errors) > 0) {
+            throw new \Exception(implode('<br />', $errors));
+        }
+    }
 }
 

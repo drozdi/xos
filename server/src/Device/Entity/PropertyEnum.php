@@ -2,121 +2,219 @@
 
 namespace Device\Entity;
 
-
+use Device\Repository\PropertyEnumRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
-use Device\Repository\PropertyEnumRepository;
-
 #[ORM\Table(name: 'd_property_enum')]
-#[ORM\UniqueConstraint(columns: ["property_id", "code"])]
+#[ORM\UniqueConstraint(columns: ["property_id", "value"])]
 #[ORM\Entity(repositoryClass: PropertyEnumRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class PropertyEnum {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
-
-    #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE)]
+    private $id;
+    #[ORM\Column(name: 'x_timestamp', type: Types::DATETIME_MUTABLE, nullable: false, unique: false)]
     #[ORM\Version]
-    private \DateTimeInterface $xTimestamp;
-
+    private $xTimestamp;
     #[ORM\ManyToOne(targetEntity: Property::class, inversedBy: 'enums')]
-    #[ORM\JoinColumn(name: 'property_id', referencedColumnName: 'id', onDelete: "CASCADE")]
-    private Property $property;
+    #[ORM\JoinColumn(name: 'property_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
+    private $property;
+    #[ORM\Column(name: '`default`', type: Types::BOOLEAN, nullable: false, unique: false, options: ['default' => false])]
+    private $default = 0;
+    #[ORM\Column(name: 'value', length: 255, nullable: false, unique: false)]
+    private $value;
+    #[ORM\Column(name: 'name', length: 255, nullable: true, unique: false)]
+    private $name;
+    #[ORM\Column(name: 'sort', type: Types::INTEGER, nullable: false, unique: false, options: ['default' => 100])]
+    private $sort = 100;
 
-    #[ORM\Column(name: 'name', length: 255, nullable: true)]
-    private ?string $name = null;
-
-    #[ORM\Column(name: "code", length: 191)]
-    private string $code;
-
-    #[ORM\Column(name: '`default`', type: Types::BOOLEAN, options: ["default" => false])]
-    private bool $default = false;
-
-    #[ORM\Column(name: 'sort', type: Types::INTEGER, options: ["default" => 100])]
-    private int $sort = 100;
-
-
-    public function getId (): ?int {
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId () {
         return $this->id;
     }
 
-    public function getXTimestamp(?string $format = null): \DateTimeInterface|string {
-        if (null != $format && null != $this->xTimestamp) {
-            return $this->xTimestamp->format($format);
-        }
+    /**
+     * Set xTimestamp
+     *
+     * @param \DateTime $xTimestamp
+     *
+     * @return Property
+     */
+    public function setXTimestamp ($xTimestamp) {
+        $this->xTimestamp = $xTimestamp;
+
+        return $this;
+    }
+
+    /**
+     * Get xTimestamp
+     *
+     * @return \DateTime
+     */
+    public function getXTimestamp () {
         return $this->xTimestamp;
     }
-    public function setXTimestamp(\DateTimeInterface $xTimestamp): self {
-        $this->xTimestamp = $xTimestamp;
+
+    /**
+     * Set property
+     *
+     * @param Property $property
+     * @param boolean $addEnum[true]
+     *
+     * @return PropertyEnum
+     */
+    public function setProperty (Property $property = null, $addEnum = true) {
+        if (null !== $this->property) {
+            $this->property->removeEnum($this, false);
+        }
+
+        $this->property = $property;
+
+        if (true === $addEnum && null !== $this->property) {
+            $this->property->addEnum($this, false);
+        }
+
         return $this;
     }
 
-    public function getProperty (): Property {
+    /**
+     * Get parent
+     *
+     * @return \Device\Entity\Property
+     */
+    public function getProperty () {
         return $this->property;
     }
-    public function setProperty (Property $property): self {
-        if (isset($this->property) && $this->property != $property) {
-            $this->property->removeEnum($this);
-        }
-        $this->property = $property;
-        if ($this->property) {
-            $this->property->addEnum($this);
-        }
+
+    /**
+     * Set default
+     *
+     * @param boolean $default
+     *
+     * @return PropertyEnum
+     */
+    public function setDefault ($default) {
+        $this->default = $default;
+
         return $this;
     }
 
-
-    public function isDefault (): bool {
+    /**
+     * Get default
+     *
+     * @return boolean
+     */
+    public function getDefault () {
         return $this->default;
     }
-    public function setDefault (bool $default): self {
-        $this->default = $default;
+
+    /**
+     * Set value
+     *
+     * @param string $value
+     *
+     * @return \Device\Entity\Property
+     */
+    public function setValue ($value) {
+        $this->value = $value;
+
         return $this;
     }
 
-    public function getCode (): string {
-        return $this->code;
+    /**
+     * Get value
+     *
+     * @return string
+     */
+    public function getValue () {
+        return $this->value;
     }
-    public function setCode (string $code): self {
-        $this->code = $code;
+
+    /**
+     * Set name
+     *
+     * @param string $name
+     *
+     * @return Property
+     */
+    public function setName ($name) {
+        $this->name = $name;
+
         return $this;
     }
 
-    public function getName (): ?string {
+    /**
+     * Get name
+     *
+     * @param boolean $isValue[true]
+     *
+     * @return string
+     */
+    public function getName ($isValue = true) {
+        if (!$this->name && $isValue) {
+            return $this->value.$this->property->getPostfix();
+        }
         return $this->name;
     }
-    public function setName (?string $name = null): self {
-        $this->name = $name;
+
+    /**
+     * Set sort
+     *
+     * @param integer $sort
+     *
+     * @return \Device\Entity\Property
+     */
+    public function setSort ($sort) {
+        $this->sort = $sort;
+
         return $this;
     }
 
-    public function getSort (): int {
+    /**
+     * Get code
+     *
+     * @return integer
+     */
+    public function getSort () {
         return $this->sort;
-    }
-    public function setSort ($sort): self {
-        $this->sort = $sort;
-        return $this;
     }
 
     #[ORM\PrePersist]
-    public function prePersist (): void {
-        $this->setDateCreated(new \DateTime());
-    }
     #[ORM\PreUpdate]
-    public function preUpdate (): void {
+    public function preUpdate (LifecycleEventArgs $event) {
+        $errors = array();
 
-    }
-    #[ORM\PreFlush]
-    public function preFlush (): void {
+        if (null == $this->value) {
+            $errors[] = 'Не ввели значение!';
+        }
+        $criteria = new Criteria();
+        $criteria
+            ->where(Criteria::expr()->neq('id', $this->id))
+            ->andWhere(Criteria::expr()->eq('value', $this->value))
+            ->andWhere(Criteria::expr()->eq('property', $this->property));
+        if ($event->getEntityManager()->getRepository(PropertyEnum::class)->matching($criteria)->count() > 0) {
+            $errors[] = $this->property->getId().' - Такое значение "'.$this->value.'" уже используется!';
+        }
 
+        if (count($errors) > 0) {
+            throw new \Exception(implode('<br />', $errors));
+        }
     }
+
     #[ORM\PreRemove]
-    public function preRemove (): void {
+    public function preRemove (LifecycleEventArgs $event) {
+        $errors = array();
 
+        if (count($errors) > 0) {
+            throw new \Exception(implode('<br />', $errors));
+        }
     }
 }

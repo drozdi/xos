@@ -3,102 +3,168 @@
 namespace Device\Entity\License;
 
 use Device\Entity\Software as BaseSoftware;
-use Device\Entity\License\Software as LicenseSoftware;
-
 use Device\Repository\License\KeyRepository;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
-use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\ArrayCollection;
-
 
 #[ORM\Table(name: 'd_license_key')]
+#[ORM\UniqueConstraint(columns: ['license_software_id', 'software_id', 'type_key'])]
 #[ORM\Entity(repositoryClass: KeyRepository::class)]
-#[ORM\UniqueConstraint(columns: ["license_software_id", "software_id", "type_key"])]
 #[ORM\HasLifecycleCallbacks]
 class Key {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private ?int $id = null;
+    private $id;
 
-    #[ORM\ManyToOne(targetEntity: LicenseSoftware::class, inversedBy: 'keys')]
-    #[ORM\JoinColumn(name: 'license_software_id', referencedColumnName: 'id', onDelete: "CASCADE")]
-    private LicenseSoftware $licenseSoftware;
+    #[ORM\Column(name: 'type_key', length: 191, nullable: false, options: ['default' => "VLK"])]
+    private $typeKey = 'VLK';
+
+    #[ORM\Column(name: 'value', length: 255, nullable: true, unique: false)]
+    private $value;
+
+    #[ORM\Column(name: 'actived', length: 255, nullable: true, unique: false)]
+    private $actived;
+
+    #[ORM\ManyToOne(targetEntity: Software::class, inversedBy: 'keys')]
+    #[ORM\JoinColumn(name: 'license_software_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    private $licenseSoftware;
 
     #[ORM\ManyToOne(targetEntity: BaseSoftware::class)]
-    #[ORM\JoinColumn(name: 'software_id', referencedColumnName: 'id', onDelete: "CASCADE")]
-    private ?BaseSoftware $software = null;
+    #[ORM\JoinColumn(name: 'software_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    private $software;
 
-    #[ORM\Column(name: 'type_key', length: 191, options: ["default" => "VLK"])]
-    private string $typeKey = 'VLK';
-
-    #[ORM\Column(name: 'value', length: 255)]
-    private string $value = '';
-
-    #[ORM\Column(name: 'actived', length: 255)]
-    private string $actived = '';
-
-    public function getId (): ?int {
+    /**
+     * Get id
+     *
+     * @return integer
+     */
+    public function getId () {
         return $this->id;
     }
 
-    public function getSoftware (): ?BaseSoftware {
-        return $this->software;
-    }
-    public function setSoftware (?BaseSoftware $software = null): self {
-        $this->software = $software;
-
-        return $this;
-    }
-
-    public function getTypeKey (): string {
-        return $this->typeKey;
-    }
-    public function setTypeKey (string $typeKey): self {
+    /**
+     * Set typeKey
+     *
+     * @param string $typeKey
+     *
+     * @return \Device\Entity\License\Key
+     */
+    public function setTypeKey ($typeKey) {
         $this->typeKey = $typeKey;
 
         return $this;
     }
 
-    public function getValue (): string {
-        return $this->value;
+    /**
+     * Get typeKey
+     *
+     * @return string
+     */
+    public function getTypeKey () {
+        return $this->typeKey;
     }
-    public function setValue (string $value): self {
+
+    /**
+     * Set value
+     *
+     * @param string $value
+     *
+     * @return Key
+     */
+    public function setValue ($value) {
         $this->value = $value;
 
         return $this;
     }
 
-    public function getActived (): string {
-        return $this->actived;
+    /**
+     * Get value
+     *
+     * @return string
+     */
+    public function getValue () {
+        return $this->value;
     }
-    public function setActived (string $actived): self {
+
+    /**
+     * Set actived
+     *
+     * @param string $actived
+     *
+     * @return Key
+     */
+    public function setActived ($actived) {
         $this->actived = $actived;
 
         return $this;
     }
 
-
-    public function getLicenseSoftware (): LicenseSoftware {
-        return $this->licenseSoftware;
+    /**
+     * Get actived
+     *
+     * @return string
+     */
+    public function getActived () {
+        return $this->actived;
     }
-    public function setLicenseSoftware (LicenseSoftware $licenseSoftware): self {
-        if (isset($this->licenseSoftware) && ($this->licenseSoftware !== $licenseSoftware)) {
-            $this->licenseSoftware->removeKey($this);
+
+    /**
+     * Set licenseSoftware
+     *
+     * @param \Device\Entity\License\Software $licenseSoftware
+     * @param boolean $addKey[true]
+     *
+     * @return \Device\Entity\License\Key
+     */
+    public function setLicenseSoftware (\Device\Entity\License\Software $licenseSoftware = null, $addKey = true) {
+        if ((null === $licenseSoftware || $this->licenseSoftware !== $licenseSoftware) && null !== $this->licenseSoftware) {
+            $this->licenseSoftware->removeKey($this, false);
         }
 
         $this->licenseSoftware = $licenseSoftware;
 
-        if ($this->licenseSoftware) {
-            $this->licenseSoftware->addKey($this);
+        if (true === $addKey && null !== $this->licenseSoftware) {
+            $this->licenseSoftware->addKey($this, false);
         }
 
         return $this;
     }
 
+    /**
+     * Get licenseSoftware
+     *
+     * @return \Device\Entity\License\Software
+     */
+    public function getLicenseSoftware () {
+        return $this->licenseSoftware;
+    }
+
+    /**
+     * Set software
+     *
+     * @param \Device\Entity\Software $software
+     *
+     * @return \Device\Entity\License\Key
+     */
+    public function setSoftware (\Device\Entity\Software $software = null) {
+        $this->software = $software;
+
+        return $this;
+    }
+
+    /**
+     * Get software
+     *
+     * @return \Device\Entity\Software
+     */
+    public function getSoftware () {
+        return $this->software;
+    }
+
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
     public function preUpdate (LifecycleEventArgs $event) {
         $errors = array();
 
@@ -114,10 +180,12 @@ class Key {
             throw new \Exception(implode('<br />', $errors));
         }
     }
+
+    #[ORM\PreRemove]
     public function preRemove (LifecycleEventArgs $event) {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('App\Entity\Device\License')->count(array(
+        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device\License')->count(array(
                 'key' => $this->getId()
             )) > 0) {
             $errors[] = 'Нельзя удалить ключ "'.$this->typeKey.' - '.$this->getValue().'" из лицензии "'.$this->licenseSoftware->getName().'" для программы "'.$this->software->getName().'", пока он используеться!';
