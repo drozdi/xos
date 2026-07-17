@@ -209,6 +209,12 @@ final class UserScopeResolver
             if ($this->hasFullAppAccess($user, $parts[0])) {
                 return !$not;
             }
+
+            $scopePath = implode('.', $parts);
+            $scopeRootRole = 'ROLE_'.strtoupper(str_replace('.', '_', $scopePath)).'_ROOT';
+            if ($this->userHasAnyRole($user, [$scopeRootRole])) {
+                return !$not;
+            }
         }
 
         $scopes = $this->resolve($user);

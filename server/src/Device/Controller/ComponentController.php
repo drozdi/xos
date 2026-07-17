@@ -22,7 +22,7 @@ use Device\Repository\PropertyRepository;
 use Device\Repository\PropertyEnumRepository;
 
 #[Route('/api/device/components')]
-#[Access('device.property')]
+#[Access('device.component')]
 class ComponentController extends AbstractController {
     #[Route('/select', methods: ['POST'])]
     #[Access('can_read')]

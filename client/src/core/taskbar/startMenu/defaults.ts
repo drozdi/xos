@@ -11,6 +11,7 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	tools: 'Средства',
 	games: 'Игры',
 	admin: 'Администрирование',
+	device: 'Устройства',
 	default: 'Приложения',
 };
 
@@ -23,6 +24,14 @@ export const DEFAULT_PINNED_APPS = [
 	'main-groups',
 	'main-ous',
 	'main-claimants',
+	'device-devices',
+	'device-sub-devices',
+	'device-types',
+	'device-properties',
+	'device-components',
+	'device-softwares',
+	'device-licenses',
+	'device-license-keys',
 ];
 
 export const DEFAULT_QUICK_ACTIONS: StartMenuQuickAction[] = [

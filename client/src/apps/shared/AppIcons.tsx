@@ -75,4 +75,87 @@ export function ClaimantIcon({ size = 32 }: { size?: number }) {
 	);
 }
 
+export function DeviceIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<rect x="2" y="3" width="20" height="14" rx="2" />
+			<path d="M8 21h8M12 17v4" />
+		</svg>
+	);
+}
+
+export function SubDeviceIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<rect x="4" y="4" width="16" height="12" rx="1" />
+			<path d="M8 20h8M10 16v4M14 16v4" />
+		</svg>
+	);
+}
+
+export function TypesIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M4 7h16M4 12h10M4 17h6" />
+			<circle cx="18" cy="12" r="3" />
+		</svg>
+	);
+}
+
+export function PropertiesIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M12 3v18M3 12h18" />
+			<circle cx="12" cy="12" r="3" />
+		</svg>
+	);
+}
+
+export function ComponentsIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<rect x="3" y="3" width="7" height="7" />
+			<rect x="14" y="3" width="7" height="7" />
+			<rect x="3" y="14" width="7" height="7" />
+			<path d="M14 17h7" />
+		</svg>
+	);
+}
+
+export function SoftwareIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3" />
+			<path d="M8 21H5a2 2 0 0 1-2-2v-3m18 0v3a2 2 0 0 1-2 2h-3" />
+			<rect x="8" y="8" width="8" height="8" rx="1" />
+		</svg>
+	);
+}
+
+export function SoftwareTypeIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M4 6h16M4 12h16M4 18h10" />
+		</svg>
+	);
+}
+
+export function LicenseIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+			<path d="M14 2v6h6M9 15l2 2 4-4" />
+		</svg>
+	);
+}
+
+export function LicenseKeyIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<circle cx="8" cy="15" r="4" />
+			<path d="M11 15h10M16 12v6" />
+		</svg>
+	);
+}
+
 export type AppIcon = ComponentType<{ size?: number }>;

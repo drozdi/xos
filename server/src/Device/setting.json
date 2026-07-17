@@ -8,7 +8,8 @@
     "device.property": "Устройства: Свойства",
     "device.component": "Устройства: Типы компанентов",
     "device.software": "Устройства: Программы",
-    "device.software.type": "Устройства: Типы программ"
+    "device.software.type": "Устройства: Типы программ",
+    "device.license": "Устройства: Лицензии"
   },
   "map-access": {
     "can_write_off": 16,

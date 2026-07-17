@@ -29,6 +29,27 @@ services:
         resource: '../src/IBlock/'
         exclude:
             - '../src/IBlock/Entity/'
+
+    Device\Controller\:
+        resource: '../src/Device/Controller/'
+        tags: ['controller.service_arguments']
+
+    Device\Repository\:
+        resource: '../src/Device/Repository/'
+
+    Device\Service\DeviceManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+    Device\Service\LicenseManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+    Device\Service\SoftwareManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
     Main\Service\MainManager:
         public: true
         lazy: true

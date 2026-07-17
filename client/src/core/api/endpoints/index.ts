@@ -35,4 +35,4 @@ export {
 	userListItemSchema,
 	userListResponseSchema,
 } from './main';
-export { deviceEndpoints } from './device';
+export { deviceEndpoints, deviceApi, subDeviceApi, deviceTypeApi, devicePropertyApi, deviceComponentApi, deviceSoftwareApi, deviceSoftwareTypeApi, deviceLicenseApi, deviceLicenseKeyApi } from './deviceApi';

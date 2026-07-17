@@ -2,6 +2,7 @@
 
 namespace Device\Controller;
 
+use App\Attribute\Access;
 use Device\Service\DeviceManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,8 +27,10 @@ use Device\Repository\Device\LocationRepository;
 use Main\Service\FileManager;
 
 #[Route('/api/device/accounting')]
+#[Access('device.device')]
 class AccountingController extends AbstractController {
     #[Route('/list/select', methods: ['POST'])]
+    #[Access('can_read')]
     public function select (Request $request, AccountingRepository $AccountingRepository): JsonResponse {
         $req = array_merge([
             't' => "list",
@@ -66,6 +69,7 @@ class AccountingController extends AbstractController {
         ]);
     }
     #[Route('/list', methods: ['POST'])]
+    #[Access('can_read')]
     public function list (Request $request, AccountingRepository $AccountingRepository): JsonResponse {
         /*throw $this->createNotFoundException(
             'No product found for id'

@@ -20,7 +20,7 @@ function GroupSection({
 	group: StartMenuAppGroup;
 	onLaunch: (appId: string) => void;
 }) {
-	const [opened, setOpened] = useState(true);
+	const [opened, setOpened] = useState(false);
 
 	return (
 		<Box>
