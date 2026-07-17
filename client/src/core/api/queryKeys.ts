@@ -30,6 +30,33 @@ export const queryKeys = {
 		claimants: (filters: ListRequest) => ['main', 'claimants', filters] as const,
 		claimant: (id: number) => ['main', 'claimant', id] as const,
 	},
+	schooltask: {
+		subjects: (filters: ListRequest) => ['schooltask', 'subjects', filters] as const,
+		subject: (id: number) => ['schooltask', 'subject', id] as const,
+		subjectTeachers: ['schooltask', 'subject', 'teachers'] as const,
+		classes: (filters: ListRequest) => ['schooltask', 'classes', filters] as const,
+		class: (id: number) => ['schooltask', 'class', id] as const,
+		classParallels: ['schooltask', 'class', 'parallels'] as const,
+		classSubjects: ['schooltask', 'class', 'subjects-options'] as const,
+		classTutors: ['schooltask', 'class', 'tutors'] as const,
+		classPupils: ['schooltask', 'class', 'pupils'] as const,
+		calendarClasses: ['schooltask', 'calendar', 'classes'] as const,
+		calendarInfo: (classId: number) => ['schooltask', 'calendar', 'info', classId] as const,
+		studentEvents: (classId: number, range: { start: string; end: string }) =>
+			['schooltask', 'calendar', 'student', classId, range] as const,
+		studentEvent: (classId: number, id: number) =>
+			['schooltask', 'calendar', 'student', classId, id] as const,
+		editorEvents: (classId: number, range: { start: string; end: string }) =>
+			['schooltask', 'calendar', 'editor', classId, range] as const,
+		editorSubgroups: (classId: number) => ['schooltask', 'calendar', 'editor', 'subgroups', classId] as const,
+		editorTeachers: (classId: number, subjectId: number) =>
+			['schooltask', 'calendar', 'editor', 'teachers', classId, subjectId] as const,
+		editorEvent: (classId: number, id: number) =>
+			['schooltask', 'calendar', 'editor', classId, id] as const,
+		teacherEvents: (range: { start: string; end: string }) =>
+			['schooltask', 'calendar', 'teacher', range] as const,
+		teacherEvent: (id: number) => ['schooltask', 'calendar', 'teacher', id] as const,
+	},
 	device: {
 		list: (filters: ListRequest) => ['device', 'list', filters] as const,
 		detail: (id: number) => ['device', 'detail', id] as const,

@@ -12,6 +12,7 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	games: 'Игры',
 	admin: 'Администрирование',
 	device: 'Устройства',
+	schooltask: 'Школа',
 	default: 'Приложения',
 };
 

@@ -50,6 +50,26 @@ services:
         calls:
             - setContainer: ['@service_container']
 
+    SchoolTask\Controller\:
+        resource: '../src/SchoolTask/Controller/'
+        tags: ['controller.service_arguments']
+
+    SchoolTask\Repository\:
+        resource: '../src/SchoolTask/Repository/'
+
+    SchoolTask\Service\SchoolTaskManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+    SchoolTask\Service\EventManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
+    Main\Controller\FileServeController:
+        arguments:
+            $uploadDir: '%upload_dir%'
+
     Main\Service\MainManager:
         public: true
         lazy: true

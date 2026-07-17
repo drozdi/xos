@@ -158,4 +158,31 @@ export function LicenseKeyIcon({ size = 32 }: { size?: number }) {
 	);
 }
 
+export function CalendarIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<rect x="3" y="4" width="18" height="18" rx="2" />
+			<path d="M16 2v4M8 2v4M3 10h18" />
+		</svg>
+	);
+}
+
+export function SubjectIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+			<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+		</svg>
+	);
+}
+
+export function ClassIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+			<path d="M9 22V12h6v10" />
+		</svg>
+	);
+}
+
 export type AppIcon = ComponentType<{ size?: number }>;

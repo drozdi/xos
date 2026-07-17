@@ -1,0 +1,29 @@
+{
+  "name": "SchoolTask",
+  "claimant": {
+    "schooltask": "Школьные задания",
+    "schooltask.subject": "Школьные задания: Предметы",
+    "schooltask.class": "Школьные задания: Классы",
+    "schooltask.event": "Школьные задания: Календарь"
+  },
+  "map-access": {
+    "subject": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "class": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "event": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    }
+  }
+}

@@ -19,7 +19,7 @@ class FileManager extends AbstractManager {
         return $this->getEntityManager()->getRepository(MainFile::class);
     }
 
-    public function upload (string $field, string $module, ?string $name = null): array {
+    public function upload (string $field, string $module, ?string $name = null, ?string $customSubDir = null): array {
         $arField = explode('[', $field);
         $files = $this->getRequest()->files->get($arField[0]);
         for ($i = 1, $cnt = count($arField); $i < $cnt; $i++) {
@@ -38,9 +38,11 @@ class FileManager extends AbstractManager {
             }
             $fileName = $file->getClientOriginalName();
             $fileExt = '.'.$file->getClientOriginalExtension();
-            $subDir = date("Y.m/d");
-
+            $subDir = $customSubDir ?: date('Y.m/d');
             $dir = $uploadDir.'/'.$module.'/'.$subDir.'/';
+            if (!is_dir($dir)) {
+                mkdir($dir, 0775, true);
+            }
             while (file_exists($dir.$fileName)) {
                 $fileName = substr(md5(mt_rand()), 0, 10).$fileExt;
             }

@@ -155,6 +155,93 @@ final class UserScopeResolver
         return $this->canMainUser($user, 'can_role.main.user');
     }
 
+    public function canCreateSchooltaskSubject(User $user): bool
+    {
+        return $this->canSchooltaskSubject($user, 'can_create.schooltask.subject');
+    }
+
+    public function canReadSchooltaskSubject(User $user): bool
+    {
+        return $this->canSchooltaskSubject($user, 'can_read.schooltask.subject');
+    }
+
+    public function canUpdateSchooltaskSubject(User $user): bool
+    {
+        return $this->canSchooltaskSubject($user, 'can_update.schooltask.subject');
+    }
+
+    public function canDeleteSchooltaskSubject(User $user): bool
+    {
+        return $this->canSchooltaskSubject($user, 'can_delete.schooltask.subject');
+    }
+
+    public function canCreateSchooltaskClass(User $user): bool
+    {
+        return $this->canSchooltaskClass($user, 'can_create.schooltask.class');
+    }
+
+    public function canReadSchooltaskClass(User $user): bool
+    {
+        return $this->canSchooltaskClass($user, 'can_read.schooltask.class');
+    }
+
+    public function canUpdateSchooltaskClass(User $user): bool
+    {
+        return $this->canSchooltaskClass($user, 'can_update.schooltask.class');
+    }
+
+    public function canDeleteSchooltaskClass(User $user): bool
+    {
+        return $this->canSchooltaskClass($user, 'can_delete.schooltask.class');
+    }
+
+    public function canCreateSchooltaskEvent(User $user): bool
+    {
+        return $this->canSchooltaskEvent($user, 'can_create.schooltask.event');
+    }
+
+    public function canReadSchooltaskEvent(User $user): bool
+    {
+        return $this->canSchooltaskEvent($user, 'can_read.schooltask.event');
+    }
+
+    public function canUpdateSchooltaskEvent(User $user): bool
+    {
+        return $this->canSchooltaskEvent($user, 'can_update.schooltask.event');
+    }
+
+    public function canDeleteSchooltaskEvent(User $user): bool
+    {
+        return $this->canSchooltaskEvent($user, 'can_delete.schooltask.event');
+    }
+
+    private function canSchooltaskSubject(User $user, string $scope): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_SCHOOLTASK_ROOT', 'ROLE_SCHOOLTASK_SUBJECT_ROOT'])) {
+            return true;
+        }
+
+        return $this->checkHasScope($user, $scope, false);
+    }
+
+    private function canSchooltaskClass(User $user, string $scope): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_SCHOOLTASK_ROOT', 'ROLE_SCHOOLTASK_CLASS_ROOT'])) {
+            return true;
+        }
+
+        return $this->checkHasScope($user, $scope, false);
+    }
+
+    private function canSchooltaskEvent(User $user, string $scope): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_SCHOOLTASK_ROOT', 'ROLE_SCHOOLTASK_EVENT_ROOT'])) {
+            return true;
+        }
+
+        return $this->checkHasScope($user, $scope, false);
+    }
+
     private function canMainOu(User $user, string $scope): bool
     {
         if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_OU_ROOT'])) {
