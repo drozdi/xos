@@ -35,6 +35,7 @@ export function MainLayout() {
 
 	return (
 		<AppShell
+			mode="static"
 			layout="alt"
 			header={{ height: 52 }}
 			footer={{ height: 48 }}

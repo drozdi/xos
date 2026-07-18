@@ -9,7 +9,16 @@ import { queryClient } from '@inccom/shared/api/query-client';
 export default function IncComApp() {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<Box h="100%" style={{ minHeight: 0, overflow: 'hidden' }}>
+			<Box
+				style={{
+					position: 'absolute',
+					inset: 0,
+					display: 'flex',
+					flexDirection: 'column',
+					minHeight: 0,
+					overflow: 'hidden',
+				}}
+			>
 				<MemoryRouter initialEntries={['/accounts']}>
 					<AppLoader>
 						<AppRouters />
