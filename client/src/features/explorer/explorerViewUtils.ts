@@ -33,6 +33,8 @@ export function getExplorerEntryIcon(entry: ExplorerEntry): ComponentType<{ size
 			return IconFileZip;
 		case 'text':
 			return IconFileText;
+		case 'markdown':
+			return IconFileText;
 		default:
 			return IconFile;
 	}
@@ -52,6 +54,8 @@ export function getExplorerEntryIconColor(entry: ExplorerEntry): string {
 			return 'var(--mantine-color-pink-6)';
 		case 'archive':
 			return 'var(--mantine-color-orange-6)';
+		case 'markdown':
+			return 'var(--mantine-color-indigo-6)';
 		case 'text':
 			return 'var(--mantine-color-blue-6)';
 		default:

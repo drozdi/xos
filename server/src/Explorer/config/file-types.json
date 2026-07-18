@@ -1,7 +1,8 @@
 {
 	"types": {
 		"folder": { "label": "Папка", "extensions": [] },
-		"text": { "label": "Текст", "extensions": ["txt", "md", "log", "json", "xml", "csv", "yml", "yaml", "ini", "php", "js", "ts", "tsx", "jsx", "css", "scss", "html", "htm"] },
+		"text": { "label": "Текст", "extensions": ["txt", "log", "json", "xml", "csv", "yml", "yaml", "ini", "php", "js", "ts", "tsx", "jsx", "css", "scss", "html", "htm"] },
+		"markdown": { "label": "Markdown", "extensions": ["md", "markdown", "mdown"] },
 		"image": { "label": "Изображение", "extensions": ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"] },
 		"video": { "label": "Видео", "extensions": ["mp4", "webm", "ogg", "avi", "mkv", "mov"] },
 		"audio": { "label": "Аудио", "extensions": ["mp3", "wav", "ogg", "flac", "aac", "m4a"] },
@@ -11,6 +12,7 @@
 	},
 	"openWith": {
 		"text": ["explorer-notepad"],
+		"markdown": ["explorer-markdown-viewer"],
 		"image": ["explorer-image-viewer"],
 		"video": ["explorer-video-player"],
 		"audio": ["explorer-audio-player"],
