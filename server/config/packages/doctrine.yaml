@@ -54,6 +54,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/IncCom/Entity'
                 prefix: 'IncCom\Entity'
                 alias: IncCom
+            Explorer:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Explorer/Entity'
+                prefix: 'Explorer\Entity'
+                alias: Explorer
         controller_resolver:
             auto_mapping: false
 

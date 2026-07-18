@@ -5,6 +5,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     upload_dir: '%kernel.project_dir%/var/uploads'
+    explorer_img_dir: '%kernel.project_dir%/../img'
+    explorer_home_dir: '%kernel.project_dir%/var/explorer/home'
 
 services:
     # default configuration for services in *this* file
@@ -76,6 +78,29 @@ services:
         lazy: true
         calls:
             - setContainer: ['@service_container']
+
+    Explorer\Controller\:
+        resource: '../src/Explorer/Controller/'
+        tags: ['controller.service_arguments']
+
+    Explorer\Repository\:
+        resource: '../src/Explorer/Repository/'
+
+    Explorer\Service\:
+        resource: '../src/Explorer/Service/'
+        exclude:
+            - '../src/Explorer/Service/FileTypeRegistry.php'
+            - '../src/Explorer/Service/DiskRegistry.php'
+
+    Explorer\Service\FileTypeRegistry:
+        arguments:
+            $configPath: '%kernel.project_dir%/src/Explorer/config/file-types.json'
+
+    Explorer\Service\DiskRegistry:
+        arguments:
+            $uploadDir: '%upload_dir%'
+            $imgDir: '%explorer_img_dir%'
+            $homeBaseDir: '%explorer_home_dir%'
 
     Main\Controller\FileServeController:
         arguments:

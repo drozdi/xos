@@ -1,0 +1,11 @@
+{
+  "name": "Explorer",
+  "claimant": {
+    "explorer": "Файловый менеджер"
+  },
+  "map-access": {
+    "can_read": 1,
+    "can_write": 2,
+    "can_delete": 4
+  }
+}

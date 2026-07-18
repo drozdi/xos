@@ -1,0 +1,168 @@
+import { Box, NavLink, ScrollArea, Stack, Text } from '@mantine/core';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState, type ReactNode } from 'react';
+
+import { queryKeys } from '@/core/api/queryKeys';
+
+import { fetchExplorerTree, type ExplorerDisk } from '../explorerApi';
+
+interface TreeNode {
+	path?: string;
+	name: string;
+	relativePath?: string;
+	type?: string;
+	children?: TreeNode[];
+}
+
+interface ExplorerSidebarProps {
+	disks: ExplorerDisk[];
+	currentPath: string;
+	onNavigate: (path: string) => void;
+}
+
+function parseDisk(path: string) {
+	const match = /^([a-z0-9_-]+):\/\//i.exec(path);
+	return match?.[1]?.toLowerCase() ?? 'home';
+}
+
+function nodePath(diskRoot: string, node: TreeNode): string {
+	if (node.path) {
+		return node.path.endsWith('://') || node.path.endsWith('/') ? node.path : `${node.path}/`;
+	}
+	const relative = node.relativePath ?? node.name;
+	if (!relative || relative === '/') {
+		return diskRoot;
+	}
+	const disk = diskRoot.replace(/\/+$/, '');
+	return `${disk}/${relative}/`;
+}
+
+function DiskFolderTree({
+	diskRoot,
+	currentPath,
+	onNavigate,
+}: {
+	diskRoot: string;
+	currentPath: string;
+	onNavigate: (path: string) => void;
+}) {
+	const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+	const treeQuery = useQuery({
+		queryKey: queryKeys.explorer.tree(diskRoot, 2),
+		queryFn: () => fetchExplorerTree(diskRoot, 2) as Promise<TreeNode>,
+	});
+
+	const toggle = (path: string) => {
+		setExpanded((prev) => ({ ...prev, [path]: !prev[path] }));
+	};
+
+	const renderNode = (node: TreeNode, depth = 0): ReactNode => {
+		if (node.type !== 'folder' && !(node.children?.length ?? 0)) {
+			return null;
+		}
+
+		const path = nodePath(diskRoot, node);
+		if (path === diskRoot && depth === 0) {
+			return (node.children ?? [])
+				.filter((child) => child.type === 'folder')
+				.map((child) => renderNode(child, depth + 1));
+		}
+
+		const label = node.name === '/' ? 'Корень' : node.name;
+		const isExpanded = expanded[path] ?? false;
+		const isActive = currentPath === path || (path !== diskRoot && currentPath.startsWith(path));
+
+		return (
+			<NavLink
+				key={path}
+				label={label}
+				active={isActive}
+				opened={isExpanded}
+				onChange={() => toggle(path)}
+				onClick={() => onNavigate(path)}
+				childrenOffset={12}
+			>
+				{(node.children ?? [])
+					.filter((child) => child.type === 'folder')
+					.map((child) => renderNode(child, depth + 1))}
+			</NavLink>
+		);
+	};
+
+	if (treeQuery.isLoading) {
+		return (
+			<Text size="xs" c="dimmed" pl="md">
+				Загрузка…
+			</Text>
+		);
+	}
+
+	if (!treeQuery.data) {
+		return (
+			<Text size="xs" c="dimmed" pl="md">
+				Пусто
+			</Text>
+		);
+	}
+
+	return <Stack gap={0}>{renderNode(treeQuery.data)}</Stack>;
+}
+
+export function ExplorerSidebar({ disks, currentPath, onNavigate }: ExplorerSidebarProps) {
+	const activeDisk = parseDisk(currentPath);
+	const [expandedDisks, setExpandedDisks] = useState<Record<string, boolean>>({});
+
+	useEffect(() => {
+		setExpandedDisks((prev) => ({ ...prev, [activeDisk]: true }));
+	}, [activeDisk]);
+
+	const toggleDisk = (code: string) => {
+		setExpandedDisks((prev) => ({ ...prev, [code]: !prev[code] }));
+	};
+
+	return (
+		<Box
+			w={260}
+			style={{
+				flexShrink: 0,
+				alignSelf: 'stretch',
+				minHeight: 0,
+				display: 'flex',
+				flexDirection: 'column',
+				overflow: 'hidden',
+				borderRight: '1px solid var(--mantine-color-default-border)',
+			}}
+		>
+			<ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto" offsetScrollbars>
+				<Stack gap={4} p="xs" pr="sm">
+					<Text size="xs" c="dimmed" tt="uppercase">
+						Диски
+					</Text>
+					{disks.map((disk) => {
+						const diskRoot = `${disk.code}://`;
+						const isExpanded = expandedDisks[disk.code] ?? false;
+						const isActive = currentPath.startsWith(diskRoot);
+
+						return (
+							<NavLink
+								key={disk.code}
+								label={disk.label}
+								description={disk.readOnly ? `${disk.code} · только чтение` : disk.code}
+								active={isActive}
+								opened={isExpanded}
+								onChange={() => toggleDisk(disk.code)}
+								onClick={() => onNavigate(diskRoot)}
+								childrenOffset={12}
+							>
+								{isExpanded && (
+									<DiskFolderTree diskRoot={diskRoot} currentPath={currentPath} onNavigate={onNavigate} />
+								)}
+							</NavLink>
+						);
+					})}
+				</Stack>
+			</ScrollArea>
+		</Box>
+	);
+}

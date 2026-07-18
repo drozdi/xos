@@ -5,6 +5,8 @@
 .osp
 .pnp.js
 node_modules
+xgn.explorer
+xos.explorer
 ###> symfony/framework-bundle ###
 /server/config/secrets/prod/prod.decrypt.private.php
 /server/public/bundles/
@@ -18,6 +20,8 @@ node_modules
 /_SYNCAPP/
 /.idea/
 /.osp/
+/xgn.explorer
+/xos.explorer
 ###< symfony/webpack-encore-bundle ###
 
 # testing

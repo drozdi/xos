@@ -80,4 +80,12 @@ export const queryKeys = {
 		licenseKeys: (filters: ListRequest) => ['device', 'licenseKeys', filters] as const,
 		licenseKey: (id: number) => ['device', 'licenseKey', id] as const,
 	},
+	explorer: {
+		config: ['explorer', 'config'] as const,
+		list: (path: string, sortBy: string, sortDir: string) =>
+			['explorer', 'list', path, sortBy, sortDir] as const,
+		tree: (path: string, depth: number) => ['explorer', 'tree', path, depth] as const,
+		trash: (disk: string) => ['explorer', 'trash', disk] as const,
+		disks: ['explorer', 'disks'] as const,
+	},
 } as const;

@@ -1,0 +1,463 @@
+import { ActionIcon, Box, Button, Group, Stack, TextInput } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+
+import { queryKeys } from '@/core/api/queryKeys';
+
+import { ExplorerPathBar } from './components/ExplorerPathBar';
+import { ConflictDialog, type ConflictPolicy, type ConflictState } from './components/ConflictDialog';
+import { ExplorerFileList } from './components/ExplorerFileList';
+import { ExplorerFooter } from './components/ExplorerFooter';
+import { ExplorerToolbar } from './components/ExplorerToolbar';
+import { ExplorerSidebar } from './components/ExplorerSidebar';
+import { ExplorerUserDisksModal } from './ExplorerUserDisksModal';
+import {
+	copyExplorerItem,
+	createExplorerFolder,
+	deleteExplorerItem,
+	emptyExplorerTrash,
+	fetchExplorerConfig,
+	fetchExplorerList,
+	fetchExplorerTrash,
+	isTargetExistsError,
+	moveExplorerItem,
+	packExplorerArchive,
+	renameExplorerItem,
+	restoreExplorerTrashItem,
+	unpackExplorerArchive,
+	uploadExplorerFile,
+	type ExplorerEntry,
+	type ExplorerSortBy,
+	type ExplorerSortDir,
+} from './explorerApi';
+import { useExplorerClipboardStore } from './explorerClipboardStore';
+import { useExplorerHistory } from './hooks/useExplorerHistory';
+import { useExplorerSelection } from './hooks/useExplorerSelection';
+import { getOpenWithAppsForEntry, openVfsPathWithApp } from './openWithRegistry';
+
+function parseDisk(path: string) {
+	const match = /^([a-z0-9_-]+):\/\//i.exec(path);
+	return match?.[1]?.toLowerCase() ?? 'home';
+}
+
+interface ExplorerWorkspaceProps {
+	initialPath?: string;
+}
+
+export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspaceProps) {
+	const {
+		currentPath,
+		setCurrentPath,
+		canGoBack,
+		canGoForward,
+		goBack,
+		goForward,
+	} = useExplorerHistory(initialPath);
+	const [viewMode, setViewMode] = useState<'normal' | 'trash'>('normal');
+	const [sortBy, setSortBy] = useState<ExplorerSortBy>('name');
+	const [sortDir, setSortDir] = useState<ExplorerSortDir>('asc');
+	const [newFolderOpened, { open: openNewFolder, close: closeNewFolder }] = useDisclosure(false);
+	const [disksOpened, { open: openDisks, close: closeDisks }] = useDisclosure(false);
+	const [newFolderName, setNewFolderName] = useState('');
+	const [conflict, setConflict] = useState<ConflictState | null>(null);
+	const [applyToAll, setApplyToAll] = useState(false);
+	const [conflictQueue, setConflictQueue] = useState<Array<{ source: string; target: string; mode: 'copy' | 'move' }>>([]);
+	const queryClient = useQueryClient();
+	const clipboard = useExplorerClipboardStore((state) => state.clipboard);
+	const setClipboard = useExplorerClipboardStore((state) => state.setClipboard);
+
+	const diskRoot = `${parseDisk(currentPath)}://`;
+	const isTrashView = viewMode === 'trash';
+
+	const configQuery = useQuery({
+		queryKey: queryKeys.explorer.config,
+		queryFn: fetchExplorerConfig,
+	});
+
+	const listQuery = useQuery({
+		queryKey: isTrashView
+			? queryKeys.explorer.trash(diskRoot)
+			: queryKeys.explorer.list(currentPath, sortBy, sortDir),
+		queryFn: () =>
+			isTrashView ? fetchExplorerTrash(diskRoot).then((data) => ({ items: data.items })) : fetchExplorerList(currentPath, sortBy, sortDir),
+	});
+
+	const items = listQuery.data?.items ?? [];
+	const rows = useMemo(
+		() =>
+			items.map((entry) => ({
+				...entry,
+				path: entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`,
+			})),
+		[currentPath, items],
+	);
+
+	const { selected, setSelected, handleSelect, clearSelection } = useExplorerSelection(rows);
+
+	const invalidateCurrent = async () => {
+		if (isTrashView) {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.explorer.trash(diskRoot) });
+			return;
+		}
+		await queryClient.invalidateQueries({ queryKey: queryKeys.explorer.list(currentPath, sortBy, sortDir) });
+		await queryClient.invalidateQueries({ queryKey: ['explorer', 'tree'] });
+	};
+
+	const runTransfer = async (
+		sourcePath: string,
+		targetPath: string,
+		mode: 'copy' | 'move',
+		overwrite = false,
+	) => {
+		if (mode === 'copy') {
+			await copyExplorerItem(sourcePath, targetPath, overwrite);
+		} else {
+			await moveExplorerItem(sourcePath, targetPath, overwrite);
+		}
+	};
+
+	const processTransferQueue = async (
+		queue: Array<{ source: string; target: string; mode: 'copy' | 'move' }>,
+		startIndex = 0,
+		defaultPolicy?: ConflictPolicy,
+	) => {
+		for (let index = startIndex; index < queue.length; index += 1) {
+			const item = queue[index]!;
+			try {
+				await runTransfer(item.source, item.target, item.mode, defaultPolicy === 'replace');
+			} catch (error) {
+				if (!isTargetExistsError(error)) {
+					throw error;
+				}
+				if (defaultPolicy === 'replace') {
+					await runTransfer(item.source, item.target, item.mode, true);
+					continue;
+				}
+				if (defaultPolicy === 'skip') {
+					continue;
+				}
+				if (defaultPolicy === 'rename') {
+					const renamed = `${item.target}-${Date.now()}`;
+					await runTransfer(item.source, renamed, item.mode, false);
+					continue;
+				}
+				setConflictQueue(queue);
+				setConflict({
+					source: item.source,
+					target: item.target,
+					message: 'Файл с таким именем уже существует.',
+				});
+				return;
+			}
+		}
+		setConflictQueue([]);
+		setConflict(null);
+		await invalidateCurrent();
+	};
+
+	const pasteMutation = useMutation({
+		mutationFn: async () => {
+			if (!clipboard) {
+				return;
+			}
+			const destBase = currentPath.endsWith('://') ? currentPath : `${currentPath.replace(/\/+$/, '')}/`;
+			const queue = clipboard.paths.map((sourcePath) => {
+				const name = sourcePath.split('/').pop() ?? 'item';
+				return {
+					source: sourcePath,
+					target: `${destBase}${name}`,
+					mode: clipboard.mode === 'copy' ? ('copy' as const) : ('move' as const),
+				};
+			});
+			await processTransferQueue(queue);
+		},
+	});
+
+	const mkdirMutation = useMutation({
+		mutationFn: (name: string) => {
+			const base = currentPath.endsWith('://') ? currentPath : `${currentPath.replace(/\/+$/, '')}/`;
+			return createExplorerFolder(`${base}${name}`);
+		},
+		onSuccess: async () => {
+			closeNewFolder();
+			setNewFolderName('');
+			await invalidateCurrent();
+		},
+	});
+
+	const renameMutation = useMutation({
+		mutationFn: ({ path, newName }: { path: string; newName: string }) => renameExplorerItem(path, newName),
+		onSuccess: invalidateCurrent,
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: (path: string) => deleteExplorerItem(path, isTrashView),
+		onSuccess: async () => {
+			clearSelection();
+			await invalidateCurrent();
+		},
+	});
+
+	const uploadMutation = useMutation({
+		mutationFn: (file: File) => uploadExplorerFile(currentPath, file),
+		onSuccess: invalidateCurrent,
+	});
+
+	const packMutation = useMutation({
+		mutationFn: async () => {
+			const archiveName = window.prompt('Имя архива', 'archive.zip');
+			if (!archiveName) {
+				return null;
+			}
+			const normalizedName = archiveName.endsWith('.zip') ? archiveName : `${archiveName}.zip`;
+			const destBase = currentPath.endsWith('://') ? currentPath : `${currentPath.replace(/\/+$/, '')}/`;
+			return packExplorerArchive(selected, `${destBase}${normalizedName}`);
+		},
+		onSuccess: async (result) => {
+			if (!result) {
+				return;
+			}
+			notifications.show({ message: 'Архив создан', color: 'green' });
+			await invalidateCurrent();
+		},
+	});
+
+	const unpackMutation = useMutation({
+		mutationFn: async () => {
+			const archivePath = selected[0];
+			if (!archivePath) {
+				return null;
+			}
+			const normalized = archivePath.replace(/\/+$/, '');
+			const slash = normalized.lastIndexOf('/');
+			const folder = slash >= 0 ? normalized.slice(0, slash + 1) : `${normalized}/`;
+			const fileName = slash >= 0 ? normalized.slice(slash + 1) : normalized;
+			return unpackExplorerArchive(archivePath, `${folder}${fileName.replace(/\.zip$/i, '')}/`);
+		},
+		onSuccess: async (result) => {
+			if (!result) {
+				return;
+			}
+			notifications.show({ message: `Распаковано: ${result.extracted}`, color: 'green' });
+			await invalidateCurrent();
+		},
+	});
+
+	const restoreMutation = useMutation({
+		mutationFn: restoreExplorerTrashItem,
+		onSuccess: async () => {
+			clearSelection();
+			await invalidateCurrent();
+			notifications.show({ message: 'Восстановлено', color: 'green' });
+		},
+	});
+
+	const emptyTrashMutation = useMutation({
+		mutationFn: () => emptyExplorerTrash(diskRoot),
+		onSuccess: async () => {
+			clearSelection();
+			await invalidateCurrent();
+			notifications.show({ message: 'Корзина очищена', color: 'green' });
+		},
+	});
+
+	const currentDisk = configQuery.data?.disks.find((disk) => disk.code === parseDisk(currentPath));
+
+	const navigateTo = (path: string) => {
+		setViewMode('normal');
+		setCurrentPath(path.endsWith('://') ? path : path.endsWith('/') ? path : `${path}/`);
+		clearSelection();
+	};
+
+	const openEntry = async (entry: ExplorerEntry) => {
+		const path = entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`;
+		if (entry.type === 'folder') {
+			navigateTo(path);
+			return;
+		}
+		const apps = getOpenWithAppsForEntry(entry);
+		if (apps.length > 0) {
+			await openVfsPathWithApp(apps[0]!, path, entry.name);
+			return;
+		}
+		notifications.show({ message: 'Нет приложения для этого типа файла', color: 'yellow' });
+	};
+
+	const handleDelete = async () => {
+		for (const path of selected) {
+			await deleteMutation.mutateAsync(path);
+		}
+	};
+
+	const handleRename = async () => {
+		const path = selected[0];
+		if (!path) {
+			return;
+		}
+		const newName = window.prompt('Новое имя');
+		if (!newName) {
+			return;
+		}
+		await renameMutation.mutateAsync({ path, newName });
+	};
+
+	const handleRestore = async () => {
+		for (const path of selected) {
+			await restoreMutation.mutateAsync(path);
+		}
+	};
+
+	const handleConflictResolve = async (policy: ConflictPolicy) => {
+		if (!conflict) {
+			return;
+		}
+		const currentIndex = conflictQueue.findIndex((item) => item.target === conflict.target);
+		const mode = conflictQueue[currentIndex]?.mode ?? 'copy';
+		try {
+			if (policy === 'replace') {
+				await runTransfer(conflict.source, conflict.target, mode, true);
+			} else if (policy === 'rename') {
+				await runTransfer(conflict.source, `${conflict.target}-${Date.now()}`, mode, false);
+			}
+			const nextIndex = currentIndex + 1;
+			if (applyToAll) {
+				await processTransferQueue(conflictQueue, nextIndex, policy);
+				return;
+			}
+			await processTransferQueue(conflictQueue, nextIndex);
+		} catch {
+			notifications.show({ message: 'Ошибка операции', color: 'red' });
+		}
+	};
+
+	const menuActions = {
+		open: openEntry,
+		copy: () => setClipboard({ mode: 'copy', paths: selected }),
+		cut: () => setClipboard({ mode: 'cut', paths: selected }),
+		paste: () => pasteMutation.mutate(),
+		delete: () => void handleDelete(),
+		rename: () => void handleRename(),
+		pack: () => packMutation.mutate(),
+		unpack: () => unpackMutation.mutate(),
+		restore: () => void handleRestore(),
+		emptyTrash: () => emptyTrashMutation.mutate(),
+		openWith: (appId: string, path: string, name: string) => openVfsPathWithApp(appId, path, name),
+	};
+
+	return (
+		<Stack h="100%" gap={0} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+			<ExplorerToolbar
+				currentDiskCode={parseDisk(currentPath)}
+				sortBy={sortBy}
+				sortDir={sortDir}
+				selectedCount={selected.length}
+				clipboardCount={clipboard?.paths.length ?? 0}
+				isTrashView={isTrashView}
+				readOnly={Boolean(currentDisk?.readOnly)}
+				isPending={pasteMutation.isPending || packMutation.isPending || unpackMutation.isPending}
+				onDiskChange={navigateTo}
+				onSortByChange={setSortBy}
+				onSortDirChange={setSortDir}
+				onNewFolder={openNewFolder}
+				onUpload={(file) => void uploadMutation.mutateAsync(file)}
+				onCopy={menuActions.copy}
+				onCut={menuActions.cut}
+				onPaste={menuActions.paste}
+				onDelete={menuActions.delete}
+				onRename={menuActions.rename}
+				onPack={menuActions.pack}
+				onUnpack={menuActions.unpack}
+				onOpenDisks={openDisks}
+				onOpenTrash={() => {
+					setViewMode('trash');
+					clearSelection();
+				}}
+				onRestore={menuActions.restore}
+				onEmptyTrash={menuActions.emptyTrash}
+			/>
+
+			{newFolderOpened && (
+				<Group px="sm" py={4} style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
+					<TextInput
+						size="xs"
+						placeholder="Имя папки"
+						value={newFolderName}
+						onChange={(event) => setNewFolderName(event.currentTarget.value)}
+						onKeyDown={(event) => {
+							if (event.key === 'Enter' && newFolderName) {
+								mkdirMutation.mutate(newFolderName);
+							}
+						}}
+					/>
+					<Button size="xs" onClick={() => newFolderName && mkdirMutation.mutate(newFolderName)} loading={mkdirMutation.isPending}>
+						Создать
+					</Button>
+					<ActionIcon variant="subtle" onClick={closeNewFolder}>
+						×
+					</ActionIcon>
+				</Group>
+			)}
+
+			<Box style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+				{!isTrashView && (
+					<ExplorerSidebar
+						disks={configQuery.data?.disks ?? []}
+						currentPath={currentPath}
+						onNavigate={navigateTo}
+					/>
+				)}
+				<Box
+					style={{
+						flex: 1,
+						minHeight: 0,
+						minWidth: 0,
+						display: 'flex',
+						flexDirection: 'column',
+						overflow: 'hidden',
+					}}
+				>
+					<ExplorerPathBar
+						path={currentPath}
+						isTrashView={isTrashView}
+						canGoBack={canGoBack}
+						canGoForward={canGoForward}
+						onBack={goBack}
+						onForward={goForward}
+						onNavigate={navigateTo}
+					/>
+					<ExplorerFileList
+						items={items}
+						currentPath={currentPath}
+						selected={selected}
+						parseDisk={parseDisk}
+						menuContext={{
+							currentPath,
+							isTrashView,
+							readOnly: Boolean(currentDisk?.readOnly),
+							actions: menuActions,
+						}}
+						onSelect={handleSelect}
+						onOpen={openEntry}
+					/>
+				</Box>
+			</Box>
+
+			<ExplorerFooter
+				itemCount={items.length}
+				selectedCount={selected.length}
+				isLoading={listQuery.isLoading}
+			/>
+
+			<ExplorerUserDisksModal opened={disksOpened} onClose={closeDisks} />
+			<ConflictDialog
+				conflict={conflict}
+				applyToAll={applyToAll}
+				onApplyToAllChange={setApplyToAll}
+				onResolve={(policy) => void handleConflictResolve(policy)}
+				onClose={() => setConflict(null)}
+			/>
+		</Stack>
+	);
+}

@@ -12,6 +12,11 @@ final class ApiResponse
         return new JsonResponse(['message' => $message], Response::HTTP_FORBIDDEN);
     }
 
+    public static function badRequest(string $message): JsonResponse
+    {
+        return new JsonResponse(['message' => $message], Response::HTTP_BAD_REQUEST);
+    }
+
     public static function notFound(string $message): JsonResponse
     {
         return new JsonResponse(['message' => $message], Response::HTTP_NOT_FOUND);

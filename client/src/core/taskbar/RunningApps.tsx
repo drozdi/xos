@@ -131,6 +131,7 @@ function TaskbarGroupButton({
 		scope: 'taskbar',
 		appId: firstWindow?.appId ?? taskbarGroup,
 		windows: groupWindows,
+		window: groupWindows.length === 1 ? firstWindow : undefined,
 		wmGroup: taskbarGroup,
 		windowId: firstWindow?.id,
 		instanceKey: firstWindow?.instanceKey,
@@ -195,7 +196,6 @@ export function RunningApps() {
 				const label = getGroupLabel(taskbarGroup, groupWindows);
 				const icon = getGroupIcon(groupWindows);
 				const active = isGroupActive(groupWindows, activeWindowId);
-				const showHoverMenu = groupWindows.length > 1;
 
 				const handleGroupClick = () => {
 					if (shouldMinimizeGroup(groupWindows)) {
@@ -220,14 +220,6 @@ export function RunningApps() {
 						onClick={handleGroupClick}
 					/>
 				);
-
-				if (!showHoverMenu) {
-					return (
-						<Box key={taskbarGroup} component="span" style={{ display: 'inline-flex' }}>
-							{button}
-						</Box>
-					);
-				}
 
 				return (
 					<Menu

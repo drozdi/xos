@@ -1,0 +1,19 @@
+{
+	"types": {
+		"folder": { "label": "Папка", "extensions": [] },
+		"text": { "label": "Текст", "extensions": ["txt", "md", "log", "json", "xml", "csv", "yml", "yaml", "ini", "php", "js", "ts", "tsx", "jsx", "css", "scss", "html", "htm"] },
+		"image": { "label": "Изображение", "extensions": ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"] },
+		"video": { "label": "Видео", "extensions": ["mp4", "webm", "ogg", "avi", "mkv", "mov"] },
+		"audio": { "label": "Аудио", "extensions": ["mp3", "wav", "ogg", "flac", "aac", "m4a"] },
+		"archive": { "label": "Архив", "extensions": ["zip", "rar", "7z", "tar", "gz", "bz2"] },
+		"document": { "label": "Документ", "extensions": ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods"] },
+		"binary": { "label": "Файл", "extensions": [] }
+	},
+	"openWith": {
+		"text": ["explorer-notepad"],
+		"image": ["explorer-image-viewer"],
+		"video": ["explorer-video-player"],
+		"audio": ["explorer-audio-player"],
+		"archive": ["explorer-archiver"]
+	}
+}

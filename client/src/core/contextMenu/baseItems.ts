@@ -18,6 +18,15 @@ function getWindowApiOrThrow(windowId: string) {
 	return api;
 }
 
+async function closeWindowById(windowId: string): Promise<void> {
+	const api = getWindowApi(windowId);
+	if (api) {
+		await api.close();
+		return;
+	}
+	useWmStore.getState().closeWindow(windowId);
+}
+
 export function buildBaseWindowMenuItems(): Record<BaseWindowMenuActionId, ContextMenuItemDef> {
 	return {
 		close: {
@@ -109,7 +118,7 @@ export function buildBaseTaskbarMenuItems(): Record<BaseTaskbarMenuActionId, Con
 			onClick: async (ctx) => {
 				const windows = ctx.windows ?? [];
 				for (const window of windows) {
-					await getWindowApi(window.id)?.close();
+					await closeWindowById(window.id);
 				}
 			},
 		},
@@ -232,7 +241,7 @@ export function applyTaskbarStateToBaseItems(
 			hidden: false,
 			onClick: async () => {
 				if (!onlyWindow) {return;}
-				await getWindowApi(onlyWindow.id)?.close();
+				await closeWindowById(onlyWindow.id);
 			},
 		};
 		next['close-all'] = { ...next['close-all'], hidden: true };
