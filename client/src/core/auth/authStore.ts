@@ -3,7 +3,6 @@ import { create } from 'zustand';
 import {
 	getUser as fetchUser,
 	login as loginRequest,
-	loginCheck,
 	logout as logoutRequest,
 } from '@/core/api/endpoints/auth';
 import { getAccesses, getAccountMap } from '@/core/api/endpoints/account';
@@ -12,9 +11,11 @@ import { resetScopes, setLevelScopes, setMapScopes } from '@/core/auth/coreScope
 import * as tokenStorage from '@/core/auth/tokenStorage';
 import { resetSettingAdapterState } from '@/core/settings/createSettingAdapter';
 import { settingManager } from '@/core/settings/SettingManager';
+import { restoreAccessToken } from '@/core/auth/sessionRestore';
 import type { LoginRequest, UserSummary } from '@/types/api.types';
 
 let hydrateGeneration = 0;
+let activeHydrate: Promise<void> | null = null;
 
 export interface AuthStore {
 	user: UserSummary | null;
@@ -107,36 +108,48 @@ export const useAuthStore = create<AuthStore>((set) => ({
 	},
 
 	hydrate: async () => {
-		const generation = ++hydrateGeneration;
-		set({ isLoading: true });
-
-		if (!tokenStorage.hasStoredSession()) {
-			if (generation === hydrateGeneration) {
-				set({ isLoading: false, isAuthenticated: false });
-			}
-			return;
+		if (activeHydrate) {
+			return activeHydrate;
 		}
 
-		try {
-			const check = await loginCheck();
-			if (check.status !== 'authenticated') {
-				throw new Error('Session is not authenticated');
-			}
+		activeHydrate = (async () => {
+			const generation = ++hydrateGeneration;
+			set({ isLoading: true });
 
-			const user = await fetchUser();
-			if (generation !== hydrateGeneration) {
+			if (!tokenStorage.hasStoredSession()) {
+				if (generation === hydrateGeneration) {
+					set({ isLoading: false, isAuthenticated: false });
+				}
 				return;
 			}
 
-			await applyUserSession(user);
-		} catch {
-			if (generation === hydrateGeneration) {
-				clearSession();
+			try {
+				const restored = await restoreAccessToken();
+				if (!restored) {
+					throw new Error('Session restore failed');
+				}
+
+				const user = await fetchUser();
+				if (generation !== hydrateGeneration) {
+					return;
+				}
+
+				await applyUserSession(user);
+			} catch {
+				if (generation === hydrateGeneration) {
+					clearSession();
+				}
+			} finally {
+				if (generation === hydrateGeneration) {
+					set({ isLoading: false });
+				}
 			}
+		})();
+
+		try {
+			await activeHydrate;
 		} finally {
-			if (generation === hydrateGeneration) {
-				set({ isLoading: false });
-			}
+			activeHydrate = null;
 		}
 	},
 }));

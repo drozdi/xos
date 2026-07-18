@@ -42,6 +42,9 @@ export function useSetting<T>(
 
 		void (async () => {
 			setIsLoading(true);
+			if (!settingManager.isInitialized()) {
+				return;
+			}
 			const stored = (await settingManager.get(category, key)) as T | undefined;
 			if (!active) {return;}
 			const resolved = stored ?? defaultValue;
@@ -56,6 +59,9 @@ export function useSetting<T>(
 
 	useEffect(() => {
 		return settingManager.subscribe((changedCategory, changedKey) => {
+			if (!settingManager.isInitialized()) {
+				return;
+			}
 			if (changedCategory === category && changedKey === key) {
 				void settingManager.get(category, key).then((next) => {
 					const resolved = (next ?? defaultValue) as T | undefined;
@@ -103,6 +109,9 @@ export function useSetState<T>(
 
 		void (async () => {
 			setIsLoading(true);
+			if (!settingManager.isInitialized()) {
+				return;
+			}
 			const stored = (await settingManager.get(category, key)) as T | undefined;
 			if (!active) {return;}
 			const resolved = stored ?? initial;
@@ -117,6 +126,9 @@ export function useSetState<T>(
 
 	useEffect(() => {
 		return settingManager.subscribe((changedCategory, changedKey) => {
+			if (!settingManager.isInitialized()) {
+				return;
+			}
 			if (changedCategory === category && changedKey === key) {
 				void settingManager.get(category, key).then((next) => {
 					const resolved = (next ?? initial) as T;

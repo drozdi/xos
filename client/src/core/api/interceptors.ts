@@ -122,7 +122,20 @@ async function performTokenRefresh(): Promise<string> {
 	const parsed = refreshResponseSchema.parse(data);
 	tokenStorage.setTokens(parsed.token, parsed.refresh_token);
 	return parsed.token;
+}
 
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+	if (refreshPromise) {
+		return refreshPromise;
+	}
+
+	refreshPromise = performTokenRefresh().finally(() => {
+		refreshPromise = null;
+	});
+
+	return refreshPromise;
 }
 
 export function setupInterceptors(authStore: AuthStoreRef): void {
@@ -160,13 +173,17 @@ export function setupInterceptors(authStore: AuthStoreRef): void {
 			originalRequest._retry = true;
 			isRefreshing = true;
 			try {
-				const newToken = await performTokenRefresh();
+				const newToken = await refreshAccessToken();
 				onRefreshed(newToken);
 				originalRequest.headers.Authorization = `Bearer ${newToken}`;
 				return apiClient(originalRequest);
 			} catch (refreshError) {
 				onRefreshFailed();
-				await authStore.logout();
+				const isNetworkError =
+					axios.isAxiosError(refreshError) && !refreshError.response;
+				if (!isNetworkError) {
+					await authStore.logout();
+				}
 				return Promise.reject(refreshError);
 			} finally {
 				isRefreshing = false;

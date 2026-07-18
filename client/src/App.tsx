@@ -84,9 +84,9 @@ export default function App() {
 	}, [isLoading, isAuthenticated]);
 
 	const expectedSettingsKey = isLoading ? null : isAuthenticated ? 'auth' : 'guest';
-	const settingsReady = settingsKey === expectedSettingsKey;
-
-	const showLoader = isLoading || (isAuthenticated && !settingsReady);
+	const settingsReady =
+		settingsKey !== null && expectedSettingsKey !== null && settingsKey === expectedSettingsKey;
+	const showLoader = isLoading || !settingsReady;
 
 	return (
 		<QueryClientProvider client={queryClient}>
@@ -97,25 +97,17 @@ export default function App() {
 			>
 				<ModalsProvider>
 					<Notifications position="top-right" />
-				{settingsReady ? (
-					<ThemeProvider>
-						<DatesSettingsProvider>
-							{showLoader ? (
-								<AppShellFallback />
-							) : (
+					{showLoader ? (
+						<AppShellFallback />
+					) : (
+						<ThemeProvider>
+							<DatesSettingsProvider>
 								<Suspense fallback={<AppShellFallback />}>
 									{isAuthenticated ? <Desktop /> : <LoginScreen />}
 								</Suspense>
-							)}
-						</DatesSettingsProvider>
-					</ThemeProvider>
-				) : showLoader ? (
-					<AppShellFallback />
-				) : (
-					<Suspense fallback={<AppShellFallback />}>
-						{isAuthenticated ? <Desktop /> : <LoginScreen />}
-					</Suspense>
-				)}
+							</DatesSettingsProvider>
+						</ThemeProvider>
+					)}
 				</ModalsProvider>
 			</MantineProvider>
 		</QueryClientProvider>
