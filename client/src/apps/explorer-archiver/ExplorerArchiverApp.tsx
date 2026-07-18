@@ -3,8 +3,12 @@ import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+
 import { fetchArchiveContents, unpackExplorerArchive } from '@/features/explorer/explorerApi';
+import { getExplorerFileName } from '@/features/explorer/explorerPathUtils';
 import { useExplorerOpenFile } from '@/features/explorer/useExplorerOpenFile';
+import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 function defaultUnpackFolder(archivePath: string) {
 	const normalized = archivePath.replace(/\/+$/, '');
@@ -17,6 +21,10 @@ function defaultUnpackFolder(archivePath: string) {
 
 export default function ExplorerArchiverApp() {
 	const openedPath = useExplorerOpenFile('explorer-archiver');
+	const { currentPath, openFile } = useExplorerSatelliteFile({
+		appId: 'explorer-archiver',
+		fileTypes: ['archive'],
+	});
 	const [archivePath, setArchivePath] = useState('');
 	const [destination, setDestination] = useState('');
 
@@ -26,6 +34,16 @@ export default function ExplorerArchiverApp() {
 			setDestination(defaultUnpackFolder(openedPath));
 		}
 	}, [openedPath]);
+
+	useEffect(() => {
+		if (!currentPath) {
+			return;
+		}
+		setArchivePath(currentPath);
+		setDestination(defaultUnpackFolder(currentPath));
+	}, [currentPath]);
+
+	useWindowTitle(archivePath ? getExplorerFileName(archivePath) : 'Архиватор');
 
 	const contentsQuery = useQuery({
 		queryKey: ['explorer', 'archive', archivePath],
@@ -53,7 +71,12 @@ export default function ExplorerArchiverApp() {
 
 	return (
 		<Stack h="100%" p="md" gap="sm" style={{ minHeight: 0 }}>
-			<Text fw={600}>Архиватор</Text>
+			<Group justify="space-between">
+				<Text fw={600}>Архиватор</Text>
+				<Button variant="default" size="xs" onClick={() => void openFile()}>
+					Открыть…
+				</Button>
+			</Group>
 			<TextInput label="Архив" value={archivePath} onChange={(e) => setArchivePath(e.currentTarget.value)} />
 			<TextInput
 				label="Папка назначения"

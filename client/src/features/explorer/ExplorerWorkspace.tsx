@@ -2,10 +2,11 @@ import { ActionIcon, Box, Button, Group, Stack, TextInput } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { queryKeys } from '@/core/api/queryKeys';
 
+import { ExplorerPickerBar } from './components/ExplorerPickerBar';
 import { ExplorerPathBar } from './components/ExplorerPathBar';
 import { ConflictDialog, type ConflictPolicy, type ConflictState } from './components/ConflictDialog';
 import { ExplorerFileList } from './components/ExplorerFileList';
@@ -33,13 +34,26 @@ import {
 	type ExplorerSortDir,
 } from './explorerApi';
 import { useExplorerClipboardStore } from './explorerClipboardStore';
+import {
+	createExplorerParentEntry,
+	getExplorerFileName,
+	getExplorerFolderPath,
+	getExplorerParentPath,
+	isExplorerParentEntry,
+	joinExplorerPath,
+	parseExplorerDisk,
+} from './explorerPathUtils';
+import {
+	matchesExplorerPickerFilter,
+	useExplorerPickerStore,
+} from './explorerPickerStore';
 import { useExplorerHistory } from './hooks/useExplorerHistory';
 import { useExplorerSelection } from './hooks/useExplorerSelection';
 import { getOpenWithAppsForEntry, openVfsPathWithApp } from './openWithRegistry';
+import type { ExplorerViewMode } from './explorerViewUtils';
 
 function parseDisk(path: string) {
-	const match = /^([a-z0-9_-]+):\/\//i.exec(path);
-	return match?.[1]?.toLowerCase() ?? 'home';
+	return parseExplorerDisk(path);
 }
 
 interface ExplorerWorkspaceProps {
@@ -56,6 +70,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 		goForward,
 	} = useExplorerHistory(initialPath);
 	const [viewMode, setViewMode] = useState<'normal' | 'trash'>('normal');
+	const [listViewMode, setListViewMode] = useState<ExplorerViewMode>('table');
 	const [sortBy, setSortBy] = useState<ExplorerSortBy>('name');
 	const [sortDir, setSortDir] = useState<ExplorerSortDir>('asc');
 	const [newFolderOpened, { open: openNewFolder, close: closeNewFolder }] = useDisclosure(false);
@@ -67,9 +82,13 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 	const queryClient = useQueryClient();
 	const clipboard = useExplorerClipboardStore((state) => state.clipboard);
 	const setClipboard = useExplorerClipboardStore((state) => state.setClipboard);
+	const picker = useExplorerPickerStore((state) => state.active);
+	const completePicker = useExplorerPickerStore((state) => state.completePicker);
+	const cancelPicker = useExplorerPickerStore((state) => state.cancelPicker);
+	const [pickerFileName, setPickerFileName] = useState('');
 
 	const diskRoot = `${parseDisk(currentPath)}://`;
-	const isTrashView = viewMode === 'trash';
+	const isTrashView = viewMode === 'trash' && !picker;
 
 	const configQuery = useQuery({
 		queryKey: queryKeys.explorer.config,
@@ -85,16 +104,56 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 	});
 
 	const items = listQuery.data?.items ?? [];
+	const displayItems = useMemo(() => {
+		let list = items;
+		if (picker?.mode === 'open') {
+			list = items.filter((item) => matchesExplorerPickerFilter(item, picker));
+		}
+
+		const parentPath = getExplorerParentPath(currentPath);
+		if (parentPath && !isTrashView) {
+			return [createExplorerParentEntry(parentPath), ...list];
+		}
+
+		return list;
+	}, [currentPath, isTrashView, items, picker]);
+
 	const rows = useMemo(
 		() =>
-			items.map((entry) => ({
+			displayItems.map((entry) => ({
 				...entry,
 				path: entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`,
 			})),
-		[currentPath, items],
+		[currentPath, displayItems],
 	);
 
 	const { selected, setSelected, handleSelect, clearSelection } = useExplorerSelection(rows);
+
+	useEffect(() => {
+		if (!picker) {
+			setPickerFileName('');
+			return;
+		}
+
+		setViewMode('normal');
+		const startPath = picker.initialPath ? getExplorerFolderPath(picker.initialPath) : 'home://';
+		setCurrentPath(startPath.endsWith('://') ? startPath : startPath.endsWith('/') ? startPath : `${startPath}/`);
+		clearSelection();
+		setPickerFileName(
+			picker.defaultFileName ?? (picker.initialPath ? getExplorerFileName(picker.initialPath) : ''),
+		);
+	}, [picker?.id, clearSelection, setCurrentPath]);
+
+	useEffect(() => {
+		if (!picker || picker.mode !== 'save' || selected.length !== 1) {
+			return;
+		}
+		const selectedPath = selected[0];
+		const entry = rows.find((row) => row.path === selectedPath);
+		if (entry && entry.type === 'file') {
+			setPickerFileName(getExplorerFileName(selectedPath!));
+		}
+	}, [picker, rows, selected]);
 
 	const invalidateCurrent = async () => {
 		if (isTrashView) {
@@ -271,8 +330,44 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 		clearSelection();
 	};
 
-	const openEntry = async (entry: ExplorerEntry) => {
+	const pickEntry = (entry: ExplorerEntry) => {
+		if (!picker) {
+			return;
+		}
+
 		const path = entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`;
+		if (entry.type === 'folder') {
+			navigateTo(path);
+			return;
+		}
+
+		if (picker.mode === 'open') {
+			if (matchesExplorerPickerFilter(entry, picker)) {
+				completePicker(path);
+			}
+			return;
+		}
+
+		setPickerFileName(getExplorerFileName(path));
+		setSelected([path]);
+	};
+
+	const openEntry = async (entry: ExplorerEntry) => {
+		if (isExplorerParentEntry(entry)) {
+			const parent = getExplorerParentPath(currentPath);
+			if (parent) {
+				navigateTo(parent);
+			}
+			return;
+		}
+
+		const path = entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`;
+
+		if (picker) {
+			pickEntry(entry);
+			return;
+		}
+
 		if (entry.type === 'folder') {
 			navigateTo(path);
 			return;
@@ -283,6 +378,26 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 			return;
 		}
 		notifications.show({ message: 'Нет приложения для этого типа файла', color: 'yellow' });
+	};
+
+	const selectedFilePath =
+		selected.find((path) => rows.find((row) => row.path === path && row.type === 'file')) ?? null;
+
+	const handlePickerConfirm = () => {
+		if (!picker) {
+			return;
+		}
+		if (picker.mode === 'open') {
+			if (selectedFilePath) {
+				completePicker(selectedFilePath);
+			}
+			return;
+		}
+		const nextPath = joinExplorerPath(currentPath, pickerFileName);
+		if (!pickerFileName.trim()) {
+			return;
+		}
+		completePicker(nextPath);
 	};
 
 	const handleDelete = async () => {
@@ -334,6 +449,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 
 	const menuActions = {
 		open: openEntry,
+		pick: pickEntry,
 		copy: () => setClipboard({ mode: 'copy', paths: selected }),
 		cut: () => setClipboard({ mode: 'cut', paths: selected }),
 		paste: () => pasteMutation.mutate(),
@@ -343,7 +459,9 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 		unpack: () => unpackMutation.mutate(),
 		restore: () => void handleRestore(),
 		emptyTrash: () => emptyTrashMutation.mutate(),
-		openWith: (appId: string, path: string, name: string) => openVfsPathWithApp(appId, path, name),
+		openWith: picker
+			? () => undefined
+			: (appId: string, path: string, name: string) => openVfsPathWithApp(appId, path, name),
 	};
 
 	return (
@@ -352,6 +470,8 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 				currentDiskCode={parseDisk(currentPath)}
 				sortBy={sortBy}
 				sortDir={sortDir}
+				viewMode={listViewMode}
+				pickerMode={Boolean(picker)}
 				selectedCount={selected.length}
 				clipboardCount={clipboard?.paths.length ?? 0}
 				isTrashView={isTrashView}
@@ -360,6 +480,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 				onDiskChange={navigateTo}
 				onSortByChange={setSortBy}
 				onSortDirChange={setSortDir}
+				onViewModeChange={setListViewMode}
 				onNewFolder={openNewFolder}
 				onUpload={(file) => void uploadMutation.mutateAsync(file)}
 				onCopy={menuActions.copy}
@@ -428,14 +549,18 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 						onNavigate={navigateTo}
 					/>
 					<ExplorerFileList
-						items={items}
+						items={displayItems}
 						currentPath={currentPath}
 						selected={selected}
+						viewMode={listViewMode}
+						pickerMode={Boolean(picker)}
 						parseDisk={parseDisk}
 						menuContext={{
 							currentPath,
 							isTrashView,
 							readOnly: Boolean(currentDisk?.readOnly),
+							pickerMode: Boolean(picker),
+							pickerRequest: picker,
 							actions: menuActions,
 						}}
 						onSelect={handleSelect}
@@ -444,11 +569,22 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 				</Box>
 			</Box>
 
-			<ExplorerFooter
-				itemCount={items.length}
-				selectedCount={selected.length}
-				isLoading={listQuery.isLoading}
-			/>
+			{picker ? (
+				<ExplorerPickerBar
+					mode={picker.mode}
+					fileName={pickerFileName}
+					selectedPath={selectedFilePath}
+					onFileNameChange={setPickerFileName}
+					onConfirm={handlePickerConfirm}
+					onCancel={cancelPicker}
+				/>
+			) : (
+				<ExplorerFooter
+					itemCount={displayItems.length}
+					selectedCount={selected.length}
+					isLoading={listQuery.isLoading}
+				/>
+			)}
 
 			<ExplorerUserDisksModal opened={disksOpened} onClose={closeDisks} />
 			<ConflictDialog

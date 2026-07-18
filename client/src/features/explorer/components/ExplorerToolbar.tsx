@@ -15,6 +15,8 @@ import {
 	IconDatabase,
 	IconFileZip,
 	IconFolderPlus,
+	IconLayoutGrid,
+	IconList,
 	IconPencil,
 	IconTrash,
 	IconTrashOff,
@@ -24,11 +26,14 @@ import {
 import type { ReactNode } from 'react';
 
 import type { ExplorerSortBy, ExplorerSortDir } from '../explorerApi';
+import type { ExplorerViewMode } from '../explorerViewUtils';
 import { useCanArchiveExplorer, useCanDeleteExplorer, useCanWriteExplorer } from '../explorerAccess';
 
 interface ExplorerToolbarProps {
 	sortBy: ExplorerSortBy;
 	sortDir: ExplorerSortDir;
+	viewMode: ExplorerViewMode;
+	pickerMode?: boolean;
 	selectedCount: number;
 	clipboardCount: number;
 	isTrashView: boolean;
@@ -38,6 +43,7 @@ interface ExplorerToolbarProps {
 	currentDiskCode: string;
 	onSortByChange: (value: ExplorerSortBy) => void;
 	onSortDirChange: (value: ExplorerSortDir) => void;
+	onViewModeChange: (value: ExplorerViewMode) => void;
 	onNewFolder: () => void;
 	onUpload: (file: File) => void;
 	onCopy: () => void;
@@ -89,6 +95,8 @@ export function ExplorerToolbar({
 	currentDiskCode,
 	sortBy,
 	sortDir,
+	viewMode,
+	pickerMode = false,
 	selectedCount,
 	clipboardCount,
 	isTrashView,
@@ -97,6 +105,7 @@ export function ExplorerToolbar({
 	onDiskChange,
 	onSortByChange,
 	onSortDirChange,
+	onViewModeChange,
 	onNewFolder,
 	onUpload,
 	onCopy,
@@ -129,7 +138,7 @@ export function ExplorerToolbar({
 				flexShrink: 0,
 			}}
 		>
-			{!isTrashView && (
+			{!pickerMode && !isTrashView && (
 				<>
 					<ToolbarIcon label="Новая папка" disabled={!writable} onClick={onNewFolder}>
 						<IconFolderPlus size={18} />
@@ -204,7 +213,7 @@ export function ExplorerToolbar({
 				</>
 			)}
 
-			{isTrashView && (
+			{!pickerMode && isTrashView && (
 				<>
 					<ToolbarIcon label="Восстановить" disabled={selectedCount === 0 || !canDelete} onClick={onRestore}>
 						<IconArrowBackUp size={18} />
@@ -219,6 +228,29 @@ export function ExplorerToolbar({
 			)}
 
 			<Group gap={4} ml="auto" wrap="nowrap">
+				<Tooltip label="Таблица" withArrow>
+					<ActionIcon
+						variant={viewMode === 'table' ? 'light' : 'subtle'}
+						size="md"
+						color={viewMode === 'table' ? 'blue' : 'gray'}
+						onClick={() => onViewModeChange('table')}
+						aria-label="Таблица"
+					>
+						<IconList size={18} />
+					</ActionIcon>
+				</Tooltip>
+				<Tooltip label="Значки" withArrow>
+					<ActionIcon
+						variant={viewMode === 'icons' ? 'light' : 'subtle'}
+						size="md"
+						color={viewMode === 'icons' ? 'blue' : 'gray'}
+						onClick={() => onViewModeChange('icons')}
+						aria-label="Значки"
+					>
+						<IconLayoutGrid size={18} />
+					</ActionIcon>
+				</Tooltip>
+				<Divider orientation="vertical" />
 				<Menu withinPortal position="bottom-end">
 					<Menu.Target>
 						<Tooltip label={sortLabel}>
@@ -237,9 +269,11 @@ export function ExplorerToolbar({
 						<Menu.Item onClick={() => onSortDirChange('desc')}>По убыванию {sortDir === 'desc' ? '✓' : ''}</Menu.Item>
 					</Menu.Dropdown>
 				</Menu>
-				<ToolbarIcon label="Управление дисками" onClick={onOpenDisks}>
-					<IconDatabase size={18} />
-				</ToolbarIcon>
+				{!pickerMode && (
+					<ToolbarIcon label="Управление дисками" onClick={onOpenDisks}>
+						<IconDatabase size={18} />
+					</ToolbarIcon>
+				)}
 			</Group>
 		</Group>
 	);

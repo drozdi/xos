@@ -1,8 +1,11 @@
 import type { ContextMenuEntry } from '@/core/contextMenu/types';
 
 import type { ExplorerEntry } from '../explorerApi';
+import { isExplorerParentEntry } from '../explorerPathUtils';
 import { canArchiveExplorer, canDeleteExplorer, canWriteExplorer } from '../explorerAccess';
 import { getAssociationLabel, getExplorerAssociations, getOpenWithAppsForEntry } from '../openWithRegistry';
+import type { ExplorerPickerRequest } from '../explorerPickerStore';
+import { matchesExplorerPickerFilter } from '../explorerPickerStore';
 
 export interface ExplorerMenuContext {
 	selectedPaths: string[];
@@ -10,8 +13,11 @@ export interface ExplorerMenuContext {
 	currentPath: string;
 	isTrashView: boolean;
 	readOnly: boolean;
+	pickerMode?: boolean;
+	pickerRequest?: ExplorerPickerRequest | null;
 	actions: {
 		open: (entry: ExplorerEntry) => void | Promise<void>;
+		pick?: (entry: ExplorerEntry) => void;
 		copy: () => void;
 		cut: () => void;
 		paste: () => void;
@@ -26,11 +32,47 @@ export interface ExplorerMenuContext {
 }
 
 export function buildExplorerMenuItems(context: ExplorerMenuContext): ContextMenuEntry[] {
-	const { selectedEntries, isTrashView, readOnly, actions } = context;
+	const { selectedEntries, isTrashView, readOnly, actions, pickerMode, pickerRequest } = context;
 	const canWrite = canWriteExplorer() && !readOnly;
 	const canDelete = canDeleteExplorer();
 	const canArchive = canArchiveExplorer();
 	const singleEntry = selectedEntries.length === 1 ? selectedEntries[0] : null;
+
+	if (pickerMode) {
+		const items: ContextMenuEntry[] = [];
+
+		if (singleEntry && !isExplorerParentEntry(singleEntry)) {
+			if (singleEntry.type === 'folder') {
+				items.push({
+					id: 'open',
+					label: 'Открыть',
+					onClick: () => void actions.open(singleEntry),
+				});
+				return items;
+			}
+
+			const canPick =
+				pickerRequest?.mode === 'save' ||
+				(pickerRequest?.mode === 'open' && matchesExplorerPickerFilter(singleEntry, pickerRequest));
+
+			if (canPick) {
+				items.push({
+					id: 'pick',
+					label: 'Выбрать',
+					onClick: () => {
+						if (actions.pick) {
+							actions.pick(singleEntry);
+							return;
+						}
+						void actions.open(singleEntry);
+					},
+				});
+			}
+		}
+
+		return items;
+	}
+
 	const openWithApps = singleEntry ? getOpenWithAppsForEntry(singleEntry) : [];
 
 	const items: ContextMenuEntry[] = [];

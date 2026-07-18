@@ -1,24 +1,38 @@
-import { Box, Stack } from '@mantine/core';
+import { Box, Button, Group, Stack } from '@mantine/core';
 
-import { useExplorerMediaUrl, useExplorerOpenFile } from '@/features/explorer/useExplorerMediaUrl';
+import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+
+import { getExplorerFileName } from '@/features/explorer/explorerPathUtils';
+import { useExplorerMediaUrl } from '@/features/explorer/useExplorerMediaUrl';
+import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 export default function ExplorerImageViewerApp() {
-	const path = useExplorerOpenFile('explorer-image-viewer');
-	const url = useExplorerMediaUrl(path);
+	const { currentPath, openFile } = useExplorerSatelliteFile({
+		appId: 'explorer-image-viewer',
+		fileTypes: ['image'],
+	});
+	const url = useExplorerMediaUrl(currentPath);
+
+	useWindowTitle(currentPath ? getExplorerFileName(currentPath) : 'Изображения');
 
 	return (
-		<Stack h="100%" p="md" align="center" justify="center">
-			{url ? (
-				<Box style={{ maxWidth: '100%', maxHeight: '100%' }}>
+		<Stack h="100%" p="md" gap="sm" style={{ minHeight: 0 }}>
+			<Group justify="flex-end">
+				<Button variant="default" size="xs" onClick={() => void openFile()}>
+					Открыть…
+				</Button>
+			</Group>
+			<Box style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+				{url ? (
 					<img
 						src={url}
-						alt={path ?? 'image'}
+						alt={currentPath ?? 'image'}
 						style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
 					/>
-				</Box>
-			) : (
-				'Откройте изображение через Проводник'
-			)}
+				) : (
+					'Откройте изображение'
+				)}
+			</Box>
 		</Stack>
 	);
 }
