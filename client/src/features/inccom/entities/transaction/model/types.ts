@@ -1,5 +1,15 @@
 export type TransactionType = 'income' | 'expense';
 
+export type TransferCounterpartyDirection = 'to' | 'from';
+
+export interface ITransferCounterparty {
+	accountId: number;
+	accountLabel: string;
+	direction: TransferCounterpartyDirection;
+	ownerId: number | null;
+	ownerName: string | null;
+}
+
 export interface ITransactionItem {
 	id?: number;
 	itemId: number;
@@ -25,6 +35,7 @@ export interface ITransaction {
 	fp: string | null;
 	fd: string | null;
 	transferId: number | null;
+	transferCounterparty: ITransferCounterparty | null;
 	items: ITransactionItem[];
 }
 

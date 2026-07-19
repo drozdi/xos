@@ -8,4 +8,6 @@ export interface ApiTransfer {
 	authorId: number | null;
 	outgoingTransactionId: number | null;
 	incomingTransactionId: number | null;
+	outgoingCategoryId: number | null;
+	incomingCategoryId: number | null;
 }

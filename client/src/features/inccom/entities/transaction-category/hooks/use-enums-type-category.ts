@@ -1,8 +1,9 @@
 import { type ComboboxItem } from '@mantine/core';
 
 const data: Record<string, string> = {
-	expense: 'Расход',
-	income: 'Доход',
+		expense: 'Расход',
+		income: 'Доход',
+		transfer: 'Перевод',
 };
 function findLabelByCode(type: string): string {
 	return data[type] || type;

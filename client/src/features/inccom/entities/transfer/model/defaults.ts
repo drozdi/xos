@@ -8,4 +8,6 @@ export const defaultTransfer: ITransfer = {
 	authorId: null,
 	outgoingTransactionId: null,
 	incomingTransactionId: null,
+	outgoingCategoryId: null,
+	incomingCategoryId: null,
 };

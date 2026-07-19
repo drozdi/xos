@@ -1,4 +1,5 @@
-﻿import { MainMenu } from '@inccom/features/menu/sidebar';
+﻿import { PersonalLink } from '@inccom/features/lk/personal-link';
+import { MainMenu } from '@inccom/features/menu/sidebar';
 import { useBreakpoint } from '@inccom/shared/hooks';
 import { $setting } from '@inccom/shared/setting';
 import { Title } from '@inccom/shared/ui';
@@ -17,6 +18,7 @@ import { TbArrowBarLeft, TbArrowBarRight } from 'react-icons/tb';
 import { Outlet, useNavigate } from 'react-router-dom';
 
 import { Template } from './store';
+import { ThemeBtn } from './components/theme-btn';
 
 export function MainLayout() {
 	const navigate = useNavigate();
@@ -70,6 +72,10 @@ export function MainLayout() {
 						</Title>
 					</Group>
 					<Template.Slot name="header" />
+					<Group>
+						<PersonalLink />
+						<ThemeBtn />
+					</Group>
 				</Group>
 			</AppShell.Header>
 			<AppShell.Navbar>

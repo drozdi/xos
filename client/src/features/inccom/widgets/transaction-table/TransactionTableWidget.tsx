@@ -4,6 +4,8 @@ import {
 	type ITransaction,
 	type ITransactionFilters,
 } from '@inccom/entities/transaction';
+import { useStoreUserProfile } from '@inccom/entities/user';
+import { formatTransferCounterparty } from '@inccom/shared/lib/format-transfer-counterparty';
 import { DataColumn, TableData } from '@inccom/shared/ui/table';
 import { formatBalance } from '@inccom/shared/utils/number-format';
 import { Anchor, ScrollArea, Text } from '@mantine/core';
@@ -71,6 +73,7 @@ export function TransactionTableWidget({
 	);
 
 	const { data, isLoading } = useTransactionsQuery(queryParams);
+	const { userData } = useStoreUserProfile();
 	const { data: categoriesData } = useTransactionCategoriesQuery({
 		accountId,
 		limit: 100,
@@ -111,15 +114,29 @@ export function TransactionTableWidget({
 					header="Тип"
 					sortable
 					resizable
-					body={(transaction) =>
-						isTransferDebit(transaction) ? (
-							<Text c="red" size="sm">
-								{formatTransactionType(transaction)}
-							</Text>
-						) : (
-							formatTransactionType(transaction)
-						)
-					}
+					body={(transaction) => {
+						const transferLabel = formatTransferCounterparty(
+							transaction.transferCounterparty,
+							userData?.id,
+						);
+
+						return (
+							<>
+								{isTransferDebit(transaction) ? (
+									<Text c="red" size="sm">
+										{formatTransactionType(transaction)}
+									</Text>
+								) : (
+									formatTransactionType(transaction)
+								)}
+								{transferLabel && (
+									<Text size="xs" c="dimmed">
+										{transferLabel}
+									</Text>
+								)}
+							</>
+						);
+					}}
 				/>
 				<DataColumn<ITransaction>
 					field="amount"

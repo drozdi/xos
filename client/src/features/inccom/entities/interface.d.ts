@@ -105,25 +105,17 @@ interface IStoreAccount extends IStore<IAccount> {}
 
 
 interface ITransfer {
-
 	id: number;
-
 	amount: string;
-
 	date: string;
-
 	comment: string | null;
-
 	fromAccountId: number;
-
 	toAccountId: number;
-
 	authorId: number | null;
-
 	outgoingTransactionId: number | null;
-
 	incomingTransactionId: number | null;
-
+	outgoingCategoryId: number | null;
+	incomingCategoryId: number | null;
 }
 
 

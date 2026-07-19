@@ -14,6 +14,8 @@ use IncCom\Entity\Transaction;
 
 use IncCom\Entity\TransactionItem;
 
+use IncCom\Enum\TransactionType;
+
 use IncCom\Repository\AccountRepository;
 
 use IncCom\Repository\TransactionRepository;
@@ -641,9 +643,89 @@ class TransactionsController extends AbstractController
 
             'transferId' => $transaction->getTransfer()?->getId(),
 
+            'transferCounterparty' => $this->mapTransferCounterparty($transaction),
+
             'items' => $items,
 
         ];
+
+    }
+
+
+
+    /**
+
+     * @return array<string, mixed>|null
+
+     */
+
+    private function mapTransferCounterparty(Transaction $transaction): ?array
+
+    {
+
+        $transfer = $transaction->getTransfer();
+
+        if ($transfer === null) {
+
+            return null;
+
+        }
+
+
+
+        $isOutgoing = $transaction->getType() === TransactionType::Expense;
+
+        $counterpartyAccount = $isOutgoing
+
+            ? $transfer->getToAccount()
+
+            : $transfer->getFromAccount();
+
+        $master = $counterpartyAccount->getMaster();
+
+
+
+        return [
+
+            'accountId' => $counterpartyAccount->getId(),
+
+            'accountLabel' => $counterpartyAccount->getLabel(),
+
+            'direction' => $isOutgoing ? 'to' : 'from',
+
+            'ownerId' => $master?->getId(),
+
+            'ownerName' => $this->formatUserDisplayName($master),
+
+        ];
+
+    }
+
+
+
+    private function formatUserDisplayName(?User $user): ?string
+
+    {
+
+        if ($user === null) {
+
+            return null;
+
+        }
+
+
+
+        $alias = $user->getAlias();
+
+        if ($alias !== null && trim($alias) !== '') {
+
+            return trim($alias);
+
+        }
+
+
+
+        return $user->getLogin();
 
     }
 

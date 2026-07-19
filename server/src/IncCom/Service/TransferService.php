@@ -4,10 +4,12 @@ namespace IncCom\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use IncCom\Entity\Account;
+use IncCom\Entity\Category;
 use IncCom\Entity\Transaction;
 use IncCom\Entity\Transfer;
 use IncCom\Enum\TransactionType;
 use IncCom\Repository\AccountRepository;
+use IncCom\Repository\CategoryRepository;
 use Main\Entity\User;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
@@ -16,10 +18,13 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  */
 class TransferService
 {
+    private const TRANSFER_CATEGORY_TYPE = 'transfer';
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly BalanceService $balanceService,
         private readonly AccountRepository $accountRepository,
+        private readonly CategoryRepository $categoryRepository,
     ) {
     }
 
@@ -48,6 +53,15 @@ class TransferService
             $transfer->setComment($comment);
             $transfer->setAuthor($author);
 
+            $outgoingCategory = $this->resolveTransferCategory(
+                $this->resolveCategoryId($data, 'outgoing'),
+                $fromAccount,
+            );
+            $incomingCategory = $this->resolveTransferCategory(
+                $this->resolveCategoryId($data, 'incoming'),
+                $toAccount,
+            );
+
             $outgoing = $this->buildTransaction(
                 TransactionType::Expense,
                 $fromAccount,
@@ -56,6 +70,7 @@ class TransferService
                 $date,
                 $comment,
                 $transfer,
+                $outgoingCategory,
             );
             $incoming = $this->buildTransaction(
                 TransactionType::Income,
@@ -65,6 +80,7 @@ class TransferService
                 $date,
                 $comment,
                 $transfer,
+                $incomingCategory,
             );
 
             $transfer->setOutgoingTransaction($outgoing);
@@ -127,6 +143,24 @@ class TransferService
                 $incoming->setComment($comment);
             }
 
+            if ($this->hasCategoryUpdate($data, 'outgoing') && $outgoing !== null) {
+                $outgoing->setCategory(
+                    $this->resolveTransferCategory(
+                        $this->resolveCategoryId($data, 'outgoing'),
+                        $fromAccount,
+                    ),
+                );
+            }
+
+            if ($this->hasCategoryUpdate($data, 'incoming') && $incoming !== null) {
+                $incoming->setCategory(
+                    $this->resolveTransferCategory(
+                        $this->resolveCategoryId($data, 'incoming'),
+                        $toAccount,
+                    ),
+                );
+            }
+
             if (bccomp($oldAmount, $newAmount, 2) !== 0) {
                 $this->balanceService->applyDelta($fromAccount, $oldAmount);
                 $this->balanceService->applyDelta($toAccount, bcsub('0.00', $oldAmount, 2));
@@ -180,6 +214,7 @@ class TransferService
         \DateTimeInterface $date,
         ?string $comment,
         Transfer $transfer,
+        ?Category $category = null,
     ): Transaction {
         $transaction = new Transaction();
         $transaction->setType($type);
@@ -188,10 +223,75 @@ class TransferService
         $transaction->setAmount($amount);
         $transaction->setDate($date);
         $transaction->setComment($comment);
+        $transaction->setCategory($category);
         $transaction->setIsManualAmount(true);
         $transaction->setTransfer($transfer);
 
         return $transaction;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function resolveCategoryId(array $data, string $leg): mixed
+    {
+        $keys = $leg === 'outgoing'
+            ? ['outgoingCategoryId', 'fromCategoryId']
+            : ['incomingCategoryId', 'toCategoryId'];
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $data)) {
+                return $data[$key];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function hasCategoryUpdate(array $data, string $leg): bool
+    {
+        $keys = $leg === 'outgoing'
+            ? ['outgoingCategoryId', 'fromCategoryId']
+            : ['incomingCategoryId', 'toCategoryId'];
+
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $data)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function resolveTransferCategory(mixed $categoryId, Account $account): ?Category
+    {
+        if ($categoryId === null || $categoryId === '') {
+            return null;
+        }
+
+        if ($categoryId instanceof Category) {
+            $category = $categoryId;
+        } elseif (is_int($categoryId) && $categoryId > 0) {
+            $category = $this->categoryRepository->find($categoryId);
+            if ($category === null) {
+                throw new \InvalidArgumentException('Category not found.');
+            }
+        } else {
+            throw new \InvalidArgumentException('Invalid category.');
+        }
+
+        if ($category->getAccount()?->getId() !== $account->getId()) {
+            throw new \InvalidArgumentException('Category does not belong to the account.');
+        }
+
+        if ($category->getType() !== self::TRANSFER_CATEGORY_TYPE) {
+            throw new \InvalidArgumentException('Category must be of type transfer.');
+        }
+
+        return $category;
     }
 
     private function assertAuthor(Transfer $transfer, User $author): void

@@ -1,5 +1,15 @@
 export type ApiTransactionType = 'income' | 'expense';
 
+export type ApiTransferCounterpartyDirection = 'to' | 'from';
+
+export interface ApiTransferCounterparty {
+	accountId: number;
+	accountLabel: string;
+	direction: ApiTransferCounterpartyDirection;
+	ownerId: number | null;
+	ownerName: string | null;
+}
+
 export interface ApiTransactionItem {
 	id?: number;
 	itemId: number;
@@ -25,5 +35,6 @@ export interface ApiTransaction {
 	fp: string | null;
 	fd: string | null;
 	transferId: number | null;
+	transferCounterparty: ApiTransferCounterparty | null;
 	items: ApiTransactionItem[];
 }

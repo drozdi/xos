@@ -459,6 +459,10 @@ class TransfersController extends AbstractController
 
             'incomingTransactionId' => $transfer->getIncomingTransaction()?->getId(),
 
+            'outgoingCategoryId' => $transfer->getOutgoingTransaction()?->getCategory()?->getId(),
+
+            'incomingCategoryId' => $transfer->getIncomingTransaction()?->getCategory()?->getId(),
+
         ];
 
     }

@@ -18,6 +18,7 @@ export const defaultTransaction: ITransaction = {
 	fp: null,
 	fd: null,
 	transferId: null,
+	transferCounterparty: null,
 	items: [],
 };
 
