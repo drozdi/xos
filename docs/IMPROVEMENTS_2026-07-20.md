@@ -121,14 +121,35 @@
 
 ---
 
-## Приоритетный план (по неделям)
+## Приоритетный план (по неделям) — выполнено 2026-07-20
 
-| Неделя | Фокус |
-|--------|-------|
-| 1 | Security hotfix: AbstractRepository, uploads, IBlock ACL, build client |
-| 2 | CI + `doctrine:schema:validate` + тесты Device API |
-| 3 | Унификация pagination/errors; рефакторинг table/queryClient |
-| 4 | DeviceManager split; документация; миграционный процесс |
+| Неделя | Фокус | Статус |
+|--------|-------|--------|
+| 1 | Security hotfix: AbstractRepository, uploads, IBlock ACL, build client | ✅ |
+| 2 | CI + `doctrine:schema:validate` + тесты Device API | ✅ |
+| 3 | Унификация pagination/errors; рефакторинг table/queryClient | ✅ (table — MIGRATION.md) |
+| 4 | DeviceManager split; документация; миграционный процесс | ✅ |
+
+### Неделя 1
+- `AbstractRepository` — параметризованные фильтры (без SQL-инъекций)
+- `UploadPathResolver` — whitelist модулей, `realpath`, path traversal
+- `#[Access('can_read')]` на `select` в Device-контроллерах; upload → `can_update`
+
+### Неделя 2
+- CI: `doctrine:schema:validate --skip-sync`
+- Mapping: `StoredAuth.ipAddr`, `Device\Property.valueL`, `Category#account`
+- `tests/Controller/DeviceApiTest.php`
+
+### Неделя 3
+- `ApiExceptionSubscriber` — единый формат `violations`
+- `apiError.ts` — поддержка `violations`
+- `interceptors.ts` — reject ожидающих при failed refresh
+- Общий `queryClient` в `core/api/queryClient.ts`
+- `ContentRangeHeaders` для пагинации
+
+### Неделя 4
+- `DevicePropertyValueSerializer` — выделен из `DeviceManager`
+- `docs/ARCHITECTURE.md`, `docs/MIGRATIONS.md`
 
 ---
 
@@ -136,12 +157,12 @@
 
 | Метрика | Сейчас | Цель |
 |---------|--------|------|
-| PHPUnit test files | 8 | 12+ (Device, IncCom) |
+| PHPUnit test files | 9 | 12+ (Device, IncCom) |
 | Vitest tests | 32+ | без регрессии |
-| `npm run build` | FAIL | PASS |
-| CI pipeline | нет | есть |
-| `doctrine:schema:validate` | FAIL (mapping) | PASS |
-| Модулей без ACL | IBlock | 0 |
+| `npm run build` | PASS | PASS |
+| CI pipeline | есть | есть |
+| `doctrine:schema:validate` | PASS (mapping) | PASS |
+| Модулей без ACL | 0 | 0 |
 
 ---
 

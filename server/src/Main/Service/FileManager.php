@@ -5,13 +5,18 @@ namespace Main\Service;
 
 use AbstractManager;
 use Main\Entity\File as MainFile;
+use Main\Service\UploadPathResolver;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Filesystem\Filesystem;
 
 class FileManager extends AbstractManager {
     private string $uploadDir;
-    public function __construct (string $uploadDir) {
+
+    public function __construct(
+        string $uploadDir,
+        private readonly UploadPathResolver $uploadPathResolver,
+    ) {
         $this->uploadDir = $uploadDir;
     }
 
@@ -20,6 +25,9 @@ class FileManager extends AbstractManager {
     }
 
     public function upload (string $field, string $module, ?string $name = null, ?string $customSubDir = null): array {
+        $this->uploadPathResolver->assertAllowedModule($module);
+        $this->uploadPathResolver->assertSafeSubDir($customSubDir);
+
         $arField = explode('[', $field);
         $files = $this->getRequest()->files->get($arField[0]);
         for ($i = 1, $cnt = count($arField); $i < $cnt; $i++) {

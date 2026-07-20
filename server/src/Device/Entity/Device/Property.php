@@ -28,7 +28,6 @@ class Property {
     #[ORM\JoinTable(name: 'd_device_property_enum')]
     #[ORM\JoinColumn(name: 'device_property_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'enum_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
-    #[ORM\JoinColumn(name: 'device_property_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private $valueL;
     #[ORM\Column(name: 'value_n', type: Types::FLOAT, nullable: true, unique: false)]
     private $valueN;

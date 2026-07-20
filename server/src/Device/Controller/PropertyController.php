@@ -25,6 +25,7 @@ use Device\Repository\PropertyEnumRepository;
 #[Access('device.property')]
 class PropertyController extends AbstractController {
     #[Route('/select', methods: ['POST'])]
+    #[Access('can_read')]
     public function select (Request $request, PropertyRepository $PropertyRepository): JsonResponse {
         $req = array_merge([
             'limit' => -1,

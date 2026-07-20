@@ -1,9 +1,10 @@
 import { Center, Loader, MantineProvider } from '@mantine/core';
 import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
+import { queryClient } from '@/core/api/queryClient';
 import { setupInterceptors } from '@/core/api/interceptors';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
@@ -22,8 +23,6 @@ const Desktop = lazy(() =>
 const LoginScreen = lazy(() =>
 	import('@/core/auth/LoginScreen').then((module) => ({ default: module.LoginScreen })),
 );
-
-const queryClient = new QueryClient();
 
 function AppShellFallback() {
 	return (

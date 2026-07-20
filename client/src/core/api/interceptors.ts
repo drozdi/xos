@@ -19,22 +19,25 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
 }
 
 let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
+let refreshSubscribers: Array<{
+	resolve: (token: string) => void;
+	reject: (error: unknown) => void;
+}> = [];
 
-function subscribeTokenRefresh(callback: (token: string) => void): void {
-	refreshSubscribers.push(callback);
+function subscribeTokenRefresh(
+	resolve: (token: string) => void,
+	reject: (error: unknown) => void,
+): void {
+	refreshSubscribers.push({ resolve, reject });
 }
 
-
-
 function onRefreshed(token: string): void {
-	refreshSubscribers.forEach((callback) => callback(token));
+	refreshSubscribers.forEach(({ resolve }) => resolve(token));
 	refreshSubscribers = [];
 }
 
-
-
-function onRefreshFailed(): void {
+function onRefreshFailed(error: unknown): void {
+	refreshSubscribers.forEach(({ reject }) => reject(error));
 	refreshSubscribers = [];
 }
 
@@ -162,12 +165,12 @@ export function setupInterceptors(authStore: AuthStoreRef): void {
 				return Promise.reject(error);
 			}
 			if (isRefreshing) {
-				return new Promise((resolve) => {
+				return new Promise((resolve, reject) => {
 					subscribeTokenRefresh((token) => {
 						originalRequest.headers.Authorization = `Bearer ${token}`;
 						originalRequest._retry = true;
 						resolve(apiClient(originalRequest));
-					});
+					}, reject);
 				});
 			}
 			originalRequest._retry = true;
@@ -178,7 +181,7 @@ export function setupInterceptors(authStore: AuthStoreRef): void {
 				originalRequest.headers.Authorization = `Bearer ${newToken}`;
 				return apiClient(originalRequest);
 			} catch (refreshError) {
-				onRefreshFailed();
+				onRefreshFailed(refreshError);
 				const isNetworkError =
 					axios.isAxiosError(refreshError) && !refreshError.response;
 				if (!isNetworkError) {

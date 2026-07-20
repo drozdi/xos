@@ -28,7 +28,7 @@ class StoredAuth
     #[ORM\Column(name: "temp_hash", type: Types::BOOLEAN, options: ["default" => true])]
     private ?bool $tempHash = true;
 
-    #[ORM\Column(name: "ip_addr", type: Types::BOOLEAN)]
+    #[ORM\Column(name: "ip_addr", type: Types::INTEGER, nullable: true)]
     private ?int $ipAddr = null;
 
     /*#[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'storedAuths')]

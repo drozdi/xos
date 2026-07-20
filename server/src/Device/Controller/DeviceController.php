@@ -202,7 +202,7 @@ class DeviceController extends AbstractController {
     }
 
     #[Route('/upload', methods: ['POST'])]
-    #[Access('can_read')]
+    #[Access('can_update')]
     public function upload (Request $request, FileManager $fm, DeviceManager $dm, #[CurrentUser] User $user): JsonResponse {
         $device = $dm->device((int)$request->get('id'));
         foreach ($fm->upload('device[images]', 'device') as $image) {

@@ -23,7 +23,7 @@ class Category
     #[ORM\Column(name: "x_timestamp", type: Types::DATETIME_MUTABLE, nullable: true), ORM\Version]
     private ?\DateTimeInterface $xTimestamp = null;
 
-    #[ORM\ManyToOne(targetEntity: Account::class)]
+    #[ORM\ManyToOne(targetEntity: Account::class, inversedBy: 'categories')]
     #[ORM\JoinColumn(name: "account_id", referencedColumnName: 'id', onDelete: "CASCADE")]
     private ?Account $account = null;
 

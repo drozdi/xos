@@ -64,8 +64,23 @@ export function extractApiFieldErrors(error: unknown): Record<string, string> {
 		return {};
 	}
 
+	if (data.violations && typeof data.violations === 'object') {
+		const fieldErrors: Record<string, string> = {};
+		for (const [field, message] of Object.entries(data.violations)) {
+			if (typeof message === 'string') {
+				fieldErrors[field] = message;
+			}
+		}
+		if (Object.keys(fieldErrors).length > 0) {
+			return fieldErrors;
+		}
+	}
+
 	const fieldErrors: Record<string, string> = {};
 	for (const [field, message] of Object.entries(data)) {
+		if (field === 'message' || field === 'error' || field === 'code' || field === 'violations') {
+			continue;
+		}
 		if (typeof message === 'string') {
 			fieldErrors[field] = message;
 		}

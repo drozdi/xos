@@ -88,6 +88,7 @@ class SoftwareController extends AbstractController {
     }
 
     #[Route('/select', methods: ['POST'])]
+    #[Access('can_read')]
     public function select (Request $request, SoftwareRepository $SoftwareRepository): JsonResponse {
         $req = array_merge([
             'limit' => -1,

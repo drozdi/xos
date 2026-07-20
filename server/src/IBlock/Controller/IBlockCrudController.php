@@ -3,6 +3,7 @@
 namespace IBlock\Controller;
 
 use AbstractRepository;
+use App\Http\ContentRangeHeaders;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -77,13 +78,11 @@ abstract class IBlockCrudController extends AbstractController
             }
         }
 
-        $start = $req['limit'] * ($req['offset'] - 1);
-        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
-        $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
-
-        return $this->json($items, Response::HTTP_OK, [
-            'Content-Range' => sprintf('items %d-%d/%d', $start, $end, $totalItems),
-        ]);
+        return $this->json($items, Response::HTTP_OK, ContentRangeHeaders::forLegacyPagination(
+            $req['limit'],
+            $req['offset'],
+            $totalItems,
+        ));
     }
 
     protected function detail(int $id): JsonResponse

@@ -184,6 +184,7 @@ class SubDeviceController extends AbstractController {
     }
 
     #[Route('/select', methods: ['POST'])]
+    #[Access('can_read')]
     public function select (Request $request, DeviceRepository $DeviceRepository): JsonResponse {
         $req = array_merge([
             'limit' => -1,

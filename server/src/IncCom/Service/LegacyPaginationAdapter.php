@@ -2,6 +2,7 @@
 
 namespace IncCom\Service;
 
+use App\Http\ContentRangeHeaders;
 use IncCom\DTO\PaginatedResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -72,10 +73,12 @@ class LegacyPaginationAdapter
                 'prev' => $offset - 1,
                 'total' => $pageTotal,
             ],
-            'headers' => [
-                'Content-Range' => sprintf('items %d-%d/%d', $start, $end, $totalItems),
-                'Content-Page' => sprintf('page %d/%d', $offset, $pageTotal),
-            ],
+            'headers' => array_merge(
+                ContentRangeHeaders::forLegacyPagination($limit, $offset, $totalItems),
+                [
+                    'Content-Page' => sprintf('page %d/%d', $offset, $pageTotal),
+                ],
+            ),
         ];
     }
 

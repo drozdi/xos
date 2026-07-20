@@ -91,6 +91,7 @@ export interface ApiError {
 	code?: number;
 	message?: string;
 	error?: string;
+	violations?: Record<string, string>;
 	[field: string]: unknown;
 }
 
