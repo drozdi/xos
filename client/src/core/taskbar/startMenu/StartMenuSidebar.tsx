@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Menu, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { Box, Menu, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { useState, type ReactNode } from 'react';
 
 import { useAppManager } from '@/core/appManager/useAppManager';
@@ -136,9 +136,20 @@ function ShutdownMenuButton({
 				},
 			}}
 		>
-			<ActionIcon variant="transparent" color="gray" size={28} aria-hidden>
+			<Box
+				component="span"
+				aria-hidden
+				style={{
+					display: 'inline-flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: 28,
+					height: 28,
+					flexShrink: 0,
+				}}
+			>
 				<PowerIcon size={20} />
-			</ActionIcon>
+			</Box>
 			{expanded ? (
 				<Text size="sm" truncate>
 					Выключение
@@ -197,9 +208,20 @@ function SidebarButton({ label, icon, expanded, onClick }: SidebarButtonProps) {
 				},
 			}}
 		>
-			<ActionIcon variant="transparent" color="gray" size={28} aria-hidden>
+			<Box
+				component="span"
+				aria-hidden
+				style={{
+					display: 'inline-flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: 28,
+					height: 28,
+					flexShrink: 0,
+				}}
+			>
 				{icon}
-			</ActionIcon>
+			</Box>
 			{expanded ? (
 				<Text size="sm" truncate>
 					{label}

@@ -107,12 +107,14 @@ function TableBodyGroupedNested<T = object>({
 		[node.nodes],
 	);
 
+	const layoutColumn = expandColumn ?? columns[0];
+
 	const layout = useMemo(
-		() => getNestedExpandLayout(columns, expandColumn ?? columns[0], groupAt),
-		[columns, expandColumn, groupAt],
+		() => (layoutColumn ? getNestedExpandLayout(columns, layoutColumn, groupAt) : null),
+		[columns, layoutColumn, groupAt],
 	);
 
-	if (!hasChildren || !isExpand || !expandColumn) {
+	if (!hasChildren || !isExpand || !expandColumn || !layoutColumn || !layout) {
 		return null;
 	}
 

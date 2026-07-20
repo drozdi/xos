@@ -39,7 +39,8 @@ function shallowEqual(objA: any, objB: any): boolean {
 	}
 
 	for (let i = 0; i < keysA.length; i++) {
-		if (objA[keysA[i]] !== objB[keysA[i]]) {
+		const key = keysA[i]
+		if (key === undefined || objA[key] !== objB[key]) {
 			return false
 		}
 	}

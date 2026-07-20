@@ -2,6 +2,7 @@
 
 namespace IBlock\Controller;
 
+use App\Attribute\Access;
 use AbstractRepository;
 use IBlock\Entity\Type;
 use IBlock\Repository\TypeRepository;
@@ -11,6 +12,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api/iblock/type', name: 'api_iblock_type_')]
+#[Access('iblock.type')]
 class TypeController extends IBlockCrudController
 {
     public function __construct(
@@ -29,30 +31,35 @@ class TypeController extends IBlockCrudController
     }
 
     #[Route('/list', name: 'list', methods: ['POST'])]
+    #[Access('can_read')]
     public function listAction(Request $request): JsonResponse
     {
         return $this->list($request);
     }
 
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'], requirements: ['id' => '\d+'])]
+    #[Access('can_read')]
     public function detailAction(int $id): JsonResponse
     {
         return $this->detail($id);
     }
 
     #[Route('/', name: 'create', methods: ['POST'])]
+    #[Access('can_create')]
     public function createAction(Request $request, ValidatorInterface $validator): JsonResponse
     {
         return $this->create($request, $validator);
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
+    #[Access('can_update')]
     public function updateAction(int $id, Request $request, ValidatorInterface $validator): JsonResponse
     {
         return $this->update($id, $request, $validator);
     }
 
     #[Route('/{id}', name: 'remove', methods: ['DELETE'], requirements: ['id' => '\d+'])]
+    #[Access('can_delete')]
     public function removeAction(int $id): JsonResponse
     {
         return $this->remove($id);

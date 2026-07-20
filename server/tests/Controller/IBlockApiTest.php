@@ -38,7 +38,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $this->resetIBlockSchema($client);
 
-        $this->createTestUser($client);
+        $this->createTestUser($client, roles: ['ROLE_ROOT']);
 
     }
 

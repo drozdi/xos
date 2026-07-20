@@ -27,7 +27,7 @@ class History
     #[ORM\JoinColumn(name: 'device_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private $device;
 
-    #[ORM\ManyToOne(targetEntity: DeviceEntity::class, inversedBy: 'devices')]
+    #[ORM\ManyToOne(targetEntity: DeviceEntity::class)]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private $parent;
 

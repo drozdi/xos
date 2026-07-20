@@ -1,4 +1,4 @@
-import { ActionIcon, Popover, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { Box, Popover, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
 
 import { useThemePreference, type ThemePreference } from '@/core/theme';
 
@@ -47,9 +47,20 @@ export function ThemeMenuButton({ expanded }: ThemeMenuButtonProps) {
 				},
 			}}
 		>
-			<ActionIcon variant="transparent" color="gray" size={28} aria-hidden>
+			<Box
+				component="span"
+				aria-hidden
+				style={{
+					display: 'inline-flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: 28,
+					height: 28,
+					flexShrink: 0,
+				}}
+			>
 				<ThemeIcon theme={theme} />
-			</ActionIcon>
+			</Box>
 			{expanded ? (
 				<Text size="sm" truncate>
 					Тема

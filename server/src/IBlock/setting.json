@@ -1,0 +1,43 @@
+{
+  "name": "IBlock",
+  "claimant": {
+    "iblock": "Инфоблоки",
+    "iblock.type": "Инфоблоки: Типы",
+    "iblock.block": "Инфоблоки: Блоки",
+    "iblock.element": "Инфоблоки: Элементы",
+    "iblock.section": "Инфоблоки: Разделы",
+    "iblock.property": "Инфоблоки: Свойства"
+  },
+  "map-access": {
+    "type": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "block": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "element": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "section": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    },
+    "property": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8
+    }
+  }
+}

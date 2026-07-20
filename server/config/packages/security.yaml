@@ -33,6 +33,10 @@ security:
             jwt: ~
             logout:
                 path: /api/logout
+        uploads:
+            pattern: ^/uploads
+            stateless: true
+            jwt: ~
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
 
@@ -48,7 +52,7 @@ security:
         - { path: ^/api/login, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/(login|token/refresh), roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/health, roles: PUBLIC_ACCESS, methods: [GET] }
-        - { path: ^/uploads/, roles: PUBLIC_ACCESS, methods: [GET] }
+        - { path: ^/uploads/, roles: IS_AUTHENTICATED_FULLY, methods: [GET] }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
     role_hierarchy:
         ROLE_ADMIN: ROLE_USER
