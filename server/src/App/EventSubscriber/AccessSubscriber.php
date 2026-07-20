@@ -40,14 +40,21 @@ final class AccessSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $classScope = $classAttributes[0]->newInstance()->getApp();
+        $classAccess = $classAttributes[0]->newInstance();
         $method = $reflectionClass->getMethod($methodName);
         $methodAttributes = $method->getAttributes(Access::class);
         if ([] === $methodAttributes) {
             return;
         }
 
-        $methodScope = $methodAttributes[0]->newInstance()->getApp();
+        $methodAccess = $methodAttributes[0]->newInstance();
+        if (!$classAccess->checksRoles() && !$classAccess->checksScopes()
+            && !$methodAccess->checksRoles() && !$methodAccess->checksScopes()) {
+            return;
+        }
+
+        $classScope = $classAccess->getApp();
+        $methodScope = $methodAccess->getApp();
         $fullScope = str_starts_with($methodScope, 'can_')
             ? $methodScope.'.'.$classScope
             : $methodScope;
@@ -60,8 +67,20 @@ final class AccessSubscriber implements EventSubscriberInterface
             return;
         }
 
-        if (!$this->userScopeResolver->checkHasScope($user, $fullScope)) {
-            $event->setController(fn () => ApiResponse::forbidden('Недостаточно прав'));
+        $module = explode('.', $classScope)[0];
+
+        if ($classAccess->checksRoles() || $methodAccess->checksRoles()) {
+            if (!$this->userScopeResolver->canAccessModule($user, $module)) {
+                $event->setController(fn () => ApiResponse::forbidden('Недостаточно прав'));
+
+                return;
+            }
+        }
+
+        if ($classAccess->checksScopes() || $methodAccess->checksScopes()) {
+            if (!$this->userScopeResolver->checkHasScope($user, $fullScope)) {
+                $event->setController(fn () => ApiResponse::forbidden('Недостаточно прав'));
+            }
         }
     }
 }

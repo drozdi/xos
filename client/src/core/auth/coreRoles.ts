@@ -89,7 +89,7 @@ export function canAccessApp(rolePrefix: string): boolean {
 
 /**
  * Полный доступ внутри приложения (scope не ограничивает):
- * ROLE_ROOT, ROLE_{name}_ROOT или ROLE_{name}_ADMIN.
+ * ROLE_ROOT, ROLE_{name}_ROOT.
  */
 export function hasFullAppAccess(rolePrefix: string): boolean {
 	if (isRoot()) {
@@ -97,5 +97,5 @@ export function hasFullAppAccess(rolePrefix: string): boolean {
 	}
 
 	const prefix = toRolePrefix(rolePrefix);
-	return isRole(`${prefix}_ROOT`) || isRole(`${prefix}_ADMIN`);
+	return isRole(`${prefix}_ROOT`);
 }

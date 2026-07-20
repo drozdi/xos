@@ -42,7 +42,7 @@ describe('coreRoles', () => {
 		setUserRoles(['ROLE_MAIN_ADMIN']);
 		expect(isAdmin('main')).toBe(true);
 		expect(isAdmin()).toBe(false);
-		expect(hasFullAppAccess('main')).toBe(true);
+		expect(hasFullAppAccess('main')).toBe(false);
 	});
 
 	it('detects app root role', () => {
@@ -65,7 +65,7 @@ describe('coreRoles', () => {
 		resetUserRoles();
 		setUserRoles(['ROLE_MAIN_ADMIN']);
 		expect(canAccessApp('main')).toBe(true);
-		expect(hasFullAppAccess('main')).toBe(true);
+		expect(hasFullAppAccess('main')).toBe(false);
 
 		resetUserRoles();
 		setUserRoles(['ROLE_USER']);

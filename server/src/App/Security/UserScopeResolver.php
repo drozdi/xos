@@ -22,7 +22,7 @@ final class UserScopeResolver
         foreach ($user->getAccesses() as $access) {
             $code = $access->getCode();
             if (null !== $code) {
-                $scopes[$code] = $access->getLevel();
+                $scopes[$code] = ($scopes[$code] ?? 0) | $access->getLevel();
             }
         }
 
@@ -48,6 +48,79 @@ final class UserScopeResolver
             'roles' => $user->getRoles(),
             'scopes' => $this->resolve($user),
         ];
+    }
+
+    /**
+     * Модуль доступен: ROLE_ROOT, ROLE_{module}, ROLE_{module}_ROOT (и legacy ROLE_{module}_ADMIN).
+     */
+    public function canAccessModule(User $user, string $module): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT'])) {
+            return true;
+        }
+
+        $prefix = strtoupper(str_replace('.', '_', $module));
+
+        return $this->userHasAnyRole($user, [
+            "ROLE_{$prefix}",
+            "ROLE_{$prefix}_ROOT",
+            "ROLE_{$prefix}_ADMIN",
+        ]);
+    }
+
+    /**
+     * Полный доступ внутри модуля (скоупы не проверяются): ROLE_ROOT, ROLE_{module}_ROOT.
+     */
+    public function hasFullAppAccess(User $user, string $module): bool
+    {
+        if ($this->userHasAnyRole($user, ['ROLE_ROOT'])) {
+            return true;
+        }
+
+        $prefix = strtoupper(str_replace('.', '_', $module));
+
+        return $this->userHasAnyRole($user, ["ROLE_{$prefix}_ROOT"]);
+    }
+
+    public function checkHasScope(User $user, string $scope, bool $allowFullAppAccessBypass = true): bool
+    {
+        $not = false;
+        if (str_starts_with($scope, '!')) {
+            $not = true;
+            $scope = substr($scope, 1);
+        }
+
+        $parts = explode('.', $scope);
+        $can = array_shift($parts);
+        if (!is_string($can) || !str_starts_with($can, 'can_')) {
+            return false;
+        }
+
+        if ($allowFullAppAccessBypass && count($parts) > 0) {
+            $module = $parts[0];
+            if ($this->hasFullAppAccess($user, $module)) {
+                return !$not;
+            }
+
+            $scopePath = implode('.', $parts);
+            $scopeRootRole = 'ROLE_'.strtoupper(str_replace('.', '_', $scopePath)).'_ROOT';
+            if ($this->userHasAnyRole($user, [$scopeRootRole])) {
+                return !$not;
+            }
+        }
+
+        $scopes = $this->resolve($user);
+        $level = 0;
+        $current = '';
+        foreach ($parts as $part) {
+            $current = '' === $current ? $part : $current.'.'.$part;
+            $level |= $scopes[$current] ?? 0;
+        }
+
+        $canBit = $this->claimantManager->getCanScopeValue($scope);
+        $result = ($level & $canBit) !== 0;
+
+        return $not ? !$result : $result;
     }
 
     public function canCreateMainOu(User $user): bool
@@ -217,7 +290,11 @@ final class UserScopeResolver
 
     private function canSchooltaskSubject(User $user, string $scope): bool
     {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_SCHOOLTASK_ROOT', 'ROLE_SCHOOLTASK_SUBJECT_ROOT'])) {
+        if (!$this->canAccessModule($user, 'schooltask')) {
+            return false;
+        }
+        if ($this->hasFullAppAccess($user, 'schooltask')
+            || $this->userHasAnyRole($user, ['ROLE_SCHOOLTASK_SUBJECT_ROOT'])) {
             return true;
         }
 
@@ -226,7 +303,11 @@ final class UserScopeResolver
 
     private function canSchooltaskClass(User $user, string $scope): bool
     {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_SCHOOLTASK_ROOT', 'ROLE_SCHOOLTASK_CLASS_ROOT'])) {
+        if (!$this->canAccessModule($user, 'schooltask')) {
+            return false;
+        }
+        if ($this->hasFullAppAccess($user, 'schooltask')
+            || $this->userHasAnyRole($user, ['ROLE_SCHOOLTASK_CLASS_ROOT'])) {
             return true;
         }
 
@@ -235,7 +316,11 @@ final class UserScopeResolver
 
     private function canSchooltaskEvent(User $user, string $scope): bool
     {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_SCHOOLTASK_ROOT', 'ROLE_SCHOOLTASK_EVENT_ROOT'])) {
+        if (!$this->canAccessModule($user, 'schooltask')) {
+            return false;
+        }
+        if ($this->hasFullAppAccess($user, 'schooltask')
+            || $this->userHasAnyRole($user, ['ROLE_SCHOOLTASK_EVENT_ROOT'])) {
             return true;
         }
 
@@ -244,115 +329,37 @@ final class UserScopeResolver
 
     private function canMainOu(User $user, string $scope): bool
     {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_OU_ROOT'])) {
-            return true;
-        }
-
-        return $this->checkHasScope($user, $scope, false);
+        return $this->canMainScope($user, 'main', $scope, 'main.ou');
     }
 
     private function canMainClaimant(User $user, string $scope): bool
     {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_CLAIMANT_ROOT'])) {
-            return true;
-        }
-
-        return $this->checkHasScope($user, $scope, false);
+        return $this->canMainScope($user, 'main', $scope, 'main.claimant');
     }
 
     private function canMainGroup(User $user, string $scope): bool
     {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_GROUP_ROOT'])) {
-            return true;
-        }
-
-        return $this->checkHasScope($user, $scope, false);
+        return $this->canMainScope($user, 'main', $scope, 'main.group');
     }
 
     private function canMainUser(User $user, string $scope): bool
     {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT', 'ROLE_MAIN_ROOT', 'ROLE_MAIN_USER_ROOT'])) {
+        return $this->canMainScope($user, 'main', $scope, 'main.user');
+    }
+
+    private function canMainScope(User $user, string $module, string $scope, string $scopePath): bool
+    {
+        if (!$this->canAccessModule($user, $module)) {
+            return false;
+        }
+
+        $scopeRootRole = 'ROLE_'.strtoupper(str_replace('.', '_', $scopePath)).'_ROOT';
+        if ($this->hasFullAppAccess($user, $module)
+            || $this->userHasAnyRole($user, [$scopeRootRole])) {
             return true;
         }
 
         return $this->checkHasScope($user, $scope, false);
-    }
-
-    public function checkHasScope(User $user, string $scope, bool $allowFullAppAccessBypass = true): bool
-    {
-        $not = false;
-        if (str_starts_with($scope, '!')) {
-            $not = true;
-            $scope = substr($scope, 1);
-        }
-
-        $parts = explode('.', $scope);
-        $can = array_shift($parts);
-        if (!is_string($can) || !str_starts_with($can, 'can_')) {
-            return false;
-        }
-
-        if ($allowFullAppAccessBypass && count($parts) > 0) {
-            if ($this->hasFullAppAccess($user, $parts[0])) {
-                return !$not;
-            }
-
-            $scopePath = implode('.', $parts);
-            $scopeRootRole = 'ROLE_'.strtoupper(str_replace('.', '_', $scopePath)).'_ROOT';
-            if ($this->userHasAnyRole($user, [$scopeRootRole])) {
-                return !$not;
-            }
-        }
-
-        $scopes = $this->resolve($user);
-        $level = 0;
-        $current = '';
-        foreach ($parts as $part) {
-            $current = '' === $current ? $part : $current.'.'.$part;
-            $level |= $scopes[$current] ?? 0;
-        }
-
-        $canBit = $this->getCanScopeValue($scope);
-        $result = ($level & $canBit) !== 0;
-
-        return $not ? !$result : $result;
-    }
-
-    private function hasFullAppAccess(User $user, string $appPrefix): bool
-    {
-        if ($this->userHasAnyRole($user, ['ROLE_ROOT'])) {
-            return true;
-        }
-
-        $prefix = strtoupper(str_replace('.', '_', $appPrefix));
-
-        return $this->userHasAnyRole($user, ["ROLE_{$prefix}_ROOT", "ROLE_{$prefix}_ADMIN"]);
-    }
-
-    private function getCanScopeValue(string $scope): int
-    {
-        $segments = explode('.', $scope);
-        $canKey = array_shift($segments);
-        if (!is_string($canKey) || !str_starts_with($canKey, 'can_') || [] === $segments) {
-            return 0;
-        }
-
-        $app = strtolower($segments[0]);
-        $map = $this->claimantManager->getMap()[$app]['map-access'] ?? [];
-        $current = $map;
-
-        for ($i = 1, $count = count($segments); $i < $count; ++$i) {
-            if (!is_array($current) || !array_key_exists($segments[$i], $current)) {
-                return 0;
-            }
-            $current = $current[$segments[$i]];
-        }
-
-        if (!is_array($current) || !array_key_exists($canKey, $current)) {
-            return 0;
-        }
-
-        return (int) $current[$canKey];
     }
 
     /**

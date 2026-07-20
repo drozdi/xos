@@ -1,128 +1,186 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: drozd
- * Date: 01.12.2019
- * Time: 12:40
- */
 
 namespace Main\Service;
 
 use AbstractManager;
-
-use Main\Entity\Role;
 use Main\Entity\Claimant;
-
-use Main\Repository\RoleRepository;
+use Main\Entity\Role;
 use Main\Repository\ClaimantRepository;
-
-use Symfony\Component\Validator\Exception\ValidationFailedException;
-use Symfony\Component\Validator\Validator\TraceableValidator;
+use Main\Repository\RoleRepository;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Path;
-
-use Symfony\Component\HttpFoundation\Request;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Common\Collections\Criteria;
-
-class ClaimantManager extends AbstractManager {
+class ClaimantManager extends AbstractManager
+{
     protected MainManager $mm;
     protected array $map = [];
     protected bool $isLoaded = false;
-    public function __construct (ValidatorInterface $Validator, MainManager $mm) {
+
+    public function __construct(ValidatorInterface $Validator, MainManager $mm)
+    {
         parent::__construct($Validator);
         $this->mm = $mm;
     }
 
-    public function getRoleRepository (): ?RoleRepository {
+    public function getRoleRepository(): ?RoleRepository
+    {
         return $this->getEntityManager()->getRepository(Role::class);
-        //return $this->container->getService(SoftwareRepository::class);
-    }
-    public function getClaimantRepository (): ?ClaimantRepository {
-        return $this->getEntityManager()->getRepository(Claimant::class);
-        //return $this->container->getService(SoftwareRepository::class);
     }
 
-    public function load (): void {
+    public function getClaimantRepository(): ?ClaimantRepository
+    {
+        return $this->getEntityManager()->getRepository(Claimant::class);
+    }
+
+    public function load(): void
+    {
         if ($this->isLoaded) {
             return;
         }
-        $path = Path::normalize($this->container->getParameter('kernel.project_dir'))."/src/*/setting.json";
+        $path = Path::normalize($this->container->getParameter('kernel.project_dir')).'/src/*/setting.json';
         foreach (glob($path) as $file) {
             $json = json_decode(file_get_contents($file), true);
-            $json['map-access'] = array_merge($json['map-access'], $this->enumeration($json['map-access']));
-            $this->map[strtolower($json['name'])] = $json;
+            if (!is_array($json) || !isset($json['name'])) {
+                continue;
+            }
+            $this->map[strtolower((string) $json['name'])] = $json;
         }
         $this->isLoaded = true;
-        //$this->reBuild();
     }
-    protected function enumeration (array $map = []): array {
-        foreach ($map as $k => $v) {
-            if (substr($k, 0,4) === "can_") {
-                $map[$k] = (int)$v;
-            } elseif (is_array($v)) {
-                $map = array_merge($map, $this->enumeration($v));
-            }
-        }
-        return $map;
-    }
-    public function reBuild (): void {
+
+    public function reBuild(): void
+    {
         foreach ($this->map as $item) {
             foreach ($item['claimant'] ?? [] as $k => $n) {
                 $this->mm->claimant([
-                    'code' => $k
+                    'code' => $k,
                 ], [
                     'code' => $k,
-                    'name' => $n
+                    'name' => $n,
                 ]);
             }
         }
     }
-    public function getMap (): ?array {
+
+    public function getMap(): ?array
+    {
         $this->load();
+
         return $this->map;
     }
-    public function getAccessesRoot (string $app): int {
+
+    public function getModuleConfig(string $module): ?array
+    {
         $this->load();
-        $ret = 0;
-        $arApp = explode('.', $app);
-        $map = $this->map[$arApp[0]]['map-access'] ?? [];
-        for ($i = 1; $i < count($arApp); $i++) {
-            $map = $map[$arApp] ?? [];
-        }
-        foreach ($map as $k => $v) {
-            if (substr($k, 0, 4) === 'can_') {
-                $ret = $ret | $v;
-            }
-        }
-        return $ret;
+
+        return $this->map[strtolower($module)] ?? null;
     }
-    public function getAccessesRole (string $role): array {
+
+    /**
+     * Сумма всех can_* для claimant-кода (например main.user → user в map-access Main).
+     */
+    public function getAccessesRoot(string $claimantCode): int
+    {
+        $this->load();
+        $parts = explode('.', $claimantCode);
+        $module = strtolower($parts[0]);
+        $config = $this->map[$module] ?? null;
+        if (null === $config) {
+            return 0;
+        }
+
+        $map = $config['map-access'] ?? [];
+        if (1 === count($parts)) {
+            return $this->sumAllCanBits($map);
+        }
+
+        $entityKey = $parts[1];
+        $entityMap = $map[$entityKey] ?? [];
+
+        return $this->sumCanBits(is_array($entityMap) ? $entityMap : []);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public function getAccessesRole(string $role): array
+    {
         $this->load();
         $ret = [];
+
         if ('ROLE_ROOT' === $role) {
-            foreach ($this->map as $key => $item) {
-                $ret[$key] = 0;
-                foreach ($item['map-access'] as $k => $v) {
-                    if (substr($k, 0, 4) === 'can_') {
-                        $ret[$key] = $ret[$key] | $v;
-                    }
+            foreach ($this->map as $item) {
+                foreach ($item['claimant'] ?? [] as $code => $name) {
+                    $ret[$code] = $this->getAccessesRoot($code);
                 }
             }
-        } elseif (substr($role, -5) === "_ROOT") {
-            foreach ($this->getRoleRepository()->findBy([]) as $r) {
-                $ret[$r->getClaimant()->getCode()] = $r->getLevel();
+
+            return $ret;
+        }
+
+        if (preg_match('/^ROLE_(.+)_ROOT$/', $role, $matches)) {
+            $claimantCode = strtolower(str_replace('_', '.', $matches[1]));
+            $ret[$claimantCode] = ($ret[$claimantCode] ?? 0) | $this->getAccessesRoot($claimantCode);
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Значение бита can_* для полного scope (can_read.main.user).
+     */
+    public function getCanScopeValue(string $scope): int
+    {
+        $segments = explode('.', $scope);
+        $canKey = array_shift($segments);
+        if (!is_string($canKey) || !str_starts_with($canKey, 'can_') || [] === $segments) {
+            return 0;
+        }
+
+        $module = strtolower($segments[0]);
+        $config = $this->map[$module] ?? null;
+        if (null === $config) {
+            return 0;
+        }
+
+        $current = $config['map-access'] ?? [];
+        for ($i = 1, $count = count($segments); $i < $count; ++$i) {
+            if (!is_array($current) || !array_key_exists($segments[$i], $current)) {
+                return 0;
             }
-        } else {
-            $role = explode('_', $role);
-            if ("ROOT" === array_pop($role) && "ROLE" === array_shift($role)) {
-                $app = strtolower(implode('.', $role));
-                $ret[$app] = ($ret[$app] ?? 0) | $this->getAccessesRoot($app);
+            $current = $current[$segments[$i]];
+        }
+
+        if (!is_array($current) || !array_key_exists($canKey, $current)) {
+            return 0;
+        }
+
+        return (int) $current[$canKey];
+    }
+
+    private function sumCanBits(array $map): int
+    {
+        $ret = 0;
+        foreach ($map as $key => $value) {
+            if (is_string($key) && str_starts_with($key, 'can_')) {
+                $ret |= (int) $value;
             }
         }
+
+        return $ret;
+    }
+
+    private function sumAllCanBits(array $map): int
+    {
+        $ret = 0;
+        foreach ($map as $key => $value) {
+            if (is_string($key) && str_starts_with($key, 'can_')) {
+                $ret |= (int) $value;
+            } elseif (is_array($value)) {
+                $ret |= $this->sumCanBits($value);
+            }
+        }
+
         return $ret;
     }
 }

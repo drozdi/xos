@@ -21,10 +21,14 @@ export interface AppManifest {
 	defaultSize: { width: number; height: number };
 	minSize?: { width: number; height: number };
 	/**
-	 * Префикс роли приложения (без ROLE_): main → ROLE_MAIN / ROLE_MAIN_ADMIN / ROLE_MAIN_ROOT.
-	 * ROLE_USER — приложения для всех авторизованных пользователей.
+	 * Префикс роли приложения (без ROLE_): main → ROLE_MAIN / ROLE_MAIN_ROOT.
+	 * Не задавать — приложение доступно всем авторизованным (без API).
 	 */
 	requiredRole?: string;
+	/** Проверять роль модуля при запуске. По умолчанию true, если задан requiredRole */
+	checkRoles?: boolean;
+	/** Проверять scope при запуске. По умолчанию true, если задан requiredScope */
+	checkScopes?: boolean;
 	/** Scope для запуска, если нет полного доступа по роли приложения */
 	requiredScope?: string;
 	/** Проверка доступа (заменяет requiredRole/requiredScope, если задана) */

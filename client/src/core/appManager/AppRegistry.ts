@@ -31,10 +31,14 @@ export const AppRegistry = {
 			return manifest.canAccess();
 		}
 
-		if (manifest.requiredRole && !canAccessApp(manifest.requiredRole)) {
+		const checkRoles = manifest.checkRoles ?? Boolean(manifest.requiredRole);
+		const checkScopes = manifest.checkScopes ?? Boolean(manifest.requiredScope);
+
+		if (checkRoles && manifest.requiredRole && !canAccessApp(manifest.requiredRole)) {
 			return false;
 		}
 		if (
+			checkScopes &&
 			manifest.requiredScope &&
 			!(manifest.requiredRole && hasFullAppAccess(manifest.requiredRole)) &&
 			!checkHasScope(manifest.requiredScope, manifest.requiredRole)

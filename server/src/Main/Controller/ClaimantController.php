@@ -16,10 +16,32 @@ use App\Security\UserScopeResolver;
 use Main\Entity\User;
 use Main\Repository\ClaimantRepository;
 use Main\Security\MainClaimantAccessMessages;
+use Main\Service\ClaimantManager;
 use Main\Service\MainManager;
 
 #[Route('/api/main/claimant')]
 class ClaimantController extends AbstractController {
+    #[Route('/access-rules', name: 'main_claimant_access_rules', methods: ['GET'])]
+    public function accessRules(
+        ClaimantManager $claimantManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadMainClaimant($user)) {
+            return ApiResponse::forbidden(MainClaimantAccessMessages::READ);
+        }
+
+        $config = $claimantManager->getModuleConfig('main');
+        if (null === $config) {
+            return ApiResponse::notFound('Правила Main не найдены');
+        }
+
+        return $this->json([
+            'claimant' => $config['claimant'] ?? [],
+            'map-access' => $config['map-access'] ?? [],
+        ]);
+    }
+
     #[Route('/list', name: 'main_claimant_list')]
     public function list (
         Request $request,
