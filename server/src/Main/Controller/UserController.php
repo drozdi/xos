@@ -319,26 +319,7 @@ class UserController extends AbstractController {
      */
     private function buildAssignableRoles(ClaimantManager $claimantManager): array
     {
-        $roles = ['ROLE_ROOT'];
-
-        foreach ($claimantManager->getMap() as $appKey => $item) {
-            $prefix = strtoupper(str_replace('.', '_', $appKey));
-            $roles[] = "ROLE_{$prefix}";
-            $roles[] = "ROLE_{$prefix}_ROOT";
-            $roles[] = "ROLE_{$prefix}_ADMIN";
-
-            foreach (array_keys($item['claimant'] ?? []) as $code) {
-                if ($code === $appKey) {
-                    continue;
-                }
-                $scopePrefix = strtoupper(str_replace('.', '_', $code));
-                $roles[] = "ROLE_{$scopePrefix}_ROOT";
-            }
-        }
-
-        sort($roles);
-
-        return array_values(array_unique($roles));
+        return $claimantManager->getExtraRoles();
     }
 
     /**

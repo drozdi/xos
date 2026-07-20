@@ -1,14 +1,16 @@
 import { Select } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 
-import { mainGroupApi } from '@/core/api/endpoints/mainApi';
+import { mainOuApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useAuthStore } from '@/core/auth/authStore';
+import type { ListRequest } from '@/types/api.types';
 
 interface OuSelectProps {
 	label?: string;
 	value: number | null | undefined;
 	onChange: (ouId: number | null) => void;
+	filters?: ListRequest['filters'];
 	disabled?: boolean;
 	error?: string;
 	withAsterisk?: boolean;
@@ -18,6 +20,7 @@ export function OuSelect({
 	label = 'Подразделение',
 	value,
 	onChange,
+	filters,
 	disabled,
 	error,
 	withAsterisk,
@@ -25,14 +28,14 @@ export function OuSelect({
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
 	const query = useQuery({
-		queryKey: queryKeys.main.groupFilter,
-		queryFn: () => mainGroupApi.filter(),
+		queryKey: queryKeys.main.ouSelect(filters),
+		queryFn: () => mainOuApi.select({ filters }),
 		enabled: isAuthenticated,
 	});
 
-	const options = (query.data ?? []).map((ou) => ({
-		value: String(ou.id),
-		label: `${ou.name} - ${ou.code}`,
+	const options = (query.data?.items ?? []).map((ou) => ({
+		value: String(ou.value),
+		label: ou.label,
 	}));
 
 	return (

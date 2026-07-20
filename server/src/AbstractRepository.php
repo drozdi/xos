@@ -4,6 +4,61 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 
 class AbstractRepository extends ServiceEntityRepository {
+    /**
+     * Legacy helper kept for old repositories that still build custom joins.
+     * Prefer `applyFieldFilter()` in new code.
+     */
+    protected function fieldVal(string $field, mixed $val): ?string {
+        $not = false;
+        if (str_ends_with($field, '!')) {
+            $not = true;
+            $field = substr($field, 0, -1);
+        }
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$/', $field)) {
+            throw new \InvalidArgumentException(sprintf('Invalid filter field: %s', $field));
+        }
+
+        if (null === $val) {
+            return $field.' IS '.($not ? 'NOT ' : '').'NULL';
+        }
+
+        if (is_array($val)) {
+            if ([] === $val) {
+                return null;
+            }
+
+            $items = array_map(fn (mixed $item): string => $this->quoteDqlLiteral($item), array_values($val));
+
+            return sprintf(
+                '%s %sIN (%s)',
+                $field,
+                $not ? 'NOT ' : '',
+                implode(', ', $items),
+            );
+        }
+
+        return sprintf(
+            '%s %s %s',
+            $field,
+            $not ? '<>' : '=',
+            $this->quoteDqlLiteral($val),
+        );
+    }
+
+    protected function quoteDqlLiteral(mixed $value): string {
+        if (null === $value) {
+            return 'NULL';
+        }
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return "'".str_replace("'", "''", (string) $value)."'";
+    }
+
     protected function applyFieldFilter(QueryBuilder $query, string $alias, string $field, mixed $value, int &$paramCounter): void {
         $not = str_ends_with($field, '!');
         if ($not) {

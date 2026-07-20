@@ -77,6 +77,44 @@ class ClaimantManager extends AbstractManager
     }
 
     /**
+     * Роли для вкладки «Дополнительные роли» — явный список, не связанный с доступом к приложениям.
+     *
+     * @return list<string>
+     */
+    public function getExtraRoles(): array
+    {
+        $this->load();
+
+        $roles = [];
+        $globalPath = Path::normalize($this->container->getParameter('kernel.project_dir')).'/src/Main/extra-roles.json';
+        if (is_file($globalPath)) {
+            $json = json_decode((string) file_get_contents($globalPath), true);
+            if (is_array($json['roles'] ?? null)) {
+                foreach ($json['roles'] as $role) {
+                    if (is_string($role) && '' !== $role) {
+                        $roles[] = $role;
+                    }
+                }
+            }
+        }
+
+        foreach ($this->map as $item) {
+            if (!is_array($item['extra-roles'] ?? null)) {
+                continue;
+            }
+            foreach ($item['extra-roles'] as $role) {
+                if (is_string($role) && '' !== $role) {
+                    $roles[] = $role;
+                }
+            }
+        }
+
+        sort($roles);
+
+        return array_values(array_unique($roles));
+    }
+
+    /**
      * Сумма всех can_* для claimant-кода (например main.user → user в map-access Main).
      */
     public function getAccessesRoot(string $claimantCode): int

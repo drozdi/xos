@@ -1,72 +1,14 @@
 import type { GroupAccessItem, GroupDetail, GroupUserItem } from '@/core/api/endpoints/mainApi';
 
-export const CAN_SCOPE_LABELS: Record<string, string> = {
-	can_create: 'Создание',
-	can_read: 'Чтение',
-	can_update: 'Изменение',
-	can_delete: 'Удаление',
-	can_access: 'Права',
-	can_user: 'Пользователи',
-	can_group: 'Группы',
-	can_role: 'Роли',
-};
-
-export function extractCanScopeMap(source: Record<string, unknown>): Record<string, number> {
-	const result: Record<string, number> = {};
-	for (const [key, value] of Object.entries(source)) {
-		if (key.startsWith('can_') && typeof value === 'number') {
-			result[key] = value;
-		}
-	}
-	return result;
-}
-
-export function resolveClaimantAccessMap(
-	claimantCode: string,
-	mainMapAccess: Record<string, unknown>,
-): Record<string, number> {
-	const parts = claimantCode.split('.');
-	if (parts[0] !== 'main') {
-		return {};
-	}
-
-	if (parts.length === 1) {
-		return extractCanScopeMap(mainMapAccess);
-	}
-
-	let current: unknown = mainMapAccess;
-	for (let index = 1; index < parts.length; index += 1) {
-		const segment = parts[index];
-		if (!segment || typeof current !== 'object' || current === null) {
-			return {};
-		}
-		current = (current as Record<string, unknown>)[segment];
-	}
-
-	if (typeof current !== 'object' || current === null) {
-		return {};
-	}
-
-	return extractCanScopeMap(current as Record<string, unknown>);
-}
-
-export function levelToChecked(level: number, scopeMap: Record<string, number>): Record<string, boolean> {
-	const checked: Record<string, boolean> = {};
-	for (const [key, bit] of Object.entries(scopeMap)) {
-		checked[key] = (level & bit) === bit;
-	}
-	return checked;
-}
-
-export function checkedToLevel(checked: Record<string, boolean>, scopeMap: Record<string, number>): number {
-	let level = 0;
-	for (const [key, bit] of Object.entries(scopeMap)) {
-		if (checked[key]) {
-			level |= bit;
-		}
-	}
-	return level;
-}
+export {
+	CAN_SCOPE_LABELS,
+	checkedToLevel,
+	extractCanScopeMap,
+	getAccessLevel as getGroupAccessLevel,
+	levelToChecked,
+	resolveClaimantAccessMap,
+	updateAccessLevel as updateGroupAccessLevel,
+} from '@/features/main/accessRulesUtils';
 
 export function normalizeGroupUsers(users: GroupDetail['users']): Record<string, GroupUserItem> {
 	if (!users) {
@@ -172,40 +114,4 @@ export function addGroupUser(
 			activeTo: null,
 		},
 	};
-}
-
-export function updateGroupAccessLevel(
-	accesses: Record<string, GroupAccessItem>,
-	claimantId: number,
-	claimantName: string,
-	level: number,
-): Record<string, GroupAccessItem> {
-	const existingEntry = Object.entries(accesses).find(([, item]) => item.claimant_id === claimantId);
-	if (level <= 0) {
-		if (!existingEntry) {
-			return accesses;
-		}
-		const next = { ...accesses };
-		delete next[existingEntry[0]];
-		return next;
-	}
-
-	const [existingKey, existingItem] = existingEntry ?? [];
-	const key = existingKey ?? `new-${claimantId}`;
-	return {
-		...accesses,
-		[key]: {
-			id: existingItem?.id,
-			claimant_id: claimantId,
-			name: existingItem?.name ?? claimantName,
-			level,
-		},
-	};
-}
-
-export function getGroupAccessLevel(
-	accesses: Record<string, GroupAccessItem>,
-	claimantId: number,
-): number {
-	return Object.values(accesses).find((item) => item.claimant_id === claimantId)?.level ?? 0;
 }

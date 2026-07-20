@@ -8,11 +8,11 @@ export {
 	CAN_SCOPE_LABELS,
 	checkedToLevel,
 	extractCanScopeMap,
-	getGroupAccessLevel as getUserAccessLevel,
+	getAccessLevel as getUserAccessLevel,
 	levelToChecked,
 	resolveClaimantAccessMap,
-	updateGroupAccessLevel as updateUserAccessLevel,
-} from '../main-group/groupFormUtils';
+	updateAccessLevel as updateUserAccessLevel,
+} from '@/features/main/accessRulesUtils';
 
 export function normalizeUserGroups(groups: UserDetail['groups']): Record<string, UserGroupItem> {
 	if (!groups) {

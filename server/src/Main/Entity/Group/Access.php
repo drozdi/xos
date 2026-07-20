@@ -80,4 +80,9 @@ class Access
         }
         return $name;
     }
+
+    public function getCode(): ?string
+    {
+        return $this->claimant?->getCode();
+    }
 }

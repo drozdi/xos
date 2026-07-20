@@ -17,13 +17,34 @@ final class UserScopeResolver
      */
     public function resolve(User $user): array
     {
-        $scopes = [];
-
+        $userDirect = [];
         foreach ($user->getAccesses() as $access) {
             $code = $access->getCode();
             if (null !== $code) {
-                $scopes[$code] = ($scopes[$code] ?? 0) | $access->getLevel();
+                $userDirect[$code] = (int) ($access->getLevel() ?? 0);
             }
+        }
+
+        $groupLevels = [];
+        foreach ($user->getGroups() as $userGroup) {
+            $group = $userGroup->getGroup();
+            if (null === $group) {
+                continue;
+            }
+            foreach ($group->getAccesses() as $access) {
+                $code = $access->getCode();
+                if (null === $code) {
+                    continue;
+                }
+                $groupLevels[$code] = ($groupLevels[$code] ?? 0) | (int) ($access->getLevel() ?? 0);
+            }
+        }
+
+        $scopes = [];
+        foreach (array_unique([...array_keys($userDirect), ...array_keys($groupLevels)]) as $code) {
+            $scopes[$code] = array_key_exists($code, $userDirect)
+                ? $userDirect[$code]
+                : $groupLevels[$code];
         }
 
         foreach ($user->getRoles() as $role) {

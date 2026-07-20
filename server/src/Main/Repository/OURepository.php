@@ -61,6 +61,33 @@ class OURepository extends  AbstractRepository {
         return $query;
     }
 
+    /**
+     * @param array<string, mixed> $filters
+     * @param array<int, array{key: string, order: string}> $sort
+     *
+     * @return array<int, array{value: int, label: string}>
+     */
+    public function findSelectItems(
+        array $filters = [],
+        array $sort = [['key' => 'sort', 'order' => 'ASC'], ['key' => 'name', 'order' => 'ASC']],
+        int $limit = -1,
+        int $offset = 1,
+    ): array {
+        $items = [];
+        $query = $this->getQueryBuilder($filters, $sort, $limit, $offset)->getQuery();
+        foreach ($query->execute() as $ou) {
+            if (!$ou instanceof OU) {
+                continue;
+            }
+            $items[] = [
+                'value' => $ou->getId(),
+                'label' => (string) $ou,
+            ];
+        }
+
+        return $items;
+    }
+
 
 //    /**
 //     * @return OU[] Returns an array of OU objects

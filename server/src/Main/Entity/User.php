@@ -462,7 +462,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
     }
 
     public function getRoles(): array {
-        $roles = $this->roles;
+        $roles = isset($this->roles) ? $this->roles : [];
         // guarantee every user at least has ROLE_USER
         $roles[] = self::ROLE_USER;
         return array_unique($roles);
@@ -478,6 +478,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
             return;
         }
 
+        if (!isset($this->roles)) {
+            $this->roles = [];
+        }
+
         if (!\in_array($role, $this->roles, true)) {
             $this->roles[] = $role;
         }
@@ -487,14 +491,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
     }
 
     public function getOptions (): array {
-        return $this->options;
+        return isset($this->options) ? $this->options : [];
     }
     public function setOptions (array $options): self {
         $this->options = $options;
         return $this;
     }
     public function addOptions (array $options): self {
-        $this->options = array_merge($this->options, $options);
+        $this->options = array_merge($this->getOptions(), $options);
         return $this;
     }
     public function getOption (string $name, $default = null): mixed {

@@ -133,8 +133,12 @@ export default function MainUserApp() {
 						<Tabs.List>
 							<Tabs.Tab value="general">Общие</Tabs.Tab>
 							<Tabs.Tab value="groups">Группы</Tabs.Tab>
-							<Tabs.Tab value="access">Права</Tabs.Tab>
-							<Tabs.Tab value="roles">Роли</Tabs.Tab>
+							{canAccess ? (
+								<Tabs.Tab value="app-access">Доступ к приложениям</Tabs.Tab>
+							) : null}
+							{canRole ? (
+								<Tabs.Tab value="extra-roles">Дополнительные роли</Tabs.Tab>
+							) : null}
 						</Tabs.List>
 
 						<Tabs.Panel value="general" pt="sm">
@@ -154,21 +158,27 @@ export default function MainUserApp() {
 							/>
 						</Tabs.Panel>
 
-						<Tabs.Panel value="access" pt="sm">
-							<UserAccessTab
-								accesses={accesses}
-								readOnly={readOnlyAccess}
-								onChange={(nextAccesses) => setField('accesses', nextAccesses)}
-							/>
-						</Tabs.Panel>
+						{canAccess ? (
+							<Tabs.Panel value="app-access" pt="sm">
+								<UserAccessTab
+									accesses={accesses}
+									roles={roles}
+									readOnly={readOnlyAccess}
+									onAccessesChange={(nextAccesses) => setField('accesses', nextAccesses)}
+									onRolesChange={(nextRoles) => setField('roles', nextRoles)}
+								/>
+							</Tabs.Panel>
+						) : null}
 
-						<Tabs.Panel value="roles" pt="sm">
-							<UserRolesTab
-								roles={roles}
-								readOnly={readOnlyRoles}
-								onChange={(nextRoles) => setField('roles', nextRoles)}
-							/>
-						</Tabs.Panel>
+						{canRole ? (
+							<Tabs.Panel value="extra-roles" pt="sm">
+								<UserRolesTab
+									roles={roles}
+									readOnly={readOnlyRoles}
+									onRolesChange={(nextRoles) => setField('roles', nextRoles)}
+								/>
+							</Tabs.Panel>
+						) : null}
 					</Tabs>
 				);
 			}}

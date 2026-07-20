@@ -266,9 +266,30 @@ export const ouDetailSchema = z.object({
 export type OuListItem = z.infer<typeof ouListItemSchema>;
 export type OuDetail = z.infer<typeof ouDetailSchema>;
 
+export const ouSelectItemSchema = z.object({
+	value: z.number(),
+	label: z.string(),
+});
+
+export type OuSelectItem = z.infer<typeof ouSelectItemSchema>;
+
 export const mainOuApi = {
 	list: (request?: ListRequest) =>
 		postList('/api/main/ou/list', request ?? {}, z.array(ouListItemSchema)),
+	select: (request?: ListRequest) =>
+		postList(
+			'/api/main/ou/select',
+			{
+				limit: -1,
+				offset: 1,
+				sortBy: [
+					{ key: 'sort', order: 'ASC' },
+					{ key: 'name', order: 'ASC' },
+				],
+				...request,
+			},
+			z.array(ouSelectItemSchema),
+		),
 	get: (id: number) => getDetail(`/api/main/ou/${id}`, ouDetailSchema),
 	create: (body: unknown) => createEntity('/api/main/ou/', body),
 	update: (id: number, body: unknown) => updateEntity('/api/main/ou', id, body),
