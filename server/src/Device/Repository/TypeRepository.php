@@ -64,6 +64,10 @@ class TypeRepository extends AbstractRepository
             }
         }
         unset($filters['property']);
+        if (array_key_exists('property!', $filters) && null === $filters['property!']) {
+            $query->andWhere($n.'.property IS NOT NULL');
+        }
+        unset($filters['property!']);
 
         foreach ($filters as $f => $v) {
             $query->andWhere($this->fieldVal($n.".{$f}", $v));

@@ -16,13 +16,25 @@ const idRecordSchema = z.preprocess(
 	z.record(z.string(), z.record(z.string(), z.unknown())),
 );
 
-const filterOptionSchema = z.object({
-	label: z.string().optional(),
-	sublabel: z.string().optional(),
-	value: z.union([z.number(), z.string()]).optional(),
-	type: z.string().optional(),
-	title: z.string().optional(),
-});
+type FilterOption = {
+	label?: string;
+	sublabel?: string;
+	value?: number | string;
+	type?: string;
+	title?: string;
+	children?: FilterOption[];
+};
+
+const filterOptionSchema: z.ZodType<FilterOption> = z.lazy(() =>
+	z.object({
+		label: z.string().optional(),
+		sublabel: z.string().optional(),
+		value: z.union([z.number(), z.string()]).optional(),
+		type: z.string().optional(),
+		title: z.string().optional(),
+		children: z.array(filterOptionSchema).optional(),
+	}),
+);
 
 export const deviceListItemSchema = z.object({
 	id: z.number(),
@@ -87,6 +99,10 @@ export const typeListItemSchema = z.object({
 	name: z.string().nullable().optional().transform((v) => v ?? ''),
 	code: z.string().nullable().optional().transform((v) => v ?? ''),
 	sort: z.number().nullable().optional(),
+	group_id: z.number().nullable().optional(),
+	group_name: z.string().nullable().optional().transform((v) => v ?? ''),
+	group_code: z.string().nullable().optional().transform((v) => v ?? ''),
+	group_sort: z.number().nullable().optional(),
 });
 
 export const typeDetailSchema = z
@@ -106,6 +122,17 @@ export const propertyListItemSchema = z.object({
 	name: z.string().nullable().optional().transform((v) => v ?? ''),
 	code: z.string().nullable().optional().transform((v) => v ?? ''),
 	sort: z.number().nullable().optional(),
+	group_id: z.number().nullable().optional(),
+	group_name: z.string().nullable().optional(),
+	group_code: z.string().nullable().optional(),
+	group_sort: z.number().nullable().optional(),
+});
+
+export const propertyCatalogOptionSchema = z.object({
+	value: z.number(),
+	label: z.string().optional(),
+	sublabel: z.string().optional(),
+	group: z.string().optional(),
 });
 
 export const propertyDetailSchema = z
@@ -121,6 +148,7 @@ export const propertyDetailSchema = z
 		listType: z.string().nullable().optional(),
 		postfix: z.string().nullable().optional(),
 		defaultValue: z.unknown().nullable().optional(),
+		prototype_id: z.number().nullable().optional(),
 		parent_id: z.number().nullable().optional(),
 		type_id: z.number().nullable().optional(),
 		enums: idRecordSchema.optional(),
@@ -128,7 +156,13 @@ export const propertyDetailSchema = z
 	})
 	.passthrough();
 
-export const componentListItemSchema = propertyListItemSchema;
+export const componentListItemSchema = z.object({
+	id: z.number(),
+	name: z.string().nullable().optional().transform((v) => v ?? ''),
+	code: z.string().nullable().optional().transform((v) => v ?? ''),
+	sort: z.number().nullable().optional(),
+});
+
 export const componentDetailSchema = z
 	.object({
 		id: z.number(),
@@ -136,7 +170,8 @@ export const componentDetailSchema = z
 		name: z.string().nullable().optional(),
 		code: z.string().nullable().optional(),
 		sort: z.number().nullable().optional(),
-		children: idRecordSchema.optional(),
+		property_id: z.number().nullable().optional(),
+		properties: idRecordSchema.optional(),
 	})
 	.passthrough();
 
@@ -244,6 +279,10 @@ export const subDeviceApi = {
 export const deviceTypeApi = {
 	list: (request: ListRequest) =>
 		postList(`${BASE}/types/list`, request, z.array(typeListItemSchema)),
+	select: async (request: ListRequest = { limit: -1, offset: 1 }) => {
+		const { data } = await apiClient.post<unknown>(`${BASE}/types/select`, request);
+		return z.array(filterOptionSchema).parse(data);
+	},
 	components: async () => {
 		const { data } = await apiClient.get<unknown>(`${BASE}/types/components`);
 		return z.array(filterOptionSchema).parse(data);
@@ -252,6 +291,12 @@ export const deviceTypeApi = {
 		const { data } = await apiClient.get<unknown>(`${BASE}/types/properties`);
 		return z.array(filterOptionSchema).parse(data);
 	},
+	propertyCatalog: async () => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/types/property-catalog`);
+		return z.array(propertyCatalogOptionSchema).parse(data);
+	},
+	propertyTemplate: (id: number) =>
+		getDetail(`${BASE}/types/property-template/${id}`, propertyDetailSchema),
 	get: (id: number) => getDetail(`${BASE}/types/${id}`, typeDetailSchema),
 	create: (body: TypeDetail) => createEntity(`${BASE}/types/`, body),
 	update: (id: number, body: TypeDetail) => updateEntity(`${BASE}/types`, id, body),
@@ -270,6 +315,12 @@ export const devicePropertyApi = {
 export const deviceComponentApi = {
 	list: (request: ListRequest) =>
 		postList(`${BASE}/components/list`, request, z.array(componentListItemSchema)),
+	propertyCatalog: async () => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/components/property-catalog`);
+		return z.array(propertyCatalogOptionSchema).parse(data);
+	},
+	propertyTemplate: (id: number) =>
+		getDetail(`${BASE}/components/property-template/${id}`, propertyDetailSchema),
 	get: (id: number) => getDetail(`${BASE}/components/${id}`, componentDetailSchema),
 	create: (body: ComponentDetail) => createEntity(`${BASE}/components/`, body),
 	update: (id: number, body: ComponentDetail) => updateEntity(`${BASE}/components`, id, body),

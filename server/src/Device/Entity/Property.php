@@ -374,6 +374,11 @@ class Property {
         return $this->required;
     }
 
+    public function isRequired(): bool
+    {
+        return (bool) $this->required;
+    }
+
     /**
      * Set multiple
      *
@@ -394,6 +399,11 @@ class Property {
      */
     public function getMultiple () {
         return $this->multiple;
+    }
+
+    public function isMultiple(): bool
+    {
+        return (bool) $this->multiple;
     }
 
     /**

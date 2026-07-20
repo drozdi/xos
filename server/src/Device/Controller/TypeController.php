@@ -19,14 +19,16 @@ use Device\Service\DeviceManager;
 use Device\Entity\Type;
 use Device\Repository\TypeRepository;
 use Device\Repository\PropertyRepository;
+use Device\Controller\PropertyArrayBuilder;
 
 #[Route('/api/device/types')]
 #[Access('device.type')]
 class TypeController extends AbstractController {
+    use PropertyCatalogTrait;
     #[Route('/select', methods: ['POST'])]
     #[Access('can_read')]
     public function select (Request $request, TypeRepository $TypeRepository): JsonResponse {
-        $req = array_merge([
+        $defaults = [
             'limit' => -1,
             'offset' => 1,
             'sortBy' => [[
@@ -38,9 +40,11 @@ class TypeController extends AbstractController {
             ]],
             'filters' => [
                 'parent' => null,
-                'property' => null
-            ]
-        ], $request->toArray());
+                'property' => null,
+            ],
+        ];
+        $req = array_merge($defaults, $request->toArray());
+        $req['filters'] = array_merge($defaults['filters'], $req['filters'] ?? []);
         if (empty($req['sortBy'])) {
             $req['sortBy'] =[[
                 'key' => "sort",
@@ -76,7 +80,7 @@ class TypeController extends AbstractController {
     #[Route('/list', name: 'device_types_list', methods: ['POST'])]
     #[Access('can_read')]
     public function list (Request $request, TypeRepository $TypeRepository): JsonResponse {
-        $req = array_merge([
+        $defaults = [
             'limit' => -1,
             'offset' => 1,
             'sortBy' => [[
@@ -88,9 +92,11 @@ class TypeController extends AbstractController {
             ]],
             'filters' => [
                 'parent' => null,
-                'property' => null
-            ]
-        ], $request->toArray());
+                'property' => null,
+            ],
+        ];
+        $req = array_merge($defaults, $request->toArray());
+        $req['filters'] = array_merge($defaults['filters'], $req['filters'] ?? []);
         if (empty($req['sortBy'])) {
             $req['sortBy'] =[[
                 'key' => "sort",
@@ -108,6 +114,23 @@ class TypeController extends AbstractController {
         $items = [];
 
         foreach ($query->execute() as $t) {
+            $children = $t->getChildren()->filter(static function (Type $sub): bool {
+                return null === $sub->getProperty();
+            });
+            if ($children->count() === 0) {
+                $items[] = array(
+                    'id' => $t->getId(),
+                    'name' => $t->getName(),
+                    'code' => $t->getCode(),
+                    'sort' => $t->getSort(),
+                    'group_id' => $t->getId(),
+                    'group_name' => null,
+                    'group_code' => null,
+                    'group_sort' => null,
+                );
+                continue;
+            }
+
             $items[] = array(
                 'id' => $t->getId(),
                 'name' => $t->getName(),
@@ -118,7 +141,7 @@ class TypeController extends AbstractController {
                 'group_code' => $t->getCode(),
                 'group_sort' => $t->getSort(),
             );
-            foreach ($t->getChildren() as $sub) {
+            foreach ($children as $sub) {
                 $items[] = array(
                     'id' => $sub->getId(),
                     'name' => $sub->getName(),
@@ -142,22 +165,13 @@ class TypeController extends AbstractController {
 
     #[Route('/components', methods: ['GET', 'POST'])]
     #[Access('can_read')]
-    public function components (PropertyRepository $PropertyRepository): JsonResponse {
+    public function components (TypeRepository $TypeRepository): JsonResponse {
         $items = [];
-        foreach ($PropertyRepository->getComponents() as $component) {
-            $child = [];
-            foreach ($component->getChildren() as $sub) {
-                $child[] = [
-                    'value' => $sub->getId(),
-                    'label' => $sub->getName(),
-                    'sublabel' => $sub->getCode(),
-                ];
-            }
+        foreach ($TypeRepository->getComponents() as $type) {
             $items[] = [
-                'value' => $component->getId(),
-                'label' => $component->getName(),
-                'sublabel' => $component->getCode(),
-                'children' => $child
+                'value' => $type->getId(),
+                'label' => $type->getName(),
+                'sublabel' => $type->getCode(),
             ];
         }
         return $this->json($items);
@@ -175,6 +189,18 @@ class TypeController extends AbstractController {
             ];
         }
         return $this->json($items);
+    }
+
+    #[Route('/property-catalog', methods: ['GET'])]
+    #[Access('can_read')]
+    public function propertyCatalog (PropertyRepository $PropertyRepository): JsonResponse {
+        return $this->propertyCatalogResponse($PropertyRepository);
+    }
+
+    #[Route('/property-template/{id}', methods: ['GET'])]
+    #[Access('can_read')]
+    public function propertyTemplate (int $id, DeviceManager $dm): JsonResponse {
+        return $this->propertyTemplateResponse($id, $dm);
     }
 
     #[Route('/', methods: ['POST'])]
@@ -199,40 +225,18 @@ class TypeController extends AbstractController {
 
     #[Route('/{id}', methods: ['GET'])]
     #[Access('can_read')]
-    public function detail (int $id, DeviceManager $dm): JsonResponse {
+    public function detail (int $id, DeviceManager $dm, TypeRepository $TypeRepository): JsonResponse {
         $type = $dm->type($id);
 
         $arComponents = [];
         $arProperties = [];
         foreach ($type->getProperties() as $property) {
-            if (null != $property->getType() || null != $property->getParent() && null != $property->getParent()->getType()) {
-                $arComponents[] = $property->getId();
+            $componentTypes = $TypeRepository->findBy(['property' => $property], ['sort' => 'ASC', 'name' => 'ASC']);
+            if (count($componentTypes) > 0) {
+                $arComponents[] = $componentTypes[0]->getId();
                 continue;
             }
-            $enums = [];
-            foreach ($property->getEnums() as $enum) {
-                $enums[$enum->getId()] = [
-                    'id' => $enum->getId(),
-                    'code' => $enum->getCode(),
-                    'name' => $enum->getName(),
-                    'sort' => $enum->getSort(),
-                    'default' => $enum->isDefault()
-                ];
-            }
-            $arProperties[$property->getId()] = [
-                'id' => $property->getId(),
-                'active' => $property->isActive(),
-                'required' => $property->isRequired(),
-                'multiple' => $property->isMultiple(),
-                'code' => $property->getCode(),
-                'name' => $property->getName(),
-                'sort' => $property->getSort(),
-                'fieldType' => $property->getFieldType(),
-                'listType' => $property->getListType(),
-                'postfix' => $property->getPostfix(),
-                'defaultValue' => $property->getDefaultValue(),
-                'enums' => $enums
-            ];
+            $arProperties[$property->getId()] = PropertyArrayBuilder::fromProperty($property);
         }
 
         return $this->json([

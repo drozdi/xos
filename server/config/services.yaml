@@ -39,6 +39,8 @@ services:
     Device\Repository\:
         resource: '../src/Device/Repository/'
 
+    Device\Service\DevicePropertyValueSerializer: ~
+
     Device\Service\DeviceManager:
         lazy: true
         calls:

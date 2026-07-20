@@ -120,10 +120,16 @@ class DeviceManager extends AbstractManager {
         //$isForm = !empty($arType['components']) || !empty($arType['properties']);
 
         $arComponents = $arType['components'] ?? [];
+        $componentPropertyIds = [];
+        foreach ($this->getTypeRepository()->findBy(['id' => $arComponents]) as $componentType) {
+            if (null != ($property = $componentType->getProperty())) {
+                $componentPropertyIds[] = $property->getId();
+            }
+        }
         $arProperties = $arType['properties'] ?? [];
         foreach ($type->getProperties() as $property) {
-            if (false !== ($key = array_search($property->getId(), $arComponents))) {
-                unset($arComponents[$key]);
+            if (false !== ($key = array_search($property->getId(), $componentPropertyIds))) {
+                unset($componentPropertyIds[$key]);
             } elseif ($arProperty = $arProperties[$property->getId()] ?? null) {
                 $type->addProperty($this->property($property, $arProperty));
                 unset($arProperties[$property->getId()]);
@@ -131,9 +137,9 @@ class DeviceManager extends AbstractManager {
                 $type->removeProperty($property);
             }
         }
-        foreach ($this->getPropertyRepository()->findBy(array(
-            'id' => $arComponents
-        )) as $property) {
+        foreach ($this->getPropertyRepository()->findBy([
+            'id' => $componentPropertyIds,
+        ]) as $property) {
             $type->addProperty($property);
         }
         foreach ($arProperties as $id => $arProperty) {
@@ -218,10 +224,10 @@ class DeviceManager extends AbstractManager {
 
         $arProperty['enums'] = $arProperty['enums'] ?? [];
 
-        if (!empty($arProperty['enums'])) {
+        if (array_key_exists('enums', $arProperty)) {
             foreach ($property->getEnums() as $propertyEnum) {
                 if ($arEnum = $arProperty['enums'][$propertyEnum->getId()] ?? null) {
-                    $propertyEnum->setCode((string)$arEnum['code']);
+                    $propertyEnum->setValue((string)($arEnum['value'] ?? $arEnum['code'] ?? ''));
                     $propertyEnum->setName((string)$arEnum['name']);
                     $propertyEnum->setSort((int)$arEnum['sort']);
                     $propertyEnum->setDefault((bool)$arEnum['default']);
@@ -233,7 +239,7 @@ class DeviceManager extends AbstractManager {
             }
             foreach ($arProperty['enums'] ?: array() as $arEnum) {
                 $this->getEntityManager()->persist($property->newEnum()
-                    ->setCode((string)$arEnum['code'])
+                    ->setValue((string)($arEnum['value'] ?? $arEnum['code'] ?? ''))
                     ->setName((string)$arEnum['name'])
                     ->setSort((int)$arEnum['sort'])
                     ->setDefault((bool)$arEnum['default']));
@@ -329,8 +335,8 @@ class DeviceManager extends AbstractManager {
                 $this->getEntityManager()->persist($newEnum = $property->newEnum()
                     ->setSort($enum->getSort())
                     ->setName($enum->getName())
-                    ->setCode($enum->getCode())
-                    ->setDefault($enum->isDefault()));
+                    ->setValue($enum->getValue())
+                    ->setDefault($enum->getDefault()));
 
                 $query = $this->getEntityManager()->createQuery('SELECT dp FROM '.Device\Property::class.' dp JOIN dp.valueL dpe WHERE dp.property = :property AND dpe = :enum')
                     ->setParameters(array(
@@ -347,14 +353,14 @@ class DeviceManager extends AbstractManager {
         if ($property && $prototype) {
             $values = array();
             foreach ($prototype->getEnums() as $enum) {
-                $values[$enum->getCode()] = $enum;
+                $values[$enum->getValue()] = $enum;
             }
             foreach ($property->getEnums() as $enum) {
-                if (!empty($values[$enum->getCode()])) {
-                    $values[$enum->getCode()]
+                if (!empty($values[$enum->getValue()])) {
+                    $values[$enum->getValue()]
                         ->setSort($enum->getSort())
                         ->setName($enum->getName())
-                        ->setDefault($enum->isDefault());
+                        ->setDefault($enum->getDefault());
 
                     $query = $this->getEntityManager()->createQuery('SELECT dp FROM ' . Device\Property::class . ' dp JOIN dp.valueL dpe  WHERE dp.property = :property AND dpe = :enum')
                         ->setParameters(array(
@@ -363,7 +369,7 @@ class DeviceManager extends AbstractManager {
                         ));
 
                     foreach ($query->execute() as $dp) {
-                        $dp->removeValueL($enum)->addValueL($values[$enum->getCode()]);
+                        $dp->removeValueL($enum)->addValueL($values[$enum->getValue()]);
                     }
 
                     $property->removeEnum($enum);
@@ -374,7 +380,7 @@ class DeviceManager extends AbstractManager {
             }
             $i = 0; $def = true;
             foreach ($prototype->getEnums() as $enum) {
-                if ($def && $enum->isDefault()) {
+                if ($def && $enum->getDefault()) {
                     $enum->setDefault(true);
                     $def = false;
                 } else {
@@ -399,8 +405,8 @@ class DeviceManager extends AbstractManager {
                 $this->getEntityManager()->persist($newEnum = $property->newEnum()
                     ->setSort($enum->getSort())
                     ->setName($enum->getName())
-                    ->setCode($enum->getCode())
-                    ->setDefault($enum->isDefault()));
+                    ->setValue($enum->getValue())
+                    ->setDefault($enum->getDefault()));
 
                 $query = $this->getEntityManager()->createQuery('SELECT dp FROM '.Device\Property::class.' dp JOIN dp.valueL dpe WHERE dp.property = :property AND dpe = :enum')
                     ->setParameters(array(
@@ -417,15 +423,15 @@ class DeviceManager extends AbstractManager {
         if (isset($prototype) && (empty($oldPrototype) || (isset($oldPrototype) && $prototype->getId() != $oldPrototype->getId()))) {
             $values = array();
             foreach ($prototype->getEnums() as $enum) {
-                $values[$enum->getCode()] = $enum;
+                $values[$enum->getValue()] = $enum;
             }
 
             foreach ($property->getEnums() as $enum) {
-                if (!empty($values[$enum->getCode()])) {
-                    $values[$enum->getCode()]
+                if (!empty($values[$enum->getValue()])) {
+                    $values[$enum->getValue()]
                         ->setSort($enum->getSort())
                         ->setName($enum->getName())
-                        ->setDefault($enum->isDefault());
+                        ->setDefault($enum->getDefault());
 
                     $query = $this->getEntityManager()->createQuery(' SELECT dp FROM '.Device\Property::class.' dp JOIN dp.valueL dpe  WHERE dp.property = :property AND dpe = :enum')
                         ->setParameters(array(
@@ -434,7 +440,7 @@ class DeviceManager extends AbstractManager {
                         ));
 
                     foreach ($query->execute() as $dp) {
-                        $dp->removeValueL($enum)->addValueL($values[$enum->getCode()]);
+                        $dp->removeValueL($enum)->addValueL($values[$enum->getValue()]);
                     }
 
                     $property->removeEnum($enum);
@@ -446,7 +452,7 @@ class DeviceManager extends AbstractManager {
 
             $i = 0; $def = true;
             foreach ($prototype->getEnums() as $enum) {
-                if ($def && $enum->isDefault()) {
+                if ($def && $enum->getDefault()) {
                     $enum->setDefault(true);
                     $def = false;
                 } else {

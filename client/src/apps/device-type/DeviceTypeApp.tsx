@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { deviceTypeApi, type TypeDetail } from '@/core/api/endpoints/deviceApi';
-import { RecordCollectionEditor } from '@/features/device/RecordCollectionEditor';
+import { TypePropertiesEditor } from '@/features/device/TypePropertiesEditor';
 import {
 	canCreateDeviceType,
 	useCanDeleteDeviceType,
@@ -11,6 +11,7 @@ import {
 	useCanUpdateDeviceType,
 } from '@/features/device/deviceAccess';
 import { normalizeIdRecord, useEntityId } from '@/features/device/deviceAppUtils';
+import type { TypePropertyItem } from '@/features/device/propertyTypes';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { validateDeviceTypeForm } from './deviceTypeValidation';
@@ -25,6 +26,44 @@ const initialData: TypeDetail = {
 	properties: {},
 };
 
+type SelectOption = { value: string; label: string };
+
+function uniqueSelectOptions(
+	items: Array<{ value?: number | string; label?: string; sublabel?: string; children?: unknown[] }>,
+	excludeId?: number,
+): SelectOption[] {
+	const map = new Map<string, string>();
+
+	const visit = (item: {
+		value?: number | string;
+		label?: string;
+		sublabel?: string;
+		children?: unknown[];
+	}) => {
+		if (item.value == null) {
+			return;
+		}
+		const value = String(item.value);
+		if (excludeId != null && value === String(excludeId)) {
+			return;
+		}
+		if (!map.has(value)) {
+			map.set(value, item.label ?? item.sublabel ?? value);
+		}
+		for (const child of item.children ?? []) {
+			if (typeof child === 'object' && child != null) {
+				visit(child as { value?: number | string; label?: string; sublabel?: string; children?: unknown[] });
+			}
+		}
+	};
+
+	for (const item of items) {
+		visit(item);
+	}
+
+	return Array.from(map, ([value, label]) => ({ value, label }));
+}
+
 export default function DeviceTypeApp() {
 	const entityId = useEntityId();
 	const canRead = useCanReadDeviceType();
@@ -36,7 +75,7 @@ export default function DeviceTypeApp() {
 
 	const listQuery = useQuery({
 		queryKey: ['device', 'types', 'select'],
-		queryFn: () => deviceTypeApi.list({ limit: -1, offset: 1 }),
+		queryFn: () => deviceTypeApi.select(),
 	});
 
 	const componentsQuery = useQuery({
@@ -45,19 +84,12 @@ export default function DeviceTypeApp() {
 	});
 
 	const parentOptions = useMemo(
-		() =>
-			(listQuery.data?.items ?? [])
-				.filter((item) => item.id !== entityId)
-				.map((item) => ({ value: String(item.id), label: item.name || item.code })),
-		[listQuery.data?.items, entityId],
+		() => uniqueSelectOptions(listQuery.data ?? [], entityId || undefined),
+		[listQuery.data, entityId],
 	);
 
 	const componentOptions = useMemo(
-		() =>
-			(componentsQuery.data ?? []).map((item) => ({
-				value: String(item.value),
-				label: item.label ?? String(item.value),
-			})),
+		() => uniqueSelectOptions(componentsQuery.data ?? []),
 		[componentsQuery.data],
 	);
 
@@ -98,7 +130,7 @@ export default function DeviceTypeApp() {
 					<Tabs.List>
 						<Tabs.Tab value="general">Общие</Tabs.Tab>
 						<Tabs.Tab value="properties">Свойства</Tabs.Tab>
-						<Tabs.Tab value="components">Компоненты</Tabs.Tab>
+						<Tabs.Tab value="components">Типы комплектующих</Tabs.Tab>
 					</Tabs.List>
 
 					<Tabs.Panel value="general" pt="sm">
@@ -138,32 +170,18 @@ export default function DeviceTypeApp() {
 					</Tabs.Panel>
 
 					<Tabs.Panel value="properties" pt="sm">
-						<RecordCollectionEditor
-							title="Свойства"
-							records={normalizeIdRecord(data.properties)}
+						<TypePropertiesEditor
+							properties={normalizeIdRecord<TypePropertyItem>(data.properties)}
 							readOnly={readOnly}
-							columns={[
-								{ key: 'name', label: 'Название' },
-								{ key: 'code', label: 'Код' },
-								{ key: 'fieldType', label: 'Тип поля' },
-								{ key: 'listType', label: 'Тип списка' },
-								{ key: 'sort', label: 'Сортировка' },
-							]}
 							onChange={(properties) => setField('properties', properties)}
-							createItem={() => ({
-								id: 0,
-								name: '',
-								code: '',
-								fieldType: '',
-								listType: '',
-								sort: 0,
-							})}
+							catalogApi={deviceTypeApi}
+							catalogQueryKey="type"
 						/>
 					</Tabs.Panel>
 
 					<Tabs.Panel value="components" pt="sm">
 						<MultiSelect
-							label="Компоненты"
+							label="Типы комплектующих"
 							data={componentOptions}
 							value={(data.components ?? []).map(String)}
 							disabled={readOnly}

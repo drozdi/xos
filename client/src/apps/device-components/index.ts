@@ -10,7 +10,7 @@ const DeviceComponentsApp = lazy(() => import('./DeviceComponentsApp'));
 
 const manifest: AppManifest = {
 	id: 'device-components',
-	name: 'Компоненты',
+	name: 'Типы комплектующих',
 	version: '1.0.0',
 	icon: ComponentsIcon,
 	component: DeviceComponentsApp,

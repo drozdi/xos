@@ -168,6 +168,8 @@ export interface TableDataProps<T = object> extends Omit<TableProps, 'layout' | 
 	initialGroupLevel?: number;
 	/** Подсветить последнюю строку в tbody (вложенная grouped-таблица). */
 	groupedHighlightLastRow?: boolean;
+	/** Раскрыть все grouped-группы при загрузке данных. */
+	defaultGroupedExpanded?: boolean;
 }
 
 export interface TableStorage {

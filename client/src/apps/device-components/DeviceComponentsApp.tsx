@@ -18,7 +18,7 @@ import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
 
 export default function DeviceComponentsApp() {
-	useWindowTitle('Компоненты');
+	useWindowTitle('Типы комплектующих');
 	const launchApp = useLaunchDeviceApp();
 	const queryClient = useQueryClient();
 	const canRead = useCanReadDeviceComponent();
@@ -57,14 +57,14 @@ export default function DeviceComponentsApp() {
 	if (!canRead) {
 		return (
 			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр компонентов
+				Нет прав на просмотр типов комплектующих
 			</Alert>
 		);
 	}
 
 	return (
 		<MainListLayout
-			title="Компоненты"
+			title="Типы комплектующих"
 			total={listQuery.data?.total}
 			isLoading={listQuery.isLoading}
 			isError={listQuery.isError}

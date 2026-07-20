@@ -174,6 +174,7 @@ export function TableData<T = object>({
 	groupLayout: initialGroupLayout,
 	initialGroupLevel = 0,
 	groupedHighlightLastRow = false,
+	defaultGroupedExpanded = false,
 
 	////////
 
@@ -809,6 +810,28 @@ export function TableData<T = object>({
 
 		return { group, groupedByLevel };
 	}, [nodes, groupColumnEntity, groupKeys]);
+
+	useEffect(() => {
+		if (!defaultGroupedExpanded) {
+			return;
+		}
+		const keys = Object.values(expandables.groupedByLevel)
+			.flat()
+			.filter((key): key is string => typeof key === 'string' && key.length > 0);
+		if (keys.length === 0) {
+			return;
+		}
+		setExpands((prev) => {
+			const nextGrouped = new Set([...prev.grouped, ...keys]);
+			if (
+				nextGrouped.size === prev.grouped.length &&
+				prev.grouped.every((key) => nextGrouped.has(key))
+			) {
+				return prev;
+			}
+			return { ...prev, grouped: [...nextGrouped] };
+		});
+	}, [defaultGroupedExpanded, expandables]);
 
 	const handlerNext = useCallback(() => {
 		if (fetcher) {

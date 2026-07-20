@@ -216,10 +216,10 @@ class PropertyController extends AbstractController {
         foreach ($property->getEnums() as $enum) {
             $enums[$enum->getId()] = [
                 'id' => $enum->getId(),
-                'code' => $enum->getCode(),
-                'name' => $enum->getName(),
+                'value' => $enum->getValue(),
+                'name' => $enum->getName(false),
                 'sort' => $enum->getSort(),
-                'default' => $enum->isDefault()
+                'default' => $enum->getDefault(),
             ];
         }
         $varieties = [];
@@ -251,6 +251,7 @@ class PropertyController extends AbstractController {
             'fieldType' => $property->getFieldType(),
             'listType' => $property->getListType(),
             'defaultValue' => $property->getDefaultValue(),
+            'prototype_id' => $property->getPrototype()?->getId(),
             'enums' => $enums,
             'varieties' => $varieties,
         ]);

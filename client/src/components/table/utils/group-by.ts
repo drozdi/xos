@@ -409,10 +409,13 @@ export function getGroupedColumnForLevel<T>(
 	level: number,
 ): ColumnEntity<T> | undefined {
 	const key = groupKeys[level];
-	if (!key) {
-		return columns.find((column) => column.isGrouped);
+	if (key) {
+		const byKey = columns.find((column) => column.isGrouped && column.field === key);
+		if (byKey) {
+			return byKey;
+		}
 	}
-	return columns.find((column) => column.isGrouped && column.field === key);
+	return columns.find((column) => column.isGrouped);
 }
 
 /** Колонка одновременно group + grouped: список берётся из node.nodes, не из отдельного поля. */

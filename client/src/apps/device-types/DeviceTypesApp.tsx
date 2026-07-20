@@ -25,7 +25,9 @@ export default function DeviceTypesApp() {
 	const canCreate = useCanCreateDeviceType();
 	const canUpdate = useCanUpdateDeviceType();
 	const canDelete = useCanDeleteDeviceType();
-	const pagination = usePaginatedList();
+	const pagination = usePaginatedList({
+		filters: { parent: null, property: null },
+	});
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.device.types(pagination.listRequest),
@@ -87,6 +89,10 @@ export default function DeviceTypesApp() {
 				onPageChange={pagination.onPageChange}
 				onLimitChange={pagination.onLimitChange}
 				serverPagination
+				groupKeys={['group_id']}
+				groupedField="group_name"
+				groupedHeader="Группа"
+				groupedMultiple
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openType(row.id)}
 				onEdit={canUpdate ? (row) => openType(row.id) : undefined}

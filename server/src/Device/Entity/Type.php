@@ -38,8 +38,8 @@ class Type {
     private $sort = 100;
     #[ORM\Column(name: 'description', type: Types::TEXT, nullable: true, unique: false)]
     private $description;
-    #[ORM\OneToOne(targetEntity: Property::class)]
-    #[ORM\JoinColumn(name: 'property_id', referencedColumnName: 'id', unique: true, nullable: true, onDelete: 'CASCADE')]
+    #[ORM\ManyToOne(targetEntity: Property::class)]
+    #[ORM\JoinColumn(name: 'property_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
     private $property;
     #[ORM\ManyToMany(targetEntity: Property::class, inversedBy: 'types')]
     #[ORM\JoinTable(name: 'd_type_property')]
@@ -345,9 +345,6 @@ class Type {
             foreach ($this->property->getChildren() as $child) {
                 $this->removeProperty($child, false);
             }
-            if (true === $setType) {
-                $this->property->setType(null, false);
-            }
         }
 
         $this->property = $property;
@@ -371,10 +368,6 @@ class Type {
             if ($activeTo = $this->property->getActiveTo()) {
                 $this->activeTo = $activeTo;
             }
-        }
-
-        if (true === $setType && null != $this->property) {
-            $this->property->setType($this, false);
             foreach ($this->property->getChildren() as $subProperty) {
                 $this->addProperty($subProperty, false);
             }

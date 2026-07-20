@@ -40,6 +40,11 @@ export interface DataTableProps<T extends object> {
 	serverPagination?: boolean;
 	onPageChange?: (page: number) => void;
 	onLimitChange?: (limit: number) => void;
+	groupKeys?: (keyof T)[];
+	groupedField?: keyof T;
+	groupedHeader?: ReactNode;
+	defaultGroupedExpanded?: boolean;
+	groupedMultiple?: boolean;
 }
 
 function defaultRowLabel<T extends object>(row: T): string {
@@ -121,6 +126,11 @@ export function DataTable<T extends object>({
 	serverPagination = false,
 	onPageChange,
 	onLimitChange,
+	groupKeys,
+	groupedField,
+	groupedHeader,
+	defaultGroupedExpanded = false,
+	groupedMultiple = false,
 }: DataTableProps<T>) {
 	const showEdit = Boolean(onEdit && canEdit);
 	const showDelete = Boolean(onDelete && canDelete);
@@ -191,7 +201,21 @@ export function DataTable<T extends object>({
 			onLimitChange={onLimitChange}
 			rowActions={hasActions ? rowActions : undefined}
 			rowActionsOnHover={false}
+			groupKeys={groupKeys}
+			multiple={groupedMultiple}
+			defaultGroupedExpanded={defaultGroupedExpanded}
 		>
+			{groupedField ? (
+				<DataColumn<T>
+					field={groupedField}
+					grouped
+					header={groupedHeader ?? 'Группа'}
+					sortable={false}
+					resizable={false}
+					toggleable={false}
+					draggable={false}
+				/>
+			) : null}
 			{columns.map((column) => (
 				<DataColumn<T>
 					key={String(column.field)}
