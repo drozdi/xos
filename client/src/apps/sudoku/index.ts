@@ -19,7 +19,6 @@ const manifest: AppManifest = {
 	wmGroup: 'games',
 	startMenuGroup: 'games',
 	taskbarGroup: 'games',
-	requiredRole: 'user',
 	singleInstance: true,
 	menu: () => import('./menu').then((module) => module.default),
 	contextMenu: {

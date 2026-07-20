@@ -3,6 +3,7 @@
 namespace App\Security;
 
 use Main\Entity\User;
+use App\Security\ProtectedAppModules;
 use Main\Service\ClaimantManager;
 
 final class UserScopeResolver
@@ -76,6 +77,11 @@ final class UserScopeResolver
      */
     public function canAccessModule(User $user, string $module): bool
     {
+        if (!ProtectedAppModules::isProtected($module)) {
+            return in_array(User::ROLE_USER, $user->getRoles(), true)
+                || $this->userHasAnyRole($user, ['ROLE_ROOT']);
+        }
+
         if ($this->userHasAnyRole($user, ['ROLE_ROOT'])) {
             return true;
         }

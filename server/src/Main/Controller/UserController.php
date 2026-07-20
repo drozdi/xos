@@ -229,10 +229,7 @@ class UserController extends AbstractController {
             'description' => $userEntity->getDescription(),
             'accesses' => (object) $accesses,
             'groups' => (object) $groups,
-            'roles' => array_values(array_filter(
-                $userEntity->getRoles(),
-                static fn (string $role): bool => User::ROLE_USER !== $role,
-            )),
+            'roles' => array_values($userEntity->getRoles()),
         ]);
     }
     #[Route('/', name: 'create', methods: ['POST'])]

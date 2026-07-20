@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
 
 import { useAuthStore } from '@/core/auth/authStore';
-import { isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
+import { canAccessApp, isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
 import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
 const EXPLORER_SCOPE = 'explorer';
 
 function canExplorerScope(actionScope: string): boolean {
 	const scopePath = EXPLORER_SCOPE;
+	if (!canAccessApp('explorer')) {
+		return false;
+	}
 	if (isRoot() || isAppRoot('explorer') || isScopeRoot(scopePath)) {
 		return true;
 	}

@@ -31,7 +31,7 @@ export function normalizeUserAccesses(
 }
 
 export function normalizeUserRoles(roles: UserDetail['roles']): string[] {
-	return (roles ?? []).filter((role) => role !== 'ROLE_USER');
+	return roles ?? [];
 }
 
 export function prepareUserSavePayload(data: UserDetail): UserDetail {

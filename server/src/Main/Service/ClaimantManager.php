@@ -2,6 +2,7 @@
 
 namespace Main\Service;
 
+use App\Security\ProtectedAppModules;
 use AbstractManager;
 use Main\Entity\Claimant;
 use Main\Entity\Role;
@@ -112,6 +113,63 @@ class ClaimantManager extends AbstractManager
         sort($roles);
 
         return array_values(array_unique($roles));
+    }
+
+    /**
+     * Модули для вкладки «Доступ к приложениям» — из setting.json с синхронизацией claimants в БД.
+     *
+     * @return list<array{
+     *     module: string,
+     *     moduleLabel: string,
+     *     root?: array{id: int, code: string, name: string},
+     *     children: list<array{id: int, code: string, name: string}>
+     * }>
+     */
+    public function getAppAccessModules(): array
+    {
+        $this->load();
+        $result = [];
+
+        foreach (ProtectedAppModules::all() as $moduleKey) {
+            $config = $this->map[$moduleKey] ?? null;
+            if (null === $config) {
+                continue;
+            }
+
+            $group = [
+                'module' => $moduleKey,
+                'moduleLabel' => (string) ($config['name'] ?? $moduleKey),
+                'children' => [],
+            ];
+
+            foreach ($config['claimant'] ?? [] as $code => $name) {
+                $claimant = $this->getClaimantRepository()->findOneBy(['code' => $code]);
+                if (null === $claimant) {
+                    $claimant = $this->mm->claimant(['code' => $code], [
+                        'code' => $code,
+                        'name' => $name,
+                    ]);
+                }
+
+                $ref = [
+                    'id' => $claimant->getId(),
+                    'code' => $code,
+                    'name' => $name,
+                ];
+
+                $parts = explode('.', $code);
+                if (1 === count($parts) && $parts[0] === $moduleKey) {
+                    $group['root'] = $ref;
+                    $group['moduleLabel'] = $name;
+                } elseif (count($parts) > 1 && $parts[0] === $moduleKey) {
+                    $group['children'][] = $ref;
+                }
+            }
+
+            $result[] = $group;
+        }
+
+        return $result;
     }
 
     /**

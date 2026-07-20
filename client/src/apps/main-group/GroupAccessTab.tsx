@@ -9,7 +9,7 @@ import {
 	CAN_SCOPE_LABELS,
 	checkedToLevel,
 	getAccessLevel,
-	groupClaimantsByModule,
+	getModuleScopeClaimants,
 	levelToChecked,
 	resolveClaimantAccessMap,
 	updateAccessLevel,
@@ -36,9 +36,9 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 	const { width: windowWidth } = useWindowSize();
 	const columns = getAccessTabColumns(windowWidth);
 
-	const claimantsQuery = useQuery({
-		queryKey: queryKeys.main.claimants({ limit: -1, offset: 1 }),
-		queryFn: () => mainClaimantApi.list({ limit: -1, offset: 1 }),
+	const modulesQuery = useQuery({
+		queryKey: queryKeys.main.appAccessModules,
+		queryFn: () => mainClaimantApi.appAccessModules(),
 	});
 
 	const mapQuery = useQuery({
@@ -47,17 +47,12 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 	});
 
 	const moduleMaps = mapQuery.data ?? {};
-	const modules = useMemo(
-		() =>
-			groupClaimantsByModule(claimantsQuery.data?.items ?? []).filter(
-				(module) => module.children.length > 0,
-			),
-		[claimantsQuery.data?.items],
-	);
+	const modules = modulesQuery.data ?? [];
 
 	const sections = useMemo(() => {
 		return modules.map((moduleGroup) => {
-			const cards = moduleGroup.children.flatMap((claimant) => {
+			const scopeClaimants = getModuleScopeClaimants(moduleGroup, moduleMaps);
+			const cards = scopeClaimants.flatMap((claimant) => {
 				const scopeMap = resolveClaimantAccessMap(claimant.code, moduleMaps);
 				const scopeKeys = Object.keys(scopeMap);
 				if (scopeKeys.length === 0) {
@@ -117,7 +112,7 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 		});
 	}, [accesses, columns, moduleMaps, modules, onChange, readOnly]);
 
-	if (claimantsQuery.isLoading || mapQuery.isLoading) {
+	if (modulesQuery.isLoading || mapQuery.isLoading) {
 		return (
 			<Text size="sm" c="dimmed">
 				Загрузка прав…

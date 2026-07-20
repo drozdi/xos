@@ -26,7 +26,7 @@ const manifest: AppManifest = {
 	wmGroup: 'tools',
 	startMenuGroup: 'tools',
 	taskbarGroup: 'explorer-tools',
-	requiredRole: 'user',
+	requiredRole: 'explorer',
 	startMenu: true,
 };
 

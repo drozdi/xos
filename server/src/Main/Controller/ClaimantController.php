@@ -42,6 +42,14 @@ class ClaimantController extends AbstractController {
         ]);
     }
 
+    #[Route('/app-access-modules', name: 'main_claimant_app_access_modules', methods: ['GET'])]
+    public function appAccessModules(
+        ClaimantManager $claimantManager,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        return $this->json($claimantManager->getAppAccessModules());
+    }
+
     #[Route('/list', name: 'main_claimant_list')]
     public function list (
         Request $request,

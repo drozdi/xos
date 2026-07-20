@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canReadInccom } from '@/features/inccom/inccomAccess';
 
 import { IncComIcon } from './IncComIcon';
 
@@ -17,7 +18,8 @@ const manifest: AppManifest = {
 	wmGroup: 'inccom',
 	startMenuGroup: 'inccom',
 	taskbarGroup: 'inccom',
-	requiredRole: 'user',
+	requiredRole: 'inccom',
+	canAccess: canReadInccom,
 	singleInstance: true,
 };
 

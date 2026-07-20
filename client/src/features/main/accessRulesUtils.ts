@@ -9,6 +9,7 @@ export const CAN_SCOPE_LABELS: Record<string, string> = {
 	can_user: 'Пользователи',
 	can_group: 'Группы',
 	can_role: 'Роли',
+	can_write: 'Запись',
 	can_mod: 'Модификация',
 	can_location: 'Размещение',
 	can_write_off: 'Списание',
@@ -43,12 +44,16 @@ export function resolveClaimantAccessMap(
 	claimantCode: string,
 	allModuleMaps: Record<string, Record<string, unknown>>,
 ): Record<string, number> {
-	const parts = claimantCode.split('.');
-	if (parts.length < 2 || !parts[0]) {
+	const parts = claimantCode.split('.').filter(Boolean);
+	if (parts.length === 0 || !parts[0]) {
 		return {};
 	}
 
 	const moduleMap = allModuleMaps[parts[0]] ?? {};
+	if (parts.length === 1) {
+		return extractCanScopeMap(moduleMap as Record<string, unknown>);
+	}
+
 	let current: unknown = moduleMap;
 	for (let index = 1; index < parts.length; index += 1) {
 		const segment = parts[index];
@@ -63,6 +68,24 @@ export function resolveClaimantAccessMap(
 	}
 
 	return extractCanScopeMap(current as Record<string, unknown>);
+}
+
+export function getModuleScopeClaimants(
+	moduleGroup: ModuleAccessGroup,
+	moduleMaps: Record<string, Record<string, unknown>>,
+): ClaimantRef[] {
+	const withScopes = (claimant: ClaimantRef) =>
+		Object.keys(resolveClaimantAccessMap(claimant.code, moduleMaps)).length > 0;
+
+	if (moduleGroup.children.length > 0) {
+		return moduleGroup.children.filter(withScopes);
+	}
+
+	if (moduleGroup.root && withScopes(moduleGroup.root)) {
+		return [moduleGroup.root];
+	}
+
+	return [];
 }
 
 export function levelToChecked(level: number, scopeMap: Record<string, number>): Record<string, boolean> {
@@ -165,7 +188,7 @@ export function getModuleAccessMode(
 	module: string,
 	roles: string[],
 	accesses: Record<string, GroupAccessItem>,
-	children: ClaimantRef[],
+	scopeClaimants: ClaimantRef[],
 ): ModuleAccessMode {
 	if (roles.includes(moduleRootRole(module))) {
 		return 'full';
@@ -175,7 +198,7 @@ export function getModuleAccessMode(
 		return 'available';
 	}
 
-	const hasScopedAccess = children.some((child) => getAccessLevel(accesses, child.id) > 0);
+	const hasScopedAccess = scopeClaimants.some((child) => getAccessLevel(accesses, child.id) > 0);
 	return hasScopedAccess ? 'available' : 'none';
 }
 
@@ -184,7 +207,7 @@ export function applyModuleAccessMode(
 	mode: ModuleAccessMode,
 	roles: string[],
 	accesses: Record<string, GroupAccessItem>,
-	children: ClaimantRef[],
+	scopeClaimants: ClaimantRef[],
 ): { roles: string[]; accesses: Record<string, GroupAccessItem> } {
 	const appRole = moduleAppRole(module);
 	const rootRole = moduleRootRole(module);
@@ -197,7 +220,7 @@ export function applyModuleAccessMode(
 	}
 
 	let nextAccesses = { ...accesses };
-	for (const child of children) {
+	for (const child of scopeClaimants) {
 		nextAccesses = updateAccessLevel(nextAccesses, child.id, child.name, 0);
 	}
 
@@ -206,10 +229,10 @@ export function applyModuleAccessMode(
 
 export function clearModuleAccesses(
 	accesses: Record<string, GroupAccessItem>,
-	children: ClaimantRef[],
+	scopeClaimants: ClaimantRef[],
 ): Record<string, GroupAccessItem> {
 	let next = { ...accesses };
-	for (const child of children) {
+	for (const child of scopeClaimants) {
 		next = updateAccessLevel(next, child.id, child.name, 0);
 	}
 	return next;

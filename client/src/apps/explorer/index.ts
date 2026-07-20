@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canReadExplorer } from '@/features/explorer/explorerAccess';
 
 import { ExplorerIcon } from './ExplorerIcon';
 
@@ -17,7 +18,8 @@ const manifest: AppManifest = {
 	wmGroup: 'system',
 	startMenuGroup: 'tools',
 	taskbarGroup: 'explorer',
-	requiredRole: 'user',
+	requiredRole: 'explorer',
+	canAccess: canReadExplorer,
 	singleInstance: true,
 	startMenu: true,
 };

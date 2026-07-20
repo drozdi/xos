@@ -14,6 +14,7 @@ class ClaimantManagerExtraRolesTest extends TestCase
     {
         $manager = $this->createClaimantManager();
 
+        self::assertContains('ROLE_USER', $manager->getExtraRoles());
         self::assertContains('ROLE_ROOT', $manager->getExtraRoles());
         self::assertContains('ROLE_ADMIN', $manager->getExtraRoles());
         self::assertNotContains('ROLE_MAIN', $manager->getExtraRoles());

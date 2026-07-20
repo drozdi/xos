@@ -22,7 +22,8 @@ export interface AppManifest {
 	minSize?: { width: number; height: number };
 	/**
 	 * Префикс роли приложения (без ROLE_): main → ROLE_MAIN / ROLE_MAIN_ROOT.
-	 * Не задавать — приложение доступно всем авторизованным (без API).
+	 * Для защищённых модулей (main, device, explorer, schooltask, inccom).
+	 * Не задавать — приложение доступно всем авторизованным с ROLE_USER.
 	 */
 	requiredRole?: string;
 	/** Проверять роль модуля при запуске. По умолчанию true, если задан requiredRole */

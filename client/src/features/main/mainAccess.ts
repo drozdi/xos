@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useAuthStore } from '@/core/auth/authStore';
-import { isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
+import { isAppRoot, isRoot, isScopeRoot, canAccessApp } from '@/core/auth/coreRoles';
 import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
 const MAIN_OU_SCOPE = 'main.ou';
@@ -11,6 +11,9 @@ const UPDATE_MAIN_OU_SCOPE = 'can_update.main.ou';
 const DELETE_MAIN_OU_SCOPE = 'can_delete.main.ou';
 
 function canMainOu(actionScope: string): boolean {
+	if (!canAccessApp('main')) {
+		return false;
+	}
 	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_OU_SCOPE)) {
 		return true;
 	}
@@ -64,6 +67,9 @@ const UPDATE_MAIN_CLAIMANT_SCOPE = 'can_update.main.claimant';
 const DELETE_MAIN_CLAIMANT_SCOPE = 'can_delete.main.claimant';
 
 function canMainClaimant(actionScope: string): boolean {
+	if (!canAccessApp('main')) {
+		return false;
+	}
 	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_CLAIMANT_SCOPE)) {
 		return true;
 	}
@@ -119,6 +125,9 @@ const USER_MAIN_GROUP_SCOPE = 'can_user.main.group';
 const ACCESS_MAIN_GROUP_SCOPE = 'can_access.main.group';
 
 function canMainGroup(actionScope: string): boolean {
+	if (!canAccessApp('main')) {
+		return false;
+	}
 	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_GROUP_SCOPE)) {
 		return true;
 	}
@@ -191,6 +200,9 @@ const ACCESS_MAIN_USER_SCOPE = 'can_access.main.user';
 const ROLE_MAIN_USER_SCOPE = 'can_role.main.user';
 
 function canMainUser(actionScope: string): boolean {
+	if (!canAccessApp('main')) {
+		return false;
+	}
 	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_USER_SCOPE)) {
 		return true;
 	}

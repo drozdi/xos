@@ -19,7 +19,7 @@ import {
 	checkedToLevel,
 	getAccessLevel,
 	getModuleAccessMode,
-	groupClaimantsByModule,
+	getModuleScopeClaimants,
 	levelToChecked,
 	resolveClaimantAccessMap,
 	updateAccessLevel,
@@ -46,9 +46,9 @@ export function UserAccessTab({
 	onAccessesChange,
 	onRolesChange,
 }: UserAccessTabProps) {
-	const claimantsQuery = useQuery({
-		queryKey: queryKeys.main.claimants({ limit: -1, offset: 1 }),
-		queryFn: () => mainClaimantApi.list({ limit: -1, offset: 1 }),
+	const modulesQuery = useQuery({
+		queryKey: queryKeys.main.appAccessModules,
+		queryFn: () => mainClaimantApi.appAccessModules(),
 	});
 
 	const mapQuery = useQuery({
@@ -57,18 +57,16 @@ export function UserAccessTab({
 	});
 
 	const moduleMaps = mapQuery.data ?? {};
-	const modules = useMemo(
-		() => groupClaimantsByModule(claimantsQuery.data?.items ?? []),
-		[claimantsQuery.data?.items],
-	);
+	const modules = modulesQuery.data ?? [];
 
 	const moduleCards = useMemo(() => {
 		return modules.map((moduleGroup) => {
+			const scopeClaimants = getModuleScopeClaimants(moduleGroup, moduleMaps);
 			const mode = getModuleAccessMode(
 				moduleGroup.module,
 				roles,
 				accesses,
-				moduleGroup.children,
+				scopeClaimants,
 			);
 
 			return (
@@ -86,22 +84,18 @@ export function UserAccessTab({
 									value as typeof mode,
 									roles,
 									accesses,
-									moduleGroup.children,
+									scopeClaimants,
 								);
 								onRolesChange(next.roles);
 								onAccessesChange(next.accesses);
 							}}
 						/>
 
-						{mode === 'available' && moduleGroup.children.length > 0 ? (
+						{mode === 'available' && scopeClaimants.length > 0 ? (
 							<SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm">
-								{moduleGroup.children.map((claimant) => {
+								{scopeClaimants.map((claimant) => {
 									const scopeMap = resolveClaimantAccessMap(claimant.code, moduleMaps);
 									const scopeKeys = Object.keys(scopeMap);
-									if (scopeKeys.length === 0) {
-										return null;
-									}
-
 									const level = getAccessLevel(accesses, claimant.id);
 									const checked = levelToChecked(level, scopeMap);
 
@@ -146,7 +140,7 @@ export function UserAccessTab({
 							</SimpleGrid>
 						) : null}
 
-						{mode === 'available' && moduleGroup.children.length === 0 ? (
+						{mode === 'available' && scopeClaimants.length === 0 ? (
 							<Text size="sm" c="dimmed">
 								Для модуля нет детализированных правил в setting.json
 							</Text>
@@ -165,7 +159,7 @@ export function UserAccessTab({
 		roles,
 	]);
 
-	const isLoading = claimantsQuery.isLoading || mapQuery.isLoading;
+	const isLoading = modulesQuery.isLoading || mapQuery.isLoading;
 
 	if (isLoading) {
 		return (

@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 
 import { useAuthStore } from '@/core/auth/authStore';
-import { isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
+import { canAccessApp, isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
 import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
 function canDeviceScope(scopePath: string, actionScope: string): boolean {
+	if (!canAccessApp('device')) {
+		return false;
+	}
 	if (isRoot() || isAppRoot('device') || isScopeRoot(scopePath)) {
 		return true;
 	}

@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 
 import { useAuthStore } from '@/core/auth/authStore';
-import { isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
+import { canAccessApp, isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
 import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
 function canSchooltaskScope(scopePath: string, actionScope: string): boolean {
+	if (!canAccessApp('schooltask')) {
+		return false;
+	}
 	if (isRoot() || isAppRoot('schooltask') || isScopeRoot(scopePath)) {
 		return true;
 	}

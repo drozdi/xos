@@ -313,9 +313,22 @@ export const claimantDetailSchema = z.object({
 export type ClaimantListItem = z.infer<typeof claimantListItemSchema>;
 export type ClaimantDetail = z.infer<typeof claimantDetailSchema>;
 
+export const appAccessModuleSchema = z.object({
+	module: z.string(),
+	moduleLabel: z.string(),
+	root: claimantListItemSchema.optional(),
+	children: z.array(claimantListItemSchema),
+});
+
+export type AppAccessModule = z.infer<typeof appAccessModuleSchema>;
+
 export const mainClaimantApi = {
 	list: (request?: ListRequest) =>
 		postList('/api/main/claimant/list', request ?? {}, z.array(claimantListItemSchema)),
+	appAccessModules: async () => {
+		const { data } = await apiClient.get<unknown>('/api/main/claimant/app-access-modules');
+		return z.array(appAccessModuleSchema).parse(data);
+	},
 	get: (id: number) => getDetail(`/api/main/claimant/${id}`, claimantDetailSchema),
 	create: (body: unknown) => createEntity('/api/main/claimant/', body),
 	update: (id: number, body: unknown) => updateEntity('/api/main/claimant', id, body),

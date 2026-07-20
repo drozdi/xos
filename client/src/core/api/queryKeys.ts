@@ -29,6 +29,7 @@ export const queryKeys = {
 		ou: (id: number) => ['main', 'ou', id] as const,
 		ouSelect: (filters?: ListRequest['filters']) => ['main', 'ou', 'select', filters] as const,
 		claimants: (filters: ListRequest) => ['main', 'claimants', filters] as const,
+		appAccessModules: ['main', 'claimant', 'app-access-modules'] as const,
 		claimant: (id: number) => ['main', 'claimant', id] as const,
 	},
 	schooltask: {

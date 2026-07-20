@@ -1,5 +1,6 @@
 import { checkHasScope } from '@/core/auth/coreScopes';
-import { canAccessApp, hasFullAppAccess } from '@/core/auth/coreRoles';
+import { hasFullAppAccess } from '@/core/auth/coreRoles';
+import { canUseAppModule, canUseAuthenticatedApps, isProtectedAppModule } from '@/core/auth/protectedApps';
 
 import type { AppManifest } from './types';
 
@@ -27,15 +28,26 @@ export const AppRegistry = {
 	},
 
 	canAccess(manifest: AppManifest): boolean {
+		if (!canUseAuthenticatedApps()) {
+			return false;
+		}
+
 		if (manifest.canAccess) {
+			if (manifest.requiredRole && isProtectedAppModule(manifest.requiredRole)) {
+				if (!canUseAppModule(manifest.requiredRole)) {
+					return false;
+				}
+			}
 			return manifest.canAccess();
 		}
 
 		const checkRoles = manifest.checkRoles ?? Boolean(manifest.requiredRole);
 		const checkScopes = manifest.checkScopes ?? Boolean(manifest.requiredScope);
 
-		if (checkRoles && manifest.requiredRole && !canAccessApp(manifest.requiredRole)) {
-			return false;
+		if (checkRoles && manifest.requiredRole) {
+			if (isProtectedAppModule(manifest.requiredRole) && !canUseAppModule(manifest.requiredRole)) {
+				return false;
+			}
 		}
 		if (
 			checkScopes &&

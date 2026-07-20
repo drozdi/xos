@@ -63,6 +63,24 @@ class UserScopeResolverTest extends TestCase
         self::assertTrue($this->resolver->checkHasScope($user, 'can_delete.main.user'));
     }
 
+    public function testPublicModuleAccessibleWithRoleUserOnly(): void
+    {
+        $user = $this->userWithRoles(['ROLE_USER']);
+
+        self::assertTrue($this->resolver->canAccessModule($user, 'browser'));
+        self::assertFalse($this->resolver->canAccessModule($user, 'main'));
+        self::assertFalse($this->resolver->canAccessModule($user, 'inccom'));
+    }
+
+    public function testProtectedModuleRequiresModuleRole(): void
+    {
+        $user = $this->userWithRoles(['ROLE_USER']);
+
+        self::assertFalse($this->resolver->canAccessModule($user, 'explorer'));
+        self::assertFalse($this->resolver->canAccessModule($user, 'device'));
+        self::assertFalse($this->resolver->canAccessModule($user, 'inccom'));
+    }
+
 	public function testScopeLevelUsesBitwiseSum(): void
 	{
 		$user = new User();

@@ -17,7 +17,6 @@ const manifest: AppManifest = {
 	wmGroup: 'browser',
 	startMenuGroup: 'tools',
 	taskbarGroup: 'browser',
-	requiredRole: 'user',
 	singleInstance: false,
 	instanceKey: (params) => params?.instanceKey ?? String(Date.now()),
 };

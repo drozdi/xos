@@ -1,5 +1,6 @@
 {
   "roles": [
+    "ROLE_USER",
     "ROLE_ROOT",
     "ROLE_ADMIN",
     "ROLE_SUPER_ADMIN"

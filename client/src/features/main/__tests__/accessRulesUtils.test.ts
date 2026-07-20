@@ -32,6 +32,10 @@ describe('accessRulesUtils', () => {
 			can_update: 4,
 			can_delete: 8,
 		});
+		expect(resolveClaimantAccessMap('explorer', { explorer: { can_read: 1, can_write: 2 } })).toEqual({
+			can_read: 1,
+			can_write: 2,
+		});
 	});
 
 	it('detects module access mode from roles', () => {
