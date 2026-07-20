@@ -25,6 +25,7 @@ security:
         refresh:
             pattern: ^/api/token/refresh
             stateless: true
+            user_checker: App\Security\UserChecker
             refresh_jwt:
                 check_path: /api/token/refresh
 
@@ -38,6 +39,7 @@ security:
         uploads:
             pattern: ^/uploads
             stateless: true
+            user_checker: App\Security\UserChecker
             jwt: ~
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall

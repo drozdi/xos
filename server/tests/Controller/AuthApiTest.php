@@ -27,6 +27,30 @@ class AuthApiTest extends AuthWebTestCase
         self::assertResponseStatusCodeSame(401);
     }
 
+    public function testInactiveUserCannotLogin(): void
+    {
+        $client = static::createClient();
+        $this->prepareAuthDatabase($client);
+
+        $user = $this->createTestUser($client, 'inactive_user', self::TEST_PASSWORD);
+        $user->setActive(false);
+        $client->getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class)->flush();
+
+        $client->request(
+            'POST',
+            '/api/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode([
+                'username' => 'inactive_user',
+                'password' => self::TEST_PASSWORD,
+            ], JSON_THROW_ON_ERROR)
+        );
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
     public function testLoginWithValidCredentialsReturnsTokenAndUser(): void
     {
         $client = static::createClient();

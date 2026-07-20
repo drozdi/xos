@@ -1,9 +1,9 @@
-import { Checkbox, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { Accordion, Checkbox, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { getAccountMap } from '@/core/api/endpoints/account';
-import { mainClaimantApi, type GroupAccessItem } from '@/core/api/endpoints/mainApi';
+import { mainClaimantApi, type AppAccessModule, type GroupAccessItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import {
 	CAN_SCOPE_LABELS,
@@ -13,6 +13,7 @@ import {
 	levelToChecked,
 	resolveClaimantAccessMap,
 	updateAccessLevel,
+	type ClaimantRef,
 } from '@/features/main/accessRulesUtils';
 import { useWindowSize } from '@/core/windowManager';
 
@@ -32,6 +33,53 @@ function getAccessTabColumns(windowWidth: number): number {
 	return 1;
 }
 
+function renderScopeClaimantCard(
+	claimant: ClaimantRef,
+	scopeMap: Record<string, number>,
+	accesses: Record<string, GroupAccessItem>,
+	readOnly: boolean,
+	onChange: (accesses: Record<string, GroupAccessItem>) => void,
+) {
+	const scopeKeys = Object.keys(scopeMap);
+	const level = getAccessLevel(accesses, claimant.id);
+	const checked = levelToChecked(level, scopeMap);
+
+	return (
+		<Paper key={claimant.id} withBorder p="sm" h="100%">
+			<Text fw={500} mb="xs">
+				{claimant.name}
+			</Text>
+			<Text size="xs" c="dimmed" mb="xs">
+				{claimant.code}
+			</Text>
+			<Stack gap={4}>
+				{scopeKeys.map((scopeKey) => (
+					<Checkbox
+						key={scopeKey}
+						label={CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
+						checked={checked[scopeKey] ?? false}
+						disabled={readOnly}
+						onChange={(event) => {
+							const nextChecked = {
+								...checked,
+								[scopeKey]: event.currentTarget.checked,
+							};
+							const nextLevel = checkedToLevel(nextChecked, scopeMap);
+							onChange(
+								updateAccessLevel(accesses, claimant.id, claimant.name, nextLevel),
+							);
+						}}
+					/>
+				))}
+			</Stack>
+		</Paper>
+	);
+}
+
+function hasModuleAccessRules(moduleGroup: AppAccessModule, moduleMaps: Record<string, Record<string, unknown>>) {
+	return getModuleScopeClaimants(moduleGroup, moduleMaps).length > 0;
+}
+
 export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabProps) {
 	const { width: windowWidth } = useWindowSize();
 	const columns = getAccessTabColumns(windowWidth);
@@ -49,68 +97,10 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 	const moduleMaps = mapQuery.data ?? {};
 	const modules = modulesQuery.data ?? [];
 
-	const sections = useMemo(() => {
-		return modules.map((moduleGroup) => {
-			const scopeClaimants = getModuleScopeClaimants(moduleGroup, moduleMaps);
-			const cards = scopeClaimants.flatMap((claimant) => {
-				const scopeMap = resolveClaimantAccessMap(claimant.code, moduleMaps);
-				const scopeKeys = Object.keys(scopeMap);
-				if (scopeKeys.length === 0) {
-					return [];
-				}
-
-				const level = getAccessLevel(accesses, claimant.id);
-				const checked = levelToChecked(level, scopeMap);
-
-				return [
-					<Paper key={claimant.id} withBorder p="sm" h="100%">
-						<Text fw={500} mb="xs">
-							{claimant.name}
-						</Text>
-						<Text size="xs" c="dimmed" mb="xs">
-							{claimant.code}
-						</Text>
-						<Stack gap={4}>
-							{scopeKeys.map((scopeKey) => (
-								<Checkbox
-									key={scopeKey}
-									label={CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
-									checked={checked[scopeKey] ?? false}
-									disabled={readOnly}
-									onChange={(event) => {
-										const nextChecked = {
-											...checked,
-											[scopeKey]: event.currentTarget.checked,
-										};
-										const nextLevel = checkedToLevel(nextChecked, scopeMap);
-										onChange(
-											updateAccessLevel(
-												accesses,
-												claimant.id,
-												claimant.name,
-												nextLevel,
-											),
-										);
-									}}
-								/>
-							))}
-						</Stack>
-					</Paper>,
-				];
-			});
-
-			if (cards.length === 0) {
-				return null;
-			}
-
-			return (
-				<Stack key={moduleGroup.module} gap="sm">
-					<Title order={5}>{moduleGroup.moduleLabel}</Title>
-					<SimpleGrid cols={columns}>{cards}</SimpleGrid>
-				</Stack>
-			);
-		});
-	}, [accesses, columns, moduleMaps, modules, onChange, readOnly]);
+	const visibleModules = useMemo(
+		() => modules.filter((moduleGroup) => hasModuleAccessRules(moduleGroup, moduleMaps)),
+		[moduleMaps, modules],
+	);
 
 	if (modulesQuery.isLoading || mapQuery.isLoading) {
 		return (
@@ -120,7 +110,7 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 		);
 	}
 
-	if (sections.every((section) => section === null)) {
+	if (visibleModules.length === 0) {
 		return (
 			<Text size="sm" c="dimmed">
 				Нет доступных правил
@@ -128,5 +118,30 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 		);
 	}
 
-	return <Stack gap="lg">{sections}</Stack>;
+	return (
+		<Accordion variant="separated" multiple>
+			{visibleModules.map((moduleGroup) => {
+				const scopeClaimants = getModuleScopeClaimants(moduleGroup, moduleMaps);
+
+				return (
+					<Accordion.Item key={moduleGroup.module} value={moduleGroup.module}>
+						<Accordion.Control>{moduleGroup.moduleLabel}</Accordion.Control>
+						<Accordion.Panel>
+							<SimpleGrid cols={columns} mt="xs">
+								{scopeClaimants.map((claimant) =>
+									renderScopeClaimantCard(
+										claimant,
+										resolveClaimantAccessMap(claimant.code, moduleMaps),
+										accesses,
+										readOnly,
+										onChange,
+									),
+								)}
+							</SimpleGrid>
+						</Accordion.Panel>
+					</Accordion.Item>
+				);
+			})}
+		</Accordion>
+	);
 }

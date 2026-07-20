@@ -204,7 +204,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
         return $this;
     }
     public function isActive (): bool {
-        return $this->active;
+        return true === $this->active;
+    }
+
+    public function isAccountEnabled(): bool
+    {
+        if (!$this->isActive()) {
+            return false;
+        }
+
+        $now = new \DateTimeImmutable();
+        if ($this->activeFrom instanceof \DateTimeInterface && $this->activeFrom > $now) {
+            return false;
+        }
+        if ($this->activeTo instanceof \DateTimeInterface && $this->activeTo < $now) {
+            return false;
+        }
+
+        return true;
     }
     public function setActive (bool$active): self {
         $this->active = $active;
