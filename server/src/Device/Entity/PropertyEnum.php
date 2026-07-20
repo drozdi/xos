@@ -16,7 +16,7 @@ class PropertyEnum {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
     #[ORM\Column(name: 'x_timestamp', type: Types::DATETIME_MUTABLE, nullable: false, unique: false)]
     #[ORM\Version]
     private $xTimestamp;

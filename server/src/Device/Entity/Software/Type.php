@@ -15,7 +15,7 @@ class Type
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: 'name', length: 255, nullable: false, unique: false)]
     private $name;

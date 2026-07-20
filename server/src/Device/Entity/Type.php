@@ -17,7 +17,7 @@ class Type {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
     #[ORM\OneToMany(targetEntity: Type::class, mappedBy: 'parent')]
     #[ORM\OrderBy(['sort' => 'ASC', 'name' => 'ASC'])]
     private $children;

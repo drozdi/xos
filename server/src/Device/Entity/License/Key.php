@@ -16,7 +16,7 @@ class Key {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: 'type_key', length: 191, nullable: false, options: ['default' => "VLK"])]
     private $typeKey = 'VLK';

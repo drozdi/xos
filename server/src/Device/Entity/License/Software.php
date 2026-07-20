@@ -19,7 +19,7 @@ class Software
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: 'count', type: Types::INTEGER, nullable: true, unique: false)]
     private $count;

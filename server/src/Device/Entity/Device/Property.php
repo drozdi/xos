@@ -19,7 +19,7 @@ class Property {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
     #[ORM\Column(name: 'value', length: 255, nullable: true, unique: false)]
     private $value;
     #[ORM\Column(name: 'value_s', length: 255, nullable: true, unique: false)]

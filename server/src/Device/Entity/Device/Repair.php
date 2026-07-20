@@ -16,7 +16,7 @@ class Repair {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: 'put_into', type: Types::DATE_MUTABLE, nullable: false, unique: false)]
     private $putInto;

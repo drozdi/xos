@@ -19,7 +19,7 @@ class License
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: DeviceEntity::class, inversedBy: 'licenses')]
     #[ORM\JoinColumn(name: 'device_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]

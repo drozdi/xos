@@ -17,7 +17,7 @@ class License
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    private $id;
+    private ?int $id = null;
 
     #[ORM\Column(name: 'code', length: 255, nullable: false, unique: true)]
     private $code;
