@@ -1,10 +1,15 @@
 import { RecordCollectionEditor } from '@/features/device/RecordCollectionEditor';
 import { normalizeIdRecord } from '@/features/device/deviceAppUtils';
+import { formatDeviceDate } from '@/features/device/deviceDateUtils';
 
 interface DeviceLocationsTabProps {
 	locations: unknown;
 	readOnly: boolean;
 	onChange: (locations: Record<string, Record<string, unknown>>) => void;
+}
+
+function isSavedLocation(item: Record<string, unknown>): boolean {
+	return Number(item.id) > 0;
 }
 
 export function DeviceLocationsTab({ locations, readOnly, onChange }: DeviceLocationsTabProps) {
@@ -16,12 +21,19 @@ export function DeviceLocationsTab({ locations, readOnly, onChange }: DeviceLoca
 			records={records}
 			readOnly={readOnly}
 			columns={[
-				{ key: 'date', label: 'Дата' },
+				{ key: 'date', label: 'Дата', type: 'date', width: 140 },
 				{ key: 'place', label: 'Место' },
 				{ key: 'responsible', label: 'Ответственный' },
 			]}
 			onChange={onChange}
-			createItem={() => ({ id: 0, date: '', place: '', responsible: '' })}
+			canRemove={(item) => !isSavedLocation(item)}
+			isRowReadOnly={isSavedLocation}
+			createItem={() => ({
+				id: 0,
+				date: formatDeviceDate(new Date()),
+				place: '',
+				responsible: '',
+			})}
 		/>
 	);
 }

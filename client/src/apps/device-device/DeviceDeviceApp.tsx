@@ -1,22 +1,23 @@
-import { Alert, Tabs } from '@mantine/core';
+import { Alert, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 
 import { deviceApi, type DeviceDetail } from '@/core/api/endpoints/deviceApi';
 import { DeviceAccountingFields } from '@/features/device/DeviceAccountingFields';
 import { DeviceInfoTab } from '@/features/device/DeviceInfoTab';
-import { ReadOnlyRecordList } from '@/features/device/ReadOnlyRecordList';
 import {
 	canCreateDevice,
 	useCanDeleteDevice,
 	useCanReadDevice,
 	useCanUpdateDevice,
 } from '@/features/device/deviceAccess';
-import { normalizeIdRecord, useEntityId } from '@/features/device/deviceAppUtils';
+import { useEntityId } from '@/features/device/deviceAppUtils';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { DeviceGeneralTab } from './DeviceGeneralTab';
 import { DeviceImagesTab } from './DeviceImagesTab';
+import { DeviceLicensesTab } from './DeviceLicensesTab';
 import { DeviceLocationsTab } from './DeviceLocationsTab';
+import { DevicePropertiesTab } from './DevicePropertiesTab';
 import { DeviceRepairsTab } from './DeviceRepairsTab';
 import { validateDeviceForm } from './deviceDeviceValidation';
 
@@ -125,16 +126,19 @@ export default function DeviceDeviceApp() {
 					</Tabs.Panel>
 
 					<Tabs.Panel value="properties" pt="sm">
-						<ReadOnlyRecordList
-							records={normalizeIdRecord(data.properties)}
-							labelFields={['name', 'title', 'value']}
+						<DevicePropertiesTab
+							typeId={data.typeId}
+							properties={data.properties}
+							readOnly={readOnly}
+							onChange={(properties) => setField('properties', properties)}
 						/>
 					</Tabs.Panel>
 
 					<Tabs.Panel value="licenses" pt="sm">
-						<ReadOnlyRecordList
-							records={normalizeIdRecord(data.licenses)}
-							labelFields={['software_name', 'key_name', 'licenseSoftware_name']}
+						<DeviceLicensesTab
+							licenses={data.licenses}
+							readOnly={readOnly}
+							onChange={(licenses) => setField('licenses', licenses)}
 						/>
 					</Tabs.Panel>
 
@@ -143,7 +147,9 @@ export default function DeviceDeviceApp() {
 					</Tabs.Panel>
 
 					<Tabs.Panel value="info" pt="sm">
-						<DeviceInfoTab data={data} />
+						<Stack gap="lg">
+							<DeviceInfoTab data={data} layout="rows" />
+						</Stack>
 					</Tabs.Panel>
 				</Tabs>
 			)}

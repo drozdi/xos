@@ -34,13 +34,12 @@ class DeviceController extends AbstractController {
     public function filter (TypeRepository $TypeRepository): JsonResponse {
         $items = [];
         foreach ($TypeRepository->getTypes() as $type) {
-            $items[] = [
-                'label' => $type->getName(),
-                'sublabel' => $type->getCode(),
-                'value' => $type->getId(),
-                'type' => $type->isRoot()? "subheader": ""
-            ];
             if ($type->isRoot()) {
+                $items[] = [
+                    'label' => $type->getName(),
+                    'sublabel' => $type->getCode(),
+                    'type' => 'subheader',
+                ];
                 foreach ($type->getChildren() as $subType) {
                     $items[] = [
                         'label' => $subType->getName(),
@@ -48,8 +47,14 @@ class DeviceController extends AbstractController {
                         'value' => $subType->getId(),
                     ];
                 }
-                $items[] = ['type'=> "divider"];
+                $items[] = ['type' => 'divider'];
+                continue;
             }
+            $items[] = [
+                'label' => $type->getName(),
+                'sublabel' => $type->getCode(),
+                'value' => $type->getId(),
+            ];
         }
 
         return $this->json($items);

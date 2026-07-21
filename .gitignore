@@ -29,6 +29,7 @@ xos.explorer
 
 # production
 /build
+/uploads/
 
 # misc
 .DS_Store

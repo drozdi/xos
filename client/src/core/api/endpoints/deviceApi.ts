@@ -284,6 +284,22 @@ export const deviceApi = {
 	create: (body: DeviceDetail) => createEntity(`${BASE}/device/`, body),
 	update: (id: number, body: DeviceDetail) => updateEntity(`${BASE}/device`, id, body),
 	remove: (id: number) => removeEntity(`${BASE}/device`, id),
+	typeProperties: async (typeId: number) => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/device/properties/${typeId}`);
+		return z
+			.array(
+				z.object({
+					value: z.number(),
+					label: z.string(),
+					sublabel: z.string().optional(),
+				}),
+			)
+			.parse(data);
+	},
+	propertyTemplate: async (propertyId: number) => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/device/property/${propertyId}`);
+		return z.object({}).passthrough().parse(data) as Record<string, unknown>;
+	},
 };
 
 export const subDeviceApi = {

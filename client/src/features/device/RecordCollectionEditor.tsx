@@ -9,10 +9,12 @@ import {
 	TextInput,
 	Textarea,
 } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 
 import { useWindowSize } from '@/core/windowManager';
 import { nextTempId } from '@/features/device/deviceAppUtils';
+import { formatDeviceDate, parseDeviceDate } from '@/features/device/deviceDateUtils';
 
 type RecordItem = Record<string, unknown>;
 
@@ -23,12 +25,14 @@ interface RecordCollectionEditorProps {
 	columns: Array<{
 		key: string;
 		label: string;
-		type?: 'text' | 'textarea' | 'checkbox';
+		type?: 'text' | 'textarea' | 'checkbox' | 'date';
 		width?: number | string;
 	}>;
 	onChange: (records: Record<string, RecordItem>) => void;
 	createItem?: () => RecordItem;
 	tableMinWidth?: number;
+	canRemove?: (item: RecordItem) => boolean;
+	isRowReadOnly?: (item: RecordItem) => boolean;
 }
 
 function useTableLayout(windowWidth: number, tableMinWidth: number): boolean {
@@ -41,6 +45,8 @@ interface RecordCollectionEntryProps {
 	readOnly: boolean;
 	columns: RecordCollectionEditorProps['columns'];
 	layout: 'table' | 'card';
+	canRemove?: (item: RecordItem) => boolean;
+	isRowReadOnly?: (item: RecordItem) => boolean;
 	onFieldChange: (key: string, field: string, value: unknown) => void;
 	onRemove: (key: string) => void;
 }
@@ -52,6 +58,25 @@ function renderField(
 	onChange: (value: unknown) => void,
 	withLabel: boolean,
 ) {
+	if (column.type === 'date') {
+		if (readOnly && String(value ?? '').trim()) {
+			return (
+				<Text size="sm" py={withLabel ? undefined : 4}>
+					{String(value)}
+				</Text>
+			);
+		}
+		return (
+			<DatePickerInput
+				label={withLabel ? column.label : undefined}
+				value={parseDeviceDate(String(value ?? ''))}
+				readOnly={readOnly}
+				valueFormat="YYYY.MM.DD"
+				onChange={(date) => onChange(formatDeviceDate(date))}
+			/>
+		);
+	}
+
 	if (column.type === 'textarea') {
 		return (
 			<Textarea
@@ -81,10 +106,14 @@ function RecordCollectionEntry({
 	readOnly,
 	columns,
 	layout,
+	canRemove,
+	isRowReadOnly,
 	onFieldChange,
 	onRemove,
 }: RecordCollectionEntryProps) {
-	const removeButton = !readOnly ? (
+	const rowReadOnly = readOnly || Boolean(isRowReadOnly?.(item));
+	const showRemove = !readOnly && (canRemove?.(item) ?? true);
+	const removeButton = showRemove ? (
 		<ActionIcon
 			color="red"
 			variant="light"
@@ -100,7 +129,7 @@ function RecordCollectionEntry({
 			<Table.Tr>
 				{columns.map((column) => (
 					<Table.Td key={column.key} w={column.width}>
-						{renderField(column, item[column.key], readOnly, (value) =>
+						{renderField(column, item[column.key], rowReadOnly, (value) =>
 							onFieldChange(entryKey, column.key, value),
 						false)}
 					</Table.Td>
@@ -120,7 +149,7 @@ function RecordCollectionEntry({
 			</Group>
 			<Stack gap="xs">
 				{columns.map((column) =>
-					renderField(column, item[column.key], readOnly, (value) =>
+					renderField(column, item[column.key], rowReadOnly, (value) =>
 						onFieldChange(entryKey, column.key, value),
 					true),
 				)}
@@ -137,6 +166,8 @@ export function RecordCollectionEditor({
 	onChange,
 	createItem,
 	tableMinWidth = 640,
+	canRemove,
+	isRowReadOnly,
 }: RecordCollectionEditorProps) {
 	const { width: windowWidth } = useWindowSize();
 	const isTableLayout = useTableLayout(windowWidth, tableMinWidth);
@@ -204,6 +235,8 @@ export function RecordCollectionEditor({
 								readOnly={readOnly}
 								columns={columns}
 								layout={layout}
+								canRemove={canRemove}
+								isRowReadOnly={isRowReadOnly}
 								onFieldChange={updateItem}
 								onRemove={removeItem}
 							/>
@@ -219,6 +252,8 @@ export function RecordCollectionEditor({
 						readOnly={readOnly}
 						columns={columns}
 						layout={layout}
+						canRemove={canRemove}
+						isRowReadOnly={isRowReadOnly}
 						onFieldChange={updateItem}
 						onRemove={removeItem}
 					/>
