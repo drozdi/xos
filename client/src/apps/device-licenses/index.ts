@@ -17,8 +17,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 800, height: 520 },
 	minSize: { width: 560, height: 360 },
 	...createDeviceListManifestOptions('device-licenses', 8),
-	startMenuBorderTop: true,
-	startMenuSort: 41,
+	startMenuSort: 33,
 	canAccess: () => canReadDeviceLicense() || canCreateDeviceLicense(),
 };
 

@@ -277,6 +277,10 @@ export const deviceApi = {
 };
 
 export const subDeviceApi = {
+	filter: async () => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/subDevices/filter`);
+		return z.array(filterOptionSchema).parse(data);
+	},
 	list: (request: ListRequest) =>
 		postList(`${BASE}/subDevices/list`, request, z.array(subDeviceListItemSchema)),
 	get: (id: number) => getDetail(`${BASE}/subDevices/${id}`, subDeviceDetailSchema),

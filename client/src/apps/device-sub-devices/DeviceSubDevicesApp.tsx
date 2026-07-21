@@ -1,7 +1,7 @@
-import { Alert } from '@mantine/core';
+import { Alert, Checkbox, Select, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
@@ -25,12 +25,31 @@ export default function DeviceSubDevicesApp() {
 	const canCreate = useCanCreateSubDevice();
 	const canUpdate = useCanUpdateSubDevice();
 	const canDelete = useCanDeleteSubDevice();
-	const pagination = usePaginatedList();
+	const [typeId, setTypeId] = useState<string | null>(null);
+	const [discardedOnly, setDiscardedOnly] = useState(false);
+
+	const listFilters = useMemo(() => {
+		if (!typeId) {
+			return {};
+		}
+		return {
+			type: Number(typeId),
+			accounting: { discarded: discardedOnly },
+		};
+	}, [typeId, discardedOnly]);
+
+	const pagination = usePaginatedList({ filters: listFilters });
+
+	const filterQuery = useQuery({
+		queryKey: queryKeys.device.subDeviceFilter,
+		queryFn: () => subDeviceApi.filter(),
+		enabled: canRead,
+	});
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.device.subDevices(pagination.listRequest),
 		queryFn: () => subDeviceApi.list(pagination.listRequest),
-		enabled: canRead,
+		enabled: canRead && typeId !== null,
 	});
 
 	const deleteMutation = useMutation({
@@ -41,6 +60,28 @@ export default function DeviceSubDevicesApp() {
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
+
+	const typeOptions = useMemo(() => {
+		const options: { value: string; label: string }[] = [];
+		for (const item of filterQuery.data ?? []) {
+			if (item.value == null) {
+				continue;
+			}
+			options.push({
+				value: String(item.value),
+				label: item.label ?? String(item.value),
+			});
+		}
+		return options;
+	}, [filterQuery.data]);
+
+	useEffect(() => {
+		const firstType = typeOptions[0];
+		if (typeId !== null || !firstType) {
+			return;
+		}
+		setTypeId(firstType.value);
+	}, [typeId, typeOptions]);
 
 	const columns = useMemo(
 		() => [
@@ -66,7 +107,7 @@ export default function DeviceSubDevicesApp() {
 		<MainListLayout
 			title="Комплектующие"
 			total={listQuery.data?.total}
-			isLoading={listQuery.isLoading}
+			isLoading={listQuery.isLoading || filterQuery.isLoading}
 			isError={listQuery.isError}
 			errorMessage={
 				listQuery.error
@@ -76,6 +117,24 @@ export default function DeviceSubDevicesApp() {
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate ? () => openSubDevice(0) : undefined}
+			filters={
+				<Stack gap="xs">
+					<Select
+						label="Тип"
+						data={typeOptions}
+						value={typeId}
+						onChange={setTypeId}
+						searchable
+						clearable={false}
+						disabled={typeOptions.length === 0}
+					/>
+					<Checkbox
+						label="Списан"
+						checked={discardedOnly}
+						onChange={(e) => setDiscardedOnly(e.currentTarget.checked)}
+					/>
+				</Stack>
+			}
 		>
 			<DataTable
 				storageKey="device-sub-devices"

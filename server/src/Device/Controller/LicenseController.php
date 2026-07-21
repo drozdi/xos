@@ -114,7 +114,7 @@ class LicenseController extends AbstractController {
             'no' => $license->getNo(),
             'autNo' => $license->getAutNo(),
             'sort' => $license->getSort(),
-            'dateReal' => $license->getDateReal("d-m-Y"),
+            'dateReal' => DateTimeFormat::format($license->getDateReal(), 'd-m-Y'),
             'softwares' => $arSoft
         ]);
     }

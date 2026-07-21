@@ -76,7 +76,7 @@ class SubDeviceController extends AbstractController {
             $arHistories[$location->getId()] = [
                 'id' => $location->getId(),
                 'parent_id' => $location->getParent()->getId(),
-                'date' => $location->getDatePlacement("Y.m.d"),
+                'date' => DateTimeFormat::format($location->getDatePlacement(), 'Y.m.d'),
                 'place' => $location->getParent()->getCode(),
             ];
         }
@@ -96,9 +96,9 @@ class SubDeviceController extends AbstractController {
 
         return $this->json([
             'id' => $device->getId(),
-            'dateCreated' => $device->getDateCreated("Y.m.d H:i"),
+            'dateCreated' => DateTimeFormat::format($device->getDateCreated(), 'Y.m.d H:i'),
             'createdBy' => $device->getCreatedBy()? $device->getCreatedBy()->getAlias(): '',
-            'xTimestamp' => $device->getXTimestamp("Y.m.d H:i"),
+            'xTimestamp' => DateTimeFormat::format($device->getXTimestamp(), 'Y.m.d H:i'),
             'modifiedBy' => $device->getModifiedBy()? $device->getModifiedBy()->getAlias(): '',
             'name' => $device->getName(),
             'title' => $device->getName(),
@@ -111,8 +111,8 @@ class SubDeviceController extends AbstractController {
                 'inNo' => $device->getAccounting()? $device->getAccounting()->getInNo(): '',
                 'isChild' => $device->getAccounting() && $device->getAccounting()->isChild(),
                 'invoice' => $device->getAccounting()? $device->getAccounting()->getInvoice(): '',
-                'dateInvoice' => $device->getAccounting()? $device->getAccounting()->getDateInvoice("Y.m.d"): '',
-                'dateDiscarded' => $device->getAccounting()? $device->getAccounting()->getDateDiscarded("Y.m.d"): '',
+                'dateInvoice' => DateTimeFormat::format($device->getAccounting()?->getDateInvoice(), 'Y.m.d') ?? '',
+                'dateDiscarded' => DateTimeFormat::format($device->getAccounting()?->getDateDiscarded(), 'Y.m.d') ?? '',
                 'discarded' => $device->getAccounting()? $device->getAccounting()->isDiscarded(): '',
                 'name' => $device->getAccounting()? $device->getAccounting()->getName(): '',
                 'parent_id' => $device->getAccounting() && $device->getAccounting()->getParent()? $device->getAccounting()->getParent()->getId(): null,
@@ -255,6 +255,10 @@ class SubDeviceController extends AbstractController {
                 'order' => "ASC",
             ]];
         }
+        $req['filters'] = array_merge(
+            ['type' => ['property!' => null]],
+            (array)($req['filters'] ?? []),
+        );
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
         $totalItems = $DeviceRepository->cnt($req['filters']);
@@ -271,10 +275,12 @@ class SubDeviceController extends AbstractController {
                 'id' => $device->getId(),
                 'code' => $device->getCode(),
                 'name' => $device->getName(),
+                'type' => $device->getType()? $device->getType()->getName(): '',
+                'inNo' => $device->getAccounting()? $device->getAccounting()->getInNo(): '',
                 'sn' => $device->getSn(),
                 'location' => $loc,
-                'dateCreated' => $device->getDateCreated("Y.m.d H:i").($device->getCreatedBy()? " (".$device->getCreatedBy()->getLogin().")": ''),
-                'xTimestamp' => $device->getXTimestamp("Y.m.d H:i").($device->getModifiedBy()? " (".$device->getModifiedBy()->getLogin().")": ''),
+                'dateCreated' => (DateTimeFormat::format($device->getDateCreated(), 'Y.m.d H:i') ?? '').($device->getCreatedBy()? " (".$device->getCreatedBy()->getLogin().")": ''),
+                'xTimestamp' => (DateTimeFormat::format($device->getXTimestamp(), 'Y.m.d H:i') ?? '').($device->getModifiedBy()? " (".$device->getModifiedBy()->getLogin().")": ''),
             );
         }
 

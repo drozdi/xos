@@ -293,9 +293,9 @@ class DeviceController extends AbstractController {
 
         return $this->json([
             'id' => $device->getId(),
-            'dateCreated' => $device->getDateCreated("Y.m.d H:i"),
+            'dateCreated' => DateTimeFormat::format($device->getDateCreated(), 'Y.m.d H:i'),
             'createdBy' => $device->getCreatedBy()? $device->getCreatedBy()->getAlias(): '',
-            'xTimestamp' => $device->getXTimestamp("Y.m.d H:i"),
+            'xTimestamp' => DateTimeFormat::format($device->getXTimestamp(), 'Y.m.d H:i'),
             'modifiedBy' => $device->getModifiedBy()? $device->getModifiedBy()->getAlias(): '',
             'name' => $device->getName(),
             'code' => $device->getCode(false),
@@ -307,8 +307,8 @@ class DeviceController extends AbstractController {
             'accounting' => [
                 'inNo' => $device->getAccounting()? $device->getAccounting()->getInNo(): '',
                 'invoice' => $device->getAccounting()? $device->getAccounting()->getInvoice(): '',
-                'dateInvoice' => $device->getAccounting()? $device->getAccounting()->getDateInvoice("Y.m.d"): '',
-                'dateDiscarded' => $device->getAccounting()? $device->getAccounting()->getDateDiscarded("Y.m.d"): '',
+                'dateInvoice' => DateTimeFormat::format($device->getAccounting()?->getDateInvoice(), 'Y.m.d') ?? '',
+                'dateDiscarded' => DateTimeFormat::format($device->getAccounting()?->getDateDiscarded(), 'Y.m.d') ?? '',
                 'discarded' => $device->getAccounting()? $device->getAccounting()->isDiscarded(): '',
                 'name' => $device->getAccounting()? $device->getAccounting()->getName(): '',
                 'isChild' => $device->getAccounting() && $device->getAccounting()->isChild(),

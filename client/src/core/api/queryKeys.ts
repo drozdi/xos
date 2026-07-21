@@ -66,6 +66,7 @@ export const queryKeys = {
 		devices: (filters: ListRequest) => ['device', 'devices', filters] as const,
 		device: (id: number) => ['device', 'device', id] as const,
 		subDevices: (filters: ListRequest) => ['device', 'subDevices', filters] as const,
+		subDeviceFilter: ['device', 'subDevice', 'filter'] as const,
 		subDevice: (id: number) => ['device', 'subDevice', id] as const,
 		types: (filters: ListRequest) => ['device', 'types', filters] as const,
 		type: (id: number) => ['device', 'type', id] as const,
