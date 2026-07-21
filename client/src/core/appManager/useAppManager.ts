@@ -147,6 +147,7 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			id: windowId,
 			appId,
 			instanceKey,
+			props: params?.props,
 			title: params?.title ?? persisted?.title ?? manifest.name,
 			x: launchX,
 			y: launchY,

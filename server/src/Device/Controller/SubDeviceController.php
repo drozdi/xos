@@ -6,6 +6,7 @@ use App\Attribute\Access;
 
 use Device\Entity\Type;
 use Device\Entity\Device;
+use Device\Entity\Accounting;
 
 use Device\Repository\TypeRepository;
 use Device\Repository\DeviceRepository;
@@ -67,9 +68,15 @@ class SubDeviceController extends AbstractController {
         ]);
     }
 
+    #[Route('/parentAccountings/{id}', methods: ['GET'])]
+    #[Access('can_read')]
+    public function parentAccountings (?Type $type, DeviceRepository $DeviceRepository): JsonResponse {
+        return $this->json($this->collectParentAccountings($type, $DeviceRepository));
+    }
+
     #[Route('/{id}', methods: ['GET'])]
     #[Access('can_read')]
-    public function detail (int $id, DeviceManager $dm, DevicePropertyRepository $DevicePropertyRepository): JsonResponse {
+    public function detail (int $id, DeviceManager $dm, DeviceRepository $DeviceRepository, DevicePropertyRepository $DevicePropertyRepository): JsonResponse {
         $device = $dm->device($id);
         $arHistories = [];
         foreach ($device->getHistories()??[] as $location) {
@@ -102,7 +109,9 @@ class SubDeviceController extends AbstractController {
             'modifiedBy' => $device->getModifiedBy()? $device->getModifiedBy()->getAlias(): '',
             'name' => $device->getName(),
             'title' => $device->getName(),
+            'sn' => $device->getSn(),
             'type_id' => $device->getType()? $device->getType()->getId(): 0,
+            'parent_id' => $device->getParent()? $device->getParent()->getId(): null,
             'sort' => $device->getSort(),
             'description' => $device->getDescription(),
             'log' => $device->getLog(),
@@ -117,6 +126,7 @@ class SubDeviceController extends AbstractController {
                 'name' => $device->getAccounting()? $device->getAccounting()->getName(): '',
                 'parent_id' => $device->getAccounting() && $device->getAccounting()->getParent()? $device->getAccounting()->getParent()->getId(): null,
             ],
+            'parentAccountings' => $this->collectParentAccountings($device->getType(), $DeviceRepository),
             'histories' => $arHistories,
             'properties' => $arProperties,
         ]);
@@ -290,5 +300,41 @@ class SubDeviceController extends AbstractController {
         return $this->json($items, Response::HTTP_OK, [
             'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
         ]);
+    }
+
+    private function collectParentAccountings (?Type $componentType, DeviceRepository $DeviceRepository): array {
+        if (!$componentType || !($property = $componentType->getProperty())) {
+            return [];
+        }
+        $typeIds = [];
+        foreach ($property->getTypes() as $deviceType) {
+            $typeIds[] = $deviceType->getId();
+        }
+        if (empty($typeIds)) {
+            return [];
+        }
+        $items = [];
+        foreach ($DeviceRepository->findFilter(
+            ['type' => $typeIds],
+            [['key' => 'sort', 'order' => 'ASC'], ['key' => 'name', 'order' => 'ASC']]
+        ) as $device) {
+            if (!($accounting = $device->getAccounting())) {
+                continue;
+            }
+            $items[$accounting->getId()] = [
+                'value' => $accounting->getId(),
+                'label' => $this->formatParentAccountingLabel($device, $accounting),
+            ];
+        }
+        return array_values($items);
+    }
+
+    private function formatParentAccountingLabel (Device $device, Accounting $accounting): string {
+        $code = $device->getCode();
+        $accountingName = trim((string)($accounting->getName() ?: ''));
+        if ($accountingName === '') {
+            return $code;
+        }
+        return $code.' ('.$accountingName.')';
     }
 }

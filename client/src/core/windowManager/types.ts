@@ -7,6 +7,7 @@ export interface WindowState {
 	id: string;
 	appId: string;
 	instanceKey: string;
+	props?: Record<string, unknown>;
 	title: string;
 	x: number;
 	y: number;
@@ -36,6 +37,7 @@ export interface OpenWindowPayload {
 	id?: string;
 	appId: string;
 	instanceKey: string;
+	props?: Record<string, unknown>;
 	title: string;
 	x?: number;
 	y?: number;

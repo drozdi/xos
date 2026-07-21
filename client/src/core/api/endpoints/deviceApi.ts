@@ -80,7 +80,9 @@ export const subDeviceDetailSchema = z
 		id: z.number(),
 		name: z.string().nullable().optional(),
 		title: z.string().nullable().optional(),
+		sn: z.string().nullable().optional(),
 		type_id: z.number().nullable().optional(),
+		parent_id: z.number().nullable().optional(),
 		sort: z.number().nullable().optional(),
 		description: z.string().nullable().optional(),
 		log: z.string().nullable().optional(),
@@ -89,6 +91,14 @@ export const subDeviceDetailSchema = z
 		xTimestamp: z.string().nullable().optional(),
 		modifiedBy: z.string().nullable().optional(),
 		accounting: z.record(z.string(), z.unknown()).optional(),
+		parentAccountings: z
+			.array(
+				z.object({
+					value: z.number(),
+					label: z.string(),
+				}),
+			)
+			.optional(),
 		histories: idRecordSchema.optional(),
 		properties: idRecordSchema.optional(),
 	})
@@ -280,6 +290,21 @@ export const subDeviceApi = {
 	filter: async () => {
 		const { data } = await apiClient.get<unknown>(`${BASE}/subDevices/filter`);
 		return z.array(filterOptionSchema).parse(data);
+	},
+	formProperties: async (typeId: number) => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/subDevices/form/${typeId}`);
+		return z.record(z.string(), z.record(z.string(), z.unknown())).parse(data);
+	},
+	parentAccountings: async (typeId: number) => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/subDevices/parentAccountings/${typeId}`);
+		return z
+			.array(
+				z.object({
+					value: z.number(),
+					label: z.string(),
+				}),
+			)
+			.parse(data);
 	},
 	list: (request: ListRequest) =>
 		postList(`${BASE}/subDevices/list`, request, z.array(subDeviceListItemSchema)),

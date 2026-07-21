@@ -93,7 +93,16 @@ export default function DeviceSubDevicesApp() {
 		[],
 	);
 
-	const openSubDevice = (id: number) => launchApp('device-sub-device', id);
+	const openSubDevice = (id: number) => {
+		if (id === 0) {
+			if (!typeId) {
+				return;
+			}
+			launchApp('device-sub-device', 0, { type_id: Number(typeId) });
+			return;
+		}
+		launchApp('device-sub-device', id);
+	};
 
 	if (!canRead) {
 		return (
@@ -116,7 +125,7 @@ export default function DeviceSubDevicesApp() {
 			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
-			onCreate={canCreate ? () => openSubDevice(0) : undefined}
+			onCreate={canCreate && typeId ? () => openSubDevice(0) : undefined}
 			filters={
 				<Stack gap="xs">
 					<Select

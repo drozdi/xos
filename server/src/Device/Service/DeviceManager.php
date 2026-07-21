@@ -1091,8 +1091,11 @@ class DeviceManager extends AbstractManager {
         if (array_key_exists('invoice', $arAccounting)) {
             $accounting->setInvoice($arAccounting['invoice']);
         }
-        if (array_key_exists('discarded', $arAccounting)) {
+		if (array_key_exists('discarded', $arAccounting)) {
             $accounting->setDiscarded((bool)$arAccounting['discarded']);
+            if (!(bool)$arAccounting['discarded']) {
+                $accounting->setDateDiscarded(null);
+            }
         }
         if (array_key_exists('name', $arAccounting)) {
             $accounting->setName($arAccounting['name']);
@@ -1101,7 +1104,14 @@ class DeviceManager extends AbstractManager {
             $accounting->setDateInvoice($arAccounting['dateInvoice']? new \DateTime($arAccounting['dateInvoice']): null);
         }
         if (array_key_exists('dateDiscarded', $arAccounting)) {
-            $accounting->setDateDiscarded($arAccounting['dateDiscarded']? new \DateTime($arAccounting['dateDiscarded']): null);
+            if (!empty($arAccounting['dateDiscarded'])) {
+                $accounting->setDateDiscarded(new \DateTime($arAccounting['dateDiscarded']));
+            } else {
+                $accounting->setDateDiscarded(null);
+                if (!array_key_exists('discarded', $arAccounting)) {
+                    $accounting->setDiscarded(false);
+                }
+            }
         }
         if ($arAccounting['device']??null instanceof Device) {
             $accounting->setDevice($arAccounting['device']);

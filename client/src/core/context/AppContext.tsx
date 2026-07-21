@@ -6,6 +6,7 @@ export interface AppContextValue {
 	appId: string;
 	windowId: string;
 	instanceKey: string;
+	props?: Record<string, unknown>;
 	manifest: AppManifest;
 }
 

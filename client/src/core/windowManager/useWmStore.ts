@@ -70,6 +70,7 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			id,
 			appId: payload.appId,
 			instanceKey: payload.instanceKey,
+			props: payload.props,
 			title: payload.title,
 			x: payload.x ?? defaults.x,
 			y: payload.y ?? defaults.y,

@@ -10,8 +10,8 @@ export function useEntityId(): number {
 export function useLaunchDeviceApp() {
 	const launchApp = useAppManager((state) => state.launchApp);
 
-	return (appId: string, id: number) => {
-		void launchApp(appId, { instanceKey: String(id) });
+	return (appId: string, id: number, props?: Record<string, unknown>) => {
+		void launchApp(appId, { instanceKey: String(id), props });
 	};
 }
 

@@ -61,9 +61,13 @@ class DeviceRepository extends AbstractRepository
         } elseif (!empty($filters['type']) && is_int($filters['type']) && $filters['type'] > 0) {
             $query->andWhere($this->fieldVal($n.".type", $filters['type']));
         } elseif (!empty($filters['type']) && is_array($filter = $filters['type'])) {
-            $query->innerJoin($n.'.type', $n.'t');
-            foreach ($filter as $field => $val) {
-                $query->andWhere($this->fieldVal($n."t.{$field}", $val));
+            if (array_is_list($filter)) {
+                $query->andWhere($this->fieldVal($n.".type", $filter));
+            } else {
+                $query->innerJoin($n.'.type', $n.'t');
+                foreach ($filter as $field => $val) {
+                    $query->andWhere($this->fieldVal($n."t.{$field}", $val));
+                }
             }
         }
         unset($filters['type']);

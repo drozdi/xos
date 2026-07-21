@@ -26,10 +26,11 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 						appId: window.appId,
 						windowId: window.id,
 						instanceKey: window.instanceKey,
+						props: window.props,
 						manifest,
 					}
 				: null,
-		[manifest, window.appId, window.id, window.instanceKey],
+		[manifest, window.appId, window.id, window.instanceKey, window.props],
 	);
 
 	if (!manifest || !appContextValue) {

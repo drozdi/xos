@@ -42,6 +42,7 @@ interface MainEntityFormProps<T> {
 	}) => ReactNode;
 	headerNote?: (props: { data: T; isNew: boolean }) => ReactNode;
 	initialData: T;
+	buildNewData?: () => Promise<T>;
 	validate?: (data: T) => Partial<Record<keyof T & string, string>>;
 	transformBeforeSave?: (data: T) => T;
 	canSave?: boolean;
@@ -60,6 +61,7 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	children,
 	headerNote,
 	initialData,
+	buildNewData,
 	validate,
 	transformBeforeSave,
 	canSave = true,
@@ -77,7 +79,7 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 
 	const { data, isLoading, isError, error } = useQuery({
 		queryKey: [...queryKey, entityId],
-		queryFn: () => (isNew ? initialData : load(entityId)),
+		queryFn: () => (isNew ? (buildNewData?.() ?? Promise.resolve(initialData)) : load(entityId)),
 	});
 
 	useEffect(() => {
