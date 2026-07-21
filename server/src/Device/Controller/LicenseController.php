@@ -39,10 +39,11 @@ class LicenseController extends AbstractController {
                 'key' => "code",
                 'order' => "ASC",
             ]],
-            'filters' => [
-                'type!' => 'OEM'
-            ]
         ], $request->toArray());
+        $req['filters'] = array_merge(
+            ['type!' => 'OEM'],
+            (array)($req['filters'] ?? []),
+        );
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
         $totalItems = $LicenseRepository->cnt($req['filters']);

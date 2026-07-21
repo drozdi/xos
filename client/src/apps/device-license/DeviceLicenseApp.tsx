@@ -1,8 +1,8 @@
-import { Alert, NumberInput, Stack, Tabs, TextInput } from '@mantine/core';
-import { useState } from 'react';
+import { Alert, NumberInput, Select, Stack, Tabs, TextInput } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { useMemo, useState } from 'react';
 
 import { deviceLicenseApi, type LicenseDetail } from '@/core/api/endpoints/deviceApi';
-import { RecordCollectionEditor } from '@/features/device/RecordCollectionEditor';
 import {
 	canCreateDeviceLicense,
 	useCanDeleteDeviceLicense,
@@ -12,6 +12,9 @@ import {
 import { normalizeIdRecord, useEntityId } from '@/features/device/deviceAppUtils';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
+import { LICENSE_TYPES } from './constants';
+import { LicenseSoftwaresEditor } from './LicenseSoftwaresEditor';
+import { formatLicenseDate, parseLicenseDate } from './licenseDateUtils';
 import { validateDeviceLicenseForm } from './deviceLicenseValidation';
 
 const initialData: LicenseDetail = {
@@ -33,6 +36,11 @@ export default function DeviceLicenseApp() {
 	const canCreate = canCreateDeviceLicense();
 	const isNew = entityId === 0;
 	const [activeTab, setActiveTab] = useState<string | null>('general');
+
+	const typeOptions = useMemo(
+		() => LICENSE_TYPES.map((value) => ({ value, label: value })),
+		[],
+	);
 
 	const canSave = isNew ? canCreate : canUpdate;
 
@@ -83,11 +91,12 @@ export default function DeviceLicenseApp() {
 								readOnly={readOnly}
 								onChange={(e) => setField('code', e.currentTarget.value)}
 							/>
-							<TextInput
+							<Select
 								label="Тип"
-								value={data.type ?? ''}
+								data={typeOptions}
+								value={data.type || null}
 								readOnly={readOnly}
-								onChange={(e) => setField('type', e.currentTarget.value)}
+								onChange={(value) => setField('type', value ?? '')}
 							/>
 							<TextInput
 								label="Номер"
@@ -107,32 +116,22 @@ export default function DeviceLicenseApp() {
 								readOnly={readOnly}
 								onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
 							/>
-							<TextInput
-								label="Дата"
-								value={data.dateReal ?? ''}
+							<DatePickerInput
+								label="Дата выдачи"
+								value={parseLicenseDate(data.dateReal)}
+								valueFormat="DD-MM-YYYY"
 								readOnly={readOnly}
-								onChange={(e) => setField('dateReal', e.currentTarget.value)}
+								clearable
+								onChange={(value) => setField('dateReal', formatLicenseDate(value))}
 							/>
 						</Stack>
 					</Tabs.Panel>
 
 					<Tabs.Panel value="softwares" pt="sm">
-						<RecordCollectionEditor
-							title="Программы"
+						<LicenseSoftwaresEditor
 							records={normalizeIdRecord(data.softwares)}
 							readOnly={readOnly}
-							columns={[
-								{ key: 'type_id', label: 'Тип (ID)' },
-								{ key: 'software_id', label: 'Программа (ID)' },
-								{ key: 'count', label: 'Количество' },
-							]}
 							onChange={(softwares) => setField('softwares', softwares)}
-							createItem={() => ({
-								id: 0,
-								type_id: '',
-								software_id: '',
-								count: 1,
-							})}
 						/>
 					</Tabs.Panel>
 				</Tabs>

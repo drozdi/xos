@@ -26,19 +26,22 @@ export function groupBy<T = object>(
 	const groups = new Map<T[keyof T], TableNode<T>[]>();
 	for (const node of nodes) {
 		const groupValue = node.data[key];
+		if (groupValue === null || groupValue === undefined || groupValue === '') {
+			continue;
+		}
 		if (!groups.has(groupValue)) {
 			groups.set(groupValue, []);
 		}
 		groups.get(groupValue)!.push(node);
 	}
-	const result: TableNode<T>[] = [];
-	for (const group of groups.values()) {
+	const groupedParents = new Map<T[keyof T], TableNode<T>>();
+	for (const [groupValue, group] of groups) {
 		if (group?.length === 0) {
 			continue;
 		}
 		const [first, ...rest] = group;
 		const parent = first as TableNode<T>;
-		const groupValue = parent.data[key];
+		const parentGroupValue = parent.data[key];
 		parent.nodes = rest.map((child) => {
 			child.isChildren = true;
 			return child;
@@ -47,7 +50,7 @@ export function groupBy<T = object>(
 		parent.isParent = rest.length > 0;
 		if (groupLevel !== undefined) {
 			parent.groupLevel = groupLevel;
-			parent.expandKey = buildExpandKey(parentExpandKey, groupLevel, groupValue);
+			parent.expandKey = buildExpandKey(parentExpandKey, groupLevel, parentGroupValue);
 		}
 		for (const child of rest) {
 			child.isParent = false;
@@ -55,7 +58,26 @@ export function groupBy<T = object>(
 				child.groupLevel = groupLevel;
 			}
 		}
-		result.push(parent);
+		groupedParents.set(groupValue, parent);
+	}
+
+	const emitted = new Set<T[keyof T]>();
+	const result: TableNode<T>[] = [];
+	for (const node of nodes) {
+		const groupValue = node.data[key];
+		if (groupValue === null || groupValue === undefined || groupValue === '') {
+			const standalone = node as TableNode<T>;
+			standalone.isParent = false;
+			standalone.isChildren = false;
+			standalone.nodes = undefined;
+			result.push(standalone);
+			continue;
+		}
+		if (emitted.has(groupValue)) {
+			continue;
+		}
+		emitted.add(groupValue);
+		result.push(groupedParents.get(groupValue)!);
 	}
 
 	return result;

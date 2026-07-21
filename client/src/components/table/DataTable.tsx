@@ -43,6 +43,8 @@ export interface DataTableProps<T extends object> {
 	groupKeys?: (keyof T)[];
 	groupedField?: keyof T;
 	groupedHeader?: ReactNode;
+	groupItemsField?: keyof T;
+	groupHeader?: ReactNode;
 	defaultGroupedExpanded?: boolean;
 	groupedMultiple?: boolean;
 }
@@ -129,6 +131,8 @@ export function DataTable<T extends object>({
 	groupKeys,
 	groupedField,
 	groupedHeader,
+	groupItemsField,
+	groupHeader,
 	defaultGroupedExpanded = false,
 	groupedMultiple = false,
 }: DataTableProps<T>) {
@@ -205,6 +209,17 @@ export function DataTable<T extends object>({
 			multiple={groupedMultiple}
 			defaultGroupedExpanded={defaultGroupedExpanded}
 		>
+			{groupItemsField ? (
+				<DataColumn<T>
+					field={groupItemsField}
+					group
+					header={groupHeader ?? groupedHeader ?? 'Группа'}
+					sortable={false}
+					resizable={false}
+					toggleable={false}
+					draggable={false}
+				/>
+			) : null}
 			{groupedField ? (
 				<DataColumn<T>
 					field={groupedField}

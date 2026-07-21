@@ -54,8 +54,10 @@ class SoftwareController extends AbstractController {
             $item = [
                 'id' => $s->getId(),
                 'name' => $s->getName(),
+                'type_id' => $s->getType()?->getId(),
                 'type' => $s->getType()->getName(),
-                'sort' => $s->getSort()
+                'sort' => $s->getSort(),
+                'parent_id' => $s->getParent()?->getId(),
             ];
             if ($s->getChildren()->count() > 0) {
                 $item = array_merge($item, [
@@ -70,8 +72,10 @@ class SoftwareController extends AbstractController {
                 $items[] = [
                     'id' => $sub->getId(),
                     'name' => $sub->getName(),
+                    'type_id' => $sub->getType()?->getId(),
                     'type' => $sub->getType()->getName(),
                     'sort' => $sub->getSort(),
+                    'parent_id' => $sub->getParent()?->getId(),
                     'group_id' => $s->getId(),
                     'group_name' => $s->getName(),
                     'group_type' => $s->getType()->getName(),

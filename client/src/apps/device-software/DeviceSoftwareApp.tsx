@@ -56,16 +56,20 @@ export default function DeviceSoftwareApp() {
 		[typesQuery.data?.items],
 	);
 
-	const parentOptions = useMemo(
+	const rootSoftwareOptions = useMemo(
 		() => {
 			// Mantine Select не поддерживает дублирующие value.
-			const byValue = new Map<string, { value: string; label: string }>();
+			const byValue = new Map<string, { value: string; label: string; typeId: number | null }>();
 			for (const item of softwareQuery.data?.items ?? []) {
 				if (item.id === entityId) {
 					continue;
 				}
 				const value = String(item.id);
-				byValue.set(value, { value, label: item.name ?? value });
+				byValue.set(value, {
+					value,
+					label: item.name ?? value,
+					typeId: item.type_id ?? null,
+				});
 			}
 			return Array.from(byValue.values());
 		},
@@ -104,7 +108,12 @@ export default function DeviceSoftwareApp() {
 			canSave={canSave}
 			canDelete={canDelete}
 		>
-			{({ data, setField, errors, readOnly }) => (
+			{({ data, setField, errors, readOnly }) => {
+				const parentOptions = rootSoftwareOptions
+					.filter((item) => (data.type_id ? item.typeId === data.type_id : true))
+					.map(({ value, label }) => ({ value, label }));
+
+				return (
 				<Stack gap="sm">
 					<TextInput
 						label="Название"
@@ -125,7 +134,18 @@ export default function DeviceSoftwareApp() {
 						data={typeOptions}
 						value={data.type_id ? String(data.type_id) : null}
 						readOnly={readOnly}
-						onChange={(value) => setField('type_id', value ? Number(value) : null)}
+						onChange={(value) => {
+							const nextTypeId = value ? Number(value) : null;
+							setField('type_id', nextTypeId);
+							if (data.parent_id) {
+								const parentExists = rootSoftwareOptions.some(
+									(item) => item.value === String(data.parent_id) && item.typeId === nextTypeId,
+								);
+								if (!parentExists) {
+									setField('parent_id', null);
+								}
+							}
+						}}
 						searchable
 						clearable
 					/>
@@ -139,7 +159,8 @@ export default function DeviceSoftwareApp() {
 						clearable
 					/>
 				</Stack>
-			)}
+				);
+			}}
 		</MainEntityForm>
 	);
 }

@@ -17,6 +17,19 @@ import {
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
 
+type LicenseListItem = {
+	id: number;
+	license_id?: number | null;
+	code: string;
+	type?: string;
+	display_name: string;
+	items?: LicenseListItem[];
+};
+
+function isLicenseSoftwareItem(item: { id: number; license_id?: number | null }) {
+	return item.license_id != null && item.id !== item.license_id;
+}
+
 export default function DeviceLicensesApp() {
 	useWindowTitle('Лицензии');
 	const launchApp = useLaunchDeviceApp();
@@ -25,7 +38,9 @@ export default function DeviceLicensesApp() {
 	const canCreate = useCanCreateDeviceLicense();
 	const canUpdate = useCanUpdateDeviceLicense();
 	const canDelete = useCanDeleteDeviceLicense();
-	const pagination = usePaginatedList();
+	const pagination = usePaginatedList({
+		filters: { 'type!': 'OEM' },
+	});
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.device.licenses(pagination.listRequest),
@@ -42,17 +57,54 @@ export default function DeviceLicensesApp() {
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
 
+	const tableData = useMemo<LicenseListItem[]>(() => {
+		const items = listQuery.data?.items ?? [];
+		const softwareByLicense = new Map<number, LicenseListItem[]>();
+
+		for (const item of items) {
+			if (!isLicenseSoftwareItem(item)) {
+				continue;
+			}
+			const parentId = item.license_id!;
+			const siblings = softwareByLicense.get(parentId) ?? [];
+			siblings.push({
+				...item,
+				display_name: item.code,
+			});
+			softwareByLicense.set(parentId, siblings);
+		}
+
+		return items
+			.filter((item) => !isLicenseSoftwareItem(item) && item.type !== 'OEM')
+			.map((item) => {
+				const row: LicenseListItem = {
+					...item,
+					display_name: item.code,
+				};
+				const children = softwareByLicense.get(item.id);
+				if (children?.length) {
+					row.items = children;
+				}
+				return row;
+			});
+	}, [listQuery.data?.items]);
+
 	const columns = useMemo(
 		() => [
 			{ field: 'id' as const, header: 'ID', width: 70 },
-			{ field: 'code' as const, header: 'Код' },
-			{ field: 'type' as const, header: 'Тип' },
-			{ field: 'no' as const, header: 'Номер' },
+			{ field: 'display_name' as const, header: 'Название' },
+			{ field: 'type' as const, header: 'Тип', width: 90 },
 		],
 		[],
 	);
 
-	const openLicense = (id: number) => launchApp('device-license', id);
+	const openRow = (row: LicenseListItem) => {
+		if (isLicenseSoftwareItem(row)) {
+			launchApp('device-license-key', row.id);
+			return;
+		}
+		launchApp('device-license', row.id);
+	};
 
 	if (!canRead) {
 		return (
@@ -75,12 +127,12 @@ export default function DeviceLicensesApp() {
 			}
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
-			onCreate={canCreate ? () => openLicense(0) : undefined}
+			onCreate={canCreate ? () => launchApp('device-license', 0) : undefined}
 		>
 			<DataTable
 				storageKey="device-licenses"
 				columns={columns}
-				data={listQuery.data?.items ?? []}
+				data={tableData}
 				total={listQuery.data?.total}
 				page={pagination.page}
 				limit={pagination.limit}
@@ -88,10 +140,21 @@ export default function DeviceLicensesApp() {
 				onLimitChange={pagination.onLimitChange}
 				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
-				onRowClick={(row) => openLicense(row.id)}
-				onEdit={canUpdate ? (row) => openLicense(row.id) : undefined}
-				onDelete={canDelete ? (row) => deleteMutation.mutateAsync(row.id) : undefined}
-				getRowLabel={(row) => row.code || row.no || String(row.id)}
+				onRowClick={openRow}
+				onEdit={canUpdate ? openRow : undefined}
+				onDelete={
+					canDelete
+						? (row) => {
+								if (isLicenseSoftwareItem(row)) {
+									return Promise.resolve();
+								}
+								return deleteMutation.mutateAsync(row.id);
+							}
+						: undefined
+				}
+				groupItemsField="items"
+				groupHeader="Программа"
+				getRowLabel={(row) => row.code || String(row.id)}
 			/>
 		</MainListLayout>
 	);

@@ -182,6 +182,11 @@ export const softwareListItemSchema = z.object({
 	name: z.string().nullable().optional().transform((v) => v ?? ''),
 	sort: z.number().nullable().optional(),
 	type_id: z.number().nullable().optional(),
+	parent_id: z.number().nullable().optional(),
+	group_id: z.number().nullable().optional(),
+	group_name: z.string().nullable().optional().transform((v) => v ?? ''),
+	group_type: z.string().nullable().optional().transform((v) => v ?? ''),
+	group_sort: z.number().nullable().optional(),
 });
 
 export const softwareDetailSchema = z
@@ -212,9 +217,9 @@ export const softwareTypeDetailSchema = z
 
 export const licenseListItemSchema = z.object({
 	id: z.number(),
+	license_id: z.number().nullable().optional(),
 	code: z.string().nullable().optional().transform((v) => v ?? ''),
 	type: z.string().nullable().optional().transform((v) => v ?? ''),
-	no: z.string().nullable().optional().transform((v) => v ?? ''),
 });
 
 export const licenseDetailSchema = z
