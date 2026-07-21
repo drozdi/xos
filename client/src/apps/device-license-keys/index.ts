@@ -17,6 +17,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 640, height: 480 },
 	minSize: { width: 480, height: 360 },
 	...createDeviceListManifestOptions('device-license-keys', 9),
+	startMenuSort: 42,
 	canAccess: canReadDeviceLicenseKey,
 };
 

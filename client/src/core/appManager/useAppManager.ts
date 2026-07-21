@@ -155,7 +155,7 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			minimized: persisted?.minimized,
 			maximized: persisted?.maximized,
 			wmGroup: persisted?.wmGroup ?? manifest.wmGroup ?? 'default',
-			wmSort: persisted?.wmSort ?? 0,
+			wmSort: persisted?.wmSort ?? manifest.wmSort ?? 0,
 			taskbarGroup: resolveTaskbarGroup(manifest),
 			dragHandles: manifest.window?.dragHandles,
 			dragCancel: manifest.window?.dragCancel,

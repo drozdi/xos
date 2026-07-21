@@ -86,7 +86,7 @@ function PropertyRowFields({
 	onRemove,
 	onOpenEnums,
 }: PropertyRowProps) {
-	const fromTemplate = Boolean(item.prototype_id);
+	const fromTemplate = Boolean(item.prototype_id ?? item.property_id);
 	const isList = item.fieldType === 'L';
 	const isNumber = item.fieldType === 'N';
 	const withLabels = layout === 'card';
@@ -116,7 +116,7 @@ function PropertyRowFields({
 
 	const prototypeHint = fromTemplate ? (
 		<Text size="xs" c="dimmed">
-			Шаблон #{item.prototype_id}
+			Шаблон #{item.prototype_id ?? item.property_id}
 		</Text>
 	) : null;
 
@@ -344,8 +344,8 @@ export function TypePropertiesEditor({
 		updateProperty(enumsEditorKey, { enums, defaultValue });
 	};
 
-	const enumsTitle = enumsProperty?.prototype_id
-		? `Значения по шаблону #${enumsProperty.prototype_id}${enumsProperty.name ? `: ${enumsProperty.name}` : ''}`
+	const enumsTitle = (enumsProperty?.prototype_id ?? enumsProperty?.property_id)
+		? `Значения по шаблону #${enumsProperty.prototype_id ?? enumsProperty.property_id}${enumsProperty.name ? `: ${enumsProperty.name}` : ''}`
 		: enumsProperty?.name
 			? `Значения: ${enumsProperty.name}`
 			: 'Значения списка';

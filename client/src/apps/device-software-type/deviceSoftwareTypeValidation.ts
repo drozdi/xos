@@ -8,6 +8,9 @@ export function validateDeviceSoftwareTypeForm(
 	if (!data.name?.trim()) {
 		errors.name = 'Обязательное поле';
 	}
+	if (!data.code?.trim()) {
+		errors.code = 'Обязательное поле';
+	}
 
 	return errors;
 }

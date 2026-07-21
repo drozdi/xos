@@ -126,13 +126,12 @@ class DeviceManager extends AbstractManager {
                 $componentPropertyIds[] = $property->getId();
             }
         }
-        $arProperties = $arType['properties'] ?? [];
+        $arProperties = $this->normalizePropertyPayloads($arType['properties'] ?? []);
         foreach ($type->getProperties() as $property) {
-            if (false !== ($key = array_search($property->getId(), $componentPropertyIds))) {
+            if (false !== ($key = array_search($property->getId(), $componentPropertyIds, true))) {
                 unset($componentPropertyIds[$key]);
-            } elseif ($arProperty = $arProperties[$property->getId()] ?? null) {
+            } elseif (null !== ($arProperty = $this->consumePropertyPayload($arProperties, (int)$property->getId()))) {
                 $type->addProperty($this->property($property, $arProperty));
-                unset($arProperties[$property->getId()]);
             } elseif (true === $isForm) {
                 $type->removeProperty($property);
             }
@@ -142,8 +141,15 @@ class DeviceManager extends AbstractManager {
         ]) as $property) {
             $type->addProperty($property);
         }
-        foreach ($arProperties as $id => $arProperty) {
-            $type->addProperty($this->property((int)$id, $arProperty));
+        foreach ($arProperties as $key => $arProperty) {
+            if (!is_array($arProperty)) {
+                continue;
+            }
+            $propertyId = (int)($arProperty['id'] ?? $key);
+            $type->addProperty($this->property($propertyId > 0 ? $propertyId : null, $arProperty));
+        }
+        if (true === $isForm) {
+            $this->syncDevicesForType($type);
         }
         $this->getEntityManager()->flush();
         return $type;
@@ -164,6 +170,8 @@ class DeviceManager extends AbstractManager {
             $this->propertyJoinPrototype($property, $arProperty['prototype']);
         } elseif (array_key_exists('prototype_id', $arProperty) && (int)$arProperty['prototype_id'] > 0) {
             $this->propertyJoinPrototype($property, $this->property((int)$arProperty['prototype_id']));
+        } elseif (array_key_exists('property_id', $arProperty) && (int)$arProperty['property_id'] > 0) {
+            $this->propertyJoinPrototype($property, $this->property((int)$arProperty['property_id']));
         }
         if (array_key_exists('active', $arProperty)) {
             $property->setActive((bool)$arProperty['active']);
@@ -217,48 +225,416 @@ class DeviceManager extends AbstractManager {
 
         $this->getPropertyRepository()->save($property, true);
 
+        if (array_key_exists('links', $arProperty) && is_array($arProperty['links']) && null === $property->getPrototype()) {
+            $this->syncPropertyLinks($property, $this->normalizeLinksPayload($arProperty['links']));
+        }
+
         $arVarieties = $arProperty['varieties'] ?? [];
         foreach ($arVarieties as $id => $arVariety) {
+            if (!is_array($arVariety)) {
+                continue;
+            }
             $this->propertyJoinPrototype($this->property((int)$id, $arVariety), $property);
         }
 
-        $arProperty['enums'] = $arProperty['enums'] ?? [];
+        // Enum values live on the linked prototype property when set.
+        if (array_key_exists('enums', $arProperty) && is_array($arProperty['enums'])) {
+            $enumOwner = $property->getPrototype() ?: $property;
+            [$enumById, $newEnums] = $this->splitEnumPayloads($arProperty['enums']);
 
-        if (array_key_exists('enums', $arProperty)) {
-            foreach ($property->getEnums() as $propertyEnum) {
-                if ($arEnum = $arProperty['enums'][$propertyEnum->getId()] ?? null) {
+            foreach ($enumOwner->getEnums(false) as $propertyEnum) {
+                $enumId = (int)$propertyEnum->getId();
+                if (isset($enumById[$enumId])) {
+                    $arEnum = $enumById[$enumId];
                     $propertyEnum->setValue((string)($arEnum['value'] ?? $arEnum['code'] ?? ''));
-                    $propertyEnum->setName((string)$arEnum['name']);
-                    $propertyEnum->setSort((int)$arEnum['sort']);
-                    $propertyEnum->setDefault((bool)$arEnum['default']);
-                    unset($arProperty['enums'][$propertyEnum->getId()]);
+                    $propertyEnum->setName((string)($arEnum['name'] ?? ''));
+                    $propertyEnum->setSort((int)($arEnum['sort'] ?? 100));
+                    $propertyEnum->setDefault((bool)($arEnum['default'] ?? false));
+                    unset($enumById[$enumId]);
                 } else {
-                    $property->removeEnum($propertyEnum);
+                    $this->detachEnumFromDevices($propertyEnum);
+                    $enumOwner->removeEnum($propertyEnum);
                     $this->getEntityManager()->remove($propertyEnum);
                 }
             }
-            foreach ($arProperty['enums'] ?: array() as $arEnum) {
-                $this->getEntityManager()->persist($property->newEnum()
+            foreach (array_merge($enumById, $newEnums) as $arEnum) {
+                if (!is_array($arEnum)) {
+                    continue;
+                }
+                $this->getEntityManager()->persist($enumOwner->newEnum()
                     ->setValue((string)($arEnum['value'] ?? $arEnum['code'] ?? ''))
-                    ->setName((string)$arEnum['name'])
-                    ->setSort((int)$arEnum['sort'])
-                    ->setDefault((bool)$arEnum['default']));
+                    ->setName((string)($arEnum['name'] ?? ''))
+                    ->setSort((int)($arEnum['sort'] ?? 100))
+                    ->setDefault((bool)($arEnum['default'] ?? false)));
             }
         }
 
-        if ((int)$property->getId() > 0) {
-            foreach ($this->getPropertyRepository()->findBy(array(
-                'prototype' => $property
-            )) as $p) {
-                $p->setFieldType($property->getFieldType());
-                $p->setPostfix($property->getPostfix());
-            }
-        }
+        $prototypeSource = $property->getPrototype() ?: $property;
+        $this->syncPropertyVariants($prototypeSource);
+        $this->syncDevicesForProperties([$prototypeSource, $property]);
 
         $this->getEntityManager()->flush();
 
         return $property;
     }
+
+    private function normalizeLinksPayload (array $links): array {
+        if (array_is_list($links)) {
+            return array_values(array_filter($links, 'is_array'));
+        }
+
+        return array_values(array_filter($links, 'is_array'));
+    }
+
+    private function syncPropertyLinks (Property $prototype, array $arLinks): void {
+        if (!(int)$prototype->getId() || null !== $prototype->getPrototype()) {
+            return;
+        }
+
+        $existing = [];
+        foreach ($this->getPropertyRepository()->findBy(['prototype' => $prototype]) as $variant) {
+            foreach ($variant->getTypes() as $type) {
+                $existing[$variant->getId().':'.$type->getId()] = [
+                    'variant' => $variant,
+                    'type' => $type,
+                ];
+            }
+        }
+
+        $kept = [];
+        foreach ($arLinks as $arLink) {
+            if (!is_array($arLink)) {
+                continue;
+            }
+            if (($arLink['link_kind'] ?? 'property') === 'root') {
+                continue;
+            }
+            $typeId = (int)($arLink['type_id'] ?? 0);
+            if ($typeId <= 0) {
+                continue;
+            }
+            $type = $this->type($typeId);
+            $variantId = (int)($arLink['id'] ?? $arLink['variant_id'] ?? 0);
+
+            if ($variantId > 0) {
+                $variant = $this->property($variantId, $arLink);
+                if (false === $type->getProperties()->contains($variant)) {
+                    $type->addProperty($variant);
+                }
+                $kept[$variant->getId().':'.$typeId] = true;
+                continue;
+            }
+
+            foreach ($type->getProperties() as $linkedProperty) {
+                if (!$this->propertyLinkMatches($linkedProperty, $prototype, $arLink)) {
+                    continue;
+                }
+                $this->property($linkedProperty, $arLink);
+                $kept[$linkedProperty->getId().':'.$typeId] = true;
+                continue 2;
+            }
+
+            $variant = $this->createPropertyVariantForType($prototype, $type, $arLink);
+            $kept[$variant->getId().':'.$typeId] = true;
+        }
+
+        foreach ($existing as $key => $data) {
+            if (isset($kept[$key])) {
+                continue;
+            }
+            $data['type']->removeProperty($data['variant']);
+            if (0 === $data['variant']->getTypes()->count()) {
+                $this->getPropertyRepository()->remove($data['variant']);
+            }
+        }
+    }
+
+    private function propertyLinkMatches (Property $linkedProperty, Property $prototype, array $arLink): bool {
+        if (null === ($linkedPrototype = $linkedProperty->getPrototype())
+            || (int)$linkedPrototype->getId() !== (int)$prototype->getId()) {
+            return false;
+        }
+        $parentId = (int)($arLink['parent_property_id'] ?? $arLink['parent_id'] ?? 0);
+        $linkedParentId = (int)($linkedProperty->getParent()?->getId() ?? 0);
+
+        return $parentId === $linkedParentId;
+    }
+
+    private function createPropertyVariantForType (Property $prototype, Type $type, array $arLink = []): Property {
+        $payload = [
+            'prototype_id' => $prototype->getId(),
+            'code' => $prototype->getCode(),
+            'name' => $prototype->getName(),
+            'active' => array_key_exists('active', $arLink) ? (bool)$arLink['active'] : $prototype->isActive(),
+            'required' => array_key_exists('required', $arLink) ? (bool)$arLink['required'] : $prototype->isRequired(),
+            'multiple' => array_key_exists('multiple', $arLink) ? (bool)$arLink['multiple'] : $prototype->isMultiple(),
+            'sort' => array_key_exists('sort', $arLink) ? (int)$arLink['sort'] : (int)$prototype->getSort(),
+            'fieldType' => $prototype->getFieldType(),
+            'listType' => $prototype->getListType(),
+            'postfix' => $prototype->getPostfix(),
+            'defaultValue' => $prototype->getDefaultValue(),
+        ];
+        $parentId = (int)($arLink['parent_property_id'] ?? $arLink['parent_id'] ?? 0);
+        if ($parentId > 0) {
+            $payload['parent_id'] = $parentId;
+        }
+        $variant = $this->property(null, $payload);
+        $type->addProperty($variant);
+
+        return $variant;
+    }
+
+    public function buildPropertyLinks (Property $property, TypeRepository $typeRepository): array {
+        $links = [];
+        if (null !== $property->getPrototype()) {
+            return $links;
+        }
+
+        foreach ($typeRepository->findBy(['property' => $property], ['sort' => 'ASC', 'name' => 'ASC']) as $type) {
+            $links['root_'.$type->getId()] = [
+                'id' => 0,
+                'variant_id' => null,
+                'type_id' => $type->getId(),
+                'type_kind' => 'component',
+                'link_kind' => 'root',
+                'type_name' => $type->getName(),
+                'type_code' => $type->getCode(),
+                'property_name' => $property->getName(),
+                'property_code' => $property->getCode(),
+                'parent_property_id' => null,
+                'parent_property_name' => null,
+                'active' => $type->isActive(),
+                'required' => false,
+                'multiple' => false,
+                'readonly' => true,
+            ];
+        }
+
+        foreach ($this->getPropertyRepository()->findBy(['prototype' => $property], ['sort' => 'ASC', 'name' => 'ASC']) as $variant) {
+            foreach ($variant->getTypes() as $type) {
+                $parent = $variant->getParent();
+                $key = $variant->getId().'_'.$type->getId();
+                $links[$key] = [
+                    'id' => $variant->getId(),
+                    'variant_id' => $variant->getId(),
+                    'type_id' => $type->getId(),
+                    'type_kind' => null !== $type->getProperty() ? 'component' : 'device',
+                    'link_kind' => 'property',
+                    'type_name' => $type->getName(),
+                    'type_code' => $type->getCode(),
+                    'property_name' => $variant->getName(),
+                    'property_code' => $variant->getCode(),
+                    'parent_property_id' => $parent?->getId(),
+                    'parent_property_name' => $parent?->getName(),
+                    'active' => $variant->isActive(),
+                    'required' => $variant->isRequired(),
+                    'multiple' => $variant->isMultiple(),
+                    'readonly' => false,
+                ];
+            }
+        }
+
+        return $links;
+    }
+
+    private function splitEnumPayloads (array $incoming): array {
+        $byId = [];
+        $new = [];
+        foreach ($incoming as $payload) {
+            if (!is_array($payload)) {
+                continue;
+            }
+            $id = (int)($payload['id'] ?? 0);
+            if ($id > 0) {
+                $byId[$id] = $payload;
+            } else {
+                $new[] = $payload;
+            }
+        }
+        return [$byId, $new];
+    }
+
+    private function syncPropertyVariants (Property $prototype): void {
+        if (!(int)$prototype->getId()) {
+            return;
+        }
+        foreach ($this->getPropertyRepository()->findBy(['prototype' => $prototype]) as $variant) {
+            $variant->setFieldType($prototype->getFieldType());
+            $variant->setPostfix($prototype->getPostfix());
+            $variant->setListType($prototype->getListType());
+        }
+    }
+
+    private function detachEnumFromDevices (PropertyEnum $enum): void {
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT dp FROM '.Device\Property::class.' dp JOIN dp.valueL e WHERE e = :enum'
+        )->setParameter('enum', $enum);
+        foreach ($query->execute() as $deviceProperty) {
+            $deviceProperty->removeValueL($enum);
+        }
+    }
+
+    /**
+     * @param Property[] $properties
+     */
+    private function syncDevicesForProperties (array $properties): void {
+        $propertyIds = [];
+        foreach ($properties as $property) {
+            if (!($property instanceof Property) || !(int)$property->getId()) {
+                continue;
+            }
+            $propertyIds[] = (int)$property->getId();
+            if (null != ($prototype = $property->getPrototype())) {
+                $propertyIds[] = (int)$prototype->getId();
+            }
+            foreach ($this->getPropertyRepository()->findBy(['prototype' => $property]) as $variant) {
+                $propertyIds[] = (int)$variant->getId();
+            }
+        }
+        $propertyIds = array_values(array_unique(array_filter($propertyIds)));
+        if (empty($propertyIds)) {
+            return;
+        }
+
+        $query = $this->getEntityManager()->createQuery(
+            'SELECT dp FROM '.Device\Property::class.' dp WHERE dp.property IN (:properties)'
+        )->setParameter('properties', $propertyIds);
+        foreach ($query->execute() as $deviceProperty) {
+            $this->syncDevicePropertyValues($deviceProperty);
+        }
+    }
+
+    private function syncDevicePropertyValues (Device\Property $deviceProperty): void {
+        $property = $deviceProperty->getProperty();
+        if (!($property instanceof Property) || $property->getFieldType() !== 'L') {
+            return;
+        }
+
+        $validEnums = [];
+        foreach ($property->getEnums() as $enum) {
+            $validEnums[(int)$enum->getId()] = $enum;
+        }
+
+        foreach ($deviceProperty->getValueL() as $enum) {
+            if (!isset($validEnums[(int)$enum->getId()])) {
+                $deviceProperty->removeValueL($enum);
+            }
+        }
+
+        if ($deviceProperty->getValueL()->count() === 0) {
+            foreach ($validEnums as $enum) {
+                if ($enum->getDefault()) {
+                    $deviceProperty->addValueL($enum);
+                    if (!$property->isMultiple()) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private function syncDevicesForType (Type $type): void {
+        $properties = [];
+        $propertyIds = [];
+        foreach ($type->getProperties() as $property) {
+            $properties[] = $property;
+            $propertyIds[(int)$property->getId()] = true;
+        }
+        if (empty($properties)) {
+            return;
+        }
+
+        foreach ($this->getDeviceRepository()->findBy(['type' => $type]) as $device) {
+            foreach ($device->getProperties()->toArray() as $deviceProperty) {
+                if (null !== $deviceProperty->getSubDevice()) {
+                    continue;
+                }
+                $baseId = (int)$deviceProperty->getProperty()->getId();
+                if (!isset($propertyIds[$baseId])) {
+                    $device->removeProperty($deviceProperty);
+                    $this->getEntityManager()->remove($deviceProperty);
+                }
+            }
+
+            $existing = [];
+            foreach ($device->getProperties() as $deviceProperty) {
+                $existing[(int)$deviceProperty->getProperty()->getId()] = true;
+            }
+            foreach ($properties as $property) {
+                $baseId = (int)$property->getId();
+                if (isset($existing[$baseId])) {
+                    continue;
+                }
+                $this->getEntityManager()->persist($deviceProperty = $device->newProperty($property));
+                $this->applyDefaultDevicePropertyValues($deviceProperty);
+            }
+        }
+
+        $this->syncDevicesForProperties($properties);
+    }
+
+    private function applyDefaultDevicePropertyValues (Device\Property $deviceProperty): void {
+        $property = $deviceProperty->getProperty();
+        if (!($property instanceof Property)) {
+            return;
+        }
+        if ($property->getFieldType() === 'L') {
+            foreach ($property->getEnums() as $enum) {
+                if ($enum->getDefault()) {
+                    $deviceProperty->addValueL($enum);
+                    if (!$property->isMultiple()) {
+                        break;
+                    }
+                }
+            }
+            return;
+        }
+        if (null !== $property->getDefaultValue() && '' !== $property->getDefaultValue()) {
+            $deviceProperty->setValue($property->getDefaultValue());
+        }
+    }
+
+    private function normalizePropertyPayloads (?array $properties): array {
+        if (empty($properties)) {
+            return [];
+        }
+        if (!array_is_list($properties)) {
+            return $properties;
+        }
+        $normalized = [];
+        foreach ($properties as $index => $payload) {
+            if (!is_array($payload)) {
+                continue;
+            }
+            $id = (int)($payload['id'] ?? 0);
+            $normalized[$id > 0 ? $id : 'new_'.$index] = $payload;
+        }
+        return $normalized;
+    }
+
+    private function consumePropertyPayload (array &$properties, int $propertyId): ?array {
+        if ($propertyId <= 0) {
+            return null;
+        }
+        foreach ([$propertyId, (string)$propertyId] as $key) {
+            if (isset($properties[$key]) && is_array($properties[$key])) {
+                $payload = $properties[$key];
+                unset($properties[$key]);
+                return $payload;
+            }
+        }
+        foreach ($properties as $key => $payload) {
+            if (!is_array($payload)) {
+                continue;
+            }
+            if ((int)($payload['id'] ?? 0) === $propertyId) {
+                unset($properties[$key]);
+                return $payload;
+            }
+        }
+        return null;
+    }
+
     public function component (mixed $component = null, ?array $arComponent = null): Property {
         if (is_int($component) && $component > 0) {
             $component = $this->getPropertyRepository()->find($component);
@@ -400,68 +776,20 @@ class DeviceManager extends AbstractManager {
         }
         $oldPrototype = $property->getPrototype();
 
-        if (isset($oldPrototype) && (empty($prototype) || (isset($prototype) && $prototype->getId() != $oldPrototype->getId()))) {
-            foreach ($oldPrototype->getEnums() as $enum) {
-                $this->getEntityManager()->persist($newEnum = $property->newEnum()
-                    ->setSort($enum->getSort())
-                    ->setName($enum->getName())
-                    ->setValue($enum->getValue())
-                    ->setDefault($enum->getDefault()));
-
-                $query = $this->getEntityManager()->createQuery('SELECT dp FROM '.Device\Property::class.' dp JOIN dp.valueL dpe WHERE dp.property = :property AND dpe = :enum')
-                    ->setParameters(array(
-                        'property' => $property->getId(),
-                        'enum' => $enum->getId()
-                    ));
-
-                foreach ($query->execute() as $dp) {
-                    $dp->removeValueL($enum)->addValueL($newEnum);
-                }
-            }
-        }
-
-        if (isset($prototype) && (empty($oldPrototype) || (isset($oldPrototype) && $prototype->getId() != $oldPrototype->getId()))) {
-            $values = array();
-            foreach ($prototype->getEnums() as $enum) {
-                $values[$enum->getValue()] = $enum;
-            }
-
-            foreach ($property->getEnums() as $enum) {
-                if (!empty($values[$enum->getValue()])) {
-                    $values[$enum->getValue()]
+        // Unlink: copy enum values from shared property onto this one.
+        if ($oldPrototype && (null === $prototype || $oldPrototype->getId() != $prototype->getId())) {
+            if (null === $prototype && $property->getEnums(false)->count() === 0) {
+                foreach ($oldPrototype->getEnums(false) as $enum) {
+                    $this->getEntityManager()->persist($property->newEnum()
                         ->setSort($enum->getSort())
-                        ->setName($enum->getName())
-                        ->setDefault($enum->getDefault());
-
-                    $query = $this->getEntityManager()->createQuery(' SELECT dp FROM '.Device\Property::class.' dp JOIN dp.valueL dpe  WHERE dp.property = :property AND dpe = :enum')
-                        ->setParameters(array(
-                            'property' => $property->getId(),
-                            'enum' => $enum->getId()
-                        ));
-
-                    foreach ($query->execute() as $dp) {
-                        $dp->removeValueL($enum)->addValueL($values[$enum->getValue()]);
-                    }
-
-                    $property->removeEnum($enum);
-                    $this->getEntityManager()->remove($enum);
-                } else {
-                    $enum->setProperty($prototype);
+                        ->setName($enum->getName(false))
+                        ->setValue($enum->getValue())
+                        ->setDefault($enum->getDefault()));
                 }
-            }
-
-            $i = 0; $def = true;
-            foreach ($prototype->getEnums() as $enum) {
-                if ($def && $enum->getDefault()) {
-                    $enum->setDefault(true);
-                    $def = false;
-                } else {
-                    $enum->setDefault(false);
-                }
-                $enum->setSort($i++);
             }
         }
 
+        // Link: enums stay on the prototype property; do not move them here.
         $property->setPrototype($prototype);
     }
 

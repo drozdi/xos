@@ -8,7 +8,7 @@ use Device\Entity\PropertyEnum;
 use Device\Repository\Device\PropertyRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\ArrayCollection;
 

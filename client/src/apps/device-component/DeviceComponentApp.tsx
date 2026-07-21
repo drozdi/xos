@@ -1,4 +1,4 @@
-import { Alert, NumberInput, Select, Stack, Switch, Tabs, TextInput } from '@mantine/core';
+import { Alert, NumberInput, Stack, Switch, Tabs, TextInput } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -72,6 +72,7 @@ export default function DeviceComponentApp() {
 			title="Тип комплектующих"
 			queryKey={['device', 'component']}
 			listQueryKey={['device', 'components']}
+			invalidateQueryKeys={[['device']]}
 			load={deviceComponentApi.get}
 			save={deviceComponentApi.update}
 			create={deviceComponentApi.create}
@@ -89,6 +90,12 @@ export default function DeviceComponentApp() {
 					</Tabs.List>
 
 					<Tabs.Panel value="general" pt="sm">
+						<Switch
+								label="Активен"
+								checked={Boolean(data.active)}
+								disabled={readOnly}
+								onChange={(e) => setField('active', e.currentTarget.checked)}
+							/>
 						<Stack gap="sm">
 							<TextInput
 								label="Название"
@@ -111,23 +118,6 @@ export default function DeviceComponentApp() {
 								value={data.sort ?? 0}
 								readOnly={readOnly}
 								onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-							/>
-							<Select
-								label="Корневое свойство"
-								withAsterisk
-								data={propertyOptions}
-								value={data.property_id ? String(data.property_id) : null}
-								error={errors.property_id}
-								readOnly={readOnly}
-								onChange={(value) => setField('property_id', value ? Number(value) : null)}
-								searchable
-								clearable
-							/>
-							<Switch
-								label="Активен"
-								checked={Boolean(data.active)}
-								disabled={readOnly}
-								onChange={(e) => setField('active', e.currentTarget.checked)}
 							/>
 						</Stack>
 					</Tabs.Panel>

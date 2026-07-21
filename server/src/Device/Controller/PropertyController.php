@@ -24,10 +24,36 @@ use Device\Repository\PropertyEnumRepository;
 #[Route('/api/device/properties')]
 #[Access('device.property')]
 class PropertyController extends AbstractController {
+    private const CATALOG_FILTERS = [
+        'parent' => null,
+        'type' => null,
+        'prototype' => null,
+    ];
+
+    private function mergeListRequest (Request $request, array $defaults): array {
+        $req = array_merge($defaults, $request->toArray());
+        $req['filters'] = array_merge($defaults['filters'] ?? [], $req['filters'] ?? []);
+        if (empty($req['sortBy'])) {
+            $req['sortBy'] = $defaults['sortBy'] ?? [];
+        }
+        $req['limit'] = (int)$req['limit'];
+        $req['offset'] = (int)$req['offset'];
+        return $req;
+    }
+
+    private function catalogPropertyRow (Property $property): array {
+        return [
+            'id' => $property->getId(),
+            'name' => $property->getName(),
+            'code' => $property->getCode(),
+            'sort' => $property->getSort(),
+        ];
+    }
+
     #[Route('/select', methods: ['POST'])]
     #[Access('can_read')]
     public function select (Request $request, PropertyRepository $PropertyRepository): JsonResponse {
-        $req = array_merge([
+        $req = $this->mergeListRequest($request, [
             'limit' => -1,
             'offset' => 1,
             'sortBy' => [[
@@ -37,22 +63,8 @@ class PropertyController extends AbstractController {
                 'key' => "name",
                 'order' => "ASC",
             ]],
-            'filters' => [
-                'parent' => null,
-                'type' => null
-            ]
-        ], $request->toArray());
-        if (empty($req['sortBy'])) {
-            $req['sortBy'] =[[
-                'key' => "sort",
-                'order' => "ASC",
-            ], [
-                'key' => "name",
-                'order' => "ASC",
-            ]];
-        }
-        $req['limit'] = (int)$req['limit'];
-        $req['offset'] = (int)$req['offset'];
+            'filters' => self::CATALOG_FILTERS,
+        ]);
         $totalItems = $PropertyRepository->cnt($req['filters']);
         $query = $PropertyRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -77,7 +89,7 @@ class PropertyController extends AbstractController {
     #[Route('/list', name: 'device_properties_list', methods: ['POST'])]
     #[Access('can_read')]
     public function list (Request $request, PropertyRepository $PropertyRepository): JsonResponse {
-        $req = array_merge([
+        $req = $this->mergeListRequest($request, [
             't' => "list",
             'limit' => -1,
             'offset' => 1,
@@ -88,57 +100,15 @@ class PropertyController extends AbstractController {
                 'key' => "name",
                 'order' => "ASC",
             ]],
-            'filters' => [
-                'parent' => null,
-                'type' => null
-            ]
-        ], $request->toArray());
-        if (empty($req['sortBy'])) {
-            $req['sortBy'] =[[
-                'key' => "sort",
-                'order' => "ASC",
-            ], [
-                'key' => "name",
-                'order' => "ASC",
-            ]];
-        }
-        $req['limit'] = (int)$req['limit'];
-        $req['offset'] = (int)$req['offset'];
+            'filters' => self::CATALOG_FILTERS,
+        ]);
         $totalItems = $PropertyRepository->cnt($req['filters']);
         $query = $PropertyRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
         $items = [];
-        $groups_items = [];
-        $one_items = [];
-        foreach ($query->execute() as $t) {
-            /*$items[] = array(
-                       'id' => $t->getId(),
-                       'name' => $t->getName(),
-                       'code' => $t->getCode(),
-                        'sort' => $t->getSort(),
-                    );*/
-            if ($t->getChildren()->count() === 0) {
-                $one_items[] = array(
-                    'id' => $t->getId(),
-                    'name' => $t->getName(),
-                    'code' => $t->getCode(),
-                    'sort' => $t->getSort(),
-                );
-            }
-            foreach ($t->getChildren() as $sub) {
-                $groups_items[] = array(
-                    'id' => $sub->getId(),
-                    'name' => $sub->getName(),
-                    'code' => $sub->getCode(),
-                    'sort' => $sub->getSort(),
-                    'group_id' => $t->getId(),
-                    'group_name' => $t->getName(),
-                    'group_code' => $t->getCode(),
-                    'group_sort' => $t->getSort(),
-                );
-            }//*/
+        foreach ($query->execute() as $property) {
+            $items[] = $this->catalogPropertyRow($property);
         }
-        $items = array_merge($one_items, $groups_items);
 
         $start = $req['limit']*($req['offset']-1);
         $end = ($req['limit'] > 0? $req['limit']*$req['offset']: $totalItems)-1;
@@ -210,7 +180,7 @@ class PropertyController extends AbstractController {
 
     #[Route('/{id}', methods: ['GET'])]
     #[Access('can_read')]
-    public function detail (int $id, DeviceManager $dm): JsonResponse {
+    public function detail (int $id, DeviceManager $dm, TypeRepository $TypeRepository): JsonResponse {
         $property = $dm->property($id);
         $enums = [];
         foreach ($property->getEnums() as $enum) {
@@ -220,23 +190,6 @@ class PropertyController extends AbstractController {
                 'name' => $enum->getName(false),
                 'sort' => $enum->getSort(),
                 'default' => $enum->getDefault(),
-            ];
-        }
-        $varieties = [];
-        foreach ($dm->getPropertyRepository()->findBy([
-            'prototype' => $property
-        ]) as $variant) {
-            $type = $variant->getParent()? $variant->getParent()->getType(): null;
-            $varieties[$variant->getId()] = [
-                'title' => $type? sprintf('%s (%s)', $type->getName(), $type->getCode()): null,
-                'subTitle' => sprintf('%s (%s)', $variant->getName(), $variant->getCode()),
-                'id' => $variant->getId(),
-                'active' => $variant->isActive(),
-                'required' => $variant->isRequired(),
-                'multiple' => $variant->isMultiple(),
-                'code' => $variant->getCode(),
-                'name' => $variant->getName(),
-                'listType' => $variant->getListType(),
             ];
         }
         return $this->json([
@@ -253,7 +206,7 @@ class PropertyController extends AbstractController {
             'defaultValue' => $property->getDefaultValue(),
             'prototype_id' => $property->getPrototype()?->getId(),
             'enums' => $enums,
-            'varieties' => $varieties,
+            'links' => $dm->buildPropertyLinks($property, $TypeRepository),
         ]);
     }
 

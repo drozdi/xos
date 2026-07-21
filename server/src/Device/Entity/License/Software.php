@@ -7,7 +7,7 @@ use Device\Entity\Software as BaseSoftware;
 use Device\Repository\License\SoftwareRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_license_software')]
@@ -223,7 +223,7 @@ class Software
     public function preRemove (LifecycleEventArgs $event) {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device\License')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device\License')->count(array(
                 'licenseSoftware' => $this->getId()
             )) > 0) {
             $errors[] = 'Нельзя удалить программу "'.$this->getName(false).'" из лицензии "'.$this->license->getCode().'", пока она установлена!';

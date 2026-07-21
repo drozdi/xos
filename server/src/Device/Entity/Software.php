@@ -6,7 +6,7 @@ use Device\Entity\Software\Type;
 use Device\Repository\SoftwareRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_software')]
@@ -249,13 +249,13 @@ class Software
     {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device\License')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device\License')->count(array(
                 'software' => $this->getId()
             )) > 0) {
             $errors[] = 'Нельзя удалить программу "'.$this->getName().'", пока она установлена!';
         }
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\License\Software')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\License\Software')->count(array(
                 'software' => $this->getId()
             )) > 0) {
             $errors[] = 'Нельзя удалить программу "'.$this->getName().'", пока она привязана к лицензии!';

@@ -17,6 +17,8 @@ const manifest: AppManifest = {
 	defaultSize: { width: 760, height: 520 },
 	minSize: { width: 560, height: 360 },
 	...createDeviceListManifestOptions('device-properties', 4),
+	startMenuBorderTop: true,
+	startMenuSort: 21,
 	canAccess: () => canReadDeviceProperty() || canCreateDeviceProperty(),
 };
 

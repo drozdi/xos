@@ -12,7 +12,7 @@ use Main\Entity\User;
 use Device\Repository\DeviceRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\ArrayCollection;
 
@@ -950,7 +950,7 @@ class Device {
     public function preRemove (LifecycleEventArgs $event) {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device\Property')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device\Property')->count(array(
                 'subDevice' => $this->id
             )) > 0) {
             $errors[] = 'Нельзя удалить компонент "'.$this->getName().'", пока он установлен в устройстве!';

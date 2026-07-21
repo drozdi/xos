@@ -15,6 +15,7 @@ import { validateDeviceSoftwareTypeForm } from './deviceSoftwareTypeValidation';
 const initialData: SoftwareTypeDetail = {
 	id: 0,
 	name: '',
+	code: '',
 	sort: 0,
 };
 
@@ -66,6 +67,14 @@ export default function DeviceSoftwareTypeApp() {
 						error={errors.name}
 						readOnly={readOnly}
 						onChange={(e) => setField('name', e.currentTarget.value)}
+					/>
+					<TextInput
+						label="Код"
+						withAsterisk
+						value={data.code ?? ''}
+						error={errors.code}
+						readOnly={readOnly}
+						onChange={(e) => setField('code', e.currentTarget.value)}
 					/>
 					<NumberInput
 						label="Сортировка"

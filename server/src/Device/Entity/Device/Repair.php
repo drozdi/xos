@@ -6,7 +6,7 @@ use Device\Entity\Device;
 use Device\Repository\Device\RepairRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_device_repair')]

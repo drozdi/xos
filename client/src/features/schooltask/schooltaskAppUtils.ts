@@ -38,6 +38,7 @@ export function createSchooltaskListManifestOptions(wmGroup: string, wmSort: num
 		singleInstance: true as const,
 		wmGroup,
 		wmSort,
+		startMenuSort: wmSort,
 		startMenuGroup: 'schooltask',
 		taskbarGroup: wmGroup,
 		requiredRole: 'schooltask' as const,

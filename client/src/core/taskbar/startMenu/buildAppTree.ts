@@ -1,6 +1,6 @@
 import type { AppManifest } from '@/core/appManager/types';
 
-import { START_MENU_GROUP_LABELS } from './defaults';
+import { START_MENU_GROUP_LABELS, START_MENU_GROUP_SORT } from './defaults';
 import type { StartMenuAppGroup } from './types';
 
 export function isStartMenuApp(manifest: AppManifest): boolean {
@@ -9,6 +9,14 @@ export function isStartMenuApp(manifest: AppManifest): boolean {
 
 function getGroupLabel(groupId: string): string {
 	return START_MENU_GROUP_LABELS[groupId] ?? groupId;
+}
+
+function getGroupSort(groupId: string): number {
+	return START_MENU_GROUP_SORT[groupId] ?? 1000;
+}
+
+export function resolveStartMenuSort(app: AppManifest): number {
+	return app.startMenuSort ?? app.wmSort ?? 0;
 }
 
 export function resolveStartMenuGroup(app: AppManifest): string {
@@ -31,10 +39,20 @@ export function buildAppTree(apps: AppManifest[]): StartMenuAppGroup[] {
 			id,
 			label: getGroupLabel(id),
 			apps: [...groupApps]
-				.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-				.map((app) => ({ id: app.id, name: app.name })),
+				.sort(
+					(a, b) =>
+						resolveStartMenuSort(a) - resolveStartMenuSort(b) ||
+						a.name.localeCompare(b.name, 'ru'),
+				)
+				.map((app) => ({
+					id: app.id,
+					name: app.name,
+					borderTop: Boolean(app.startMenuBorderTop),
+				})),
 		}))
-		.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+		.sort(
+			(a, b) => getGroupSort(a.id) - getGroupSort(b.id) || a.label.localeCompare(b.label, 'ru'),
+		);
 }
 
 export function resolvePinnedApps(

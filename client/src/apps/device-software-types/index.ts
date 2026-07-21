@@ -20,6 +20,7 @@ const manifest: AppManifest = {
 	defaultSize: { width: 640, height: 480 },
 	minSize: { width: 480, height: 360 },
 	...createDeviceListManifestOptions('device-software-types', 7),
+	startMenuSort: 32,
 	canAccess: () => canReadDeviceSoftwareType() || canCreateDeviceSoftwareType(),
 };
 

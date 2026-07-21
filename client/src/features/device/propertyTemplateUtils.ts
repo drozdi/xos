@@ -6,6 +6,9 @@ export function resolvePrototypeId(source: PropertyDetail): number {
 	if (source.prototype_id && source.prototype_id > 0) {
 		return source.prototype_id;
 	}
+	if (source.property_id && source.property_id > 0) {
+		return source.property_id;
+	}
 	return source.id;
 }
 
@@ -17,6 +20,7 @@ export function createTypePropertyFromTemplate(
 	return {
 		id: 0,
 		prototype_id: prototypeId,
+		property_id: prototypeId,
 		active: source.active ?? true,
 		required: source.required ?? false,
 		multiple: source.multiple ?? false,

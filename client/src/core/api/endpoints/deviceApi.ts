@@ -149,9 +149,11 @@ export const propertyDetailSchema = z
 		postfix: z.string().nullable().optional(),
 		defaultValue: z.unknown().nullable().optional(),
 		prototype_id: z.number().nullable().optional(),
+		property_id: z.number().nullable().optional(),
 		parent_id: z.number().nullable().optional(),
 		type_id: z.number().nullable().optional(),
 		enums: idRecordSchema.optional(),
+		links: idRecordSchema.optional(),
 		varieties: z.unknown().optional(),
 	})
 	.passthrough();
@@ -195,6 +197,7 @@ export const softwareDetailSchema = z
 export const softwareTypeListItemSchema = z.object({
 	id: z.number(),
 	name: z.string().nullable().optional().transform((v) => v ?? ''),
+	code: z.string().nullable().optional().transform((v) => v ?? ''),
 	sort: z.number().nullable().optional(),
 });
 
@@ -202,6 +205,7 @@ export const softwareTypeDetailSchema = z
 	.object({
 		id: z.number(),
 		name: z.string().nullable().optional(),
+		code: z.string().nullable().optional(),
 		sort: z.number().nullable().optional(),
 	})
 	.passthrough();

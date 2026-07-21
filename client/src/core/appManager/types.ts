@@ -37,6 +37,12 @@ export interface AppManifest {
 	wmGroup?: string;
 	/** Группа в меню «Пуск» (дерево приложений). По умолчанию — wmGroup */
 	startMenuGroup?: string;
+	/** Порядок приложения в меню «Пуск» внутри группы. По умолчанию — wmSort или 0 */
+	startMenuSort?: number;
+	/** Разделитель перед пунктом в меню «Пуск» */
+	startMenuBorderTop?: boolean;
+	/** Порядок окон внутри wmGroup на панели задач */
+	wmSort?: number;
 	/** Группа на панели задач (кнопка с hover-списком окон). По умолчанию — id приложения */
 	taskbarGroup?: string;
 	/** Показывать в меню «Пуск». По умолчанию true */

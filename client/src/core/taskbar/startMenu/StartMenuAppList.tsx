@@ -7,6 +7,7 @@ import { useAppManager } from '@/core/appManager/useAppManager';
 import { AppIcon } from '../taskbarUtils';
 import { buildAppTree } from './buildAppTree';
 import { ChevronIcon } from './startMenuIcons';
+import { startMenuDividerStyle } from './startMenuDividerStyle';
 import type { StartMenuAppGroup } from './types';
 
 interface StartMenuAppListProps {
@@ -70,6 +71,7 @@ function GroupSection({
 									padding: '8px 10px',
 									borderRadius: 4,
 									color: 'var(--xos-shell-text)',
+									...(app.borderTop ? startMenuDividerStyle : {}),
 								}}
 								styles={{
 									root: {

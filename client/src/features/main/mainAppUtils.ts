@@ -33,6 +33,7 @@ export function createMainListManifestOptions(wmGroup: string, wmSort: number) {
 		singleInstance: true as const,
 		wmGroup,
 		wmSort,
+		startMenuSort: wmSort,
 		startMenuGroup: 'admin',
 		taskbarGroup: wmGroup,
 		requiredRole: 'main' as const,

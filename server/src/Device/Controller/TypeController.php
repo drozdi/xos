@@ -232,7 +232,7 @@ class TypeController extends AbstractController {
         $arProperties = [];
         foreach ($type->getProperties() as $property) {
             $componentTypes = $TypeRepository->findBy(['property' => $property], ['sort' => 'ASC', 'name' => 'ASC']);
-            if (count($componentTypes) > 0) {
+            if (count($componentTypes) > 0 && null === $property->getPrototype()) {
                 $arComponents[] = $componentTypes[0]->getId();
                 continue;
             }

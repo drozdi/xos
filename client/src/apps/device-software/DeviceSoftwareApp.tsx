@@ -41,19 +41,34 @@ export default function DeviceSoftwareApp() {
 	});
 
 	const typeOptions = useMemo(
-		() =>
-			(typesQuery.data?.items ?? []).map((item) => ({
-				value: String(item.id),
-				label: item.name ?? String(item.id),
-			})),
+		() => {
+			// Mantine Select не поддерживает дублирующие value.
+			const byValue = new Map<string, { value: string; label: string }>();
+			for (const item of typesQuery.data?.items ?? []) {
+				const value = String(item.id);
+				byValue.set(value, {
+					value,
+					label: item.name ?? value,
+				});
+			}
+			return Array.from(byValue.values());
+		},
 		[typesQuery.data?.items],
 	);
 
 	const parentOptions = useMemo(
-		() =>
-			(softwareQuery.data?.items ?? [])
-				.filter((item) => item.id !== entityId)
-				.map((item) => ({ value: String(item.id), label: item.name ?? String(item.id) })),
+		() => {
+			// Mantine Select не поддерживает дублирующие value.
+			const byValue = new Map<string, { value: string; label: string }>();
+			for (const item of softwareQuery.data?.items ?? []) {
+				if (item.id === entityId) {
+					continue;
+				}
+				const value = String(item.id);
+				byValue.set(value, { value, label: item.name ?? value });
+			}
+			return Array.from(byValue.values());
+		},
 		[softwareQuery.data?.items, entityId],
 	);
 

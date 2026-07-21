@@ -11,7 +11,7 @@ export interface StartMenuQuickAction {
 export interface StartMenuAppGroup {
 	id: string;
 	label: string;
-	apps: Array<{ id: string; name: string }>;
+	apps: Array<{ id: string; name: string; borderTop?: boolean }>;
 }
 
 export const START_MENU_SETTING_KEYS = {

@@ -17,6 +17,17 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	default: 'Приложения',
 };
 
+export const START_MENU_GROUP_SORT: Record<string, number> = {
+	system: 0,
+	tools: 10,
+	games: 20,
+	admin: 30,
+	device: 40,
+	schooltask: 50,
+	inccom: 60,
+	default: 100,
+};
+
 export const DEFAULT_PINNED_APPS = [
 	'explorer',
 	'demo-calculator',

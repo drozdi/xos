@@ -30,6 +30,7 @@ final class PropertyArrayBuilder {
             'postfix' => $property->getPostfix(),
             'defaultValue' => $property->getDefaultValue(),
             'prototype_id' => $property->getPrototype()?->getId(),
+            'property_id' => $property->getPrototype()?->getId(),
             'enums' => $enums,
         ];
     }

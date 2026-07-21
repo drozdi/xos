@@ -16,7 +16,7 @@ const manifest: AppManifest = {
 	component: DeviceDeviceApp,
 	defaultSize: { width: 560, height: 560 },
 	minSize: { width: 400, height: 440 },
-	...createDeviceDetailManifestOptions('device-device', 2),
+	...createDeviceDetailManifestOptions('device-device', 100),
 	canAccess: () => canReadDevice() || canCreateDevice(),
 };
 

@@ -5,7 +5,7 @@ namespace Device\Entity;
 use Device\Repository\PropertyEnumRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_property_enum')]
@@ -200,7 +200,7 @@ class PropertyEnum {
             ->where(Criteria::expr()->neq('id', $this->id))
             ->andWhere(Criteria::expr()->eq('value', $this->value))
             ->andWhere(Criteria::expr()->eq('property', $this->property));
-        if ($event->getEntityManager()->getRepository(PropertyEnum::class)->matching($criteria)->count() > 0) {
+        if ($event->getObjectManager()->getRepository(PropertyEnum::class)->matching($criteria)->count() > 0) {
             $errors[] = $this->property->getId().' - Такое значение "'.$this->value.'" уже используется!';
         }
 

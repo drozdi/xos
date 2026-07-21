@@ -28,6 +28,7 @@ interface MainEntityFormProps<T> {
 	title: string;
 	queryKey: readonly unknown[];
 	listQueryKey?: readonly unknown[];
+	invalidateQueryKeys?: readonly (readonly unknown[])[];
 	load: (id: number) => Promise<T>;
 	save: (id: number, data: T) => Promise<number>;
 	create: (data: T) => Promise<number>;
@@ -51,6 +52,7 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	title,
 	queryKey,
 	listQueryKey,
+	invalidateQueryKeys,
 	load,
 	save,
 	create,
@@ -105,6 +107,9 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 			void queryClient.invalidateQueries({ queryKey });
 			if (listQueryKey) {
 				void queryClient.invalidateQueries({ queryKey: listQueryKey });
+			}
+			for (const key of invalidateQueryKeys ?? []) {
+				void queryClient.invalidateQueries({ queryKey: key });
 			}
 		},
 		onError: (err: unknown) => {

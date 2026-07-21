@@ -25,7 +25,9 @@ export default function DevicePropertiesApp() {
 	const canCreate = useCanCreateDeviceProperty();
 	const canUpdate = useCanUpdateDeviceProperty();
 	const canDelete = useCanDeleteDeviceProperty();
-	const pagination = usePaginatedList();
+	const pagination = usePaginatedList({
+		filters: { parent: null, type: null, prototype: null },
+	});
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.device.properties(pagination.listRequest),

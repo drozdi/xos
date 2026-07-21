@@ -2,9 +2,10 @@
 
 namespace Device\Entity\Software;
 
+use Device\Repository\Software\TypeRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_software_type')]
@@ -129,7 +130,7 @@ class Type
         $criteria
             ->where(Criteria::expr()->neq('id', $this->id))
             ->andWhere(Criteria::expr()->eq('code', $this->code));
-        if ($event->getEntityManager()->getRepository('Device\Entity\Software\Type')->matching($criteria)->count() > 0) {
+        if ($event->getObjectManager()->getRepository('Device\Entity\Software\Type')->matching($criteria)->count() > 0) {
             $errors[] = 'Такой код уже используется!';
         }
 
@@ -143,7 +144,7 @@ class Type
     {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Software')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Software')->count(array(
             'type' => $this->getId()
         )) > 0) {
             $errors[] = 'Нельзя удалить пока есть программы!';

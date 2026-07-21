@@ -5,7 +5,7 @@ namespace Device\Entity\License;
 use Device\Entity\Software as BaseSoftware;
 use Device\Repository\License\KeyRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_license_key')]
@@ -185,7 +185,7 @@ class Key {
     public function preRemove (LifecycleEventArgs $event) {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device\License')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device\License')->count(array(
                 'key' => $this->getId()
             )) > 0) {
             $errors[] = 'Нельзя удалить ключ "'.$this->typeKey.' - '.$this->getValue().'" из лицензии "'.$this->licenseSoftware->getName().'" для программы "'.$this->software->getName().'", пока он используеться!';

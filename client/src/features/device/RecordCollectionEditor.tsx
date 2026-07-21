@@ -114,7 +114,7 @@ function RecordCollectionEntry({
 		<Paper withBorder p="sm">
 			<Group justify="space-between" align="flex-start" mb="xs">
 				<Text fw={500} size="sm">
-					{String(item.name ?? item.code ?? 'Запись')}
+					{String(item.name ?? item.value ?? item.code ?? 'Запись')}
 				</Text>
 				{removeButton}
 			</Group>

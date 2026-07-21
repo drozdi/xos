@@ -34,21 +34,21 @@ class DevicePropertyValueSerializer
         }
         $enums = [];
         foreach ($property->getEnums() as $enum) {
-            if ($isDef && $enum->isDefault() && $property->isMultiple()) {
+            if ($isDef && $enum->getDefault() && $property->isMultiple()) {
                 $valueL[] = $enum->getId();
                 if ($property->getFieldType() === 'L') {
                     $value[] = $enum->getName();
                 }
-            } elseif ($isDef && $enum->isDefault()) {
+            } elseif ($isDef && $enum->getDefault()) {
                 $valueL = $enum->getId();
                 $value = $enum->getName();
             }
             $enums[$enum->getId()] = [
                 'id' => $enum->getId(),
-                'code' => $enum->getCode(),
-                'name' => $enum->getName(),
+                'value' => $enum->getValue(),
+                'name' => $enum->getName(false),
                 'sort' => $enum->getSort(),
-                'default' => $enum->isDefault(),
+                'default' => $enum->getDefault(),
             ];
         }
 

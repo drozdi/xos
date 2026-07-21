@@ -86,7 +86,7 @@ class PropertyRepository extends AbstractRepository
     }
 
     public function getProperties ($limit = null, $offset = 0) {
-        $dql = 'SELECT p FROM '.Property::class.' p WHERE p.parent IS NULL ORDER BY p.sort ASC, p.name ASC';
+        $dql = 'SELECT p FROM '.Property::class.' p WHERE p.parent IS NULL AND p.type IS NULL AND p.prototype IS NULL ORDER BY p.sort ASC, p.name ASC';
         $query = $this->getEntityManager()->createQuery($dql);
         if ($limit && (int)$limit > 0) {
             $query->setMaxResults((int)$limit);

@@ -9,22 +9,12 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 trait PropertyCatalogTrait {
     protected function propertyCatalogItems (PropertyRepository $PropertyRepository): array {
         $items = [];
-        foreach ($PropertyRepository->getProperties() as $root) {
-            if ($root->getChildren()->count() === 0) {
-                $items[] = [
-                    'value' => $root->getId(),
-                    'label' => $root->getName(),
-                    'sublabel' => $root->getCode(),
-                ];
-            }
-            foreach ($root->getChildren() as $child) {
-                $items[] = [
-                    'value' => $child->getId(),
-                    'label' => $child->getName(),
-                    'sublabel' => $child->getCode(),
-                    'group' => $root->getName(),
-                ];
-            }
+        foreach ($PropertyRepository->getProperties() as $property) {
+            $items[] = [
+                'value' => $property->getId(),
+                'label' => $property->getName(),
+                'sublabel' => $property->getCode(),
+            ];
         }
         return $items;
     }

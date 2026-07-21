@@ -6,7 +6,7 @@ use Device\Entity\License\Software as LicenseSoftware;
 use Device\Repository\LicenseRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_license')]
@@ -282,7 +282,7 @@ class License
             ->where(Criteria::expr()->neq('id', $this->id))
             ->andWhere(Criteria::expr()->eq('code', $this->code));
 
-        if ($event->getEntityManager()->getRepository(License::class)->matching($criteria)->count() > 0) {
+        if ($event->getObjectManager()->getRepository(License::class)->matching($criteria)->count() > 0) {
             $errors[] = 'Такой код уже используется!';
         }
 
@@ -293,8 +293,8 @@ class License
     #[ORM\PreRemove]
     public function preRemove(LifecycleEventArgs $event)
     {
-        if ((int)$event->getEntityManager()->getRepository(Device\License::class)->count(array(
-                'licenseSoftware' => $event->getEntityManager()->getRepository(License\Software::class)->findByLicense($this->getId())
+        if ((int)$event->getObjectManager()->getRepository(Device\License::class)->count(array(
+                'licenseSoftware' => $event->getObjectManager()->getRepository(License\Software::class)->findByLicense($this->getId())
             )) > 0) {
             $errors[] = 'Нельзя удалить лицензию, пока она используеться устройствами!';
         }

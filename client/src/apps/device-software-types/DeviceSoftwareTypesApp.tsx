@@ -48,6 +48,7 @@ export default function DeviceSoftwareTypesApp() {
 		() => [
 			{ field: 'id' as const, header: 'ID', width: 70 },
 			{ field: 'name' as const, header: 'Название' },
+			{ field: 'code' as const, header: 'Код' },
 			{ field: 'sort' as const, header: 'Сорт.', width: 80 },
 		],
 		[],
@@ -92,7 +93,7 @@ export default function DeviceSoftwareTypesApp() {
 				onRowClick={(row) => openType(row.id)}
 				onEdit={canUpdate ? (row) => openType(row.id) : undefined}
 				onDelete={canDelete ? (row) => deleteMutation.mutateAsync(row.id) : undefined}
-				getRowLabel={(row) => row.name || String(row.id)}
+				getRowLabel={(row) => row.name || row.code || String(row.id)}
 			/>
 		</MainListLayout>
 	);

@@ -5,7 +5,7 @@ namespace Device\Entity;
 use Device\Repository\TypeRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\ArrayCollection;
 
@@ -505,7 +505,7 @@ class Type {
             ->andWhere(Criteria::expr()->eq('code', $this->code))
             ->andWhere(Criteria::expr()->eq('parent', $this->parent));
 
-        if ($event->getEntityManager()->getRepository(Type::class)->matching($criteria)->count() > 0) {
+        if ($event->getObjectManager()->getRepository(Type::class)->matching($criteria)->count() > 0) {
             $errors[] = 'Такой код типа уже используется!';
         }
 
@@ -518,7 +518,7 @@ class Type {
     public function preRemove (LifecycleEventArgs $event) {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device')->count(array(
                 'type' => $this->id
             )) > 0) {
             $errors[] = 'Нельзя удалить тип "'.$this->getName().'" пока есть устройства этого типа!';

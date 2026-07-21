@@ -116,6 +116,7 @@ export default function DeviceTypeApp() {
 			title="Тип устройства"
 			queryKey={['device', 'type']}
 			listQueryKey={['device', 'types']}
+			invalidateQueryKeys={[['device']]}
 			load={deviceTypeApi.get}
 			save={deviceTypeApi.update}
 			create={deviceTypeApi.create}

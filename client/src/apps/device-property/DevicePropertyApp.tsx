@@ -2,14 +2,17 @@ import { Alert, NumberInput, Stack, Switch, Tabs, TextInput } from '@mantine/cor
 import { useState } from 'react';
 
 import { devicePropertyApi, type PropertyDetail } from '@/core/api/endpoints/deviceApi';
-import { RecordCollectionEditor } from '@/features/device/RecordCollectionEditor';
+import { PropertyEnumsEditor } from '@/features/device/PropertyEnumsEditor';
+import { PropertyLinksEditor } from '@/features/device/PropertyLinksEditor';
+import { normalizeEnumRecord } from '@/features/device/propertyEnumUtils';
+import type { PropertyLinkItem } from '@/features/device/propertyTypes';
 import {
 	canCreateDeviceProperty,
 	useCanDeleteDeviceProperty,
 	useCanReadDeviceProperty,
 	useCanUpdateDeviceProperty,
 } from '@/features/device/deviceAccess';
-import { normalizeIdRecord, useEntityId } from '@/features/device/deviceAppUtils';
+import { normalizeIdRecord, useEntityId, useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { validateDevicePropertyForm } from './devicePropertyValidation';
@@ -27,10 +30,12 @@ const initialData: PropertyDetail = {
 	postfix: '',
 	defaultValue: '',
 	enums: {},
+	links: {},
 };
 
 export default function DevicePropertyApp() {
 	const entityId = useEntityId();
+	const launchApp = useLaunchDeviceApp();
 	const canRead = useCanReadDeviceProperty();
 	const canUpdate = useCanUpdateDeviceProperty();
 	const canDelete = useCanDeleteDeviceProperty();
@@ -61,6 +66,7 @@ export default function DevicePropertyApp() {
 			title="Свойство"
 			queryKey={['device', 'property']}
 			listQueryKey={['device', 'properties']}
+			invalidateQueryKeys={[['device']]}
 			load={devicePropertyApi.get}
 			save={devicePropertyApi.update}
 			create={devicePropertyApi.create}
@@ -75,6 +81,9 @@ export default function DevicePropertyApp() {
 					<Tabs.List>
 						<Tabs.Tab value="general">Общие</Tabs.Tab>
 						<Tabs.Tab value="enums">Значения</Tabs.Tab>
+						{!isNew && !data.prototype_id ? (
+							<Tabs.Tab value="links">Связанные свойства</Tabs.Tab>
+						) : null}
 					</Tabs.List>
 
 					<Tabs.Panel value="general" pt="sm">
@@ -147,19 +156,31 @@ export default function DevicePropertyApp() {
 					</Tabs.Panel>
 
 					<Tabs.Panel value="enums" pt="sm">
-						<RecordCollectionEditor
-							title="Значения"
-							records={normalizeIdRecord(data.enums)}
+						<PropertyEnumsEditor
+							variant="inline"
+							enums={normalizeEnumRecord(data.enums)}
 							readOnly={readOnly}
-							columns={[
-								{ key: 'name', label: 'Название' },
-								{ key: 'code', label: 'Код' },
-								{ key: 'sort', label: 'Сортировка' },
-							]}
-							onChange={(enums) => setField('enums', enums)}
-							createItem={() => ({ id: 0, name: '', code: '', sort: 0 })}
+							onChange={(enums, defaultValue) => {
+								setField('enums', enums);
+								setField('defaultValue', defaultValue);
+							}}
 						/>
 					</Tabs.Panel>
+
+					{!isNew && !data.prototype_id ? (
+						<Tabs.Panel value="links" pt="sm">
+							<PropertyLinksEditor
+								links={normalizeIdRecord<PropertyLinkItem>(data.links)}
+								propertyName={data.name ?? ''}
+								propertyCode={data.code ?? ''}
+								readOnly={readOnly}
+								onChange={(links) => setField('links', links)}
+								onOpenType={(typeKind, typeId) => {
+									launchApp(typeKind === 'component' ? 'device-component' : 'device-type', typeId);
+								}}
+							/>
+						</Tabs.Panel>
+					) : null}
 				</Tabs>
 			)}
 		</MainEntityForm>

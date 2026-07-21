@@ -58,6 +58,53 @@ describe('buildAppTree', () => {
 		expect(tree.find((group) => group.id === 'admin')?.apps[0]?.id).toBe('list');
 	});
 
+	it('sorts apps by startMenuSort then name', () => {
+		const tree = buildAppTree([
+			mockApp({ id: 'c', name: 'Charlie', startMenuGroup: 'device', startMenuSort: 30 }),
+			mockApp({ id: 'a', name: 'Alpha', startMenuGroup: 'device', startMenuSort: 10 }),
+			mockApp({ id: 'b', name: 'Bravo', startMenuGroup: 'device', startMenuSort: 10 }),
+		]);
+
+		expect(tree.find((group) => group.id === 'device')?.apps.map((app) => app.id)).toEqual([
+			'a',
+			'b',
+			'c',
+		]);
+	});
+
+	it('falls back to wmSort when startMenuSort is not set', () => {
+		const tree = buildAppTree([
+			mockApp({ id: 'b', name: 'Beta', startMenuGroup: 'device', wmSort: 2 }),
+			mockApp({ id: 'a', name: 'Alpha', startMenuGroup: 'device', wmSort: 1 }),
+		]);
+
+		expect(tree.find((group) => group.id === 'device')?.apps.map((app) => app.id)).toEqual([
+			'a',
+			'b',
+		]);
+	});
+
+	it('sorts groups by START_MENU_GROUP_SORT', () => {
+		const tree = buildAppTree([
+			mockApp({ id: 'd', name: 'Device', startMenuGroup: 'device' }),
+			mockApp({ id: 'g', name: 'Game', startMenuGroup: 'games' }),
+			mockApp({ id: 'a', name: 'Admin', startMenuGroup: 'admin' }),
+		]);
+
+		expect(tree.map((group) => group.id)).toEqual(['games', 'admin', 'device']);
+	});
+
+	it('passes startMenuBorderTop into app tree items', () => {
+		const tree = buildAppTree([
+			mockApp({ id: 'a', name: 'Alpha', startMenuGroup: 'device', startMenuBorderTop: true }),
+			mockApp({ id: 'b', name: 'Beta', startMenuGroup: 'device' }),
+		]);
+
+		const apps = tree.find((group) => group.id === 'device')?.apps;
+		expect(apps?.[0]?.borderTop).toBe(true);
+		expect(apps?.[1]?.borderTop).toBeFalsy();
+	});
+
 	it('resolves pinned apps in order', () => {
 		const apps = [
 			mockApp({ id: 'b', name: 'B' }),

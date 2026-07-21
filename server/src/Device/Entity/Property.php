@@ -6,7 +6,7 @@ use Device\Entity\PropertyEnum;
 use Device\Repository\PropertyRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_property')]
@@ -623,6 +623,7 @@ class Property {
         if (null != $this->prototype) {
             $this->setPostfix($this->prototype->getPostfix());
             $this->setFieldType($this->prototype->getFieldType());
+            $this->setListType($this->prototype->getListType());
         }
 
         return $this;
@@ -801,7 +802,7 @@ class Property {
             ->andWhere(Criteria::expr()->eq('code', $this->code))
             ->andWhere(Criteria::expr()->eq('parent', $this->parent));
 
-        if ($event->getEntityManager()->getRepository(Property::class)->matching($criteria)->count() > 0) {
+        if ($event->getObjectManager()->getRepository(Property::class)->matching($criteria)->count() > 0) {
             $errors[] = 'Такой код св-ва уже используется!';
         }
 
@@ -814,20 +815,20 @@ class Property {
     public function preRemove (LifecycleEventArgs $event) {
         $errors = array();
 
-        if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device\Property')->count(array(
+        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device\Property')->count(array(
                 'property' => $this->id
             )) > 0) {
             $errors[] = 'Нельзя удалить характеристику "' . $this->getName() . '" пока она используется для описания устройств!';
         }
 
-        if ((int)$event->getEntityManager()->getRepository(Device\Property::class)->count(array(
+        if ((int)$event->getObjectManager()->getRepository(Device\Property::class)->count(array(
                 'property' => $this->children->toArray()
             )) > 0) {
             $errors[] = 'Нельзя удалить характеристику "' . $this->getName() . '" пока ее компоненты используется для описания устройств!';
         }
 
         if (null != $this->type) {
-            if ((int)$event->getEntityManager()->getRepository('Device\Entity\Device')->count(array(
+            if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device')->count(array(
                     'type' => $this->type
                 )) > 0) {
                 $errors[] = 'Нельзя удалить характеристику (тип компонента) "' . $this->getName() . '" пока есть устройства этой характеристики!';
