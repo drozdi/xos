@@ -45,6 +45,7 @@ class EpClassController extends AbstractController
                 'graduated' => $class->isGraduated(),
                 'graduated_year' => $class->getGraduatedYear(),
                 'should_graduate' => $schoolTaskManager->shouldGraduateClass($class),
+                'transition' => $schoolTaskManager->getClassTransitionAction($class),
                 'parent_id' => $class->getParent()?->getId(),
                 'parent_name' => $class->getParent()?->getName(),
             ];
@@ -209,7 +210,13 @@ class EpClassController extends AbstractController
 
         $items = [];
         foreach ($schoolTaskManager->getParallelGroups() as $group) {
-            $items[] = ['value' => $group->getId(), 'text' => $group->getName()];
+            $items[] = [
+                'value' => $group->getId(),
+                'text' => $group->isGraduates()
+                    ? sprintf('%s (выпуск)', $group->getName())
+                    : $group->getName(),
+                'graduates' => $group->isGraduates(),
+            ];
         }
 
         return $this->json($items);

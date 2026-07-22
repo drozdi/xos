@@ -100,11 +100,12 @@ class EpParallelController extends AbstractController
 
         try {
             $payload = $request->toArray();
-            if (array_key_exists('name', $payload)) {
-                $parallel = $schoolTaskManager->group($parallel, [
-                    'name' => $payload['name'],
-                    'sort' => $payload['sort'] ?? $parallel->getSort(),
-                ]);
+            if (array_key_exists('name', $payload) || array_key_exists('sort', $payload) || array_key_exists('graduates', $payload)) {
+                $parallel = $schoolTaskManager->group($parallel, array_filter([
+                    'name' => $payload['name'] ?? null,
+                    'sort' => $payload['sort'] ?? null,
+                    'graduates' => array_key_exists('graduates', $payload) ? $payload['graduates'] : null,
+                ], static fn ($value) => null !== $value));
             }
             if (array_key_exists('sub', $payload)) {
                 $schoolTaskManager->syncParallelSubjectGroups($parallel, (array) $payload['sub']);

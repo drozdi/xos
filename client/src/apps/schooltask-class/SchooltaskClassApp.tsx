@@ -2,6 +2,7 @@ import {
 	ActionIcon,
 	Alert,
 	Button,
+	Checkbox,
 	Group,
 	Modal,
 	MultiSelect,
@@ -63,6 +64,7 @@ export default function SchooltaskClassApp() {
 	const [activeTab, setActiveTab] = useState<string | null>('general');
 	const [parallelModalOpen, setParallelModalOpen] = useState(false);
 	const [newParallelName, setNewParallelName] = useState('');
+	const [newParallelGraduates, setNewParallelGraduates] = useState(false);
 	const [onParallelCreated, setOnParallelCreated] = useState<((parentId: number) => void) | null>(
 		null,
 	);
@@ -118,13 +120,15 @@ export default function SchooltaskClassApp() {
 	);
 
 	const createParallelMutation = useMutation({
-		mutationFn: (name: string) => schooltaskParallelApi.create({ name }),
+		mutationFn: (payload: { name: string; graduates: boolean }) =>
+			schooltaskParallelApi.create(payload),
 		onSuccess: async (parallel) => {
 			notifications.show({ message: 'Параллель создана', color: 'green' });
 			await queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.classParallels });
 			onParallelCreated?.(parallel.id);
 			setParallelModalOpen(false);
 			setNewParallelName('');
+			setNewParallelGraduates(false);
 			setOnParallelCreated(null);
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка создания параллели'),
@@ -374,6 +378,7 @@ export default function SchooltaskClassApp() {
 				onClose={() => {
 					setParallelModalOpen(false);
 					setNewParallelName('');
+					setNewParallelGraduates(false);
 					setOnParallelCreated(null);
 				}}
 				title="Новая параллель"
@@ -388,12 +393,19 @@ export default function SchooltaskClassApp() {
 						onChange={(event) => setNewParallelName(event.currentTarget.value)}
 						data-autofocus
 					/>
+					<Checkbox
+						label="Выпускная параллель"
+						description="Классы этой параллели будут выпускаться, а не переводиться"
+						checked={newParallelGraduates}
+						onChange={(event) => setNewParallelGraduates(event.currentTarget.checked)}
+					/>
 					<Group justify="flex-end" gap="xs">
 						<Button
 							variant="default"
 							onClick={() => {
 								setParallelModalOpen(false);
 								setNewParallelName('');
+								setNewParallelGraduates(false);
 								setOnParallelCreated(null);
 							}}
 						>
@@ -402,7 +414,12 @@ export default function SchooltaskClassApp() {
 						<Button
 							loading={createParallelMutation.isPending}
 							disabled={!newParallelName.trim()}
-							onClick={() => createParallelMutation.mutate(newParallelName.trim())}
+							onClick={() =>
+								createParallelMutation.mutate({
+									name: newParallelName.trim(),
+									graduates: newParallelGraduates,
+								})
+							}
 						>
 							Создать
 						</Button>

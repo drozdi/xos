@@ -78,11 +78,23 @@ export default function SchooltaskClassesApp() {
 			{ field: 'name' as const, header: 'Класс' },
 			{ field: 'tutor' as const, header: 'Классный руководитель' },
 			{
-				field: 'graduated' as const,
-				header: 'Выпуск',
-				width: 120,
-				render: (row: { graduated?: boolean; graduated_year?: number | null }) =>
-					row.graduated ? `Да (${row.graduated_year ?? '—'})` : 'Нет',
+				field: 'transition' as const,
+				header: 'Переход',
+				width: 130,
+				render: (row: {
+					transition?: 'graduate' | 'promote' | 'graduated';
+					graduated?: boolean;
+					should_graduate?: boolean;
+					graduated_year?: number | null;
+				}) => {
+					const action =
+						row.transition ??
+						(row.graduated ? 'graduated' : row.should_graduate ? 'graduate' : 'promote');
+					if (action === 'graduated') {
+						return `Выпущен${row.graduated_year ? ` (${row.graduated_year})` : ''}`;
+					}
+					return action === 'graduate' ? 'Выпускается' : 'Переводится';
+				},
 			},
 			...(canUpdate
 				? [
@@ -95,27 +107,37 @@ export default function SchooltaskClassesApp() {
 								name?: string;
 								graduated?: boolean;
 								should_graduate?: boolean;
-							}) =>
-								row.graduated ? null : row.should_graduate ? (
-									<Button
-										size="compact-xs"
-										variant="light"
-										color="orange"
-										loading={graduateMutation.isPending}
-										onClick={(event) => {
-											event.stopPropagation();
-											confirmAction({
-												title: 'Выпуск класса',
-												message: `Выпустить класс «${row.name}»?`,
-												confirmLabel: 'Выпустить',
-												confirmColor: 'orange',
-												onConfirm: () => graduateMutation.mutate(row.id),
-											});
-										}}
-									>
-										Выпустить
-									</Button>
-								) : (
+								transition?: 'graduate' | 'promote' | 'graduated';
+							}) => {
+								const action =
+									row.transition ??
+									(row.graduated ? 'graduated' : row.should_graduate ? 'graduate' : 'promote');
+								if (action === 'graduated') {
+									return null;
+								}
+								if (action === 'graduate') {
+									return (
+										<Button
+											size="compact-xs"
+											variant="light"
+											color="orange"
+											loading={graduateMutation.isPending}
+											onClick={(event) => {
+												event.stopPropagation();
+												confirmAction({
+													title: 'Выпуск класса',
+													message: `Выпустить класс «${row.name}»?`,
+													confirmLabel: 'Выпустить',
+													confirmColor: 'orange',
+													onConfirm: () => graduateMutation.mutate(row.id),
+												});
+											}}
+										>
+											Выпустить
+										</Button>
+									);
+								}
+								return (
 									<Button
 										size="compact-xs"
 										variant="light"
@@ -132,7 +154,8 @@ export default function SchooltaskClassesApp() {
 									>
 										Перевести
 									</Button>
-								),
+								);
+							},
 						},
 					]
 				: []),

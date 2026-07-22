@@ -243,6 +243,10 @@ class SchoolTaskManager extends AbstractManager
 
         }
 
+        if (array_key_exists('graduates', $arGroup)) {
+            $group->setGraduates((bool) $arGroup['graduates']);
+        }
+
         if (!(int) $group->getId()) {
 
             $parentId = (int) ($arGroup['parent_id'] ?? 0);
@@ -717,36 +721,26 @@ class SchoolTaskManager extends AbstractManager
             'parent_id' => null,
             'sort' => $sort,
             'code' => $code,
+            'graduates' => !empty($arParallel['graduates']),
         ]);
     }
 
     public function serializeParallel(EpGroup $parallel): array
     {
-
         $sub = [];
-
         foreach ($parallel->getChildren() as $child) {
-
             if ($this->isParallelSubjectGroup($child)) {
-
                 $sub[] = $this->serializeSubjectGroup($child);
-
             }
-
         }
 
-
-
         return [
-
             'id' => $parallel->getId(),
-
             'name' => $parallel->getName(),
-
+            'sort' => $parallel->getSort(),
+            'graduates' => $parallel->isGraduates(),
             'sub' => $sub,
-
         ];
-
     }
 
 
@@ -1052,7 +1046,7 @@ class SchoolTaskManager extends AbstractManager
             throw new \InvalidArgumentException('Класс уже выпущен');
         }
         if (!$this->shouldGraduateClass($class)) {
-            throw new \InvalidArgumentException('Выпуск доступен только для параллелей 9 и 11');
+            throw new \InvalidArgumentException('Выпуск доступен только для выпускных параллелей');
         }
         $year = (int) date('Y');
         $class->setGraduated(true)->setGraduatedYear($year);
@@ -1072,7 +1066,7 @@ class SchoolTaskManager extends AbstractManager
             throw new \InvalidArgumentException(SchoolTaskAccessMessages::PARALLEL_NOT_FOUND);
         }
         if (!$this->shouldGraduateParallel($parallel)) {
-            throw new \InvalidArgumentException('Выпуск доступен только для параллелей 9 и 11');
+            throw new \InvalidArgumentException('Выпуск доступен только для выпускных параллелей');
         }
         foreach ($parallel->getChildren()->toArray() as $class) {
             if ($this->isClassGroup($class) && !$class->isGraduated()) {
@@ -1085,9 +1079,7 @@ class SchoolTaskManager extends AbstractManager
 
     public function shouldGraduateParallel(EpGroup $parallel): bool
     {
-        $level = $this->getParallelGradeLevel($parallel);
-
-        return 9 === $level || 11 === $level;
+        return $this->isParallelGroup($parallel) && $parallel->isGraduates();
     }
 
     public function shouldGraduateClass(EpGroup $class): bool
@@ -1100,21 +1092,14 @@ class SchoolTaskManager extends AbstractManager
         return $parallel instanceof EpGroup && $this->shouldGraduateParallel($parallel);
     }
 
-    public function getParallelGradeLevel(EpGroup $parallel): ?int
+    /** @return 'graduate'|'promote'|'graduated' */
+    public function getClassTransitionAction(EpGroup $class): string
     {
-        if (!$this->isParallelGroup($parallel)) {
-            return null;
-        }
-        $code = $parallel->getCode();
-        if (preg_match('/(?:class_|parallel_)(\d+)/', $code, $matches)) {
-            return (int) $matches[1];
-        }
-        $name = $parallel->getName();
-        if (preg_match('/^(\d+)/', $name, $matches)) {
-            return (int) $matches[1];
+        if ($class->isGraduated()) {
+            return 'graduated';
         }
 
-        return null;
+        return $this->shouldGraduateClass($class) ? 'graduate' : 'promote';
     }
 
     private function listClassesQuery(): \Doctrine\ORM\Query

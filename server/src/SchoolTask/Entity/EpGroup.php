@@ -59,6 +59,10 @@ class EpGroup
     #[ORM\Column(name: 'graduated_year', type: Types::SMALLINT, nullable: true)]
     private ?int $graduatedYear = null;
 
+    /** Выпускная параллель: классы при переводе выпускаются, а не повышаются. */
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    private bool $graduates = false;
+
     #[ORM\OneToMany(mappedBy: 'group', targetEntity: EpGroupUser::class, orphanRemoval: true)]
     private Collection $users;
 
@@ -245,6 +249,18 @@ class EpGroup
     public function setGraduatedYear(?int $graduatedYear): self
     {
         $this->graduatedYear = $graduatedYear;
+
+        return $this;
+    }
+
+    public function isGraduates(): bool
+    {
+        return $this->graduates;
+    }
+
+    public function setGraduates(bool $graduates): self
+    {
+        $this->graduates = $graduates;
 
         return $this;
     }

@@ -42,6 +42,7 @@ async function postJson<T>(path: string, body: unknown, schema: z.ZodType<T>): P
 const optionSchema = z.object({
 	value: z.union([z.number(), z.string()]),
 	text: z.string().optional(),
+	graduates: z.boolean().optional(),
 });
 
 export const subjectListItemSchema = z.object({
@@ -82,6 +83,7 @@ export const classListItemSchema = z.object({
 	graduated: z.boolean().optional(),
 	graduated_year: z.number().nullable().optional(),
 	should_graduate: z.boolean().optional(),
+	transition: z.enum(['graduate', 'promote', 'graduated']).optional(),
 	parent_id: z.number().nullable().optional(),
 	parent_name: z.string().nullable().optional(),
 });
@@ -121,6 +123,8 @@ export const parallelDetailSchema = z
 	.object({
 		id: z.number(),
 		name: z.string().nullable().optional(),
+		sort: z.number().nullable().optional(),
+		graduates: z.boolean().optional(),
 		sub: z.array(classSubSchema).optional(),
 	})
 	.passthrough();
@@ -289,7 +293,7 @@ export const schooltaskClassApi = {
 export const schooltaskParallelApi = {
 	list: () => postJson(`${BASE}/parallels/list`, {}, z.array(parallelDetailSchema)),
 	get: (id: number) => getDetail(`${BASE}/parallels/${id}`, parallelDetailSchema),
-	create: async (body: { name: string; sort?: number; code?: string }): Promise<ParallelDetail> => {
+	create: async (body: { name: string; sort?: number; code?: string; graduates?: boolean }): Promise<ParallelDetail> => {
 		const { data } = await apiClient.post<unknown>(`${BASE}/parallels`, body);
 		return parallelDetailSchema.parse(data);
 	},
