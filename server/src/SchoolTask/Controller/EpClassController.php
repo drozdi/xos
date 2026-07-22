@@ -152,6 +152,26 @@ class EpClassController extends AbstractController
         return $this->json(['id' => $id]);
     }
 
+    #[Route('/promote-all', methods: ['POST'])]
+    #[Access('can_update')]
+    public function promoteAll(
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canUpdateSchooltaskClass($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_CLASS);
+        }
+
+        try {
+            $result = $schoolTaskManager->promoteAllClasses();
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($result);
+    }
+
     #[Route('/{id}/promote', requirements: ['id' => '\d+'], methods: ['POST'])]
     #[Access('can_update')]
     public function promote(

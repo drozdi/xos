@@ -288,6 +288,16 @@ export const schooltaskClassApi = {
 	},
 	promote: (id: number) => postJson(`${BASE}/classes/${id}/promote`, {}, classDetailSchema),
 	graduate: (id: number) => postJson(`${BASE}/classes/${id}/graduate`, {}, classDetailSchema),
+	promoteAll: () =>
+		postJson(
+			`${BASE}/classes/promote-all`,
+			{},
+			z.object({
+				total: z.number(),
+				promoted: z.number(),
+				graduated: z.number(),
+			}),
+		),
 };
 
 export const schooltaskParallelApi = {

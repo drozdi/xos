@@ -271,6 +271,10 @@ class SchoolTaskManager extends AbstractManager
 
 
 
+        $this->assertUniqueGroupName($group);
+
+
+
         $this->getEpGroupRepository()->save($group, true);
 
 
@@ -959,83 +963,129 @@ class SchoolTaskManager extends AbstractManager
 
 
 
-    public function promoteClass(EpGroup $class): EpGroup
-
+    public function promoteAllClasses(): array
     {
+        $classes = [];
+        foreach ($this->listClasses(false) as $class) {
+            if ($this->isClassGroup($class) && !$class->isGraduated()) {
+                $classes[] = $class;
+            }
+        }
 
+        $promoted = 0;
+        $graduated = 0;
+        foreach ($classes as $class) {
+            $shouldGraduate = $this->shouldGraduateClass($class);
+            $this->promoteClass($class);
+            if ($shouldGraduate) {
+                ++$graduated;
+            } else {
+                ++$promoted;
+            }
+        }
+
+        return [
+            'total' => count($classes),
+            'promoted' => $promoted,
+            'graduated' => $graduated,
+        ];
+    }
+
+    public function promoteClass(EpGroup $class): EpGroup
+    {
         if (!$this->isClassGroup($class)) {
-
             throw new \InvalidArgumentException(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
-
         }
-
         if ($class->isGraduated()) {
-
             throw new \InvalidArgumentException('Класс уже выпущен');
-
         }
-
         $parallel = $class->getParent();
-
-        if ($parallel instanceof EpGroup && $this->shouldGraduateParallel($parallel)) {
-
+        if (!$parallel instanceof EpGroup) {
+            throw new \InvalidArgumentException(SchoolTaskAccessMessages::PARALLEL_NOT_FOUND);
+        }
+        if ($this->shouldGraduateParallel($parallel)) {
             return $this->graduateClass($class);
-
         }
 
-
-
-        $name = $class->getName();
-
-        if (preg_match('/^(\d+)(.*)$/', $name, $matches)) {
-
-            $class->setName(((int) $matches[1] + 1).($matches[2] ?? ''));
-
-            $this->getEpGroupRepository()->save($class, true);
-
+        $currentLevel = $this->resolveParallelGradeLevel($parallel);
+        if (null === $currentLevel) {
+            throw new \InvalidArgumentException('Не удалось определить номер параллели');
         }
 
+        $nextLevel = $currentLevel + 1;
+        $nextParallel = $this->findOrCreateParallelByGradeLevel($nextLevel);
 
+        $suffix = '';
+        if (preg_match('/^\d+(.*)$/u', $class->getName(), $matches)) {
+            $suffix = $matches[1];
+        }
+        $class->setName($nextLevel.$suffix);
+        $class->setParent($nextParallel);
+        $this->assertUniqueGroupName($class);
+        $this->getEpGroupRepository()->save($class, true);
 
         return $class;
-
     }
-
-
 
     public function promoteParallel(EpGroup $parallel): void
-
     {
-
         if (!$this->isParallelGroup($parallel)) {
-
             throw new \InvalidArgumentException(SchoolTaskAccessMessages::PARALLEL_NOT_FOUND);
-
         }
-
         if ($this->shouldGraduateParallel($parallel)) {
-
             $this->graduateParallel($parallel);
 
-
-
             return;
-
         }
-
         foreach ($parallel->getChildren()->toArray() as $class) {
-
             if ($this->isClassGroup($class) && !$class->isGraduated()) {
-
                 $this->promoteClass($class);
-
             }
-
         }
-
     }
 
+    public function findParallelByGradeLevel(int $level): ?EpGroup
+    {
+        foreach ($this->getParallelGroups() as $parallel) {
+            if ($this->resolveParallelGradeLevel($parallel) === $level) {
+                return $parallel;
+            }
+        }
 
+        return null;
+    }
+
+    public function findOrCreateParallelByGradeLevel(int $level): EpGroup
+    {
+        $existing = $this->findParallelByGradeLevel($level);
+        if ($existing instanceof EpGroup) {
+            return $existing;
+        }
+
+        return $this->createParallel([
+            'name' => (string) $level,
+            'sort' => $level * 10,
+            'code' => sprintf('parallel_%d_%s', $level, uniqid()),
+            'graduates' => false,
+        ]);
+    }
+
+    public function resolveParallelGradeLevel(EpGroup $parallel): ?int
+    {
+        if (!$this->isParallelGroup($parallel)) {
+            return null;
+        }
+        $code = $parallel->getCode();
+        if (preg_match('/(?:class_|parallel_)(\d+)/', $code, $matches)) {
+            return (int) $matches[1];
+        }
+        $name = $parallel->getName();
+        if (preg_match('/^(\d+)/', $name, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
 
     public function graduateClass(EpGroup $class): EpGroup
     {
@@ -1055,6 +1105,7 @@ class SchoolTaskManager extends AbstractManager
         if (!str_contains($name, (string) $year)) {
             $class->setName(trim($name).' ('.$year.')');
         }
+        $this->assertUniqueGroupName($class);
         $this->getEpGroupRepository()->save($class, true);
 
         return $class;
@@ -1505,6 +1556,198 @@ class SchoolTaskManager extends AbstractManager
 
 
         $this->getEpGroupRepository()->save($group, true);
+
+    }
+
+
+
+    private function assertUniqueGroupName(EpGroup $group): void
+
+
+
+    {
+
+
+
+        $name = trim($group->getName());
+
+
+
+        if ('' === $name) {
+
+
+
+            throw new \InvalidArgumentException('Укажите название');
+
+
+
+        }
+
+
+
+        if ($name !== $group->getName()) {
+
+
+
+            $group->setName($name);
+
+
+
+        }
+
+
+
+        $excludeId = (int) ($group->getId() ?? 0);
+
+
+
+        if ($this->isParallelGroup($group)) {
+
+
+
+            foreach ($this->getParallelGroups() as $other) {
+
+
+
+                if ($excludeId > 0 && (int) $other->getId() === $excludeId) {
+
+
+
+                    continue;
+
+
+
+                }
+
+
+
+                if (trim($other->getName()) === $name) {
+
+
+
+                    throw new \InvalidArgumentException(SchoolTaskAccessMessages::PARALLEL_NAME_EXISTS);
+
+
+
+                }
+
+
+
+            }
+
+
+
+            return;
+
+
+
+        }
+
+
+
+        if ($this->isClassGroup($group)) {
+
+
+
+            foreach ($this->listClasses(true) as $other) {
+
+
+
+                if ($excludeId > 0 && (int) $other->getId() === $excludeId) {
+
+
+
+                    continue;
+
+
+
+                }
+
+
+
+                if (!$this->isClassGroup($other)) {
+
+
+
+                    continue;
+
+
+
+                }
+
+
+
+                if (trim($other->getName()) === $name) {
+
+
+
+                    throw new \InvalidArgumentException(SchoolTaskAccessMessages::CLASS_NAME_EXISTS);
+
+
+
+                }
+
+
+
+            }
+
+
+
+            return;
+
+
+
+        }
+
+
+
+        $parent = $group->getParent();
+
+
+
+        if (!$parent instanceof EpGroup) {
+
+
+
+            return;
+
+
+
+        }
+
+
+
+        foreach ($parent->getChildren() as $sibling) {
+
+
+
+            if ($excludeId > 0 && (int) $sibling->getId() === $excludeId) {
+
+
+
+                continue;
+
+
+
+            }
+
+
+
+            if (trim($sibling->getName()) === $name) {
+
+
+
+                throw new \InvalidArgumentException(SchoolTaskAccessMessages::SUBGROUP_NAME_EXISTS);
+
+
+
+            }
+
+
+
+        }
+
+
 
     }
 

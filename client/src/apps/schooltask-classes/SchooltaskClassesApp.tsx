@@ -1,4 +1,4 @@
-import { Alert, Button, Checkbox } from '@mantine/core';
+import { Alert, Button, Checkbox, Group } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -59,6 +59,19 @@ export default function SchooltaskClassesApp() {
 			void queryClient.invalidateQueries({ queryKey: ['schooltask', 'classes'] });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка выпуска'),
+	});
+
+	const promoteAllMutation = useMutation({
+		mutationFn: () => schooltaskClassApi.promoteAll(),
+		onSuccess: (result) => {
+			notifications.show({
+				message: `Готово: переведено ${result.promoted}, выпущено ${result.graduated}`,
+				color: 'green',
+			});
+			void queryClient.invalidateQueries({ queryKey: ['schooltask', 'classes'] });
+			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.classParallels });
+		},
+		onError: (error) => notifyApiError(error, 'Ошибка массового перевода'),
 	});
 
 	const deleteMutation = useMutation({
@@ -190,11 +203,31 @@ export default function SchooltaskClassesApp() {
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate ? () => openClass(0) : undefined}
 			filters={
-				<Checkbox
-					label="Показать выпускников"
-					checked={showGraduated}
-					onChange={(event) => setShowGraduated(event.currentTarget.checked)}
-				/>
+				<Group justify="space-between" wrap="wrap">
+					<Checkbox
+						label="Показать выпускников"
+						checked={showGraduated}
+						onChange={(event) => setShowGraduated(event.currentTarget.checked)}
+					/>
+					{canUpdate ? (
+						<Button
+							size="xs"
+							variant="light"
+							loading={promoteAllMutation.isPending}
+							onClick={() => {
+								confirmAction({
+									title: 'Перевести всех',
+									message:
+										'Перевести все активные классы на следующий год? Выпускные параллели будут выпущены.',
+									confirmLabel: 'Перевести всех',
+									onConfirm: () => promoteAllMutation.mutate(),
+								});
+							}}
+						>
+							Перевести всех
+						</Button>
+					) : null}
+				</Group>
 			}
 		>
 			<DataTable

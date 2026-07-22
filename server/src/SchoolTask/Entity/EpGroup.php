@@ -20,7 +20,6 @@ class EpGroup
     private ?int $id = null;
 
     #[ORM\Column(name: 'x_timestamp', type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[ORM\Version]
     private ?\DateTimeInterface $xTimestamp = null;
 
     #[ORM\ManyToOne(targetEntity: User::class)]

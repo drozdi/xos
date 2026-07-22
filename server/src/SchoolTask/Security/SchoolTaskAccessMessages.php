@@ -25,6 +25,9 @@ final class SchoolTaskAccessMessages
     public const READ_ZAM = 'Нет прав на управление составом групп';
     public const UPDATE_ZAM = 'Нет прав на изменение состава групп';
     public const PARALLEL_NOT_FOUND = 'Параллель не найдена';
+    public const PARALLEL_NAME_EXISTS = 'Параллель с таким названием уже существует';
+    public const CLASS_NAME_EXISTS = 'Класс с таким названием уже существует';
+    public const SUBGROUP_NAME_EXISTS = 'Подгруппа с таким названием уже существует';
     public const GROUP_NOT_FOUND = 'Группа не найдена';
     public const PUPIL_ALREADY_IN_CLASS = 'Ученик уже состоит в другом классе';
     public const PUPIL_NOT_IN_PARALLEL = 'Ученик не состоит в этой параллели';
