@@ -58,6 +58,23 @@ describe('buildAppTree', () => {
 		expect(tree.find((group) => group.id === 'admin')?.apps[0]?.id).toBe('list');
 	});
 
+	it('excludes apps with startMenuList false from tree but keeps them pinnable', () => {
+		const apps = [
+			mockApp({ id: 'list', name: 'List', startMenuGroup: 'admin' }),
+			mockApp({
+				id: 'hidden',
+				name: 'Hidden',
+				startMenuGroup: 'admin',
+				startMenuList: false,
+			}),
+		];
+		const tree = buildAppTree(apps);
+
+		expect(tree.find((group) => group.id === 'admin')?.apps).toHaveLength(1);
+		expect(tree.find((group) => group.id === 'admin')?.apps[0]?.id).toBe('list');
+		expect(resolvePinnedApps(['hidden'], apps).map((app) => app.id)).toEqual(['hidden']);
+	});
+
 	it('sorts apps by startMenuSort then name', () => {
 		const tree = buildAppTree([
 			mockApp({ id: 'c', name: 'Charlie', startMenuGroup: 'device', startMenuSort: 30 }),

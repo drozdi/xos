@@ -1,5 +1,5 @@
 import { Box, Collapse, Group, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { useAppManager } from '@/core/appManager/useAppManager';
@@ -9,17 +9,92 @@ import { buildAppTree } from './buildAppTree';
 import { ChevronIcon } from './startMenuIcons';
 import { startMenuDividerStyle } from './startMenuDividerStyle';
 import type { StartMenuAppGroup } from './types';
+import { useStartMenuItemMenu } from './useStartMenuItemMenu';
 
 interface StartMenuAppListProps {
 	onClose: () => void;
+	isPinned: (appId: string) => boolean;
+	onPin: (appId: string) => void;
+}
+
+function AppListItem({
+	appId,
+	name,
+	borderTop,
+	isPinned,
+	onLaunch,
+	onPin,
+}: {
+	appId: string;
+	name: string;
+	borderTop?: boolean;
+	isPinned: boolean;
+	onLaunch: (appId: string) => void;
+	onPin: (appId: string) => void;
+}) {
+	const manifest = AppRegistry.get(appId);
+	const menuItems = useMemo(
+		() => [
+			{
+				id: 'open',
+				label: 'Открыть',
+				onClick: () => onLaunch(appId),
+			},
+			{
+				id: 'pin',
+				label: 'Добавить на быстрый доступ',
+				disabled: isPinned,
+				onClick: () => onPin(appId),
+			},
+		],
+		[appId, isPinned, onLaunch, onPin],
+	);
+	const { onContextMenu, menu } = useStartMenuItemMenu(menuItems);
+
+	if (!manifest) {
+		return null;
+	}
+
+	return (
+		<>
+			<UnstyledButton
+				onClick={() => onLaunch(appId)}
+				onContextMenu={onContextMenu}
+				style={{
+					display: 'flex',
+					alignItems: 'center',
+					gap: 10,
+					padding: '8px 10px',
+					borderRadius: 4,
+					color: 'var(--xos-shell-text)',
+					...(borderTop ? startMenuDividerStyle : {}),
+				}}
+				styles={{
+					root: {
+						'&:hover': {
+							background: 'var(--xos-shell-hover)',
+						},
+					},
+				}}
+			>
+				<AppIcon icon={manifest.icon} size={18} />
+				<Text size="sm">{name}</Text>
+			</UnstyledButton>
+			{menu}
+		</>
+	);
 }
 
 function GroupSection({
 	group,
+	isPinned,
 	onLaunch,
+	onPin,
 }: {
 	group: StartMenuAppGroup;
+	isPinned: (appId: string) => boolean;
 	onLaunch: (appId: string) => void;
+	onPin: (appId: string) => void;
 }) {
 	const [opened, setOpened] = useState(false);
 
@@ -55,44 +130,24 @@ function GroupSection({
 			</UnstyledButton>
 			<Collapse expanded={opened}>
 				<Stack gap={2} pl="xs">
-					{group.apps.map((app) => {
-						const manifest = AppRegistry.get(app.id);
-						if (!manifest) {
-							return null;
-						}
-						return (
-							<UnstyledButton
-								key={app.id}
-								onClick={() => onLaunch(app.id)}
-								style={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: 10,
-									padding: '8px 10px',
-									borderRadius: 4,
-									color: 'var(--xos-shell-text)',
-									...(app.borderTop ? startMenuDividerStyle : {}),
-								}}
-								styles={{
-									root: {
-										'&:hover': {
-											background: 'var(--xos-shell-hover)',
-										},
-									},
-								}}
-							>
-								<AppIcon icon={manifest.icon} size={18} />
-								<Text size="sm">{app.name}</Text>
-							</UnstyledButton>
-						);
-					})}
+					{group.apps.map((app) => (
+						<AppListItem
+							key={app.id}
+							appId={app.id}
+							name={app.name}
+							borderTop={app.borderTop}
+							isPinned={isPinned(app.id)}
+							onLaunch={onLaunch}
+							onPin={onPin}
+						/>
+					))}
 				</Stack>
 			</Collapse>
 		</Box>
 	);
 }
 
-export function StartMenuAppList({ onClose }: StartMenuAppListProps) {
+export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListProps) {
 	const launchApp = useAppManager((state) => state.launchApp);
 	const groups = buildAppTree(AppRegistry.getAvailable());
 
@@ -123,7 +178,13 @@ export function StartMenuAppList({ onClose }: StartMenuAppListProps) {
 				) : (
 					<Stack gap="sm">
 						{groups.map((group) => (
-							<GroupSection key={group.id} group={group} onLaunch={handleLaunch} />
+							<GroupSection
+								key={group.id}
+								group={group}
+								isPinned={isPinned}
+								onLaunch={handleLaunch}
+								onPin={onPin}
+							/>
 						))}
 					</Stack>
 				)}

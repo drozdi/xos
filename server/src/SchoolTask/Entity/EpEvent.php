@@ -80,7 +80,7 @@ class EpEvent
     private bool $update = false;
 
     #[ORM\ManyToMany(targetEntity: File::class)]
-    #[ORM\JoinTable(name: 'ep_event_file')]
+    #[ORM\JoinTable(name: 'st_ep_event_file')]
     #[ORM\JoinColumn(name: 'event_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'file_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $files;

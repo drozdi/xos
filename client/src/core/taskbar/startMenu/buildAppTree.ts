@@ -7,6 +7,10 @@ export function isStartMenuApp(manifest: AppManifest): boolean {
 	return manifest.startMenu !== false;
 }
 
+export function isStartMenuListApp(manifest: AppManifest): boolean {
+	return isStartMenuApp(manifest) && manifest.startMenuList !== false;
+}
+
 function getGroupLabel(groupId: string): string {
 	return START_MENU_GROUP_LABELS[groupId] ?? groupId;
 }
@@ -24,7 +28,7 @@ export function resolveStartMenuGroup(app: AppManifest): string {
 }
 
 export function buildAppTree(apps: AppManifest[]): StartMenuAppGroup[] {
-	const visibleApps = apps.filter(isStartMenuApp);
+	const visibleApps = apps.filter(isStartMenuListApp);
 	const groups = new Map<string, AppManifest[]>();
 
 	for (const app of visibleApps) {

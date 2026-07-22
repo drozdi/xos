@@ -8,7 +8,7 @@ import {
 	START_MENU_SIDEBAR_EXPANDED_WIDTH,
 	START_MENU_SIDEBAR_WIDTH,
 } from './defaults';
-import { PowerIcon, ReloadIcon, SettingsIcon } from './startMenuIcons';
+import { PowerIcon, ReloadIcon } from './startMenuIcons';
 import { ThemeMenuButton } from './ThemeMenuButton';
 import type { StartMenuCommand } from './types';
 
@@ -53,12 +53,6 @@ export function StartMenuSidebar({ onClose }: StartMenuSidebarProps) {
 				align="center"
 				style={{ borderTop: '1px solid var(--xos-shell-border)' }}
 			>
-				<SidebarButton
-					label="Параметры"
-					icon={<SettingsIcon size={20} />}
-					expanded={isExpanded}
-					onClick={() => runCommand('settings')}
-				/>
 				<SidebarButton
 					label={userLabel}
 					icon={

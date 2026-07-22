@@ -25,7 +25,7 @@ class EpSubject
     private int $sort = 100;
 
     #[ORM\ManyToMany(targetEntity: User::class)]
-    #[ORM\JoinTable(name: 'ep_subject_user')]
+    #[ORM\JoinTable(name: 'st_ep_subject_user')]
     #[ORM\JoinColumn(name: 'subject_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'user_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private Collection $users;

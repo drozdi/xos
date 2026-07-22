@@ -28,27 +28,7 @@ export const START_MENU_GROUP_SORT: Record<string, number> = {
 	default: 100,
 };
 
-export const DEFAULT_PINNED_APPS = [
-	'explorer',
-	'demo-calculator',
-	'browser',
-	'tic-tac-toe',
-	'sudoku',
-	'settings',
-	'main-users',
-	'main-groups',
-	'main-ous',
-	'main-claimants',
-	'device-devices',
-	'device-sub-devices',
-	'device-types',
-	'device-properties',
-	'device-components',
-	'device-softwares',
-	'device-licenses',
-	'device-license-keys',
-	'inccom',
-];
+export const DEFAULT_PINNED_APPS: string[] = [];
 
 export const DEFAULT_QUICK_ACTIONS: StartMenuQuickAction[] = [
 	{ id: 'quick-users', type: 'app', appId: 'main-users', label: 'Пользователи' },

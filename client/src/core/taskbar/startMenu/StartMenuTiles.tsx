@@ -1,19 +1,20 @@
 import { Box, ScrollArea, SimpleGrid, Text, UnstyledButton } from '@mantine/core';
-import { Fragment } from 'react';
+import { useMemo } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
 import { useAppManager } from '@/core/appManager/useAppManager';
 
 import { AppIcon } from '../taskbarUtils';
 import { START_MENU_TILES_WIDTH } from './defaults';
-import { startMenuDividerStyle } from './startMenuDividerStyle';
+import { useStartMenuItemMenu } from './useStartMenuItemMenu';
 
 interface StartMenuTilesProps {
 	apps: AppManifest[];
 	onClose: () => void;
+	onUnpin: (appId: string) => void;
 }
 
-export function StartMenuTiles({ apps, onClose }: StartMenuTilesProps) {
+export function StartMenuTiles({ apps, onClose, onUnpin }: StartMenuTilesProps) {
 	const launchApp = useAppManager((state) => state.launchApp);
 
 	const handleLaunch = (appId: string) => {
@@ -37,25 +38,17 @@ export function StartMenuTiles({ apps, onClose }: StartMenuTilesProps) {
 			<ScrollArea h={468} px="md" pb="md" type="auto">
 				{apps.length === 0 ? (
 					<Text size="sm" c="dimmed">
-						Закрепите приложения в параметрах startMenu.pinnedApps
+						Добавьте приложения из списка через контекстное меню
 					</Text>
 				) : (
 					<SimpleGrid cols={3} spacing="sm">
 						{apps.map((app) => (
-							<Fragment key={app.id}>
-								{app.startMenuBorderTop ? (
-									<Box
-										aria-hidden
-										style={{
-											gridColumn: '1 / -1',
-											...startMenuDividerStyle,
-											marginTop: 10,
-											paddingTop: 0,
-										}}
-									/>
-								) : null}
-								<StartMenuTile app={app} onLaunch={handleLaunch} />
-							</Fragment>
+							<StartMenuTile
+								key={app.id}
+								app={app}
+								onLaunch={handleLaunch}
+								onUnpin={onUnpin}
+							/>
 						))}
 					</SimpleGrid>
 				)}
@@ -67,35 +60,58 @@ export function StartMenuTiles({ apps, onClose }: StartMenuTilesProps) {
 function StartMenuTile({
 	app,
 	onLaunch,
+	onUnpin,
 }: {
 	app: AppManifest;
 	onLaunch: (appId: string) => void;
+	onUnpin: (appId: string) => void;
 }) {
+	const menuItems = useMemo(
+		() => [
+			{
+				id: 'open',
+				label: 'Открыть',
+				onClick: () => onLaunch(app.id),
+			},
+			{
+				id: 'unpin',
+				label: 'Открепить от быстрого доступа',
+				onClick: () => onUnpin(app.id),
+			},
+		],
+		[app.id, onLaunch, onUnpin],
+	);
+	const { onContextMenu, menu } = useStartMenuItemMenu(menuItems);
+
 	return (
-		<UnstyledButton
-			onClick={() => onLaunch(app.id)}
-			style={{
-				display: 'flex',
-				flexDirection: 'column',
-				alignItems: 'center',
-				gap: 6,
-				padding: '10px 6px',
-				borderRadius: 6,
-				color: 'var(--xos-shell-text)',
-				minHeight: 88,
-			}}
-			styles={{
-				root: {
-					'&:hover': {
-						background: 'var(--xos-shell-hover)',
+		<>
+			<UnstyledButton
+				onClick={() => onLaunch(app.id)}
+				onContextMenu={onContextMenu}
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					gap: 6,
+					padding: '10px 6px',
+					borderRadius: 6,
+					color: 'var(--xos-shell-text)',
+					minHeight: 88,
+				}}
+				styles={{
+					root: {
+						'&:hover': {
+							background: 'var(--xos-shell-hover)',
+						},
 					},
-				},
-			}}
-		>
-			<AppIcon icon={app.icon} size={28} />
-			<Text size="xs" ta="center" lineClamp={2}>
-				{app.name}
-			</Text>
-		</UnstyledButton>
+				}}
+			>
+				<AppIcon icon={app.icon} size={28} />
+				<Text size="xs" ta="center" lineClamp={2}>
+					{app.name}
+				</Text>
+			</UnstyledButton>
+			{menu}
+		</>
 	);
 }

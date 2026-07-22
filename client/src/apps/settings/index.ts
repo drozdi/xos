@@ -16,6 +16,7 @@ const manifest: AppManifest = {
 	minSize: { width: 360, height: 400 },
 	wmGroup: 'system',
 	singleInstance: true,
+	startMenuList: false
 };
 
 export default manifest;

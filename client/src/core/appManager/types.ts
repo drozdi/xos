@@ -47,6 +47,8 @@ export interface AppManifest {
 	taskbarGroup?: string;
 	/** Показывать в меню «Пуск». По умолчанию true */
 	startMenu?: boolean;
+	/** Показывать в списке «Все приложения». По умолчанию true. Не влияет на быстрый доступ */
+	startMenuList?: boolean;
 	singleInstance?: boolean;
 	instanceKey?: string | ((params?: LaunchParams) => string);
 	contextMenu?: ContextMenuConfig;

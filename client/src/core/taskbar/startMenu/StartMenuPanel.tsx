@@ -1,6 +1,8 @@
 import { Box } from '@mantine/core';
+import { useCallback } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
+import { settingManager } from '@/core/settings/SettingManager';
 import { useSetState } from '@/core/settings/hooks';
 
 import { resolvePinnedApps } from './buildAppTree';
@@ -18,15 +20,51 @@ interface StartMenuPanelProps {
 	onClose: () => void;
 }
 
+function persistPinnedIds(next: string[]) {
+	if (!settingManager.isInitialized()) {
+		return;
+	}
+	void settingManager.set('USER', START_MENU_SETTING_KEYS.pinnedApps, next);
+}
+
 export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
 	const availableApps = AppRegistry.getAvailable();
-	const [pinnedIds] = useSetState<string[]>(
+	const [pinnedIds, setPinnedIds] = useSetState<string[]>(
 		'USER',
 		START_MENU_SETTING_KEYS.pinnedApps,
 		DEFAULT_PINNED_APPS,
 	);
 
 	const pinnedApps = resolvePinnedApps(pinnedIds, availableApps);
+	const pinnedIdSet = new Set(pinnedIds);
+
+	const pinApp = useCallback(
+		(appId: string) => {
+			setPinnedIds((prev) => {
+				if (prev.includes(appId)) {
+					return prev;
+				}
+				const next = [...prev, appId];
+				persistPinnedIds(next);
+				return next;
+			});
+		},
+		[setPinnedIds],
+	);
+
+	const unpinApp = useCallback(
+		(appId: string) => {
+			setPinnedIds((prev) => {
+				const next = prev.filter((id) => id !== appId);
+				if (next.length === prev.length) {
+					return prev;
+				}
+				persistPinnedIds(next);
+				return next;
+			});
+		},
+		[setPinnedIds],
+	);
 
 	return (
 		<Box
@@ -43,8 +81,12 @@ export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
 		>
 			<StartMenuSidebar onClose={onClose} />
 			<Box style={{ display: 'flex', flex: 1, minWidth: 0 }}>
-				<StartMenuAppList onClose={onClose} />
-				<StartMenuTiles apps={pinnedApps} onClose={onClose} />
+				<StartMenuAppList
+					onClose={onClose}
+					isPinned={(appId) => pinnedIdSet.has(appId)}
+					onPin={pinApp}
+				/>
+				<StartMenuTiles apps={pinnedApps} onClose={onClose} onUnpin={unpinApp} />
 			</Box>
 		</Box>
 	);
