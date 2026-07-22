@@ -55,11 +55,16 @@ export function notifyApiError(
 }
 
 export function extractApiFieldErrors(error: unknown): Record<string, string> {
-	if (!axios.isAxiosError<ApiError>(error) || error.response?.status !== 400) {
+	if (!axios.isAxiosError<ApiError>(error)) {
 		return {};
 	}
 
-	const data = error.response.data;
+	const status = error.response?.status;
+	if (status !== 400 && status !== 422) {
+		return {};
+	}
+
+	const data = error.response?.data;
 	if (!data || typeof data !== 'object') {
 		return {};
 	}
@@ -85,6 +90,22 @@ export function extractApiFieldErrors(error: unknown): Record<string, string> {
 			fieldErrors[field] = message;
 		}
 	}
+	if (Object.keys(fieldErrors).length > 0) {
+		return fieldErrors;
+	}
 
-	return fieldErrors;
+	if (typeof data.message === 'string' && data.message.length > 0) {
+		const message = data.message;
+		if (message.includes('Класс с таким названием')) {
+			return { name: message };
+		}
+		if (message.includes('Подгруппа с таким названием')) {
+			return { sub: message };
+		}
+		if (message.includes('Параллель с таким названием')) {
+			return { name: message };
+		}
+	}
+
+	return {};
 }

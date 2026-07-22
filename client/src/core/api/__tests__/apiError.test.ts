@@ -37,8 +37,24 @@ describe('apiError', () => {
 		);
 
 		expect(extractApiFieldErrors(error)).toEqual({
-			code: 'Код должен быть указан',
 			name: 'Название должно быть указано',
+		});
+	});
+
+	it('maps 422 uniqueness message to name field', () => {
+		const error = new axios.AxiosError(
+			'Unprocessable',
+			'422',
+			undefined,
+			undefined,
+			{
+				status: 422,
+				data: { message: 'Класс с таким названием уже существует' },
+			} as never,
+		);
+
+		expect(extractApiFieldErrors(error)).toEqual({
+			name: 'Класс с таким названием уже существует',
 		});
 	});
 });

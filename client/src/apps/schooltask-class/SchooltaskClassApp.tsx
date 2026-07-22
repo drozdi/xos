@@ -17,7 +17,7 @@ import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { notifyApiError } from '@/core/api/apiError';
+import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import {
 	schooltaskClassApi,
 	schooltaskParallelApi,
@@ -35,7 +35,10 @@ import {
 import { useEntityId } from '@/features/schooltask/schooltaskAppUtils';
 
 import {
+	PARALLEL_NAME_EXISTS,
 	addSubGroup,
+	getInvalidSubGroupIndexes,
+	isParallelNameTaken,
 	normalizeClassUsers,
 	prepareClassSavePayload,
 	removeSubGroup,
@@ -52,6 +55,12 @@ const initialData: ClassDetail = {
 	sub: [],
 };
 
+const classNamesListRequest = {
+	offset: 1,
+	limit: 1000,
+	filters: { graduated: true },
+} as const;
+
 export default function SchooltaskClassApp() {
 	const entityId = useEntityId();
 	const queryClient = useQueryClient();
@@ -65,6 +74,7 @@ export default function SchooltaskClassApp() {
 	const [parallelModalOpen, setParallelModalOpen] = useState(false);
 	const [newParallelName, setNewParallelName] = useState('');
 	const [newParallelGraduates, setNewParallelGraduates] = useState(false);
+	const [parallelNameError, setParallelNameError] = useState<string | null>(null);
 	const [onParallelCreated, setOnParallelCreated] = useState<((parentId: number) => void) | null>(
 		null,
 	);
@@ -84,6 +94,11 @@ export default function SchooltaskClassApp() {
 	const subjectsQuery = useQuery({
 		queryKey: queryKeys.schooltask.classSubjects,
 		queryFn: () => schooltaskClassApi.subjectsOptions(),
+	});
+	const classNamesQuery = useQuery({
+		queryKey: queryKeys.schooltask.classes(classNamesListRequest),
+		queryFn: () => schooltaskClassApi.list(classNamesListRequest),
+		enabled: canRead || canCreate,
 	});
 
 	const parallelOptions = useMemo(
@@ -118,6 +133,14 @@ export default function SchooltaskClassApp() {
 			})),
 		[subjectsQuery.data],
 	);
+	const existingClasses = useMemo(
+		() =>
+			(classNamesQuery.data?.items ?? []).map((item) => ({
+				id: item.id,
+				name: item.name,
+			})),
+		[classNamesQuery.data?.items],
+	);
 
 	const createParallelMutation = useMutation({
 		mutationFn: (payload: { name: string; graduates: boolean }) =>
@@ -129,13 +152,33 @@ export default function SchooltaskClassApp() {
 			setParallelModalOpen(false);
 			setNewParallelName('');
 			setNewParallelGraduates(false);
+			setParallelNameError(null);
 			setOnParallelCreated(null);
 		},
-		onError: (error) => notifyApiError(error, 'Ошибка создания параллели'),
+		onError: (error) => {
+			const message = extractApiErrorMessage(error, 'Ошибка создания параллели');
+			setParallelNameError(message);
+			notifyApiError(error, 'Ошибка создания параллели');
+		},
 	});
 
 	const canSave = isNew ? canCreate : canUpdate;
 	const canCreateParallel = canCreate || canUpdate;
+
+	const submitNewParallel = () => {
+		const name = newParallelName.trim();
+		if (!name) {
+			setParallelNameError('Укажите название');
+			return;
+		}
+		if (isParallelNameTaken(name, parallelOptions.map((item) => item.label))) {
+			setParallelNameError(PARALLEL_NAME_EXISTS);
+			notifications.show({ color: 'red', title: 'Ошибка', message: PARALLEL_NAME_EXISTS });
+			return;
+		}
+		setParallelNameError(null);
+		createParallelMutation.mutate({ name, graduates: newParallelGraduates });
+	};
 
 	if (isNew && !canCreate) {
 		return (
@@ -164,7 +207,12 @@ export default function SchooltaskClassApp() {
 				create={schooltaskClassApi.create}
 				remove={schooltaskClassApi.remove}
 				initialData={initialData}
-				validate={validateClassForm}
+				validate={(data) =>
+					validateClassForm(data, {
+						existingClasses,
+						excludeClassId: isNew ? 0 : entityId,
+					})
+				}
 				transformBeforeSave={(data) => {
 					const payload = prepareClassSavePayload(data);
 					if (!canUpdateZam) {
@@ -177,6 +225,7 @@ export default function SchooltaskClassApp() {
 			>
 				{({ data, setField, errors, readOnly }) => {
 					const pupils = normalizeClassUsers(data.users).map((item) => String(item.user_id));
+					const invalidSubIndexes = getInvalidSubGroupIndexes(data.sub);
 
 					return (
 						<Tabs value={activeTab} onChange={setActiveTab}>
@@ -217,6 +266,7 @@ export default function SchooltaskClassApp() {
 													setOnParallelCreated(() => (parentId: number) => {
 														setField('parent_id', parentId);
 													});
+													setParallelNameError(null);
 													setParallelModalOpen(true);
 												}}
 											>
@@ -271,6 +321,11 @@ export default function SchooltaskClassApp() {
 											</Button>
 										) : null}
 									</Group>
+									{errors.sub ? (
+										<Alert color="red" title="Ошибка">
+											{errors.sub}
+										</Alert>
+									) : null}
 									<Table withTableBorder withColumnBorders>
 										<Table.Thead>
 											<Table.Tr>
@@ -288,6 +343,11 @@ export default function SchooltaskClassApp() {
 														<TextInput
 															value={row.name ?? ''}
 															readOnly={readOnly}
+															error={
+																errors.sub && invalidSubIndexes.has(index)
+																	? errors.sub
+																	: undefined
+															}
 															onChange={(event) =>
 																setField(
 																	'sub',
@@ -379,6 +439,7 @@ export default function SchooltaskClassApp() {
 					setParallelModalOpen(false);
 					setNewParallelName('');
 					setNewParallelGraduates(false);
+					setParallelNameError(null);
 					setOnParallelCreated(null);
 				}}
 				title="Новая параллель"
@@ -390,7 +451,11 @@ export default function SchooltaskClassApp() {
 						withAsterisk
 						placeholder="Например: 5"
 						value={newParallelName}
-						onChange={(event) => setNewParallelName(event.currentTarget.value)}
+						error={parallelNameError}
+						onChange={(event) => {
+							setNewParallelName(event.currentTarget.value);
+							setParallelNameError(null);
+						}}
 						data-autofocus
 					/>
 					<Checkbox
@@ -406,6 +471,7 @@ export default function SchooltaskClassApp() {
 								setParallelModalOpen(false);
 								setNewParallelName('');
 								setNewParallelGraduates(false);
+								setParallelNameError(null);
 								setOnParallelCreated(null);
 							}}
 						>
@@ -414,12 +480,7 @@ export default function SchooltaskClassApp() {
 						<Button
 							loading={createParallelMutation.isPending}
 							disabled={!newParallelName.trim()}
-							onClick={() =>
-								createParallelMutation.mutate({
-									name: newParallelName.trim(),
-									graduates: newParallelGraduates,
-								})
-							}
+							onClick={submitNewParallel}
 						>
 							Создать
 						</Button>

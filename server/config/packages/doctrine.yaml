@@ -14,7 +14,8 @@ doctrine:
             EnumLicense: Doctrine\DBAL\Types\StringType
             EnumKey: Doctrine\DBAL\Types\StringType
     orm:
-        auto_generate_proxy_classes: true
+        # FILE_NOT_EXISTS (2): на Windows AUTOGENERATE_ALWAYS даёт race rename → «Отказано в доступе (code: 5)»
+        auto_generate_proxy_classes: 2
         enable_lazy_ghost_objects: true
         report_fields_where_declared: true
         validate_xml_mapping: true

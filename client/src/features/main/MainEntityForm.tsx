@@ -94,7 +94,10 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 				const nextErrors = validate(form);
 				if (Object.keys(nextErrors).length > 0) {
 					setErrors(nextErrors);
-					throw new Error('Заполните обязательные поля');
+					const firstMessage = Object.values(nextErrors).find(
+						(value): value is string => typeof value === 'string' && value.length > 0,
+					);
+					throw new Error(firstMessage ?? 'Проверьте форму');
 				}
 			}
 			setErrors({});
