@@ -83,6 +83,7 @@ export default function SchooltaskSubjectApp() {
 			canDelete={canDelete}
 			transformBeforeSave={(data) => ({
 				...data,
+				users: [],
 				user_ids: extractSubjectUserIds(data.users),
 			})}
 		>

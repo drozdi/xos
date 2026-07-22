@@ -40,10 +40,12 @@ function createSchooltaskCrudAccess(scopePath: string) {
 const SUBJECT_SCOPE = 'schooltask.subject';
 const CLASS_SCOPE = 'schooltask.class';
 const EVENT_SCOPE = 'schooltask.event';
+const ZAM_SCOPE = 'schooltask.zam';
 
 const subjectCrud = createSchooltaskCrudAccess(SUBJECT_SCOPE);
 const classCrud = createSchooltaskCrudAccess(CLASS_SCOPE);
 const eventCrud = createSchooltaskCrudAccess(EVENT_SCOPE);
+const zamCrud = createSchooltaskCrudAccess(ZAM_SCOPE);
 
 export const canReadSchooltaskSubject = subjectCrud.canRead;
 export const canCreateSchooltaskSubject = subjectCrud.canCreate;
@@ -71,3 +73,12 @@ export const useCanReadSchooltaskEvent = eventCrud.useCanRead;
 export const useCanCreateSchooltaskEvent = eventCrud.useCanCreate;
 export const useCanUpdateSchooltaskEvent = eventCrud.useCanUpdate;
 export const useCanDeleteSchooltaskEvent = eventCrud.useCanDelete;
+
+export const canReadSchooltaskZam = zamCrud.canRead;
+export const canCreateSchooltaskZam = zamCrud.canCreate;
+export const canUpdateSchooltaskZam = zamCrud.canUpdate;
+export const canDeleteSchooltaskZam = zamCrud.canDelete;
+export const useCanReadSchooltaskZam = zamCrud.useCanRead;
+export const useCanCreateSchooltaskZam = zamCrud.useCanCreate;
+export const useCanUpdateSchooltaskZam = zamCrud.useCanUpdate;
+export const useCanDeleteSchooltaskZam = zamCrud.useCanDelete;

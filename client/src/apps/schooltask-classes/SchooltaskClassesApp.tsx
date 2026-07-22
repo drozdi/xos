@@ -1,13 +1,14 @@
-import { Alert } from '@mantine/core';
+import { Alert, Button, Checkbox } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { schooltaskClassApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import { confirmAction } from '@/core/confirm/confirmAction';
 import {
 	useCanCreateSchooltaskClass,
 	useCanDeleteSchooltaskClass,
@@ -26,11 +27,38 @@ export default function SchooltaskClassesApp() {
 	const canUpdate = useCanUpdateSchooltaskClass();
 	const canDelete = useCanDeleteSchooltaskClass();
 	const pagination = usePaginatedList();
+	const [showGraduated, setShowGraduated] = useState(false);
+
+	const listRequest = useMemo(
+		() => ({
+			...pagination.listRequest,
+			filters: { graduated: showGraduated },
+		}),
+		[pagination.listRequest, showGraduated],
+	);
 
 	const listQuery = useQuery({
-		queryKey: queryKeys.schooltask.classes(pagination.listRequest),
-		queryFn: () => schooltaskClassApi.list(pagination.listRequest),
+		queryKey: queryKeys.schooltask.classes(listRequest),
+		queryFn: () => schooltaskClassApi.list(listRequest),
 		enabled: canRead,
+	});
+
+	const promoteMutation = useMutation({
+		mutationFn: (id: number) => schooltaskClassApi.promote(id),
+		onSuccess: () => {
+			notifications.show({ message: 'Класс переведён', color: 'green' });
+			void queryClient.invalidateQueries({ queryKey: ['schooltask', 'classes'] });
+		},
+		onError: (error) => notifyApiError(error, 'Ошибка перевода'),
+	});
+
+	const graduateMutation = useMutation({
+		mutationFn: (id: number) => schooltaskClassApi.graduate(id),
+		onSuccess: () => {
+			notifications.show({ message: 'Класс выпущен', color: 'green' });
+			void queryClient.invalidateQueries({ queryKey: ['schooltask', 'classes'] });
+		},
+		onError: (error) => notifyApiError(error, 'Ошибка выпуска'),
 	});
 
 	const deleteMutation = useMutation({
@@ -49,8 +77,67 @@ export default function SchooltaskClassesApp() {
 			{ field: 'id' as const, header: 'ID', width: 70 },
 			{ field: 'name' as const, header: 'Класс' },
 			{ field: 'tutor' as const, header: 'Классный руководитель' },
+			{
+				field: 'graduated' as const,
+				header: 'Выпуск',
+				width: 120,
+				render: (row: { graduated?: boolean; graduated_year?: number | null }) =>
+					row.graduated ? `Да (${row.graduated_year ?? '—'})` : 'Нет',
+			},
+			...(canUpdate
+				? [
+						{
+							field: 'id' as const,
+							header: 'Действия',
+							width: 140,
+							render: (row: {
+								id: number;
+								name?: string;
+								graduated?: boolean;
+								should_graduate?: boolean;
+							}) =>
+								row.graduated ? null : row.should_graduate ? (
+									<Button
+										size="compact-xs"
+										variant="light"
+										color="orange"
+										loading={graduateMutation.isPending}
+										onClick={(event) => {
+											event.stopPropagation();
+											confirmAction({
+												title: 'Выпуск класса',
+												message: `Выпустить класс «${row.name}»?`,
+												confirmLabel: 'Выпустить',
+												confirmColor: 'orange',
+												onConfirm: () => graduateMutation.mutate(row.id),
+											});
+										}}
+									>
+										Выпустить
+									</Button>
+								) : (
+									<Button
+										size="compact-xs"
+										variant="light"
+										loading={promoteMutation.isPending}
+										onClick={(event) => {
+											event.stopPropagation();
+											confirmAction({
+												title: 'Перевод класса',
+												message: `Перевести класс «${row.name}» на следующий год?`,
+												confirmLabel: 'Перевести',
+												onConfirm: () => promoteMutation.mutate(row.id),
+											});
+										}}
+									>
+										Перевести
+									</Button>
+								),
+						},
+					]
+				: []),
 		],
-		[],
+		[canUpdate, graduateMutation, promoteMutation],
 	);
 
 	const openClass = (id: number) => launchApp('schooltask-class', id);
@@ -79,6 +166,13 @@ export default function SchooltaskClassesApp() {
 			isFetching={listQuery.isFetching}
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate ? () => openClass(0) : undefined}
+			filters={
+				<Checkbox
+					label="Показать выпускников"
+					checked={showGraduated}
+					onChange={(event) => setShowGraduated(event.currentTarget.checked)}
+				/>
+			}
 		>
 			<DataTable
 				storageKey="schooltask-classes"

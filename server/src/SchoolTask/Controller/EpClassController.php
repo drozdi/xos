@@ -23,6 +23,7 @@ class EpClassController extends AbstractController
     #[Route('/list', methods: ['POST'])]
     #[Access('can_read')]
     public function list(
+        Request $request,
         SchoolTaskManager $schoolTaskManager,
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
@@ -31,13 +32,21 @@ class EpClassController extends AbstractController
             return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_CLASS);
         }
 
+        $filters = $request->toArray()['filters'] ?? [];
+        $includeGraduated = !empty($filters['graduated']);
+
         $items = [];
-        foreach ($schoolTaskManager->listClasses() as $class) {
+        foreach ($schoolTaskManager->listClasses($includeGraduated) as $class) {
             $tutor = $class->getUser();
             $items[] = [
                 'id' => $class->getId(),
                 'name' => $class->getName(),
                 'tutor' => $tutor ? sprintf('%s (%s)', $tutor->getAlias(), $tutor->getLogin()) : '',
+                'graduated' => $class->isGraduated(),
+                'graduated_year' => $class->getGraduatedYear(),
+                'should_graduate' => $schoolTaskManager->shouldGraduateClass($class),
+                'parent_id' => $class->getParent()?->getId(),
+                'parent_name' => $class->getParent()?->getName(),
             ];
         }
 
@@ -77,6 +86,8 @@ class EpClassController extends AbstractController
 
         try {
             $class = $schoolTaskManager->class(null, $request->toArray());
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (ValidationFailedException $e) {
             return $this->json(['message' => (string) $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -102,8 +113,15 @@ class EpClassController extends AbstractController
             return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_CLASS);
         }
 
+        $payload = $request->toArray();
+        if (array_key_exists('users', $payload) && !$userScopeResolver->canUpdateSchooltaskZam($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_ZAM);
+        }
+
         try {
-            $class = $schoolTaskManager->class($class, $request->toArray());
+            $class = $schoolTaskManager->class($class, $payload);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (ValidationFailedException $e) {
             return $this->json(['message' => (string) $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -131,6 +149,54 @@ class EpClassController extends AbstractController
         $schoolTaskManager->removeClass($class);
 
         return $this->json(['id' => $id]);
+    }
+
+    #[Route('/{id}/promote', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Access('can_update')]
+    public function promote(
+        int $id,
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canUpdateSchooltaskClass($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_CLASS);
+        }
+        $class = $schoolTaskManager->getClassGroup($id);
+        if (!$class || !$schoolTaskManager->isClassGroup($class)) {
+            return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
+        }
+        try {
+            $class = $schoolTaskManager->promoteClass($class);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($schoolTaskManager->serializeClass($class));
+    }
+
+    #[Route('/{id}/graduate', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Access('can_update')]
+    public function graduate(
+        int $id,
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canUpdateSchooltaskClass($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_CLASS);
+        }
+        $class = $schoolTaskManager->getClassGroup($id);
+        if (!$class || !$schoolTaskManager->isClassGroup($class)) {
+            return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
+        }
+        try {
+            $class = $schoolTaskManager->graduateClass($class);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return $this->json($schoolTaskManager->serializeClass($class));
     }
 
     #[Route('/parallels/options', methods: ['GET'])]

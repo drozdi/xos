@@ -3,17 +3,28 @@
 namespace SchoolTask\Service;
 
 use AbstractManager;
-use Main\Entity\Group;
 use Main\Entity\User;
 use Main\Service\FileManager;
 use SchoolTask\Entity\EpEvent;
 use SchoolTask\Entity\EpSubject;
+use SchoolTask\Entity\EpGroup;
 use SchoolTask\Repository\EpEventRepository;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class EventManager extends AbstractManager
 {
+    /** @var array<int, array{0: string, 1: string}> */
+    private const LESSON_TIMES = [
+        1 => ['08:00:00', '08:40:00'],
+        2 => ['08:50:00', '09:30:00'],
+        3 => ['09:50:00', '10:30:00'],
+        4 => ['10:40:00', '11:20:00'],
+        5 => ['11:40:00', '12:20:00'],
+        6 => ['12:30:00', '13:10:00'],
+        7 => ['13:20:00', '14:00:00'],
+        8 => ['14:10:00', '14:50:00'],
+    ];
     public function __construct(
         ValidatorInterface $validator,
         private readonly SchoolTaskManager $schoolTaskManager,
@@ -42,26 +53,29 @@ class EventManager extends AbstractManager
         return $this->buildEvent($event, $arEvent, $event->getClass());
     }
 
-    public function createEvent(array $arEvent, User $actor): EpEvent
+    public function createEvent(array $arEvent, User $actor, bool $canManageSchedule): EpEvent
     {
         $class = $this->schoolTaskManager->getClassGroup((int) ($arEvent['class_id'] ?? 0));
-        if (!$class instanceof Group) {
+        if (!$class instanceof EpGroup) {
             throw new \InvalidArgumentException('Класс не найден');
         }
-        if (!$this->schoolTaskManager->isClassTutor($actor, $class)) {
-            throw new \RuntimeException('Добавить может только классный руководитель!');
+        if (!$canManageSchedule) {
+            throw new \RuntimeException('Недостаточно прав для редактирования расписания');
         }
 
         $first = $this->buildEvent(new EpEvent(), $arEvent, $class, false);
+        $repeatUntil = $this->parseRepeatUntil($arEvent);
+        if ($repeatUntil instanceof \DateTimeInterface) {
+            $first->setRepeatUntil($repeatUntil);
+        }
         $this->getEpEventRepository()->save($first);
 
-        $repeate = $this->parseDate($arEvent['repeate'] ?? null);
-        if ($repeate instanceof \DateTimeInterface) {
+        if ($repeatUntil instanceof \DateTimeInterface) {
             $start = \DateTime::createFromInterface($first->getStart());
             $end = \DateTime::createFromInterface($first->getEnd());
             $start->modify('+7 days');
             $end->modify('+7 days');
-            while ($start <= $repeate) {
+            while ($start <= $repeatUntil) {
                 $child = $this->cloneEventSkeleton($first, $start, $end);
                 $child->setParent($first);
                 $this->getEpEventRepository()->save($child);
@@ -75,10 +89,10 @@ class EventManager extends AbstractManager
         return $first;
     }
 
-    public function editEvent(EpEvent $event, array $arEvent, User $actor): EpEvent
+    public function editEvent(EpEvent $event, array $arEvent, User $actor, bool $canManageSchedule): EpEvent
     {
-        if (!$this->schoolTaskManager->isClassTutor($actor, $event->getClass())) {
-            throw new \RuntimeException('Изменить может только классный руководитель!');
+        if (!$canManageSchedule) {
+            throw new \RuntimeException('Недостаточно прав для редактирования расписания');
         }
 
         $editType = (string) ($arEvent['editType'] ?? 'one');
@@ -97,10 +111,10 @@ class EventManager extends AbstractManager
         return $event;
     }
 
-    public function removeEvent(EpEvent $event, array $arEvent, User $actor): void
+    public function removeEvent(EpEvent $event, array $arEvent, User $actor, bool $canManageSchedule): void
     {
-        if (!$this->schoolTaskManager->isClassTutor($actor, $event->getClass())) {
-            throw new \RuntimeException('Удалить может только классный руководитель!');
+        if (!$canManageSchedule) {
+            throw new \RuntimeException('Недостаточно прав для редактирования расписания');
         }
 
         $editType = (string) ($arEvent['editType'] ?? 'one');
@@ -157,6 +171,21 @@ class EventManager extends AbstractManager
         return $this->getEpEventRepository()->findInRange($start, $end, ['user' => $teacher->getId()]);
     }
 
+    /** @return array<int, array{lesson_number: int, start: string, end: string}> */
+    public function listLessonTemplates(): array
+    {
+        $items = [];
+        foreach (self::LESSON_TIMES as $lessonNumber => $times) {
+            $items[] = [
+                'lesson_number' => $lessonNumber,
+                'start' => $times[0],
+                'end' => $times[1],
+            ];
+        }
+
+        return $items;
+    }
+
     public function serializeCalendarItem(EpEvent $event, string $mode = 'student'): array
     {
         $subject = $this->schoolTaskManager->getSubjectForGroup($event->getGroup());
@@ -196,6 +225,8 @@ class EventManager extends AbstractManager
             'subject_id' => $subject?->getId(),
             'start' => $event->getStart('Y-m-d H:i:s'),
             'end' => $event->getEnd('Y-m-d H:i:s'),
+            'lesson_number' => $event->getLessonNumber(),
+            'repeat_until' => $event->getRepeatUntil('Y-m-d H:i:s'),
         ];
     }
 
@@ -242,7 +273,7 @@ class EventManager extends AbstractManager
         ];
     }
 
-    public function getClassInfo(Group $class): array
+    public function getClassInfo(EpGroup $class): array
     {
         return [
             'name' => $class->getName(),
@@ -250,16 +281,16 @@ class EventManager extends AbstractManager
         ];
     }
 
-    private function buildEvent(EpEvent $event, array $arEvent, ?Group $class, bool $flush = true): EpEvent
+    private function buildEvent(EpEvent $event, array $arEvent, ?EpGroup $class, bool $flush = true): EpEvent
     {
-        if ($class instanceof Group) {
+        if ($class instanceof EpGroup) {
             $event->setClass($class);
         } elseif (array_key_exists('class_id', $arEvent)) {
             $event->setClass($this->schoolTaskManager->getClassGroup((int) $arEvent['class_id']));
         }
 
         if (array_key_exists('group_id', $arEvent)) {
-            $group = $this->schoolTaskManager->getClassGroup((int) $arEvent['group_id']);
+            $group = $this->schoolTaskManager->getEpGroup((int) $arEvent['group_id']);
             $event->setGroup($group);
             $subject = $group ? $this->schoolTaskManager->getSubjectForGroup($group) : null;
             if ($subject instanceof EpSubject) {
@@ -275,6 +306,10 @@ class EventManager extends AbstractManager
         if (array_key_exists('title', $arEvent)) {
             $event->setTitle((string) $arEvent['title']);
         }
+        if (array_key_exists('lesson_number', $arEvent)) {
+            $lessonNumber = $arEvent['lesson_number'];
+            $event->setLessonNumber(null !== $lessonNumber && '' !== $lessonNumber ? (int) $lessonNumber : null);
+        }
         if (array_key_exists('start', $arEvent)) {
             $start = $this->parseDate($arEvent['start']);
             if ($start instanceof \DateTimeInterface) {
@@ -286,6 +321,12 @@ class EventManager extends AbstractManager
             if ($end instanceof \DateTimeInterface) {
                 $event->setEnd($end);
             }
+        }
+        if (null !== $event->getLessonNumber()) {
+            $this->applyLessonNumberTime($event);
+        }
+        if (array_key_exists('repeat_until', $arEvent)) {
+            $event->setRepeatUntil($this->parseDate($arEvent['repeat_until']));
         }
 
         $map = [
@@ -318,6 +359,22 @@ class EventManager extends AbstractManager
         return $event;
     }
 
+    private function applyLessonNumberTime(EpEvent $event): void
+    {
+        $lessonNumber = $event->getLessonNumber();
+        if (null === $lessonNumber || $lessonNumber < 1 || $lessonNumber > 8) {
+            return;
+        }
+        $times = self::LESSON_TIMES[$lessonNumber] ?? null;
+        if (null === $times) {
+            return;
+        }
+        $dateSource = $event->getStart() ?? new \DateTime();
+        $date = $dateSource->format('Y-m-d');
+        $event->setStart(new \DateTime($date.' '.$times[0]));
+        $event->setEnd(new \DateTime($date.' '.$times[1]));
+    }
+
     private function cloneEventSkeleton(EpEvent $source, \DateTimeInterface $start, \DateTimeInterface $end): EpEvent
     {
         $event = new EpEvent();
@@ -327,6 +384,7 @@ class EventManager extends AbstractManager
         $event->setTitle($source->getTitle());
         $event->setStart($start);
         $event->setEnd($end);
+        $event->setLessonNumber($source->getLessonNumber());
 
         return $event;
     }
@@ -379,5 +437,14 @@ class EventManager extends AbstractManager
         $value = str_replace('T', ' ', $value);
 
         return new \DateTime($value);
+    }
+
+    private function parseRepeatUntil(array $arEvent): ?\DateTimeInterface
+    {
+        if (array_key_exists('repeat_until', $arEvent)) {
+            return $this->parseDate($arEvent['repeat_until']);
+        }
+
+        return $this->parseDate($arEvent['repeate'] ?? null);
     }
 }

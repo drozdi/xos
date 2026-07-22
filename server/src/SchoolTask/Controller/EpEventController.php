@@ -5,6 +5,7 @@ namespace SchoolTask\Controller;
 use App\Http\ApiResponse;
 use App\Security\UserScopeResolver;
 use Main\Entity\User;
+use SchoolTask\Entity\EpGroup;
 use SchoolTask\Security\SchoolTaskAccessMessages;
 use SchoolTask\Service\EventManager;
 use SchoolTask\Service\SchoolTaskManager;
@@ -187,7 +188,11 @@ class EpEventController extends AbstractController
 
         $payload = array_merge($request->toArray(), ['class_id' => $classId]);
         try {
-            $event = $eventManager->createEvent($payload, $user);
+            $event = $eventManager->createEvent(
+                $payload,
+                $user,
+                $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver),
+            );
         } catch (\Throwable $e) {
             return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -227,7 +232,12 @@ class EpEventController extends AbstractController
         }
 
         try {
-            $event = $eventManager->editEvent($event, $payload, $user);
+            $event = $eventManager->editEvent(
+                $event,
+                $payload,
+                $user,
+                $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver),
+            );
         } catch (\Throwable $e) {
             return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -259,7 +269,12 @@ class EpEventController extends AbstractController
         }
 
         try {
-            $eventManager->removeEvent($event, $payload, $user);
+            $eventManager->removeEvent(
+                $event,
+                $payload,
+                $user,
+                $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver),
+            );
         } catch (\Throwable $e) {
             return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -287,6 +302,16 @@ class EpEventController extends AbstractController
         }
 
         return $this->json($eventManager->serializeEditorDetail($event));
+    }
+
+    #[Route('/lesson-templates', methods: ['GET'])]
+    public function lessonTemplates(EventManager $eventManager, UserScopeResolver $userScopeResolver, #[CurrentUser] User $user): JsonResponse
+    {
+        if (!$userScopeResolver->canReadSchooltaskEvent($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_EVENT);
+        }
+
+        return $this->json($eventManager->listLessonTemplates());
     }
 
     #[Route('/teacher/events', methods: ['POST'])]
@@ -362,13 +387,23 @@ class EpEventController extends AbstractController
         return $this->json([]);
     }
 
+    private function canManageSchedule(
+        User $user,
+        EpGroup $class,
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+    ): bool {
+        return $userScopeResolver->canUpdateSchooltaskEvent($user)
+            || $schoolTaskManager->isClassTutor($user, $class);
+    }
+
     private function requireClassEditor(
         int $classId,
         User $user,
         SchoolTaskManager $schoolTaskManager,
         UserScopeResolver $userScopeResolver,
         bool $write = true,
-    ): JsonResponse|\Main\Entity\Group {
+    ): JsonResponse|EpGroup {
         $class = $schoolTaskManager->getClassGroup($classId);
         if (!$class) {
             return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
@@ -385,7 +420,7 @@ class EpEventController extends AbstractController
 
     private function canViewClassCalendar(
         User $user,
-        \Main\Entity\Group $class,
+        EpGroup $class,
         UserScopeResolver $userScopeResolver,
         SchoolTaskManager $schoolTaskManager,
     ): bool {

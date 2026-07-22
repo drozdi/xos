@@ -7,6 +7,7 @@ import {
 	canCreateSchooltaskClass,
 	canReadSchooltaskEvent,
 	canReadSchooltaskSubject,
+	canReadSchooltaskZam,
 	canUpdateSchooltaskEvent,
 } from '@/features/schooltask/schooltaskAccess';
 
@@ -19,6 +20,7 @@ describe('schooltaskAccess', () => {
 			subject: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
 			class: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
 			event: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
+			zam: { can_create: 1, can_read: 2, can_update: 4, can_delete: 8 },
 		});
 	});
 
@@ -45,6 +47,12 @@ describe('schooltaskAccess', () => {
 		setLevelScopes({ 'schooltask.event': 4 });
 		expect(canUpdateSchooltaskEvent()).toBe(true);
 		expect(canReadSchooltaskEvent()).toBe(false);
+	});
+
+	it('allows zam read with can_read bit', () => {
+		setUserRoles(['ROLE_SCHOOLTASK']);
+		setLevelScopes({ 'schooltask.zam': 2 });
+		expect(canReadSchooltaskZam()).toBe(true);
 	});
 
 	it('allows all for ROLE_ROOT', () => {

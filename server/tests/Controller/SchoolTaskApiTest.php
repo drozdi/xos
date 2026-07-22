@@ -6,13 +6,11 @@ use App\Tests\AuthWebTestCase;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Main\Entity\Claimant;
-use Main\Entity\Group;
 use Main\Entity\User;
 use Main\Entity\User\Access as UserAccess;
-use Main\Entity\User\Group as UserGroup;
 use SchoolTask\Entity\EpEvent;
 use SchoolTask\Entity\EpSubject;
-use SchoolTask\Entity\GroupMeta;
+use SchoolTask\Entity\StGroup;
 use SchoolTask\Security\SchoolTaskAccessMessages;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
@@ -433,14 +431,14 @@ class SchoolTaskApiTest extends AuthWebTestCase
         /** @var EntityManagerInterface $entityManager */
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
         $metadata = [
-            $entityManager->getClassMetadata(Group::class),
-            $entityManager->getClassMetadata(UserGroup::class),
             $entityManager->getClassMetadata(EpSubject::class),
-            $entityManager->getClassMetadata(GroupMeta::class),
+            $entityManager->getClassMetadata(StGroup::class),
+            $entityManager->getClassMetadata(\SchoolTask\Entity\StGroupUser::class),
             $entityManager->getClassMetadata(EpEvent::class),
         ];
 
         $schemaTool = new SchemaTool($entityManager);
+        $schemaTool->dropSchema($metadata);
         $schemaTool->createSchema($metadata);
     }
 
@@ -477,12 +475,12 @@ class SchoolTaskApiTest extends AuthWebTestCase
         ]);
     }
 
-    protected function createParallelGroup(KernelBrowser $client, string $code, string $name): Group
+    protected function createParallelGroup(KernelBrowser $client, string $code, string $name): StGroup
     {
         /** @var EntityManagerInterface $entityManager */
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
 
-        $group = new Group();
+        $group = new StGroup();
         $group->setCode($code);
         $group->setName($name);
         $group->setSort(100);
@@ -515,7 +513,7 @@ class SchoolTaskApiTest extends AuthWebTestCase
      */
     protected function createClassWithSubgroup(
         KernelBrowser $client,
-        Group $parallel,
+        StGroup $parallel,
         string $className,
         User $tutor,
         EpSubject $subject,
@@ -525,28 +523,23 @@ class SchoolTaskApiTest extends AuthWebTestCase
         /** @var EntityManagerInterface $entityManager */
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
 
-        $class = new Group();
+        $class = new StGroup();
         $class->setCode('st_class_test_'.uniqid());
         $class->setName($className);
         $class->setParent($parallel);
         $class->setUser($tutor);
-        $class->setLevel(1);
         $entityManager->persist($class);
 
-        $subgroup = new Group();
+        $subgroup = new StGroup();
         $subgroup->setCode('st_sub_test_'.uniqid());
         $subgroup->setName($subject->getName().' '.$className);
         $subgroup->setParent($class);
         $subgroup->setUser($teacher);
-        $subgroup->setLevel(2);
+        $subgroup->setSubject($subject);
         $entityManager->persist($subgroup);
 
-        $meta = (new GroupMeta())->setGroup($subgroup)->setSubject($subject);
-        $entityManager->persist($meta);
-
         if ($pupil instanceof User) {
-            $userGroup = $class->newUser($pupil);
-            $entityManager->persist($userGroup);
+            $entityManager->persist($class->newUser($pupil));
         }
 
         $entityManager->flush();

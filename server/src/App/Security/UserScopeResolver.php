@@ -315,6 +315,26 @@ final class UserScopeResolver
         return $this->canSchooltaskEvent($user, 'can_delete.schooltask.event');
     }
 
+    public function canCreateSchooltaskZam(User $user): bool
+    {
+        return $this->canSchooltaskZam($user, 'can_create.schooltask.zam');
+    }
+
+    public function canReadSchooltaskZam(User $user): bool
+    {
+        return $this->canSchooltaskZam($user, 'can_read.schooltask.zam');
+    }
+
+    public function canUpdateSchooltaskZam(User $user): bool
+    {
+        return $this->canSchooltaskZam($user, 'can_update.schooltask.zam');
+    }
+
+    public function canDeleteSchooltaskZam(User $user): bool
+    {
+        return $this->canSchooltaskZam($user, 'can_delete.schooltask.zam');
+    }
+
     private function canSchooltaskSubject(User $user, string $scope): bool
     {
         if (!$this->canAccessModule($user, 'schooltask')) {
@@ -348,6 +368,19 @@ final class UserScopeResolver
         }
         if ($this->hasFullAppAccess($user, 'schooltask')
             || $this->userHasAnyRole($user, ['ROLE_SCHOOLTASK_EVENT_ROOT'])) {
+            return true;
+        }
+
+        return $this->checkHasScope($user, $scope, false);
+    }
+
+    private function canSchooltaskZam(User $user, string $scope): bool
+    {
+        if (!$this->canAccessModule($user, 'schooltask')) {
+            return false;
+        }
+        if ($this->hasFullAppAccess($user, 'schooltask')
+            || $this->userHasAnyRole($user, ['ROLE_SCHOOLTASK_ZAM_ROOT'])) {
             return true;
         }
 

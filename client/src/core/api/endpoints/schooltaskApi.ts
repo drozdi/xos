@@ -79,6 +79,11 @@ export const classListItemSchema = z.object({
 	id: z.number(),
 	name: z.string().nullable().optional().transform((v) => v ?? ''),
 	tutor: z.string().nullable().optional().transform((v) => v ?? ''),
+	graduated: z.boolean().optional(),
+	graduated_year: z.number().nullable().optional(),
+	should_graduate: z.boolean().optional(),
+	parent_id: z.number().nullable().optional(),
+	parent_name: z.string().nullable().optional(),
 });
 
 const classUserSchema = z.object({
@@ -96,6 +101,7 @@ const classSubSchema = z.object({
 	user_id: z.number().nullable().optional(),
 	subject_id: z.number().nullable().optional(),
 	subject_name: z.string().nullable().optional(),
+	users: z.array(classUserSchema).optional(),
 });
 
 export const classDetailSchema = z
@@ -104,10 +110,26 @@ export const classDetailSchema = z
 		name: z.string().nullable().optional(),
 		parent_id: z.number().nullable().optional(),
 		user_id: z.number().nullable().optional(),
+		graduated: z.boolean().optional(),
+		graduated_year: z.number().nullable().optional(),
 		users: z.array(classUserSchema).optional(),
 		sub: z.array(classSubSchema).optional(),
 	})
 	.passthrough();
+
+export const parallelDetailSchema = z
+	.object({
+		id: z.number(),
+		name: z.string().nullable().optional(),
+		sub: z.array(classSubSchema).optional(),
+	})
+	.passthrough();
+
+export const lessonTemplateSchema = z.object({
+	lesson_number: z.number(),
+	start: z.string(),
+	end: z.string(),
+});
 
 export const calendarClassSchema = z.object({
 	id: z.number(),
@@ -151,6 +173,8 @@ export const editorEventDetailSchema = z.object({
 	subject_id: z.number().nullable().optional(),
 	start: z.string(),
 	end: z.string(),
+	lesson_number: z.number().nullable().optional(),
+	repeat_until: z.string().nullable().optional(),
 });
 
 export const teacherEventDetailSchema = z.object({
@@ -169,6 +193,8 @@ export const teacherEventDetailSchema = z.object({
 		.optional(),
 });
 
+export type ParallelDetail = z.infer<typeof parallelDetailSchema>;
+export type LessonTemplate = z.infer<typeof lessonTemplateSchema>;
 export type SubjectDetail = z.infer<typeof subjectDetailSchema>;
 export type ClassDetail = z.infer<typeof classDetailSchema>;
 export type CalendarEvent = z.infer<typeof calendarEventSchema>;
@@ -186,6 +212,8 @@ export interface EditorEventPayload {
 	subject_id?: number | null;
 	start?: string;
 	end?: string;
+	lesson_number?: number | null;
+	repeat_until?: string | null;
 	repeate?: string | null;
 	editType?: 'one' | 'after' | 'all';
 }
@@ -254,11 +282,40 @@ export const schooltaskClassApi = {
 		const { data } = await apiClient.get<unknown>(`${BASE}/classes/pupils/options`);
 		return z.array(optionSchema).parse(data);
 	},
+	promote: (id: number) => postJson(`${BASE}/classes/${id}/promote`, {}, classDetailSchema),
+	graduate: (id: number) => postJson(`${BASE}/classes/${id}/graduate`, {}, classDetailSchema),
+};
+
+export const schooltaskParallelApi = {
+	list: () => postJson(`${BASE}/parallels/list`, {}, z.array(parallelDetailSchema)),
+	get: (id: number) => getDetail(`${BASE}/parallels/${id}`, parallelDetailSchema),
+	create: async (body: { name: string; sort?: number; code?: string }): Promise<ParallelDetail> => {
+		const { data } = await apiClient.post<unknown>(`${BASE}/parallels`, body);
+		return parallelDetailSchema.parse(data);
+	},
+	update: (id: number, body: ParallelDetail) =>
+		apiClient.put(`${BASE}/parallels/${id}`, body).then((response) => parallelDetailSchema.parse(response.data)),
+	promote: (id: number) => postJson(`${BASE}/parallels/${id}/promote`, {}, parallelDetailSchema),
+	graduate: (id: number) => postJson(`${BASE}/parallels/${id}/graduate`, {}, parallelDetailSchema),
+};
+
+export const schooltaskMemberApi = {
+	sync: async (groupId: number, users: Array<{ id?: number; user_id: number }>) => {
+		const { data } = await apiClient.post<unknown>(`${BASE}/members/sync`, {
+			group_id: groupId,
+			users,
+		});
+		return z.object({ id: z.number() }).parse(data);
+	},
 };
 
 export const schooltaskCalendarApi = {
 	listClasses: () =>
 		postJson(`${BASE}/calendar/classes`, {}, z.array(calendarClassSchema)),
+	lessonTemplates: async () => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/calendar/lesson-templates`);
+		return z.array(lessonTemplateSchema).parse(data);
+	},
 	classInfo: (classId: number) =>
 		postJson(`${BASE}/calendar/${classId}/info`, {}, calendarClassInfoSchema),
 	studentEvents: (classId: number, range: CalendarRange) =>

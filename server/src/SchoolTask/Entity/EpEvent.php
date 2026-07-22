@@ -7,8 +7,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Main\Entity\File;
-use Main\Entity\Group;
 use Main\Entity\User;
+use SchoolTask\Entity\EpGroup;
 use SchoolTask\Repository\EpEventRepository;
 
 #[ORM\Entity(repositoryClass: EpEventRepository::class)]
@@ -35,13 +35,13 @@ class EpEvent
     #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, onDelete: 'RESTRICT')]
     private ?User $user = null;
 
-    #[ORM\ManyToOne(targetEntity: Group::class)]
+    #[ORM\ManyToOne(targetEntity: EpGroup::class)]
     #[ORM\JoinColumn(name: 'group_id', referencedColumnName: 'id', nullable: true, onDelete: 'RESTRICT')]
-    private ?Group $group = null;
+    private ?EpGroup $group = null;
 
-    #[ORM\ManyToOne(targetEntity: Group::class)]
+    #[ORM\ManyToOne(targetEntity: EpGroup::class)]
     #[ORM\JoinColumn(name: 'class_id', referencedColumnName: 'id', nullable: true, onDelete: 'RESTRICT')]
-    private ?Group $class = null;
+    private ?EpGroup $class = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $title = null;
@@ -78,6 +78,12 @@ class EpEvent
 
     #[ORM\Column(name: '`update`', type: Types::BOOLEAN, options: ['default' => false])]
     private bool $update = false;
+
+    #[ORM\Column(name: 'lesson_number', type: Types::SMALLINT, nullable: true)]
+    private ?int $lessonNumber = null;
+
+    #[ORM\Column(name: 'repeat_until', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $repeatUntil = null;
 
     #[ORM\ManyToMany(targetEntity: File::class)]
     #[ORM\JoinTable(name: 'st_ep_event_file')]
@@ -144,24 +150,24 @@ class EpEvent
         return $this;
     }
 
-    public function getGroup(): ?Group
+    public function getGroup(): ?EpGroup
     {
         return $this->group;
     }
 
-    public function setGroup(?Group $group): self
+    public function setGroup(?EpGroup $group): self
     {
         $this->group = $group;
 
         return $this;
     }
 
-    public function getClass(): ?Group
+    public function getClass(): ?EpGroup
     {
         return $this->class;
     }
 
-    public function setClass(?Group $class): self
+    public function setClass(?EpGroup $class): self
     {
         $this->class = $class;
 
@@ -316,6 +322,34 @@ class EpEvent
     public function setUpdate(bool $update): self
     {
         $this->update = $update;
+
+        return $this;
+    }
+
+    public function getLessonNumber(): ?int
+    {
+        return $this->lessonNumber;
+    }
+
+    public function setLessonNumber(?int $lessonNumber): self
+    {
+        $this->lessonNumber = $lessonNumber;
+
+        return $this;
+    }
+
+    public function getRepeatUntil(?string $format = null): \DateTimeInterface|string|null
+    {
+        if (null !== $format && null !== $this->repeatUntil) {
+            return $this->repeatUntil->format($format);
+        }
+
+        return $this->repeatUntil;
+    }
+
+    public function setRepeatUntil(?\DateTimeInterface $repeatUntil): self
+    {
+        $this->repeatUntil = $repeatUntil;
 
         return $this;
     }

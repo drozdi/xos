@@ -21,4 +21,11 @@ final class SchoolTaskAccessMessages
     public const UPDATE_EVENT = 'Нет прав на изменение события';
     public const DELETE_EVENT = 'Нет прав на удаление события';
     public const EVENT_NOT_FOUND = 'Событие не найдено';
+
+    public const READ_ZAM = 'Нет прав на управление составом групп';
+    public const UPDATE_ZAM = 'Нет прав на изменение состава групп';
+    public const PARALLEL_NOT_FOUND = 'Параллель не найдена';
+    public const GROUP_NOT_FOUND = 'Группа не найдена';
+    public const PUPIL_ALREADY_IN_CLASS = 'Ученик уже состоит в другом классе';
+    public const PUPIL_NOT_IN_PARALLEL = 'Ученик не состоит в этой параллели';
 }

@@ -14,6 +14,7 @@ import {
 import { queryKeys } from '@/core/api/queryKeys';
 import { confirmAction } from '@/core/confirm/confirmAction';
 import { DateTimeField } from '@/core/dates/DateTimeField';
+import { applyLessonTemplate } from '@/features/schooltask/lessonTemplates';
 
 interface EventEditorModalProps {
 	classId: number;
@@ -32,6 +33,8 @@ const emptyForm: EditorEventDetail = {
 	subject_id: null,
 	start: '',
 	end: '',
+	lesson_number: null,
+	repeat_until: null,
 };
 
 export function EventEditorModal({
@@ -127,6 +130,8 @@ export function EventEditorModal({
 				subject_id: form.subject_id,
 				start: form.start,
 				end: form.end,
+				lesson_number: form.lesson_number,
+				repeat_until: form.repeat_until,
 				editType,
 			};
 			if (isNew) {
@@ -192,10 +197,48 @@ export function EventEditorModal({
 					clearable
 					disabled={resolvedSubjectId <= 0}
 				/>
+				<Select
+					label="Номер урока"
+					data={Array.from({ length: 8 }, (_, index) => ({
+						value: String(index + 1),
+						label: `Урок ${index + 1}`,
+					}))}
+					value={form.lesson_number ? String(form.lesson_number) : null}
+					clearable
+					onChange={(value) => {
+						const lessonNumber = value ? Number(value) : null;
+						setForm((current) => {
+							if (!lessonNumber) {
+								return { ...current, lesson_number: null };
+							}
+							const date = current.start?.slice(0, 10) ?? dayjs().format('YYYY-MM-DD');
+							const times = applyLessonTemplate(date, lessonNumber);
+							return {
+								...current,
+								lesson_number: lessonNumber,
+								start: times?.start ?? current.start,
+								end: times?.end ?? current.end,
+							};
+						});
+					}}
+				/>
 				<DateTimeField
 					label="Начало"
 					value={form.start}
-					onChange={(value) => setForm((current) => ({ ...current, start: value ?? '' }))}
+					onChange={(value) => {
+						const nextStart = value ?? '';
+						setForm((current) => {
+							if (!current.lesson_number || !nextStart) {
+								return { ...current, start: nextStart };
+							}
+							const times = applyLessonTemplate(nextStart.slice(0, 10), current.lesson_number);
+							return {
+								...current,
+								start: times?.start ?? nextStart,
+								end: times?.end ?? current.end,
+							};
+						});
+					}}
 					withSeconds
 				/>
 				<DateTimeField
@@ -204,6 +247,14 @@ export function EventEditorModal({
 					onChange={(value) => setForm((current) => ({ ...current, end: value ?? '' }))}
 					withSeconds
 				/>
+				{isNew ? (
+					<DateTimeField
+						label="Повторять до"
+						value={form.repeat_until ?? ''}
+						onChange={(value) => setForm((current) => ({ ...current, repeat_until: value }))}
+						withSeconds
+					/>
+				) : null}
 				{!isNew ? (
 					<Select
 						label="Изменить"
