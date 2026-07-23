@@ -1721,6 +1721,18 @@ class SchoolTaskManager extends AbstractManager
 
 
 
+            if ($sibling === $group) {
+
+
+
+                continue;
+
+
+
+            }
+
+
+
             if ($excludeId > 0 && (int) $sibling->getId() === $excludeId) {
 
 

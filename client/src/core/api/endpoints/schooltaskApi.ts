@@ -45,6 +45,18 @@ const optionSchema = z.object({
 	graduates: z.boolean().optional(),
 });
 
+const subjectOptionSchema = optionSchema.extend({
+	users: z
+		.array(
+			z.object({
+				value: z.union([z.number(), z.string()]),
+				text: z.string().optional(),
+			}),
+		)
+		.optional()
+		.default([]),
+});
+
 export const subjectListItemSchema = z.object({
 	id: z.number(),
 	name: z.string().nullable().optional().transform((v) => v ?? ''),
@@ -276,7 +288,7 @@ export const schooltaskClassApi = {
 	},
 	subjectsOptions: async () => {
 		const { data } = await apiClient.get<unknown>(`${BASE}/classes/subjects/options`);
-		return z.array(optionSchema).parse(data);
+		return z.array(subjectOptionSchema).parse(data);
 	},
 	tutorsOptions: async () => {
 		const { data } = await apiClient.get<unknown>(`${BASE}/classes/tutors/options`);

@@ -37,6 +37,7 @@ import { useEntityId } from '@/features/schooltask/schooltaskAppUtils';
 import {
 	PARALLEL_NAME_EXISTS,
 	addSubGroup,
+	buildSubGroupName,
 	getInvalidSubGroupIndexes,
 	isParallelNameTaken,
 	normalizeClassUsers,
@@ -130,6 +131,10 @@ export default function SchooltaskClassApp() {
 			(subjectsQuery.data ?? []).map((item) => ({
 				value: String(item.value),
 				label: item.text ?? String(item.value),
+				teachers: (item.users ?? []).map((user) => ({
+					value: String(user.value),
+					label: user.text ?? String(user.value),
+				})),
 			})),
 		[subjectsQuery.data],
 	);
@@ -225,6 +230,8 @@ export default function SchooltaskClassApp() {
 			>
 				{({ data, setField, errors, readOnly }) => {
 					const pupils = normalizeClassUsers(data.users).map((item) => String(item.user_id));
+					const classPupilIdSet = new Set(pupils);
+					const classPupilOptions = pupilOptions.filter((item) => classPupilIdSet.has(item.value));
 					const invalidSubIndexes = getInvalidSubGroupIndexes(data.sub);
 
 					return (
@@ -329,16 +336,57 @@ export default function SchooltaskClassApp() {
 									<Table withTableBorder withColumnBorders>
 										<Table.Thead>
 											<Table.Tr>
-												<Table.Th>Название</Table.Th>
 												<Table.Th>Предмет</Table.Th>
+												<Table.Th>Название</Table.Th>
 												<Table.Th>Учитель</Table.Th>
 												<Table.Th>Ученики</Table.Th>
 												<Table.Th w={40} />
 											</Table.Tr>
 										</Table.Thead>
 										<Table.Tbody>
-											{(data.sub ?? []).map((row, index) => (
+											{(data.sub ?? []).map((row, index) => {
+												const subjectTeachers =
+													subjectOptions.find(
+														(item) => item.value === String(row.subject_id ?? ''),
+													)?.teachers ?? [];
+												const teacherIdSet = new Set(subjectTeachers.map((item) => item.value));
+												const teacherValue =
+													row.user_id && teacherIdSet.has(String(row.user_id))
+														? String(row.user_id)
+														: null;
+
+												return (
 												<Table.Tr key={`${row.id}-${index}`}>
+													<Table.Td>
+														<Select
+															data={subjectOptions}
+															value={row.subject_id ? String(row.subject_id) : null}
+															readOnly={readOnly}
+															onChange={(value) => {
+																const subjectId = value ? Number(value) : null;
+																const subject = subjectOptions.find((item) => item.value === value);
+																const subjectLabel = subject?.label ?? '';
+																const teachers = subject?.teachers ?? [];
+																const nextTeacherId =
+																	row.user_id &&
+																	teachers.some((item) => item.value === String(row.user_id))
+																		? row.user_id
+																		: teachers.length === 1 && teachers[0]
+																			? Number(teachers[0].value)
+																			: null;
+																setField(
+																	'sub',
+																	updateSubGroup(data.sub, index, {
+																		subject_id: subjectId,
+																		name: buildSubGroupName(data.name, subjectLabel),
+																		user_id: nextTeacherId,
+																	}),
+																);
+															}}
+															searchable
+															clearable
+														/>
+													</Table.Td>
 													<Table.Td>
 														<TextInput
 															value={row.name ?? ''}
@@ -360,26 +408,17 @@ export default function SchooltaskClassApp() {
 													</Table.Td>
 													<Table.Td>
 														<Select
-															data={subjectOptions}
-															value={row.subject_id ? String(row.subject_id) : null}
+															data={subjectTeachers}
+															value={teacherValue}
 															readOnly={readOnly}
-															onChange={(value) =>
-																setField(
-																	'sub',
-																	updateSubGroup(data.sub, index, {
-																		subject_id: value ? Number(value) : null,
-																	}),
-																)
+															disabled={!row.subject_id}
+															placeholder={
+																!row.subject_id
+																	? 'Сначала выберите предмет'
+																	: subjectTeachers.length === 0
+																		? 'У предмета нет учителей'
+																		: undefined
 															}
-															searchable
-															clearable
-														/>
-													</Table.Td>
-													<Table.Td>
-														<Select
-															data={tutorOptions}
-															value={row.user_id ? String(row.user_id) : null}
-															readOnly={readOnly}
 															onChange={(value) =>
 																setField(
 																	'sub',
@@ -394,8 +433,15 @@ export default function SchooltaskClassApp() {
 													</Table.Td>
 													<Table.Td>
 														<MultiSelect
-															data={pupilOptions}
-															value={(row.users ?? []).map((item) => String(item.user_id))}
+															data={classPupilOptions}
+															placeholder={
+																classPupilOptions.length === 0
+																	? 'Сначала добавьте учеников в класс'
+																	: undefined
+															}
+															value={(row.users ?? [])
+																.map((item) => String(item.user_id))
+																.filter((userId) => classPupilIdSet.has(userId))}
 															disabled={readOnly || (!canUpdateZam && !canUpdate)}
 															onChange={(values) =>
 																setField(
@@ -424,7 +470,8 @@ export default function SchooltaskClassApp() {
 														) : null}
 													</Table.Td>
 												</Table.Tr>
-											))}
+												);
+											})}
 										</Table.Tbody>
 									</Table>
 								</Stack>

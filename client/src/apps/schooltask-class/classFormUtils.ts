@@ -111,7 +111,17 @@ export function normalizeClassUsers(users: ClassDetail['users']) {
 	}));
 }
 
+/** Имя предметной группы по умолчанию: «Класс Предмет». */
+export function buildSubGroupName(
+	className: string | null | undefined,
+	subjectName: string | null | undefined,
+): string {
+	return [normalizeGroupName(className), normalizeGroupName(subjectName)].filter(Boolean).join(' ');
+}
+
 export function prepareClassSavePayload(data: ClassDetail): ClassDetail {
+	const classUserIds = new Set(normalizeClassUsers(data.users).map((item) => item.user_id));
+
 	return {
 		...data,
 		name: normalizeGroupName(data.name),
@@ -120,6 +130,7 @@ export function prepareClassSavePayload(data: ClassDetail): ClassDetail {
 			...item,
 			name: normalizeGroupName(item.name),
 			parent_id: data.id || item.parent_id,
+			users: (item.users ?? []).filter((user) => classUserIds.has(user.user_id)),
 		})),
 	};
 }
