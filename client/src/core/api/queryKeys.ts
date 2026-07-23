@@ -58,6 +58,7 @@ export const queryKeys = {
 		teacherEvents: (range: { start: string; end: string }) =>
 			['schooltask', 'calendar', 'teacher', range] as const,
 		teacherEvent: (id: number) => ['schooltask', 'calendar', 'teacher', id] as const,
+		teacherFiles: ['schooltask', 'calendar', 'teacher', 'files'] as const,
 	},
 	device: {
 		list: (filters: ListRequest) => ['device', 'list', filters] as const,
@@ -90,5 +91,9 @@ export const queryKeys = {
 		tree: (path: string, depth: number) => ['explorer', 'tree', path, depth] as const,
 		trash: (disk: string) => ['explorer', 'trash', disk] as const,
 		disks: ['explorer', 'disks'] as const,
+	},
+	todo: {
+		lists: ['todo', 'lists'] as const,
+		list: (id: number) => ['todo', 'list', id] as const,
 	},
 } as const;

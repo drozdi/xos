@@ -25,6 +25,8 @@ class EventManager extends AbstractManager
         7 => ['13:20:00', '14:00:00'],
         8 => ['14:10:00', '14:50:00'],
     ];
+
+    private const REPEAT_STEP_SECONDS = 604800;
     public function __construct(
         ValidatorInterface $validator,
         private readonly SchoolTaskManager $schoolTaskManager,
@@ -63,7 +65,7 @@ class EventManager extends AbstractManager
             throw new \RuntimeException('Недостаточно прав для редактирования расписания');
         }
 
-        $first = $this->buildEvent(new EpEvent(), $arEvent, $class, false);
+        $first = $this->buildEvent(new EpEvent(), $this->withDefaultTeacherFromGroup($arEvent), $class, false);
         $repeatUntil = $this->parseRepeatUntil($arEvent);
         if ($repeatUntil instanceof \DateTimeInterface) {
             $first->setRepeatUntil($repeatUntil);
@@ -71,16 +73,21 @@ class EventManager extends AbstractManager
         $this->getEpEventRepository()->save($first);
 
         if ($repeatUntil instanceof \DateTimeInterface) {
+            $previous = $first;
             $start = \DateTime::createFromInterface($first->getStart());
             $end = \DateTime::createFromInterface($first->getEnd());
-            $start->modify('+7 days');
-            $end->modify('+7 days');
-            while ($start <= $repeatUntil) {
+
+            while (true) {
+                $start = (clone $start)->modify('+'.self::REPEAT_STEP_SECONDS.' seconds');
+                $end = (clone $end)->modify('+'.self::REPEAT_STEP_SECONDS.' seconds');
+                if ($start > $repeatUntil) {
+                    break;
+                }
+
                 $child = $this->cloneEventSkeleton($first, $start, $end);
-                $child->setParent($first);
+                $child->setParent($previous);
                 $this->getEpEventRepository()->save($child);
-                $start->modify('+7 days');
-                $end->modify('+7 days');
+                $previous = $child;
             }
         }
 
@@ -96,14 +103,41 @@ class EventManager extends AbstractManager
         }
 
         $editType = (string) ($arEvent['editType'] ?? 'one');
-        foreach ($this->resolveSeriesTargets($event, $editType) as $target) {
-            if ('one' === $editType && $target->getId() !== $event->getId()) {
-                continue;
+        $targets = $this->resolveSeriesTargets($event, $editType);
+
+        if ('one' === $editType) {
+            if ($event->getParent() instanceof EpEvent) {
+                $event->setUpdate(true);
             }
-            if ('one' === $editType && $target->getId() === $event->getId() && $event->getParent()) {
-                $target->setUpdate(true);
+            $this->buildEvent($event, $arEvent, $event->getClass(), false);
+            $this->getEntityManager()->flush();
+
+            return $event;
+        }
+
+        $baseStart = $this->parseDate($arEvent['start'] ?? null);
+        $baseEnd = $this->parseDate($arEvent['end'] ?? null);
+        if (!$baseStart instanceof \DateTimeInterface) {
+            $baseStart = \DateTime::createFromInterface($event->getStart());
+        }
+        if (!$baseEnd instanceof \DateTimeInterface) {
+            $baseEnd = \DateTime::createFromInterface($event->getEnd());
+        }
+
+        $anchorIndex = 0;
+        foreach ($targets as $index => $target) {
+            if ((int) $target->getId() === (int) $event->getId()) {
+                $anchorIndex = $index;
+                break;
             }
-            $this->buildEvent($target, $arEvent, $event->getClass(), false);
+        }
+
+        foreach ($targets as $index => $target) {
+            $offsetSeconds = ($index - $anchorIndex) * self::REPEAT_STEP_SECONDS;
+            $payload = $arEvent;
+            $payload['start'] = $this->shiftDateTime($baseStart, $offsetSeconds);
+            $payload['end'] = $this->shiftDateTime($baseEnd, $offsetSeconds);
+            $this->buildEvent($target, $payload, $event->getClass(), false);
         }
 
         $this->getEntityManager()->flush();
@@ -137,26 +171,85 @@ class EventManager extends AbstractManager
 
         $this->buildEvent($event, $arEvent, $event->getClass(), false);
 
-        $keepIds = array_map('intval', (array) ($arEvent['files'] ?? []));
+        $keepIds = array_values(array_unique(array_filter(array_map('intval', (array) ($arEvent['files'] ?? [])))));
         foreach ($event->getFiles()->toArray() as $file) {
             if (!in_array((int) $file->getId(), $keepIds, true)) {
+                // только открепить от урока, файл остаётся в библиотеке учителя
                 $event->removeFile($file);
-                $this->fileManager->remove($file);
             }
         }
 
-        $subjectName = $this->schoolTaskManager->getSubjectForGroup($event->getGroup())?->getName() ?? 'subject';
-        $subDir = $this->schoolTaskManager->translit((string) $event->getClass()?->getName())
-            .'/'
-            .$this->schoolTaskManager->translit((string) $subjectName);
+        $attachedIds = [];
+        foreach ($event->getFiles() as $file) {
+            $attachedIds[(int) $file->getId()] = true;
+        }
 
+        foreach ($keepIds as $fileId) {
+            if (isset($attachedIds[$fileId])) {
+                continue;
+            }
+            $file = $this->fileManager->getFileRepository()?->find($fileId);
+            if (!$file instanceof \Main\Entity\File) {
+                continue;
+            }
+            if ((int) $file->getCreatedBy()?->getId() !== (int) $actor->getId()) {
+                continue;
+            }
+            $event->addFile($file);
+        }
+
+        $subDir = sprintf('teacher/%d', (int) $actor->getId());
         foreach ($this->fileManager->upload('files', 'task', null, $subDir) as $file) {
+            $file->setCreatedBy($actor)->setModifiedBy($actor);
+            $this->getEntityManager()->persist($file);
             $event->addFile($file);
         }
 
         $this->getEntityManager()->flush();
 
         return $event;
+    }
+
+    /** @return array<int, array{id: int, name: string, src: string}> */
+    public function listTeacherFiles(User $teacher): array
+    {
+        $files = $this->fileManager->getFileRepository()?->findBy(
+            ['createdBy' => $teacher, 'module' => 'task'],
+            ['dateUpload' => 'DESC'],
+        ) ?? [];
+
+        $items = [];
+        foreach ($files as $file) {
+            if (!$file instanceof \Main\Entity\File) {
+                continue;
+            }
+            $items[] = [
+                'id' => (int) $file->getId(),
+                'name' => $file->getOriginalName(),
+                'src' => $file->getFileSRC(),
+            ];
+        }
+
+        return $items;
+    }
+
+    /** @return array<int, array{id: int, name: string, src: string}> */
+    public function uploadTeacherFiles(User $teacher): array
+    {
+        $subDir = sprintf('teacher/%d', (int) $teacher->getId());
+        $items = [];
+        foreach ($this->fileManager->upload('files', 'task', null, $subDir) as $file) {
+            $file->setCreatedBy($teacher)->setModifiedBy($teacher);
+            $this->getEntityManager()->persist($file);
+            $this->getEntityManager()->flush();
+            $items[] = [
+                'id' => (int) $file->getId(),
+                'name' => $file->getOriginalName(),
+                'src' => $file->getFileSRC(),
+            ];
+        }
+
+        return $items;
     }
 
     /** @return EpEvent[] */
@@ -189,19 +282,19 @@ class EventManager extends AbstractManager
     public function serializeCalendarItem(EpEvent $event, string $mode = 'student'): array
     {
         $subject = $this->schoolTaskManager->getSubjectForGroup($event->getGroup());
-        $name = $subject?->getName() ?? $event->getGroup()?->getName() ?? $event->getTitle();
+        $name = $subject?->getName() ?? $event->getGroup()?->getName() ?? $event->getTitle() ?? '';
         $item = [
             'id' => $event->getId(),
             'name' => $name,
-            'start' => $event->getStart('Y-m-d H:i'),
-            'end' => $event->getEnd('Y-m-d H:i'),
+            'start' => $event->getStart('Y-m-d H:i:s'),
+            'end' => $event->getEnd('Y-m-d H:i:s'),
             'color' => !empty($event->getTheme()) ? 'green' : 'blue',
         ];
 
         if ('teacher' === $mode) {
-            $files = [];
+            $files = new \stdClass();
             foreach ($event->getFiles() as $file) {
-                $files[$file->getId()] = $file->getOriginalName();
+                $files->{$file->getId()} = $file->getOriginalName();
             }
             $item['name'] = $event->getGroup()?->getName() ?? $name;
             $item['files'] = $files;
@@ -237,7 +330,17 @@ class EventManager extends AbstractManager
             $files[$file->getOriginalName()] = $file->getFileSRC();
         }
 
+        $group = $event->getGroup();
+        $subject = $group ? $this->schoolTaskManager->getSubjectForGroup($group) : null;
+        $subjectName = $subject?->getName()
+            ?? $event->getTitle()
+            ?? $group?->getName()
+            ?? 'Урок';
+
         $result = [
+            'subject' => $subjectName,
+            'start' => $event->getStart('Y-m-d H:i:s'),
+            'end' => $event->getEnd('Y-m-d H:i:s'),
             'theme' => $event->getTheme(),
             'teacher' => $event->getUser()?->getAlias(),
             'email' => $event->getUser()?->getEmail(),
@@ -260,6 +363,7 @@ class EventManager extends AbstractManager
             $files[] = [
                 'id' => $file->getId(),
                 'name' => $file->getOriginalName(),
+                'src' => $file->getFileSRC(),
             ];
         }
 
@@ -359,6 +463,28 @@ class EventManager extends AbstractManager
         return $event;
     }
 
+    /** @param array<string, mixed> $arEvent */
+    private function withDefaultTeacherFromGroup(array $arEvent): array
+    {
+        $userId = (int) ($arEvent['user_id'] ?? 0);
+        if ($userId > 0) {
+            return $arEvent;
+        }
+
+        $groupId = (int) ($arEvent['group_id'] ?? 0);
+        if ($groupId <= 0) {
+            return $arEvent;
+        }
+
+        $group = $this->schoolTaskManager->getEpGroup($groupId);
+        $teacherId = (int) ($group?->getUser()?->getId() ?? 0);
+        if ($teacherId > 0) {
+            $arEvent['user_id'] = $teacherId;
+        }
+
+        return $arEvent;
+    }
+
     private function applyLessonNumberTime(EpEvent $event): void
     {
         $lessonNumber = $event->getLessonNumber();
@@ -382,8 +508,8 @@ class EventManager extends AbstractManager
         $event->setGroup($source->getGroup());
         $event->setUser($source->getUser());
         $event->setTitle($source->getTitle());
-        $event->setStart($start);
-        $event->setEnd($end);
+        $event->setStart(\DateTime::createFromInterface($start));
+        $event->setEnd(\DateTime::createFromInterface($end));
         $event->setLessonNumber($source->getLessonNumber());
 
         return $event;
@@ -392,38 +518,69 @@ class EventManager extends AbstractManager
     /** @return EpEvent[] */
     private function resolveSeriesTargets(EpEvent $event, string $editType): array
     {
-        $root = $event->getParent() ?? $event;
+        if ('one' === $editType) {
+            return [$event];
+        }
+
+        $series = $this->collectSeriesEvents($event);
         if ('all' === $editType) {
-            $targets = [$root];
-            foreach ($root->getChildren()->toArray() as $child) {
-                $targets[] = $child;
-            }
-
-            return $targets;
-        }
-        if ('after' === $editType) {
-            $targets = [];
-            if ($root->getId() === $event->getId() || $event->getStart() <= $root->getStart()) {
-                $targets[] = $root;
-            }
-            foreach ($root->getChildren()->toArray() as $child) {
-                if ($child->getStart() >= $event->getStart()) {
-                    $targets[] = $child;
-                }
-            }
-
-            return [] === $targets ? [$event] : $targets;
+            return $series;
         }
 
-        return [$event];
+        // after: текущий и все следующие по дате
+        return array_values(array_filter(
+            $series,
+            static fn (EpEvent $item) => $item->getStart() >= $event->getStart(),
+        ));
+    }
+
+    private function resolveSeriesRoot(EpEvent $event): EpEvent
+    {
+        $current = $event;
+        while ($current->getParent() instanceof EpEvent) {
+            $current = $current->getParent();
+        }
+
+        return $current;
+    }
+
+    /** @return EpEvent[] */
+    private function collectSeriesEvents(EpEvent $event): array
+    {
+        $root = $this->resolveSeriesRoot($event);
+        $events = [];
+        $queue = [$root];
+        while ([] !== $queue) {
+            $node = array_shift($queue);
+            $events[] = $node;
+            foreach ($node->getChildren()->toArray() as $child) {
+                $queue[] = $child;
+            }
+        }
+
+        usort(
+            $events,
+            static fn (EpEvent $left, EpEvent $right) => $left->getStart() <=> $right->getStart(),
+        );
+
+        return $events;
     }
 
     private function removeEventFiles(EpEvent $event): void
     {
         foreach ($event->getFiles()->toArray() as $file) {
             $event->removeFile($file);
-            $this->fileManager->remove($file);
         }
+    }
+
+    private function shiftDateTime(\DateTimeInterface $dateTime, int $seconds): string
+    {
+        $shifted = \DateTime::createFromInterface($dateTime);
+        if (0 !== $seconds) {
+            $shifted->modify(($seconds >= 0 ? '+' : '').$seconds.' seconds');
+        }
+
+        return $shifted->format('Y-m-d H:i:s');
     }
 
     private function parseDate(mixed $value): ?\DateTimeInterface

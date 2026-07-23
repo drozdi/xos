@@ -25,13 +25,27 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        if (!$userScopeResolver->canReadSchooltaskEvent($user)) {
+        if (
+            !$userScopeResolver->canReadSchooltaskEvent($user)
+            && !$userScopeResolver->canUpdateSchooltaskEvent($user)
+        ) {
             return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_EVENT);
         }
 
         $items = [];
         foreach ($schoolTaskManager->listClasses() as $class) {
-            $items[] = ['id' => $class->getId(), 'name' => $class->getName()];
+            $canEdit = $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver);
+            $canView = $this->canViewClassCalendar($user, $class, $userScopeResolver, $schoolTaskManager);
+            if (!$canView && !$canEdit) {
+                continue;
+            }
+
+            $items[] = [
+                'id' => $class->getId(),
+                'name' => $class->getName(),
+                'teacher' => $class->getUser()?->getAlias(),
+                'can_edit' => $canEdit,
+            ];
         }
 
         return $this->json($items);
@@ -226,6 +240,7 @@ class EpEventController extends AbstractController
         }
 
         $payload = $request->toArray();
+        unset($payload['group_id'], $payload['class_id']);
         $event = $eventManager->event((int) ($payload['id'] ?? 0));
         if (!(int) $event->getId()) {
             return ApiResponse::notFound(SchoolTaskAccessMessages::EVENT_NOT_FOUND);
@@ -314,6 +329,38 @@ class EpEventController extends AbstractController
         return $this->json($eventManager->listLessonTemplates());
     }
 
+    #[Route('/teacher/files', methods: ['POST'])]
+    public function teacherFiles(
+        EventManager $eventManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadSchooltaskEvent($user) && !$userScopeResolver->canUpdateSchooltaskEvent($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_EVENT);
+        }
+
+        return $this->json($eventManager->listTeacherFiles($user));
+    }
+
+    #[Route('/teacher/files/upload', methods: ['POST'])]
+    public function teacherFilesUpload(
+        EventManager $eventManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadSchooltaskEvent($user) && !$userScopeResolver->canUpdateSchooltaskEvent($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_EVENT);
+        }
+
+        try {
+            $items = $eventManager->uploadTeacherFiles($user);
+        } catch (\Throwable $e) {
+            return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->json($items, Response::HTTP_CREATED);
+    }
+
     #[Route('/teacher/events', methods: ['POST'])]
     public function teacherEvents(
         Request $request,
@@ -321,7 +368,7 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        if (!$userScopeResolver->canReadSchooltaskEvent($user)) {
+        if (!$userScopeResolver->canReadSchooltaskEvent($user) && !$userScopeResolver->canUpdateSchooltaskEvent($user)) {
             return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_EVENT);
         }
 
@@ -341,7 +388,7 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        if (!$userScopeResolver->canReadSchooltaskEvent($user)) {
+        if (!$userScopeResolver->canReadSchooltaskEvent($user) && !$userScopeResolver->canUpdateSchooltaskEvent($user)) {
             return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_EVENT);
         }
 
@@ -360,10 +407,6 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        if (!$userScopeResolver->canUpdateSchooltaskEvent($user)) {
-            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_EVENT);
-        }
-
         $payload = $request->request->all()['event'] ?? $request->toArray();
         if (!is_array($payload)) {
             $payload = $request->toArray();
@@ -374,8 +417,8 @@ class EpEventController extends AbstractController
             return ApiResponse::notFound(SchoolTaskAccessMessages::EVENT_NOT_FOUND);
         }
 
-        if (is_array($request->request->all()['files'] ?? null)) {
-            $payload['files'] = $request->request->all()['files'];
+        if ((int) $event->getUser()?->getId() !== (int) $user->getId()) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_EVENT);
         }
 
         try {
@@ -425,7 +468,8 @@ class EpEventController extends AbstractController
         SchoolTaskManager $schoolTaskManager,
     ): bool {
         return $userScopeResolver->canReadSchooltaskEvent($user)
-            || $schoolTaskManager->isClassMember($user, $class);
+            || $schoolTaskManager->isClassMember($user, $class)
+            || $schoolTaskManager->isClassTutor($user, $class);
     }
 
     /** @return array{0: \DateTimeInterface, 1: \DateTimeInterface} */

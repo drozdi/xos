@@ -1,0 +1,16 @@
+{
+  "name": "Todo",
+  "claimant": {
+    "todo": "Todo",
+    "todo.list": "Todo: Списки дел"
+  },
+  "map-access": {
+    "list": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8,
+      "can_share": 16
+    }
+  }
+}

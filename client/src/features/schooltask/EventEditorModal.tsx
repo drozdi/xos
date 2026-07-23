@@ -1,4 +1,4 @@
-import { Button, Group, Modal, Select, Stack } from '@mantine/core';
+import { Button, Group, Modal, Radio, Select, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -125,7 +125,7 @@ export function EventEditorModal({
 			const payload: EditorEventPayload = {
 				id: eventId ?? undefined,
 				class_id: classId,
-				group_id: form.group_id,
+				group_id: isNew ? form.group_id : undefined,
 				user_id: form.user_id,
 				subject_id: form.subject_id,
 				start: form.start,
@@ -171,22 +171,27 @@ export function EventEditorModal({
 			onClose={onClose}
 			title={isNew ? 'Новый урок' : `Урок #${eventId}`}
 			size="md"
-			centered
 		>
 			<Stack gap="sm">
 				<Select
 					label="Подгруппа"
 					data={subgroupOptions}
 					value={selectedSubgroup}
-					onChange={(value) =>
+					disabled={!isNew}
+					onChange={(value) => {
+						const groupId = value ? Number(value) : null;
+						const subgroup = (classQuery.data?.sub ?? []).find(
+							(item) => item.id === groupId || item.group_id === groupId,
+						);
 						setForm((current) => ({
 							...current,
-							group_id: value ? Number(value) : null,
-							subject_id: null,
-						}))
-					}
+							group_id: groupId,
+							subject_id: subgroup?.subject_id ?? null,
+							user_id: subgroup?.user_id ?? null,
+						}));
+					}}
 					searchable
-					clearable
+					clearable={isNew}
 				/>
 				<Select
 					label="Учитель"
@@ -256,16 +261,17 @@ export function EventEditorModal({
 					/>
 				) : null}
 				{!isNew ? (
-					<Select
+					<Radio.Group
 						label="Изменить"
-						data={[
-							{ value: 'one', label: 'Только этот урок' },
-							{ value: 'after', label: 'Этот и следующие' },
-							{ value: 'all', label: 'Всю серию' },
-						]}
 						value={editType}
-						onChange={(value) => setEditType((value as typeof editType) ?? 'one')}
-					/>
+						onChange={(value) => setEditType((value as typeof editType) || 'one')}
+					>
+						<Stack gap="xs" mt={6}>
+							<Radio value="one" label="Только этот урок" />
+							<Radio value="after" label="Этот и следующие" />
+							<Radio value="all" label="Всю серию" />
+						</Stack>
+					</Radio.Group>
 				) : null}
 				<Group justify="space-between">
 					{!isNew ? (

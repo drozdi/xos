@@ -150,6 +150,8 @@ export const lessonTemplateSchema = z.object({
 export const calendarClassSchema = z.object({
 	id: z.number(),
 	name: z.string(),
+	teacher: z.string().nullable().optional(),
+	can_edit: z.boolean().optional(),
 });
 
 export const calendarClassInfoSchema = z.object({
@@ -159,11 +161,19 @@ export const calendarClassInfoSchema = z.object({
 
 export const calendarEventSchema = z.object({
 	id: z.number(),
-	name: z.string(),
+	name: z.string().nullable().optional().transform((v) => v ?? ''),
 	start: z.string(),
 	end: z.string(),
 	color: z.string().optional(),
-	files: z.record(z.string(), z.string()).optional(),
+	files: z
+		.union([z.record(z.string(), z.string()), z.array(z.unknown())])
+		.optional()
+		.transform((value) => {
+			if (!value || Array.isArray(value)) {
+				return undefined;
+			}
+			return value;
+		}),
 });
 
 export const calendarRangeSchema = z.object({
@@ -172,6 +182,9 @@ export const calendarRangeSchema = z.object({
 });
 
 export const studentEventDetailSchema = z.object({
+	subject: z.string().nullable().optional(),
+	start: z.string().nullable().optional(),
+	end: z.string().nullable().optional(),
 	theme: z.string().nullable().optional(),
 	teacher: z.string().nullable().optional(),
 	email: z.string().nullable().optional(),
@@ -204,9 +217,16 @@ export const teacherEventDetailSchema = z.object({
 			z.object({
 				id: z.number(),
 				name: z.string(),
+				src: z.string().optional(),
 			}),
 		)
 		.optional(),
+});
+
+export const teacherFileSchema = z.object({
+	id: z.number(),
+	name: z.string(),
+	src: z.string().optional(),
 });
 
 export type ParallelDetail = z.infer<typeof parallelDetailSchema>;
@@ -378,12 +398,23 @@ export const schooltaskCalendarApi = {
 		postJson(`${BASE}/calendar/teacher/events`, range, z.array(calendarEventSchema)),
 	teacherEventDetail: (id: number) =>
 		postJson(`${BASE}/calendar/teacher/events/${id}`, {}, teacherEventDetailSchema),
-	teacherSave: async (payload: TeacherEventSavePayload, newFiles: File[]): Promise<void> => {
+	teacherFiles: () => postJson(`${BASE}/calendar/teacher/files`, {}, z.array(teacherFileSchema)),
+	teacherFilesUpload: async (files: File[]) => {
+		const formData = new FormData();
+		for (const file of files) {
+			formData.append('files[]', file);
+		}
+		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/upload`, formData, {
+			headers: { 'Content-Type': 'multipart/form-data' },
+		});
+		return z.array(teacherFileSchema).parse(data);
+	},
+	teacherSave: async (payload: TeacherEventSavePayload, newFiles: File[] = []): Promise<void> => {
 		const formData = new FormData();
 		for (const [key, value] of Object.entries(payload)) {
 			if (key === 'files' && Array.isArray(value)) {
 				for (const fileId of value) {
-					formData.append('files[]', String(fileId));
+					formData.append('event[files][]', String(fileId));
 				}
 				continue;
 			}

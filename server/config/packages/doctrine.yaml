@@ -66,6 +66,12 @@ doctrine:
                 dir: '%kernel.project_dir%/src/Explorer/Entity'
                 prefix: 'Explorer\Entity'
                 alias: Explorer
+            Todo:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Todo/Entity'
+                prefix: 'Todo\Entity'
+                alias: Todo
         controller_resolver:
             auto_mapping: false
 

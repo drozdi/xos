@@ -54,11 +54,6 @@ export default function SchooltaskCalendarApp() {
 		<Box p="md" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
 			<Stack gap="xs" mb="sm">
 				<Text fw={600}>{infoQuery.data?.name ?? `Класс #${classId}`}</Text>
-				{infoQuery.data?.teacher ? (
-					<Text size="sm" c="dimmed">
-						Классный руководитель: {infoQuery.data.teacher}
-					</Text>
-				) : null}
 			</Stack>
 			<Box style={{ flex: 1, minHeight: 0 }}>
 				<WeekCalendar

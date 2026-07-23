@@ -22,14 +22,14 @@ export default function SchooltaskCalendarTeacherApp() {
 	const eventsQuery = useQuery({
 		queryKey: queryKeys.schooltask.teacherEvents(range),
 		queryFn: () => schooltaskCalendarApi.teacherEvents(range),
-		enabled: canRead,
+		enabled: canRead || canUpdate,
 	});
 
 	const handleRangeChange = useCallback((start: Date, end: Date) => {
 		setRange(formatCalendarRange(start, end));
 	}, []);
 
-	if (!canRead) {
+	if (!canRead && !canUpdate) {
 		return (
 			<Alert color="red" title="Доступ запрещён" m="md">
 				Нет прав на просмотр уроков
@@ -38,22 +38,30 @@ export default function SchooltaskCalendarTeacherApp() {
 	}
 
 	return (
-		<Box p="md" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+		<Box
+			p="md"
+			style={{
+				position: 'relative',
+				height: '100%',
+				minHeight: 0,
+				display: 'flex',
+				flexDirection: 'column',
+				overflow: 'hidden',
+			}}
+		>
 			<Box style={{ flex: 1, minHeight: 0 }}>
 				<WeekCalendar
 					events={eventsQuery.data ?? []}
 					isLoading={eventsQuery.isFetching}
 					onRangeChange={handleRangeChange}
 					onEventClick={(event) => {
-						if (canUpdate) {
-							setSelectedEventId(event.id);
-						}
+						setSelectedEventId(event.id);
 					}}
 				/>
 			</Box>
 			<EventTeacherModal
 				eventId={selectedEventId}
-				opened={selectedEventId !== null && canUpdate}
+				opened={selectedEventId !== null}
 				onClose={() => setSelectedEventId(null)}
 				onSaved={() => void eventsQuery.refetch()}
 			/>

@@ -1,7 +1,10 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
-import { canReadSchooltaskEvent } from '@/features/schooltask/schooltaskAccess';
+import {
+	canReadSchooltaskEvent,
+	canUpdateSchooltaskEvent,
+} from '@/features/schooltask/schooltaskAccess';
 import { createSchooltaskListManifestOptions } from '@/features/schooltask/schooltaskAppUtils';
 
 import { CalendarIcon } from '../shared/AppIcons';
@@ -14,10 +17,10 @@ const manifest: AppManifest = {
 	version: '1.0.0',
 	icon: CalendarIcon,
 	component: SchooltaskCalendarsApp,
-	defaultSize: { width: 480, height: 420 },
-	minSize: { width: 360, height: 300 },
+	defaultSize: { width: 640, height: 480 },
+	minSize: { width: 420, height: 320 },
 	...createSchooltaskListManifestOptions('schooltask-calendars', 5),
-	canAccess: () => canReadSchooltaskEvent(),
+	canAccess: () => canReadSchooltaskEvent() || canUpdateSchooltaskEvent(),
 };
 
 export default manifest;

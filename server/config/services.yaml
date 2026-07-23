@@ -104,6 +104,20 @@ services:
             $imgDir: '%explorer_img_dir%'
             $homeBaseDir: '%explorer_home_dir%'
 
+    Todo\Controller\:
+        resource: '../src/Todo/Controller/'
+        tags: ['controller.service_arguments']
+
+    Todo\Repository\:
+        resource: '../src/Todo/Repository/'
+
+    Todo\Service\TodoMarkdownSync: ~
+
+    Todo\Service\TodoManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
     Main\Controller\FileServeController:
         arguments:
             $uploadDir: '%upload_dir%'

@@ -55,9 +55,18 @@ abstract class AbstractManager implements ServiceSubscriberInterface{
         return $requestStack->getCurrentRequest();
     }
     protected function getUser (): ?UserInterface {
-        if (null === $token = $this->container->get('security.token_storage')->getToken()) {
+        if (!$this->container->has('security.token_storage')) {
             return null;
         }
+        try {
+            $tokenStorage = $this->container->get('security.token_storage');
+        } catch (\Psr\Container\ContainerExceptionInterface) {
+            return null;
+        }
+        if (null === $tokenStorage || null === $token = $tokenStorage->getToken()) {
+            return null;
+        }
+
         return $token->getUser();
     }
     protected function isGranted (mixed $attribute, mixed $subject = null): bool {

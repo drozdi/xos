@@ -360,8 +360,10 @@ class SchoolTaskApiTest extends AuthWebTestCase
 
         self::assertResponseIsSuccessful();
 
-        /** @var array{theme: string, ht: string, teacher: string, net: list<string>} $detail */
+        /** @var array{subject: string, start: string, theme: string, ht: string, teacher: string, net: list<string>} $detail */
         $detail = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertNotEmpty($detail['subject']);
+        self::assertNotEmpty($detail['start']);
         self::assertSame('Клетка', $detail['theme']);
         self::assertStringContainsString('Параграф 5', $detail['ht']);
         self::assertSame('Test User', $detail['teacher']);

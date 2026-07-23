@@ -2,6 +2,7 @@ import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/schedule/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/tiptap/styles.css';
 import './process-shim';
 
 import { createRoot } from 'react-dom/client';
