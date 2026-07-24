@@ -18,6 +18,11 @@ const COLOR_MAP: Record<string, string> = {
 
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
+/** Как подписи дней в шапке (Пн / ДД.ММ). */
+const LABEL_COLOR = 'var(--xos-shell-dimmed, rgba(0,0,0,0.45))';
+const GRID_LINE_COLOR = 'var(--xos-shell-dimmed, rgba(0,0,0,0.45))';
+const NOW_LINE_COLOR = '#ff4d4f';
+
 export interface WeekCalendarSlot {
 	start: string;
 	end: string;
@@ -90,6 +95,17 @@ function eventStyle(event: CalendarEvent, day: Dayjs): CSSProperties | null {
 	};
 }
 
+function useNowMinutes() {
+	const [now, setNow] = useState(() => dayjs());
+
+	useEffect(() => {
+		const id = window.setInterval(() => setNow(dayjs()), 30_000);
+		return () => window.clearInterval(id);
+	}, []);
+
+	return now;
+}
+
 export function WeekCalendar({
 	events,
 	isLoading,
@@ -98,6 +114,7 @@ export function WeekCalendar({
 	onSlotClick,
 }: WeekCalendarProps) {
 	const [anchor, setAnchor] = useState(() => dayjs());
+	const now = useNowMinutes();
 
 	const { days, rangeLabel } = useMemo(() => {
 		const { weekStart: start } = getVisibleWeekRange(anchor);
@@ -153,8 +170,18 @@ export function WeekCalendar({
 		[onSlotClick],
 	);
 
-	const todayKey = dayjs().format('YYYY-MM-DD');
+	const todayKey = now.format('YYYY-MM-DD');
 	const gridHeight = TOTAL_HOURS * HOUR_HEIGHT;
+
+	const nowLineTop = useMemo(() => {
+		const minutes = minutesFromDayStart(now);
+		const rangeStartMin = HOUR_START * 60;
+		const rangeEndMin = HOUR_END * 60;
+		if (minutes < rangeStartMin || minutes > rangeEndMin) {
+			return null;
+		}
+		return ((minutes - rangeStartMin) / 60) * HOUR_HEIGHT;
+	}, [now]);
 
 	return (
 		<div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -167,7 +194,7 @@ export function WeekCalendar({
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
-						background: 'rgba(255,255,255,0.55)',
+						background: 'color-mix(in srgb, var(--xos-window-bg, #fff) 55%, transparent)',
 					}}
 				>
 					<Spin />
@@ -181,6 +208,7 @@ export function WeekCalendar({
 					gap: 8,
 					padding: '8px 0',
 					flexShrink: 0,
+					color: 'var(--xos-window-text, inherit)',
 				}}
 			>
 				<Button size="small" onClick={goPrev}>
@@ -201,9 +229,10 @@ export function WeekCalendar({
 						display: 'grid',
 						gridTemplateColumns: `56px repeat(${VISIBLE_WEEK_DAYS}, 1fr)`,
 						minWidth: 640,
+						color: 'var(--xos-window-text, inherit)',
 					}}
 				>
-					<div style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }} />
+					<div style={{ borderBottom: `1px solid ${GRID_LINE_COLOR}` }} />
 					{days.map((day, index) => {
 						const key = day.format('YYYY-MM-DD');
 						const isToday = key === todayKey;
@@ -213,13 +242,13 @@ export function WeekCalendar({
 								style={{
 									textAlign: 'center',
 									padding: '8px 4px',
-									borderBottom: '1px solid rgba(0,0,0,0.06)',
-									borderLeft: '1px solid rgba(0,0,0,0.06)',
+									borderBottom: `1px solid ${GRID_LINE_COLOR}`,
+									borderLeft: `1px solid ${GRID_LINE_COLOR}`,
 									fontWeight: isToday ? 600 : 400,
 									background: isToday ? 'rgba(22,119,255,0.06)' : undefined,
 								}}
 							>
-								<div style={{ fontSize: 12, opacity: 0.65 }}>{WEEKDAY_LABELS[index]}</div>
+								<div style={{ fontSize: 12, color: LABEL_COLOR }}>{WEEKDAY_LABELS[index]}</div>
 								<div>{day.format('DD.MM')}</div>
 							</div>
 						);
@@ -233,8 +262,8 @@ export function WeekCalendar({
 									position: 'absolute',
 									top: (hour - HOUR_START) * HOUR_HEIGHT,
 									right: 8,
-									fontSize: 11,
-									color: 'rgba(0,0,0,0.45)',
+									fontSize: 12,
+									color: LABEL_COLOR,
 									transform: 'translateY(-50%)',
 								}}
 							>
@@ -253,7 +282,7 @@ export function WeekCalendar({
 								style={{
 									position: 'relative',
 									height: gridHeight,
-									borderLeft: '1px solid rgba(0,0,0,0.06)',
+									borderLeft: `1px solid ${GRID_LINE_COLOR}`,
 									background: isToday ? 'rgba(22,119,255,0.03)' : undefined,
 								}}
 							>
@@ -275,12 +304,40 @@ export function WeekCalendar({
 											right: 0,
 											top: (hour - HOUR_START) * HOUR_HEIGHT,
 											height: HOUR_HEIGHT,
-											borderTop: '1px solid rgba(0,0,0,0.06)',
+											borderTop: `1px solid ${GRID_LINE_COLOR}`,
 											cursor: onSlotClick ? 'pointer' : 'default',
 											boxSizing: 'border-box',
 										}}
 									/>
 								))}
+
+								{isToday && nowLineTop != null ? (
+									<div
+										aria-hidden
+										style={{
+											position: 'absolute',
+											left: 0,
+											right: 0,
+											top: nowLineTop,
+											height: 0,
+											borderTop: `2px solid ${NOW_LINE_COLOR}`,
+											zIndex: 3,
+											pointerEvents: 'none',
+										}}
+									>
+										<span
+											style={{
+												position: 'absolute',
+												left: -4,
+												top: -5,
+												width: 8,
+												height: 8,
+												borderRadius: '50%',
+												background: NOW_LINE_COLOR,
+											}}
+										/>
+									</div>
+								) : null}
 
 								{dayEvents.map((event) => {
 									const style = eventStyle(event, day);

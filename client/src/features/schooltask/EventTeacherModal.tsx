@@ -3,18 +3,15 @@ import {
 	Checkbox,
 	Flex,
 	Input,
-	Modal,
 	Typography,
 	Upload,
 } from 'antd';
 import { notifications } from '@/ui/toast';
 import { CloseOutlined, DeleteOutlined, PaperClipOutlined, UploadOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Link from '@tiptap/extension-link';
-import Underline from '@tiptap/extension-underline';
-import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useMemo, useState } from 'react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 import { notifyApiError } from '@/core/api/apiError';
 import { schooltaskCalendarApi, type TeacherEventSavePayload } from '@/core/api/endpoints/schooltaskApi';
@@ -29,6 +26,26 @@ interface EventTeacherModalProps {
 
 type LibraryFile = { id: number; name: string; src?: string };
 
+const QUILL_MODULES = {
+	toolbar: [
+		[{ header: [2, 3, false] }],
+		['bold', 'italic', 'underline', 'strike'],
+		[{ list: 'ordered' }, { list: 'bullet' }],
+		['link'],
+		['clean'],
+	],
+};
+
+const QUILL_FORMATS = [
+	'header',
+	'bold',
+	'italic',
+	'underline',
+	'strike',
+	'list',
+	'link',
+];
+
 export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTeacherModalProps) {
 	const queryClient = useQueryClient();
 	const [theme, setTheme] = useState('');
@@ -38,20 +55,6 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	const [netResource, setNetResource] = useState('');
 	const [attachedIds, setAttachedIds] = useState<number[]>([]);
 	const [librarySearch, setLibrarySearch] = useState('');
-	const [linkModalOpen, setLinkModalOpen] = useState(false);
-	const [linkUrl, setLinkUrl] = useState('https://');
-
-	const editor = useEditor({
-		extensions: [
-			StarterKit,
-			Underline,
-			Link.configure({ openOnClick: false }),
-		],
-		content: '',
-		onUpdate: ({ editor: current }) => {
-			setDescription(current.getHTML());
-		},
-	});
 
 	const detailQuery = useQuery({
 		queryKey: queryKeys.schooltask.teacherEvent(eventId ?? 0),
@@ -72,14 +75,10 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 		setTheme(detailQuery.data.theme ?? '');
 		setHt(detailQuery.data.ht ?? '');
 		setPt(detailQuery.data.pt ?? '');
-		const nextDescription = detailQuery.data.description ?? '';
-		setDescription(nextDescription);
+		setDescription(detailQuery.data.description ?? '');
 		setNetResource(detailQuery.data.netResource ?? '');
 		setAttachedIds((detailQuery.data.files ?? []).map((file) => file.id));
-		if (editor && !editor.isDestroyed) {
-			editor.commands.setContent(nextDescription || '');
-		}
-	}, [detailQuery.data, editor]);
+	}, [detailQuery.data]);
 
 	const uploadMutation = useMutation({
 		mutationFn: (files: File[]) => schooltaskCalendarApi.teacherFilesUpload(files),
@@ -107,7 +106,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 				theme,
 				ht,
 				pt,
-				description: editor?.getHTML() ?? description,
+				description,
 				netResource,
 				files: attachedIds,
 			};
@@ -232,155 +231,32 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 
 						<div>
 							<div style={{ marginBottom: 6, fontWeight: 500, fontSize: 13 }}>Описание</div>
-							<div
-								style={{
-									border: '1px solid rgba(0,0,0,0.15)',
-									borderRadius: 6,
-									overflow: 'hidden',
-								}}
-							>
-								<Flex
-									wrap="wrap"
-									gap={4}
-									style={{
-										padding: 6,
-										borderBottom: '1px solid rgba(0,0,0,0.06)',
-										background: 'rgba(0,0,0,0.02)',
-									}}
-								>
-									<Button
-										size="small"
-										type={editor?.isActive('bold') ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleBold().run()}
-									>
-										B
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('italic') ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleItalic().run()}
-									>
-										I
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('underline') ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleUnderline().run()}
-									>
-										U
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('strike') ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleStrike().run()}
-									>
-										S
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('heading', { level: 2 }) ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-									>
-										H2
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('heading', { level: 3 }) ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
-									>
-										H3
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('bulletList') ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleBulletList().run()}
-									>
-										• List
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('orderedList') ? 'primary' : 'default'}
-										onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-									>
-										1. List
-									</Button>
-									<Button
-										size="small"
-										type={editor?.isActive('link') ? 'primary' : 'default'}
-										onClick={() => {
-											if (!editor) {
-												return;
-											}
-											if (editor.isActive('link')) {
-												editor.chain().focus().unsetLink().run();
-												return;
-											}
-											const previous = editor.getAttributes('link').href as string | undefined;
-											setLinkUrl(previous ?? 'https://');
-											setLinkModalOpen(true);
-										}}
-									>
-										Link
-									</Button>
-									<Button size="small" onClick={() => editor?.chain().focus().undo().run()}>
-										Undo
-									</Button>
-									<Button size="small" onClick={() => editor?.chain().focus().redo().run()}>
-										Redo
-									</Button>
-								</Flex>
-								<div className="schooltask-teacher-editor" style={{ minHeight: 180, padding: 8 }}>
-									<style>{`
-										.schooltask-teacher-editor .ProseMirror {
-											min-height: 160px;
-											outline: none;
-										}
-										.schooltask-teacher-editor .ProseMirror p {
-											margin: 0 0 0.5em;
-										}
-									`}</style>
-									<EditorContent editor={editor} />
-								</div>
-							</div>
-							<Modal
-								title="Ссылка"
-								open={linkModalOpen}
-								onCancel={() => setLinkModalOpen(false)}
-								onOk={() => {
-									if (!editor) {
-										setLinkModalOpen(false);
-										return;
-									}
-									const url = linkUrl.trim();
-									if (!url) {
-										editor.chain().focus().extendMarkRange('link').unsetLink().run();
-									} else {
-										editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-									}
-									setLinkModalOpen(false);
-								}}
-								okText="Применить"
-								cancelText="Отмена"
-								destroyOnHidden
-							>
-								<Input
-									value={linkUrl}
-									onChange={(event) => setLinkUrl(event.target.value)}
-									placeholder="https://"
-									onPressEnter={() => {
-										if (!editor) {
-											return;
-										}
-										const url = linkUrl.trim();
-										if (!url) {
-											editor.chain().focus().extendMarkRange('link').unsetLink().run();
-										} else {
-											editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-										}
-										setLinkModalOpen(false);
-									}}
+							<style>{`
+								.schooltask-teacher-quill .ql-toolbar.ql-snow {
+									border-color: rgba(0,0,0,0.15);
+									border-radius: 6px 6px 0 0;
+									background: rgba(0,0,0,0.02);
+								}
+								.schooltask-teacher-quill .ql-container.ql-snow {
+									border-color: rgba(0,0,0,0.15);
+									border-radius: 0 0 6px 6px;
+									min-height: 180px;
+									font-size: 14px;
+								}
+								.schooltask-teacher-quill .ql-editor {
+									min-height: 160px;
+								}
+							`}</style>
+							<div className="schooltask-teacher-quill">
+								<ReactQuill
+									theme="snow"
+									value={description}
+									onChange={setDescription}
+									modules={QUILL_MODULES}
+									formats={QUILL_FORMATS}
+									placeholder="Описание урока…"
 								/>
-							</Modal>
+							</div>
 						</div>
 
 						<Flex vertical gap={12}>
