@@ -1,4 +1,3 @@
-import { Box } from '@mantine/core';
 import { MemoryRouter } from 'react-router-dom';
 
 import { AppLoader } from '@inccom/app/app-loader';
@@ -6,7 +5,7 @@ import { AppRouters } from '@inccom/app/app-routes';
 
 export default function IncComApp() {
 	return (
-		<Box
+		<div
 			style={{
 				position: 'absolute',
 				inset: 0,
@@ -21,6 +20,6 @@ export default function IncComApp() {
 					<AppRouters />
 				</AppLoader>
 			</MemoryRouter>
-		</Box>
+		</div>
 	);
 }

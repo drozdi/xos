@@ -6,5 +6,5 @@ export const SignOutPage = () => {
 	const storeUserProfile = useStoreUserProfile();
 	storeAuth.logout();
 	storeUserProfile.reset();
-	return <Navigate to="/" />;
+	return <Navigate to="/auth/sign-in" replace />;
 };

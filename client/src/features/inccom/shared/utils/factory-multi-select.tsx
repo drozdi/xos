@@ -1,22 +1,31 @@
-import type { ComboboxItem, SelectProps } from '@mantine/core'
-import { Loader, MultiSelect } from '@mantine/core'
+import { Select, Spin, type SelectProps } from 'antd';
+
+import type { SelectOption } from './factory-select';
 
 interface Props {
-	isLoading: boolean
-	dataSelect: ComboboxItem[]
+	isLoading: boolean;
+	dataSelect: SelectOption[];
 }
 
-export function factoryMultiSelect(props: Props | ((...args: unknown[]) => Props), ...params: unknown[]) {
-	return function SelectBuilds({ leftSection, ...other }: SelectProps = {}) {
-		const { isLoading, dataSelect } = typeof props === 'function' ? props(...params) : props
+export function factoryMultiSelect(
+	props: Props | ((...args: unknown[]) => Props),
+	...params: unknown[]
+) {
+	return function SelectBuilds({
+		suffixIcon,
+		...other
+	}: SelectProps = {}) {
+		const { isLoading, dataSelect } =
+			typeof props === 'function' ? props(...params) : props;
 		return (
-			<MultiSelect
+			<Select
+				mode="multiple"
 				defaultValue={[]}
 				disabled={isLoading}
-				leftSection={isLoading ? <Loader size='xs' /> : leftSection}
-				data={dataSelect}
+				suffixIcon={isLoading ? <Spin size="small" /> : suffixIcon}
+				options={dataSelect}
 				{...other}
 			/>
-		)
-	}
+		);
+	};
 }

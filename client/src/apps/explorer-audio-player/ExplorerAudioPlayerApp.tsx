@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text } from '@mantine/core';
+import { Button, Flex, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
@@ -27,26 +27,26 @@ export default function ExplorerAudioPlayerApp() {
 	}, [currentPath]);
 
 	return (
-		<Stack h="100%" p="md" gap="sm">
-			<Group justify="flex-end">
-				<Button variant="default" size="xs" onClick={() => void openFile()}>
+		<Flex vertical gap="small" style={{ height: '100%', padding: 16 }}>
+			<Flex justify="flex-end">
+				<Button size="small" onClick={() => void openFile()}>
 					Открыть…
 				</Button>
-			</Group>
-			{url ? <audio src={url} controls style={{ width: '100%' }} /> : <Text>Откройте аудиофайл</Text>}
-			<Stack gap={4}>
-				<Text size="sm" fw={600}>
+			</Flex>
+			{url ? <audio src={url} controls style={{ width: '100%' }} /> : <Typography.Text>Откройте аудиофайл</Typography.Text>}
+			<Flex vertical gap={4}>
+				<Typography.Text strong style={{ fontSize: 13 }}>
 					Плейлист
-				</Text>
+				</Typography.Text>
 				{playlist.map((item) => (
-					<Group key={item} justify="space-between">
-						<Text size="sm">{getExplorerFileName(item)}</Text>
-						<Button variant="subtle" size="compact-xs" onClick={() => setCurrent(item)}>
+					<Flex key={item} justify="space-between" align="center">
+						<Typography.Text style={{ fontSize: 13 }}>{getExplorerFileName(item)}</Typography.Text>
+						<Button type="text" size="small" onClick={() => setCurrent(item)}>
 							▶
 						</Button>
-					</Group>
+					</Flex>
 				))}
-			</Stack>
-		</Stack>
+			</Flex>
+		</Flex>
 	);
 }

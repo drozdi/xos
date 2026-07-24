@@ -1,16 +1,16 @@
 import {
-	ActionIcon,
 	Button,
-	Group,
-	Paper,
-	Stack,
+	Card,
+	DatePicker,
+	Flex,
+	Form,
+	Input,
 	Table,
-	Text,
-	TextInput,
-	Textarea,
-} from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
+	Typography,
+} from 'antd';
+import dayjs from 'dayjs';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
+import type { ReactNode } from 'react';
 
 import { useWindowSize } from '@/core/windowManager';
 import { nextTempId, normalizeIdRecord } from '@/features/device/deviceAppUtils';
@@ -28,6 +28,15 @@ function isRepairCompleted(item: RepairRecord): boolean {
 	return Boolean(String(item.receivedFrom ?? '').trim() && String(item.description ?? '').trim());
 }
 
+function toDayjs(value: string) {
+	const parsed = parseDeviceDate(value);
+	if (!parsed) {
+		return null;
+	}
+	const d = dayjs(parsed);
+	return d.isValid() ? d : null;
+}
+
 function RepairDateField({
 	label,
 	value,
@@ -41,173 +50,45 @@ function RepairDateField({
 }) {
 	if (readOnly && value.trim()) {
 		return (
-			<Stack gap={2}>
-				<Text size="xs" c="dimmed">
-					{label}
-				</Text>
-				<Text size="sm">{value}</Text>
-			</Stack>
+			<Flex vertical gap={2}>
+				{label ? (
+					<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+						{label}
+					</Typography.Text>
+				) : null}
+				<Typography.Text>{value}</Typography.Text>
+			</Flex>
 		);
 	}
 
 	if (readOnly) {
 		return (
-			<Stack gap={2}>
-				<Text size="xs" c="dimmed">
-					{label}
-				</Text>
-				<Text size="sm" c="dimmed">
-					—
-				</Text>
-			</Stack>
+			<Flex vertical gap={2}>
+				{label ? (
+					<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+						{label}
+					</Typography.Text>
+				) : null}
+				<Typography.Text type="secondary">—</Typography.Text>
+			</Flex>
 		);
 	}
 
-	return (
-		<DatePickerInput
-			label={label}
-			value={parseDeviceDate(value)}
-			valueFormat="YYYY.MM.DD"
-			onChange={(date) => onChange(formatDeviceDate(date))}
+	const field = (
+		<DatePicker
+			value={toDayjs(value)}
+			format="YYYY.MM.DD"
+			style={{ width: '100%' }}
+			onChange={(date) => onChange(formatDeviceDate(date ? date.toDate() : null))}
 		/>
 	);
-}
 
-function RepairEntry({
-	item,
-	entryKey,
-	readOnly,
-	onFieldChange,
-	onRemove,
-	layout,
-}: {
-	item: RepairRecord;
-	entryKey: string;
-	readOnly: boolean;
-	onFieldChange: (key: string, field: string, value: unknown) => void;
-	onRemove: (key: string) => void;
-	layout: 'table' | 'card';
-}) {
-	const putInto = String(item.putInto ?? '');
-	const receivedFrom = String(item.receivedFrom ?? '');
-	const putIntoLocked = putInto.trim().length > 0;
-	const receivedFromLocked = receivedFrom.trim().length > 0;
-	const completed = isRepairCompleted(item) || Boolean(item.closed);
-
-	const removeButton =
-		!readOnly && Number(item.id) === 0 ? (
-			<ActionIcon
-				color="red"
-				variant="light"
-				aria-label="Удалить"
-				onClick={() => onRemove(entryKey)}
-			>
-				<IconTrash size={16} />
-			</ActionIcon>
-		) : null;
-
-	const statusLabel = completed ? 'Завершён' : putIntoLocked ? 'В ремонте' : 'Новый';
-
-	if (layout === 'table') {
-		return (
-			<Table.Tr>
-				<Table.Td>
-					<RepairDateField
-						label=""
-						value={putInto}
-						readOnly={readOnly || putIntoLocked}
-						onChange={(value) => onFieldChange(entryKey, 'putInto', value)}
-					/>
-				</Table.Td>
-				<Table.Td>
-					<RepairDateField
-						label=""
-						value={receivedFrom}
-						readOnly={readOnly || receivedFromLocked}
-						onChange={(value) => onFieldChange(entryKey, 'receivedFrom', value)}
-					/>
-				</Table.Td>
-				<Table.Td>
-					<TextInput
-						value={String(item.repairman ?? '')}
-						readOnly={readOnly}
-						onChange={(e) => onFieldChange(entryKey, 'repairman', e.currentTarget.value)}
-					/>
-				</Table.Td>
-				<Table.Td>
-					<TextInput
-						value={String(item.reason ?? '')}
-						readOnly={readOnly}
-						onChange={(e) => onFieldChange(entryKey, 'reason', e.currentTarget.value)}
-					/>
-				</Table.Td>
-				<Table.Td>
-					<Textarea
-						value={String(item.description ?? '')}
-						readOnly={readOnly}
-						minRows={1}
-						autosize
-						onChange={(e) => onFieldChange(entryKey, 'description', e.currentTarget.value)}
-					/>
-				</Table.Td>
-				<Table.Td>
-					<Text size="sm">{statusLabel}</Text>
-				</Table.Td>
-				{!readOnly ? <Table.Td w={48}>{removeButton}</Table.Td> : null}
-			</Table.Tr>
-		);
-	}
-
-	return (
-		<Paper withBorder p="sm">
-			<Group justify="space-between" align="flex-start" mb="xs">
-				<Text fw={500} size="sm">
-					Ремонт {putInto || 'без даты сдачи'}
-				</Text>
-				<Group gap="xs">
-					<Text size="xs" c="dimmed">
-						{statusLabel}
-					</Text>
-					{removeButton}
-				</Group>
-			</Group>
-			<Stack gap="sm">
-				<RepairDateField
-					label="Дата сдачи"
-					value={putInto}
-					readOnly={readOnly || putIntoLocked}
-					onChange={(value) => onFieldChange(entryKey, 'putInto', value)}
-				/>
-				<RepairDateField
-					label="Дата получения"
-					value={receivedFrom}
-					readOnly={readOnly || receivedFromLocked}
-					onChange={(value) => onFieldChange(entryKey, 'receivedFrom', value)}
-				/>
-				<TextInput
-					label="Исполнитель"
-					value={String(item.repairman ?? '')}
-					readOnly={readOnly}
-					onChange={(e) => onFieldChange(entryKey, 'repairman', e.currentTarget.value)}
-				/>
-				<Textarea
-					label="Причина"
-					value={String(item.reason ?? '')}
-					readOnly={readOnly}
-					minRows={2}
-					autosize
-					onChange={(e) => onFieldChange(entryKey, 'reason', e.currentTarget.value)}
-				/>
-				<Textarea
-					label="Заключение"
-					value={String(item.description ?? '')}
-					readOnly={readOnly}
-					minRows={2}
-					autosize
-					onChange={(e) => onFieldChange(entryKey, 'description', e.currentTarget.value)}
-				/>
-			</Stack>
-		</Paper>
+	return label ? (
+		<Form.Item label={label} style={{ marginBottom: 0 }}>
+			{field}
+		</Form.Item>
+	) : (
+		field
 	);
 }
 
@@ -257,61 +138,226 @@ export function DeviceRepairsTab({ repairs, readOnly, onChange }: DeviceRepairsT
 		});
 	};
 
+	type RepairTableRow = {
+		key: string;
+		putInto: string;
+		receivedFrom: string;
+		repairman: string;
+		reason: string;
+		description: string;
+		statusLabel: string;
+		putIntoLocked: boolean;
+		receivedFromLocked: boolean;
+		removeButton: ReactNode;
+	};
+
+	const buildTableRow = (key: string, item: RepairRecord): RepairTableRow => {
+		const putInto = String(item.putInto ?? '');
+		const receivedFrom = String(item.receivedFrom ?? '');
+		const putIntoLocked = putInto.trim().length > 0;
+		const receivedFromLocked = receivedFrom.trim().length > 0;
+		const completed = isRepairCompleted(item) || Boolean(item.closed);
+		const statusLabel = completed ? 'Завершён' : putIntoLocked ? 'В ремонте' : 'Новый';
+
+		return {
+			key,
+			putInto,
+			receivedFrom,
+			repairman: String(item.repairman ?? ''),
+			reason: String(item.reason ?? ''),
+			description: String(item.description ?? ''),
+			statusLabel,
+			putIntoLocked,
+			receivedFromLocked,
+			removeButton:
+				!readOnly && Number(item.id) === 0 ? (
+					<Button
+						type="text"
+						danger
+						aria-label="Удалить"
+						icon={<IconTrash size={16} />}
+						onClick={() => removeItem(key)}
+					/>
+				) : null,
+		};
+	};
+
+	const renderCard = (key: string, item: RepairRecord) => {
+		const putInto = String(item.putInto ?? '');
+		const receivedFrom = String(item.receivedFrom ?? '');
+		const putIntoLocked = putInto.trim().length > 0;
+		const receivedFromLocked = receivedFrom.trim().length > 0;
+		const completed = isRepairCompleted(item) || Boolean(item.closed);
+		const statusLabel = completed ? 'Завершён' : putIntoLocked ? 'В ремонте' : 'Новый';
+		const removeButton =
+			!readOnly && Number(item.id) === 0 ? (
+				<Button
+					type="text"
+					danger
+					aria-label="Удалить"
+					icon={<IconTrash size={16} />}
+					onClick={() => removeItem(key)}
+				/>
+			) : null;
+
+		return (
+			<Card key={key} size="small">
+				<Flex justify="space-between" align="flex-start" style={{ marginBottom: 8 }}>
+					<Typography.Text strong style={{ fontSize: 14 }}>
+						Ремонт {putInto || 'без даты сдачи'}
+					</Typography.Text>
+					<Flex gap={8} align="center">
+						<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+							{statusLabel}
+						</Typography.Text>
+						{removeButton}
+					</Flex>
+				</Flex>
+				<Flex vertical gap={12}>
+					<RepairDateField
+						label="Дата сдачи"
+						value={putInto}
+						readOnly={readOnly || putIntoLocked}
+						onChange={(value) => updateItem(key, 'putInto', value)}
+					/>
+					<RepairDateField
+						label="Дата получения"
+						value={receivedFrom}
+						readOnly={readOnly || receivedFromLocked}
+						onChange={(value) => updateItem(key, 'receivedFrom', value)}
+					/>
+					<Form.Item label="Исполнитель" style={{ marginBottom: 0 }}>
+						<Input
+							value={String(item.repairman ?? '')}
+							readOnly={readOnly}
+							onChange={(e) => updateItem(key, 'repairman', e.target.value)}
+						/>
+					</Form.Item>
+					<Form.Item label="Причина" style={{ marginBottom: 0 }}>
+						<Input.TextArea
+							value={String(item.reason ?? '')}
+							readOnly={readOnly}
+							autoSize={{ minRows: 2 }}
+							onChange={(e) => updateItem(key, 'reason', e.target.value)}
+						/>
+					</Form.Item>
+					<Form.Item label="Заключение" style={{ marginBottom: 0 }}>
+						<Input.TextArea
+							value={String(item.description ?? '')}
+							readOnly={readOnly}
+							autoSize={{ minRows: 2 }}
+							onChange={(e) => updateItem(key, 'description', e.target.value)}
+						/>
+					</Form.Item>
+				</Flex>
+			</Card>
+		);
+	};
+
+	const tableData = entries.map(([key, item]) => buildTableRow(key, item));
+
 	return (
-		<Stack gap="sm">
-			<Group justify="space-between">
+		<Flex vertical gap={12}>
+			<Flex justify="space-between" align="center">
 				<strong>Ремонты</strong>
 				{!readOnly ? (
-					<Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={addItem}>
+					<Button size="small" icon={<IconPlus size={14} />} onClick={addItem}>
 						Добавить
 					</Button>
 				) : null}
-			</Group>
+			</Flex>
 
 			{entries.length === 0 ? (
-				<Text size="sm" c="dimmed">
-					Нет записей
-				</Text>
+				<Typography.Text type="secondary">Нет записей</Typography.Text>
 			) : isTableLayout ? (
-				<Table highlightOnHover withTableBorder withColumnBorders>
-					<Table.Thead>
-						<Table.Tr>
-							<Table.Th w={140}>Дата сдачи</Table.Th>
-							<Table.Th w={140}>Дата получения</Table.Th>
-							<Table.Th>Исполнитель</Table.Th>
-							<Table.Th>Причина</Table.Th>
-							<Table.Th>Заключение</Table.Th>
-							<Table.Th w={100}>Статус</Table.Th>
-							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
-						</Table.Tr>
-					</Table.Thead>
-					<Table.Tbody>
-						{entries.map(([key, item]) => (
-							<RepairEntry
-								key={key}
-								entryKey={key}
-								item={item}
-								readOnly={readOnly}
-								layout="table"
-								onFieldChange={updateItem}
-								onRemove={removeItem}
-							/>
-						))}
-					</Table.Tbody>
-				</Table>
+				<Table
+					size="small"
+					bordered
+					pagination={false}
+					rowKey="key"
+					dataSource={tableData}
+					columns={[
+						{
+							title: 'Дата сдачи',
+							key: 'putInto',
+							width: 140,
+							render: (_, row) => (
+								<RepairDateField
+									label=""
+									value={row.putInto}
+									readOnly={readOnly || row.putIntoLocked}
+									onChange={(value) => updateItem(row.key, 'putInto', value)}
+								/>
+							),
+						},
+						{
+							title: 'Дата получения',
+							key: 'receivedFrom',
+							width: 140,
+							render: (_, row) => (
+								<RepairDateField
+									label=""
+									value={row.receivedFrom}
+									readOnly={readOnly || row.receivedFromLocked}
+									onChange={(value) => updateItem(row.key, 'receivedFrom', value)}
+								/>
+							),
+						},
+						{
+							title: 'Исполнитель',
+							key: 'repairman',
+							render: (_, row) => (
+								<Input
+									value={row.repairman}
+									readOnly={readOnly}
+									onChange={(e) => updateItem(row.key, 'repairman', e.target.value)}
+								/>
+							),
+						},
+						{
+							title: 'Причина',
+							key: 'reason',
+							render: (_, row) => (
+								<Input
+									value={row.reason}
+									readOnly={readOnly}
+									onChange={(e) => updateItem(row.key, 'reason', e.target.value)}
+								/>
+							),
+						},
+						{
+							title: 'Заключение',
+							key: 'description',
+							render: (_, row) => (
+								<Input.TextArea
+									value={row.description}
+									readOnly={readOnly}
+									autoSize={{ minRows: 1 }}
+									onChange={(e) => updateItem(row.key, 'description', e.target.value)}
+								/>
+							),
+						},
+						{
+							title: 'Статус',
+							key: 'status',
+							width: 100,
+							render: (_, row) => <Typography.Text>{row.statusLabel}</Typography.Text>,
+						},
+						...(!readOnly
+							? [
+									{
+										title: '',
+										key: 'actions',
+										width: 48,
+										render: (_: unknown, row: (typeof tableData)[number]) => row.removeButton,
+									},
+								]
+							: []),
+					]}
+				/>
 			) : (
-				entries.map(([key, item]) => (
-					<RepairEntry
-						key={key}
-						entryKey={key}
-						item={item}
-						readOnly={readOnly}
-						layout="card"
-						onFieldChange={updateItem}
-						onRemove={removeItem}
-					/>
-				))
+				entries.map(([key, item]) => renderCard(key, item))
 			)}
-		</Stack>
+		</Flex>
 	);
 }

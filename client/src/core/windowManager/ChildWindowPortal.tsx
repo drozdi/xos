@@ -1,5 +1,5 @@
-import { Box, Loader } from '@mantine/core';
-import { lazy, Suspense, useMemo } from 'react';
+import { Modal, Spin } from 'antd';
+import { useMemo } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { AppProvider } from '@/core/context/AppContext';
@@ -9,10 +9,6 @@ import { getOrCreateCoreApi } from '@/core/context/coreApiRegistry';
 import { useChildWindowStore } from './childWindowStore';
 import { useWmStore } from './useWmStore';
 
-const LazyModal = lazy(() =>
-	import('@mantine/core').then((module) => ({ default: module.Modal })),
-);
-
 interface ChildWindowPortalProps {
 	windowId: string;
 }
@@ -20,7 +16,9 @@ interface ChildWindowPortalProps {
 export function ChildWindowPortal({ windowId }: ChildWindowPortalProps) {
 	const children = useChildWindowStore((state) => state.byParent[windowId] ?? []);
 
-	if (children.length === 0) {return null;}
+	if (children.length === 0) {
+		return null;
+	}
 
 	return (
 		<>
@@ -77,30 +75,25 @@ function ChildWindowDialog({ parentWindowId, child }: ChildWindowDialogProps) {
 		);
 
 	return (
-		<Suspense fallback={<Loader size="xs" />}>
-			<LazyModal
-				opened={child.open}
-				onClose={() => removeChild(parentWindowId, child.id)}
-				title={child.title}
-				size="auto"
-				centered
-				withinPortal={false}
-				zIndex={100}
-				styles={{
-					inner: { position: 'absolute', inset: 0, padding: 0 },
-					content: {
-						width: child.width,
-						maxWidth: '90%',
-						maxHeight: '90%',
-					},
-					body: {
-						height: child.height,
-						overflow: 'auto',
-					},
-				}}
-			>
-				<Box>{content}</Box>
-			</LazyModal>
-		</Suspense>
+		<Modal
+			open={child.open}
+			onCancel={() => removeChild(parentWindowId, child.id)}
+			title={child.title}
+			footer={null}
+			centered
+			getContainer={false}
+			zIndex={100}
+			width={child.width}
+			styles={{
+				body: {
+					height: child.height,
+					overflow: 'auto',
+					padding: 0,
+				},
+			}}
+			style={{ maxWidth: '90%' }}
+		>
+			{content ?? <Spin size="small" />}
+		</Modal>
 	);
 }

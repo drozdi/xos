@@ -1,14 +1,4 @@
-import {
-	ActionIcon,
-	Button,
-	Group,
-	Modal,
-	Radio,
-	Stack,
-	Table,
-	Text,
-	TextInput,
-} from '@mantine/core';
+import { Button, Flex, Input, Modal, Radio, Table, Typography } from 'antd';
 import { IconGripVertical, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
@@ -79,95 +69,112 @@ export function PropertyEnumsEditor({
 	};
 
 	const content = (
-		<Stack gap="sm">
+		<Flex vertical gap={12}>
 			{!readOnly ? (
-				<Group justify="flex-end">
+				<Flex justify="flex-end">
 					<Button
-						size="xs"
-						variant="light"
-						leftSection={<IconPlus size={14} />}
+						size="small"
+						icon={<IconPlus size={14} />}
 						onClick={() => updateEntries(addEnumItem(enums))}
 					>
 						Добавить
 					</Button>
-				</Group>
+				</Flex>
 			) : null}
 
 			{entries.length === 0 ? (
-				<Text size="sm" c="dimmed">
-					Нет значений
-				</Text>
+				<Typography.Text type="secondary">Нет значений</Typography.Text>
 			) : (
-				<Table highlightOnHover withTableBorder withColumnBorders>
-					<Table.Thead>
-						<Table.Tr>
-							<Table.Th w={36} aria-label="Сортировка" />
-							<Table.Th w={56}>По умолч.</Table.Th>
-							<Table.Th>Значение</Table.Th>
-							<Table.Th>Название</Table.Th>
-							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
-						</Table.Tr>
-					</Table.Thead>
-					<Table.Tbody>
-						{entries.map(([key, item], index) => (
-							<Table.Tr
-								key={key}
-								draggable={!readOnly}
-								onDragStart={() => setDragIndex(index)}
-								onDragOver={(event) => event.preventDefault()}
-								onDrop={() => handleDrop(index)}
-								onDragEnd={() => setDragIndex(null)}
-								style={{ opacity: dragIndex === index ? 0.5 : 1 }}
-							>
-								<Table.Td>
-									{!readOnly ? (
-										<ActionIcon variant="subtle" aria-label="Перетащить" style={{ cursor: 'grab' }}>
-											<IconGripVertical size={16} />
-										</ActionIcon>
-									) : null}
-								</Table.Td>
-								<Table.Td>
-									<Radio
-										checked={Boolean(item.default)}
-										disabled={readOnly}
-										onChange={() => updateEntries(setEnumDefault(enums, key, true))}
+				<Table
+					size="small"
+					bordered
+					pagination={false}
+					rowKey={([key]) => key}
+					onRow={(_, index) => ({
+						draggable: !readOnly,
+						onDragStart: () => setDragIndex(index ?? null),
+						onDragOver: (event) => event.preventDefault(),
+						onDrop: () => handleDrop(index ?? 0),
+						onDragEnd: () => setDragIndex(null),
+						style: { opacity: dragIndex === index ? 0.5 : 1 },
+					})}
+					dataSource={entries}
+					columns={[
+						{
+							title: '',
+							key: 'drag',
+							width: 36,
+							render: () =>
+								!readOnly ? (
+									<Button
+										type="text"
+										aria-label="Перетащить"
+										icon={<IconGripVertical size={16} />}
+										style={{ cursor: 'grab' }}
 									/>
-								</Table.Td>
-								<Table.Td>
-									<TextInput
-										value={item.value ?? ''}
-										readOnly={readOnly}
-										onChange={(e) => updateItem(key, { value: e.currentTarget.value })}
-									/>
-								</Table.Td>
-								<Table.Td>
-									<TextInput
-										value={item.name ?? ''}
-										readOnly={readOnly}
-										onChange={(e) => updateItem(key, { name: e.currentTarget.value })}
-									/>
-								</Table.Td>
-								{!readOnly ? (
-									<Table.Td>
-										<ActionIcon color="red" variant="light" onClick={() => removeItem(key)}>
-											<IconTrash size={16} />
-										</ActionIcon>
-									</Table.Td>
-								) : null}
-							</Table.Tr>
-						))}
-					</Table.Tbody>
-				</Table>
+								) : null,
+						},
+						{
+							title: 'По умолч.',
+							key: 'default',
+							width: 56,
+							render: (_: unknown, [key, item]: [string, PropertyEnumItem]) => (
+								<Radio
+									checked={Boolean(item.default)}
+									disabled={readOnly}
+									onChange={() => updateEntries(setEnumDefault(enums, key, true))}
+								/>
+							),
+						},
+						{
+							title: 'Значение',
+							key: 'value',
+							render: (_: unknown, [key, item]: [string, PropertyEnumItem]) => (
+								<Input
+									value={item.value ?? ''}
+									readOnly={readOnly}
+									onChange={(e) => updateItem(key, { value: e.target.value })}
+								/>
+							),
+						},
+						{
+							title: 'Название',
+							key: 'name',
+							render: (_: unknown, [key, item]: [string, PropertyEnumItem]) => (
+								<Input
+									value={item.name ?? ''}
+									readOnly={readOnly}
+									onChange={(e) => updateItem(key, { name: e.target.value })}
+								/>
+							),
+						},
+						...(!readOnly
+							? [
+									{
+										title: '',
+										key: 'actions',
+										width: 48,
+										render: (_: unknown, [key]: [string, PropertyEnumItem]) => (
+											<Button
+												type="text"
+												danger
+												icon={<IconTrash size={16} />}
+												onClick={() => removeItem(key)}
+											/>
+										),
+									},
+								]
+							: []),
+					]}
+				/>
 			)}
 
 			{variant === 'modal' ? (
-				<Group justify="flex-end">
-					<Button variant="default" onClick={handleSaveClose}>
-						{readOnly ? 'Закрыть' : 'Готово'}
-					</Button>
-				</Group>
+				<Flex justify="flex-end">
+					<Button onClick={handleSaveClose}>{readOnly ? 'Закрыть' : 'Готово'}</Button>
+				</Flex>
 			) : null}
-		</Stack>
+		</Flex>
 	);
 
 	if (variant === 'inline') {
@@ -175,7 +182,7 @@ export function PropertyEnumsEditor({
 	}
 
 	return (
-		<Modal opened={opened} onClose={() => onClose?.()} title={title} size="lg" centered>
+		<Modal open={opened} onCancel={() => onClose?.()} title={title} width={800} centered footer={null}>
 			{content}
 		</Modal>
 	);

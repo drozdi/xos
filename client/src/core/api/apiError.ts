@@ -1,4 +1,4 @@
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/ui/toast';
 import axios from 'axios';
 
 import type { ApiError } from '@/types/api.types';

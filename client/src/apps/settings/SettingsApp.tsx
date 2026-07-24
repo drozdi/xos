@@ -1,5 +1,4 @@
-import { Alert, Button, Loader, PasswordInput, Select, Stack, Text, TextInput } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import { Alert, Button, Flex, Form, Input, Select, Spin, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useEffect, useRef } from 'react';
@@ -71,20 +70,7 @@ export default function SettingsApp() {
 	const queryClient = useQueryClient();
 	const { data: account, isLoading, isError, error } = useAccount();
 	const { locale, timeFormat, setLocale, setTimeFormat, isLoading: datesLoading } = useDateSettings();
-
-	const form = useForm<ProfileFormValues>({
-		mode: 'uncontrolled',
-		initialValues: {
-			email: '',
-			alias: '',
-			second_name: '',
-			first_name: '',
-			patronymic: '',
-			description: '',
-			password: '',
-			confirm_password: '',
-		},
-	});
+	const [form] = Form.useForm<ProfileFormValues>();
 
 	useWindowTitle('Settings');
 
@@ -95,7 +81,7 @@ export default function SettingsApp() {
 			return;
 		}
 		syncedAccountIdRef.current = account.id;
-		form.setValues(toFormValues(account));
+		form.setFieldsValue(toFormValues(account));
 	}, [account, form]);
 
 	const saveMutation = useMutation({
@@ -103,17 +89,20 @@ export default function SettingsApp() {
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({ queryKey: queryKeys.account.detail });
 			coreApi.toast.success('Профиль сохранён');
-			form.setFieldValue('password', '');
-			form.setFieldValue('confirm_password', '');
+			form.setFieldsValue({ password: '', confirm_password: '' });
 		},
 		onError: (err) => {
 			if (isAxiosError<ApiError>(err) && err.response?.status === 400) {
 				const data = err.response.data;
 				if (data && typeof data === 'object') {
-					for (const [field, message] of Object.entries(data)) {
-						if (typeof message === 'string' && field in form.values) {
-							form.setFieldError(field as keyof ProfileFormValues, message);
-						}
+					const fieldErrors = Object.entries(data)
+						.filter(([, message]) => typeof message === 'string')
+						.map(([field, message]) => ({
+							name: field as keyof ProfileFormValues,
+							errors: [message as string],
+						}));
+					if (fieldErrors.length > 0) {
+						form.setFields(fieldErrors);
 					}
 				}
 				coreApi.toast.error('Проверьте введённые данные');
@@ -123,96 +112,88 @@ export default function SettingsApp() {
 		},
 	});
 
-	const handleSubmit = form.onSubmit((values) => {
-		saveMutation.mutate(values);
-	});
-
 	if (isLoading || datesLoading) {
 		return (
-			<Stack align="center" justify="center" h="100%" p="md">
-				<Loader size="sm" />
-			</Stack>
+			<Flex align="center" justify="center" style={{ height: '100%', padding: 16 }}>
+				<Spin size="small" />
+			</Flex>
 		);
 	}
 
 	if (isError) {
 		const message = error instanceof Error ? error.message : 'Не удалось загрузить профиль';
 		return (
-			<Stack p="md">
-				<Alert color="red" title="Ошибка">
-					{message}
-				</Alert>
-			</Stack>
+			<div style={{ padding: 16 }}>
+				<Alert type="error" showIcon message="Ошибка" description={message} />
+			</div>
 		);
 	}
 
 	return (
-		<form onSubmit={handleSubmit}>
-			<Stack p="md" gap="md">
-				<Stack gap="sm">
-					<Text fw={600}>Дата и время</Text>
-					<Select
-						label="Язык календаря"
-						data={[...DATE_LOCALE_OPTIONS]}
-						value={locale}
-						onChange={(value) => {
-							if (value === 'ru' || value === 'en') {
-								setLocale(value);
-							}
-						}}
-					/>
-					<Select
-						label="Формат даты и времени"
-						data={[...DATE_TIME_FORMAT_OPTIONS]}
-						value={timeFormat}
-						onChange={(value) => {
-							const option = DATE_TIME_FORMAT_OPTIONS.find((item) => item.value === value);
-							if (option) {
-								setTimeFormat(option.value);
-							}
-						}}
-					/>
-				</Stack>
+		<div style={{ padding: 16 }}>
+			<Flex vertical gap="middle">
+				<Flex vertical gap="small">
+					<Typography.Text strong>Дата и время</Typography.Text>
+					<Form.Item label="Язык календаря" style={{ marginBottom: 0 }}>
+						<Select
+							options={[...DATE_LOCALE_OPTIONS]}
+							value={locale}
+							onChange={(value) => {
+								if (value === 'ru' || value === 'en') {
+									setLocale(value);
+								}
+							}}
+						/>
+					</Form.Item>
+					<Form.Item label="Формат даты и времени" style={{ marginBottom: 0 }}>
+						<Select
+							options={[...DATE_TIME_FORMAT_OPTIONS]}
+							value={timeFormat}
+							onChange={(value) => {
+								const option = DATE_TIME_FORMAT_OPTIONS.find((item) => item.value === value);
+								if (option) {
+									setTimeFormat(option.value);
+								}
+							}}
+						/>
+					</Form.Item>
+				</Flex>
 
-				<Stack gap="sm">
-					<Text fw={600}>Профиль</Text>
-				<TextInput label="Email" key={form.key('email')} {...form.getInputProps('email')} />
-				<TextInput label="Alias" key={form.key('alias')} {...form.getInputProps('alias')} />
-				<TextInput
-					label="Фамилия"
-					key={form.key('second_name')}
-					{...form.getInputProps('second_name')}
-				/>
-				<TextInput
-					label="Имя"
-					key={form.key('first_name')}
-					{...form.getInputProps('first_name')}
-				/>
-				<TextInput
-					label="Отчество"
-					key={form.key('patronymic')}
-					{...form.getInputProps('patronymic')}
-				/>
-				<TextInput
-					label="Описание"
-					key={form.key('description')}
-					{...form.getInputProps('description')}
-				/>
-				<PasswordInput
-					label="Новый пароль"
-					key={form.key('password')}
-					{...form.getInputProps('password')}
-				/>
-				<PasswordInput
-					label="Подтверждение пароля"
-					key={form.key('confirm_password')}
-					{...form.getInputProps('confirm_password')}
-				/>
-				<Button type="submit" loading={saveMutation.isPending}>
-					Сохранить профиль
-				</Button>
-				</Stack>
-			</Stack>
-		</form>
+				<Typography.Text strong>Профиль</Typography.Text>
+				<Form
+					form={form}
+					layout="vertical"
+					onFinish={(values) => saveMutation.mutate(values)}
+				>
+					<Form.Item label="Email" name="email">
+						<Input />
+					</Form.Item>
+					<Form.Item label="Alias" name="alias">
+						<Input />
+					</Form.Item>
+					<Form.Item label="Фамилия" name="second_name">
+						<Input />
+					</Form.Item>
+					<Form.Item label="Имя" name="first_name">
+						<Input />
+					</Form.Item>
+					<Form.Item label="Отчество" name="patronymic">
+						<Input />
+					</Form.Item>
+					<Form.Item label="Описание" name="description">
+						<Input />
+					</Form.Item>
+					<Form.Item label="Новый пароль" name="password">
+						<Input.Password />
+					</Form.Item>
+					<Form.Item label="Подтверждение пароля" name="confirm_password">
+						<Input.Password />
+					</Form.Item>
+					<Button type="primary" htmlType="submit" loading={saveMutation.isPending}>
+						Сохранить профиль
+					</Button>
+				</Form>
+			</Flex>
+		</div>
 	);
 }

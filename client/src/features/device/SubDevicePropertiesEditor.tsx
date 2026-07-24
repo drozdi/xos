@@ -1,12 +1,4 @@
-import {
-	Checkbox,
-	MultiSelect,
-	NumberInput,
-	Select,
-	Stack,
-	Switch,
-	TextInput,
-} from '@mantine/core';
+import { Checkbox, Flex, Form, Input, InputNumber, Select, Switch } from 'antd';
 import { useMemo } from 'react';
 
 import type { PropertyEnumItem } from '@/features/device/propertyTypes';
@@ -63,16 +55,15 @@ function ListPropertyField({ item, readOnly, onChange }: PropertyFieldProps) {
 	if (isCheckbox && item.multiple) {
 		const selected = new Set(selectedEnumIds(item.valueL));
 		return (
-			<Stack gap="xs">
+			<Flex vertical gap={8}>
 				{entries.map((entry) => (
 					<Checkbox
 						key={entry.id}
-						label={entry.name ?? entry.value ?? String(entry.id)}
 						checked={selected.has(String(entry.id))}
 						disabled={readOnly}
 						onChange={(event) => {
 							const next = new Set(selected);
-							if (event.currentTarget.checked) {
+							if (event.target.checked) {
 								next.add(String(entry.id));
 							} else {
 								next.delete(String(entry.id));
@@ -83,9 +74,11 @@ function ListPropertyField({ item, readOnly, onChange }: PropertyFieldProps) {
 								}),
 							);
 						}}
-					/>
+					>
+						{entry.name ?? entry.value ?? String(entry.id)}
+					</Checkbox>
 				))}
-			</Stack>
+			</Flex>
 		);
 	}
 
@@ -93,62 +86,66 @@ function ListPropertyField({ item, readOnly, onChange }: PropertyFieldProps) {
 		const selectedId = singleEnumId(item.valueL);
 		const checkedEntry = entries.find((entry) => String(entry.id) === selectedId);
 		return (
-			<Switch
-				label={checkedEntry?.name ?? item.name ?? 'Значение'}
-				checked={selectedId != null}
-				disabled={readOnly}
-				onChange={(event) => {
-					if (!event.currentTarget.checked) {
-						onChange(patchSubDeviceProperty(item, { valueL: null }));
-						return;
-					}
-					const defaultEntry =
-						entries.find((entry) => entry.default) ?? entries[0];
-					onChange(
-						patchSubDeviceProperty(item, {
-							valueL: defaultEntry ? defaultEntry.id : null,
-						}),
-					);
-				}}
-			/>
+			<Form.Item label={checkedEntry?.name ?? item.name ?? 'Значение'} style={{ marginBottom: 0 }}>
+				<Switch
+					checked={selectedId != null}
+					disabled={readOnly}
+					onChange={(checked) => {
+						if (!checked) {
+							onChange(patchSubDeviceProperty(item, { valueL: null }));
+							return;
+						}
+						const defaultEntry =
+							entries.find((entry) => entry.default) ?? entries[0];
+						onChange(
+							patchSubDeviceProperty(item, {
+								valueL: defaultEntry ? defaultEntry.id : null,
+							}),
+						);
+					}}
+				/>
+			</Form.Item>
 		);
 	}
 
 	if (item.multiple) {
 		return (
-			<MultiSelect
-				label={item.name}
-				data={options}
-				value={selectedEnumIds(item.valueL)}
-				readOnly={readOnly}
-				searchable
-				onChange={(values) =>
-					onChange(
-						patchSubDeviceProperty(item, {
-							valueL: values.map(Number),
-						}),
-					)
-				}
-			/>
+			<Form.Item label={item.name} style={{ marginBottom: 0 }}>
+				<Select
+					mode="multiple"
+					options={options}
+					value={selectedEnumIds(item.valueL)}
+					disabled={readOnly}
+					showSearch
+					onChange={(values) =>
+						onChange(
+							patchSubDeviceProperty(item, {
+								valueL: values.map(Number),
+							}),
+						)
+					}
+				/>
+			</Form.Item>
 		);
 	}
 
 	return (
-		<Select
-			label={item.name}
-			data={options}
-			value={singleEnumId(item.valueL)}
-			readOnly={readOnly}
-			searchable
-			clearable
-			onChange={(value) =>
-				onChange(
-					patchSubDeviceProperty(item, {
-						valueL: value ? Number(value) : null,
-					}),
-				)
-			}
-		/>
+		<Form.Item label={item.name} style={{ marginBottom: 0 }}>
+			<Select
+				options={options}
+				value={singleEnumId(item.valueL)}
+				disabled={readOnly}
+				showSearch
+				allowClear
+				onChange={(value) =>
+					onChange(
+						patchSubDeviceProperty(item, {
+							valueL: value ? Number(value) : null,
+						}),
+					)
+				}
+			/>
+		</Form.Item>
 	);
 }
 
@@ -162,38 +159,41 @@ function PropertyField({ item, readOnly, onChange }: PropertyFieldProps) {
 
 	if (fieldType === 'N') {
 		return (
-			<NumberInput
-				label={label}
-				value={
-					item.valueN === '' || item.valueN == null
-						? undefined
-						: Number(item.valueN)
-				}
-				readOnly={readOnly}
-				onChange={(value) =>
-					onChange(
-						patchSubDeviceProperty(item, {
-							valueN: typeof value === 'number' ? value : '',
-						}),
-					)
-				}
-			/>
+			<Form.Item label={label} style={{ marginBottom: 0 }}>
+				<InputNumber
+					value={
+						item.valueN === '' || item.valueN == null
+							? undefined
+							: Number(item.valueN)
+					}
+					disabled={readOnly}
+					style={{ width: '100%' }}
+					onChange={(value) =>
+						onChange(
+							patchSubDeviceProperty(item, {
+								valueN: typeof value === 'number' ? value : '',
+							}),
+						)
+					}
+				/>
+			</Form.Item>
 		);
 	}
 
 	return (
-		<TextInput
-			label={label}
-			value={item.valueS ?? item.value ?? ''}
-			readOnly={readOnly}
-			onChange={(event) =>
-				onChange(
-					patchSubDeviceProperty(item, {
-						value: event.currentTarget.value,
-					}),
-				)
-			}
-		/>
+		<Form.Item label={label} style={{ marginBottom: 0 }}>
+			<Input
+				value={item.valueS ?? item.value ?? ''}
+				readOnly={readOnly}
+				onChange={(event) =>
+					onChange(
+						patchSubDeviceProperty(item, {
+							value: event.target.value,
+						}),
+					)
+				}
+			/>
+		</Form.Item>
 	);
 }
 
@@ -205,7 +205,11 @@ export function SubDevicePropertiesEditor({
 	const entries = useMemo(() => sortSubDeviceProperties(properties), [properties]);
 
 	if (entries.length === 0) {
-		return <TextInput label="Свойства" value="Нет свойств" readOnly disabled />;
+		return (
+			<Form.Item label="Свойства" style={{ marginBottom: 0 }}>
+				<Input value="Нет свойств" readOnly disabled />
+			</Form.Item>
+		);
 	}
 
 	const updateProperty = (key: string, next: SubDevicePropertyValue) => {
@@ -213,7 +217,7 @@ export function SubDevicePropertiesEditor({
 	};
 
 	return (
-		<Stack gap="sm">
+		<Flex vertical gap={12}>
 			{entries.map(([key, item]) => (
 				<PropertyField
 					key={key}
@@ -222,6 +226,6 @@ export function SubDevicePropertiesEditor({
 					onChange={(next) => updateProperty(key, next)}
 				/>
 			))}
-		</Stack>
+		</Flex>
 	);
 }

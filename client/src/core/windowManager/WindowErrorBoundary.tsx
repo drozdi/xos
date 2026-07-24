@@ -1,5 +1,5 @@
+import { Alert, Button, Flex, Typography } from 'antd';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Alert, Button, Stack, Text } from '@mantine/core';
 
 interface WindowErrorBoundaryProps {
 	children: ReactNode;
@@ -39,14 +39,24 @@ export class WindowErrorBoundary extends Component<
 	override render(): ReactNode {
 		if (this.state.hasError) {
 			return (
-				<Stack p="md" gap="sm" h="100%" justify="center">
-					<Alert color="red" title="Window content error">
-						<Text size="sm">{this.state.message}</Text>
-					</Alert>
-					<Button size="xs" variant="light" onClick={this.handleReset}>
+				<Flex
+					vertical
+					gap="small"
+					justify="center"
+					style={{ height: '100%', padding: 16 }}
+				>
+					<Alert
+						type="error"
+						showIcon
+						message="Window content error"
+						description={
+							<Typography.Text style={{ fontSize: 13 }}>{this.state.message}</Typography.Text>
+						}
+					/>
+					<Button size="small" type="primary" ghost onClick={this.handleReset}>
 						Try again
 					</Button>
-				</Stack>
+				</Flex>
 			);
 		}
 

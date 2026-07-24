@@ -1,45 +1,25 @@
-.row {
-	border: 1px solid transparent;
-	border-radius: var(--mantine-radius-sm);
-	padding: 4px 6px;
-	transition: background-color 120ms ease, border-color 120ms ease;
+.root {
+	border-radius: 6px;
 }
 
-.rowDragging {
-	opacity: 0.45;
+.dropTarget {
+	border-color: #1677ff;
+	background: color-mix(in srgb, #e6f4ff 80%, transparent);
 }
 
-.rowDropTarget {
-	border-color: var(--mantine-color-blue-5);
-	background-color: light-dark(
-		var(--mantine-color-blue-0),
-		var(--mantine-color-dark-5)
-	);
+.placeholder {
+	border: 1px dashed #d9d9d9;
+	border-radius: 6px;
+	color: #868e96;
+	font-size: 0.875rem;
 }
 
-.rootDropZone {
-	border: 1px dashed light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
-	border-radius: var(--mantine-radius-sm);
-	padding: 8px 12px;
-	color: var(--mantine-color-dimmed);
-	font-size: var(--mantine-font-size-sm);
-	transition: border-color 120ms ease, background-color 120ms ease;
+.placeholderActive {
+	border-color: #1677ff;
+	background: color-mix(in srgb, #e6f4ff 80%, transparent);
+	color: #0958d9;
 }
 
-.rootDropZoneActive {
-	border-color: var(--mantine-color-blue-5);
-	background-color: light-dark(
-		var(--mantine-color-blue-0),
-		var(--mantine-color-dark-5)
-	);
-	color: var(--mantine-color-blue-7);
-}
-
-.dragHandle {
-	cursor: grab;
-	color: var(--mantine-color-dimmed);
-}
-
-.dragHandle:active {
-	cursor: grabbing;
+.dimmed {
+	color: #868e96;
 }

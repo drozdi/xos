@@ -1,20 +1,17 @@
-import { Center, Loader, MantineProvider } from '@mantine/core';
-import { ModalsProvider } from '@mantine/modals';
-import { Notifications } from '@mantine/notifications';
+import { Flex, Spin } from 'antd';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { queryClient } from '@/core/api/queryClient';
 import { setupInterceptors } from '@/core/api/interceptors';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
+import { resolveAuthRealm } from '@/core/auth/tokenStorage';
+import { DatesSettingsProvider } from '@/core/dates';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
 import { preloadSettings } from '@/core/settings/preloadSettings';
 import { settingManager } from '@/core/settings/SettingManager';
-import { DEFAULT_THEME, ThemeProvider, xosColorSchemeManager } from '@/core/theme';
-import { DatesSettingsProvider } from '@/core/dates';
-import { theme } from '@/styles/theme';
-
-const colorSchemeManager = xosColorSchemeManager();
+import { ThemeProvider, useThemePreference } from '@/core/theme';
+import { AntdProvider } from '@/ui/AntdProvider';
 
 const Desktop = lazy(() =>
 	import('@/core/desktop/Desktop').then((module) => ({ default: module.Desktop })),
@@ -24,26 +21,22 @@ const LoginScreen = lazy(() =>
 	import('@/core/auth/LoginScreen').then((module) => ({ default: module.LoginScreen })),
 );
 
+const IncComStandaloneApp = lazy(() => import('@/apps/inccom/IncComStandaloneApp'));
+
 function AppShellFallback() {
 	return (
-		<Center h="100vh">
-			<Loader size="lg" />
-		</Center>
+		<Flex align="center" justify="center" style={{ height: '100vh' }}>
+			<Spin size="large" />
+		</Flex>
 	);
 }
 
-export default function App() {
+function DesktopShell() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 	const isLoading = useAuthStore((state) => state.isLoading);
-	const interceptorsReady = useRef(false);
 	const [settingsKey, setSettingsKey] = useState<'guest' | 'auth' | null>(null);
 
 	useEffect(() => {
-		if (!interceptorsReady.current) {
-			setupInterceptors(getAuthStoreActions());
-			interceptorsReady.current = true;
-		}
-
 		void useAuthStore.getState().hydrate();
 	}, []);
 
@@ -87,28 +80,48 @@ export default function App() {
 		settingsKey !== null && expectedSettingsKey !== null && settingsKey === expectedSettingsKey;
 	const showLoader = isLoading || !settingsReady;
 
+	if (showLoader) {
+		return <AppShellFallback />;
+	}
+
+	return (
+		<Suspense fallback={<AppShellFallback />}>
+			{isAuthenticated ? <Desktop /> : <LoginScreen />}
+		</Suspense>
+	);
+}
+
+function ThemedAntdBridge({ children }: { children: ReactNode }) {
+	const { theme: colorScheme } = useThemePreference();
+	return <AntdProvider colorScheme={colorScheme}>{children}</AntdProvider>;
+}
+
+export default function App() {
+	const interceptorsReady = useRef(false);
+	const isAppRealm = resolveAuthRealm() === 'app';
+
+	useEffect(() => {
+		if (!interceptorsReady.current) {
+			setupInterceptors(getAuthStoreActions());
+			interceptorsReady.current = true;
+		}
+	}, []);
+
 	return (
 		<QueryClientProvider client={queryClient}>
-			<MantineProvider
-				theme={theme}
-				defaultColorScheme={DEFAULT_THEME}
-				colorSchemeManager={colorSchemeManager}
-			>
-				<ModalsProvider>
-					<Notifications position="top-right" />
-					{showLoader ? (
-						<AppShellFallback />
-					) : (
-						<ThemeProvider>
-							<DatesSettingsProvider>
-								<Suspense fallback={<AppShellFallback />}>
-									{isAuthenticated ? <Desktop /> : <LoginScreen />}
-								</Suspense>
-							</DatesSettingsProvider>
-						</ThemeProvider>
-					)}
-				</ModalsProvider>
-			</MantineProvider>
+			<ThemeProvider>
+				<ThemedAntdBridge>
+					<DatesSettingsProvider>
+						{isAppRealm ? (
+							<Suspense fallback={<AppShellFallback />}>
+								<IncComStandaloneApp />
+							</Suspense>
+						) : (
+							<DesktopShell />
+						)}
+					</DatesSettingsProvider>
+				</ThemedAntdBridge>
+			</ThemeProvider>
 		</QueryClientProvider>
 	);
 }

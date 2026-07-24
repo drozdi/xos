@@ -1,5 +1,5 @@
-import { Alert, NumberInput, Select, Stack, Tabs, TextInput } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
+import { Alert, DatePicker, Flex, Form, Input, InputNumber, Select, Tabs } from 'antd';
+import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
 import { deviceLicenseApi, type LicenseDetail } from '@/core/api/endpoints/deviceApi';
@@ -28,6 +28,15 @@ const initialData: LicenseDetail = {
 	softwares: {},
 };
 
+function toDayjs(value: string) {
+	const parsed = parseLicenseDate(value);
+	if (!parsed) {
+		return null;
+	}
+	const d = dayjs(parsed);
+	return d.isValid() ? d : null;
+}
+
 export default function DeviceLicenseApp() {
 	const entityId = useEntityId();
 	const canRead = useCanReadDeviceLicense();
@@ -35,7 +44,7 @@ export default function DeviceLicenseApp() {
 	const canDelete = useCanDeleteDeviceLicense();
 	const canCreate = canCreateDeviceLicense();
 	const isNew = entityId === 0;
-	const [activeTab, setActiveTab] = useState<string | null>('general');
+	const [activeTab, setActiveTab] = useState('general');
 
 	const typeOptions = useMemo(
 		() => LICENSE_TYPES.map((value) => ({ value, label: value })),
@@ -46,17 +55,25 @@ export default function DeviceLicenseApp() {
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на создание лицензии
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на создание лицензии"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр лицензии
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на просмотр лицензии"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
@@ -75,66 +92,86 @@ export default function DeviceLicenseApp() {
 			canDelete={canDelete}
 		>
 			{({ data, setField, errors, readOnly }) => (
-				<Tabs value={activeTab} onChange={setActiveTab}>
-					<Tabs.List>
-						<Tabs.Tab value="general">Общие</Tabs.Tab>
-						<Tabs.Tab value="softwares">Программы</Tabs.Tab>
-					</Tabs.List>
-
-					<Tabs.Panel value="general" pt="sm">
-						<Stack gap="sm">
-							<TextInput
-								label="Код"
-								withAsterisk
-								value={data.code ?? ''}
-								error={errors.code}
-								readOnly={readOnly}
-								onChange={(e) => setField('code', e.currentTarget.value)}
-							/>
-							<Select
-								label="Тип"
-								data={typeOptions}
-								value={data.type || null}
-								readOnly={readOnly}
-								onChange={(value) => setField('type', value ?? '')}
-							/>
-							<TextInput
-								label="Номер"
-								value={data.no ?? ''}
-								readOnly={readOnly}
-								onChange={(e) => setField('no', e.currentTarget.value)}
-							/>
-							<TextInput
-								label="Авт. номер"
-								value={data.autNo ?? ''}
-								readOnly={readOnly}
-								onChange={(e) => setField('autNo', e.currentTarget.value)}
-							/>
-							<NumberInput
-								label="Сортировка"
-								value={data.sort ?? 0}
-								readOnly={readOnly}
-								onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-							/>
-							<DatePickerInput
-								label="Дата выдачи"
-								value={parseLicenseDate(data.dateReal)}
-								valueFormat="DD-MM-YYYY"
-								readOnly={readOnly}
-								clearable
-								onChange={(value) => setField('dateReal', formatLicenseDate(value))}
-							/>
-						</Stack>
-					</Tabs.Panel>
-
-					<Tabs.Panel value="softwares" pt="sm">
-						<LicenseSoftwaresEditor
-							records={normalizeIdRecord(data.softwares)}
-							readOnly={readOnly}
-							onChange={(softwares) => setField('softwares', softwares)}
-						/>
-					</Tabs.Panel>
-				</Tabs>
+				<Tabs
+					activeKey={activeTab}
+					onChange={setActiveTab}
+					items={[
+						{
+							key: 'general',
+							label: 'Общие',
+							children: (
+								<Flex vertical gap={12}>
+									<Form.Item
+										label="Код"
+										required
+										validateStatus={errors.code ? 'error' : undefined}
+										help={errors.code}
+										style={{ marginBottom: 0 }}
+									>
+										<Input
+											value={data.code ?? ''}
+											readOnly={readOnly}
+											onChange={(e) => setField('code', e.target.value)}
+										/>
+									</Form.Item>
+									<Form.Item label="Тип" style={{ marginBottom: 0 }}>
+										<Select
+											options={typeOptions}
+											value={data.type || undefined}
+											disabled={readOnly}
+											onChange={(value) => setField('type', value ?? '')}
+										/>
+									</Form.Item>
+									<Form.Item label="Номер" style={{ marginBottom: 0 }}>
+										<Input
+											value={data.no ?? ''}
+											readOnly={readOnly}
+											onChange={(e) => setField('no', e.target.value)}
+										/>
+									</Form.Item>
+									<Form.Item label="Авт. номер" style={{ marginBottom: 0 }}>
+										<Input
+											value={data.autNo ?? ''}
+											readOnly={readOnly}
+											onChange={(e) => setField('autNo', e.target.value)}
+										/>
+									</Form.Item>
+									<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
+										<InputNumber
+											value={data.sort ?? 0}
+											disabled={readOnly}
+											style={{ width: '100%' }}
+											onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
+										/>
+									</Form.Item>
+									<Form.Item label="Дата выдачи" style={{ marginBottom: 0 }}>
+										<DatePicker
+											value={toDayjs(data.dateReal ?? '')}
+											format="DD-MM-YYYY"
+											disabled={readOnly}
+											allowClear
+											style={{ width: '100%' }}
+											onChange={(value) =>
+												setField('dateReal', formatLicenseDate(value ? value.toDate() : null))
+											}
+										/>
+									</Form.Item>
+								</Flex>
+							),
+						},
+						{
+							key: 'softwares',
+							label: 'Программы',
+							children: (
+								<LicenseSoftwaresEditor
+									records={normalizeIdRecord(data.softwares)}
+									readOnly={readOnly}
+									onChange={(softwares) => setField('softwares', softwares)}
+								/>
+							),
+						},
+					]}
+				/>
 			)}
 		</MainEntityForm>
 	);

@@ -1,4 +1,4 @@
-import { Select } from '@mantine/core';
+import { Form, Select } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 
 import { mainOuApi } from '@/core/api/endpoints/mainApi';
@@ -39,17 +39,24 @@ export function OuSelect({
 	}));
 
 	return (
-		<Select
+		<Form.Item
 			label={label}
-			withAsterisk={withAsterisk}
-			error={error}
-			data={options}
-			value={value ? String(value) : null}
-			onChange={(next) => onChange(next ? Number(next) : null)}
-			searchable
-			clearable
-			disabled={disabled || query.isError}
-			nothingFoundMessage={query.isLoading ? 'Загрузка…' : 'Ничего не найдено'}
-		/>
+			required={withAsterisk}
+			validateStatus={error ? 'error' : undefined}
+			help={error}
+			style={{ marginBottom: 0 }}
+		>
+			<Select
+				options={options}
+				value={value ? String(value) : undefined}
+				onChange={(next) => onChange(next ? Number(next) : null)}
+				showSearch
+				allowClear
+				optionFilterProp="label"
+				disabled={disabled || query.isError}
+				notFoundContent={query.isLoading ? 'Загрузка…' : 'Ничего не найдено'}
+				style={{ width: '100%' }}
+			/>
+		</Form.Item>
 	);
 }

@@ -1,4 +1,4 @@
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/ui/toast';
 
 import { getApiClient } from '@/core/api/client';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';

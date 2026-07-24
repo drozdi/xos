@@ -1,4 +1,4 @@
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/ui/toast';
 import { create } from 'zustand';
 
 import { settingManager } from '@/core/settings/SettingManager';

@@ -1,5 +1,5 @@
-import { Alert, Select } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert, Form, Select } from 'antd';
+import { notifications } from '@/ui/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -79,9 +79,13 @@ export default function MainGroupsApp() {
 
 	if (!canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр групп
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на просмотр групп"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
@@ -100,14 +104,16 @@ export default function MainGroupsApp() {
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate ? () => openGroup(0) : undefined}
 			filters={
-				<Select
-					label="Подразделение"
-					data={ouOptions}
-					value={String(ouFilter)}
-					onChange={(value) => setOuFilter(value ? Number(value) : ALL_FILTER)}
-					searchable
-					clearable={false}
-				/>
+				<Form.Item label="Подразделение" style={{ marginBottom: 0 }}>
+					<Select
+						options={ouOptions}
+						value={String(ouFilter)}
+						onChange={(value) => setOuFilter(value ? Number(value) : ALL_FILTER)}
+						showSearch
+						optionFilterProp="label"
+						style={{ width: '100%' }}
+					/>
+				</Form.Item>
 			}
 		>
 			<DataTable

@@ -1,18 +1,16 @@
 import {
-	ActionIcon,
 	Button,
 	Checkbox,
-	Group,
-	Loader,
+	Flex,
+	Input,
 	Modal,
-	SegmentedControl,
-	Stack,
-	Text,
-	Textarea,
-	TextInput,
+	Segmented,
+	Space,
+	Spin,
 	Tooltip,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+	Typography,
+} from 'antd';
+import { notifications } from '@/ui/toast';
 import { IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -115,8 +113,8 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 	const canWrite = detail?.can_write ?? false;
 	const isOwner = detail?.is_owner ?? false;
 
-	const switchMode = (next: string) => {
-		const value = next as 'checklist' | 'markdown' | 'preview';
+	const switchMode = (next: string | number) => {
+		const value = String(next) as 'checklist' | 'markdown' | 'preview';
 		if (mode === 'markdown' && value !== 'markdown') {
 			const parsed = parseMarkdown(markdown);
 			setItems(parsed.items);
@@ -138,25 +136,29 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 	return (
 		<>
 			<Modal
-				opened={opened}
-				onClose={onClose}
+				open={opened}
+				onCancel={onClose}
 				title={detailQuery.isLoading ? 'Загрузка…' : title || 'Список'}
-				size="lg"
+				width={720}
 				centered
+				footer={null}
+				destroyOnHidden
 			>
 				{detailQuery.isLoading ? (
-					<Group justify="center" py="md">
-						<Loader size="sm" />
-					</Group>
+					<Flex justify="center" style={{ padding: '16px 0' }}>
+						<Spin size="small" />
+					</Flex>
 				) : (
-					<Stack gap="sm">
-						<TextInput
-							label="Название"
-							value={title}
-							disabled={!canWrite}
-							onChange={(e) => setTitle(e.currentTarget.value)}
-						/>
-						<Group gap={6}>
+					<Flex vertical gap={12}>
+						<div>
+							<Typography.Text style={{ display: 'block', marginBottom: 4 }}>Название</Typography.Text>
+							<Input
+								value={title}
+								disabled={!canWrite}
+								onChange={(e) => setTitle(e.target.value)}
+							/>
+						</div>
+						<Space size={6} wrap>
 							{TODO_COLORS.map((c) => (
 								<button
 									key={c}
@@ -174,12 +176,12 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 									}}
 								/>
 							))}
-						</Group>
+						</Space>
 
-						<SegmentedControl
+						<Segmented
 							value={mode}
 							onChange={switchMode}
-							data={[
+							options={[
 								{ label: 'Список', value: 'checklist' },
 								{ label: 'Markdown', value: 'markdown' },
 								{ label: 'Просмотр', value: 'preview' },
@@ -187,21 +189,21 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 						/>
 
 						{mode === 'checklist' ? (
-							<Stack gap="xs">
+							<Flex vertical gap={8}>
 								{items.map((item, index) => (
-									<Group key={index} align="flex-start" wrap="nowrap" gap="xs">
+									<Flex key={index} align="flex-start" gap={8} wrap="nowrap">
 										<Checkbox
-											mt={8}
+											style={{ marginTop: 8 }}
 											checked={item.done}
 											disabled={!canWrite}
-											onChange={(e) => updateItem(index, { done: e.currentTarget.checked })}
+											onChange={(e) => updateItem(index, { done: e.target.checked })}
 										/>
-										<Stack gap={4} style={{ flex: 1 }}>
-											<TextInput
+										<Flex vertical gap={4} style={{ flex: 1 }}>
+											<Input
 												value={item.text}
 												disabled={!canWrite}
 												placeholder="Дело…"
-												onChange={(e) => updateItem(index, { text: e.currentTarget.value })}
+												onChange={(e) => updateItem(index, { text: e.target.value })}
 											/>
 											<DateTimeField
 												label="Срок"
@@ -215,66 +217,71 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 													});
 												}}
 											/>
-										</Stack>
+										</Flex>
 										{canWrite ? (
-											<ActionIcon
-												mt={6}
-												variant="subtle"
-												color="red"
+											<Button
+												type="text"
+												danger
 												aria-label="Удалить"
+												style={{ marginTop: 6 }}
+												icon={<IconTrash size={16} />}
 												onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
-											>
-												<IconTrash size={16} />
-											</ActionIcon>
+											/>
 										) : null}
-									</Group>
+									</Flex>
 								))}
 								{canWrite ? (
 									<Button
-										variant="light"
-										leftSection={<IconPlus size={16} />}
+										icon={<IconPlus size={16} />}
 										onClick={() => setItems((prev) => [...prev, { text: '', done: false, due_at: null }])}
 									>
 										Добавить дело
 									</Button>
 								) : null}
-								<Textarea
-									label="Заметки (Markdown)"
-									minRows={3}
-									value={notesMd}
-									disabled={!canWrite}
-									onChange={(e) => setNotesMd(e.currentTarget.value)}
-								/>
-							</Stack>
+								<div>
+									<Typography.Text style={{ display: 'block', marginBottom: 4 }}>
+										Заметки (Markdown)
+									</Typography.Text>
+									<Input.TextArea
+										rows={3}
+										value={notesMd}
+										disabled={!canWrite}
+										onChange={(e) => setNotesMd(e.target.value)}
+									/>
+								</div>
+							</Flex>
 						) : null}
 
 						{mode === 'markdown' ? (
-							<Textarea
-								minRows={12}
-								autosize
-								value={markdown}
-								disabled={!canWrite}
-								description="Чеклист: - [ ] текст | due:YYYY-MM-DD HH:mm. Заметки — после ---"
-								onChange={(e) => setMarkdown(e.currentTarget.value)}
-							/>
+							<div>
+								<Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>
+									Чеклист: - [ ] текст | due:YYYY-MM-DD HH:mm. Заметки — после ---
+								</Typography.Text>
+								<Input.TextArea
+									rows={12}
+									value={markdown}
+									disabled={!canWrite}
+									onChange={(e) => setMarkdown(e.target.value)}
+								/>
+							</div>
 						) : null}
 
 						{mode === 'preview' ? (
-							<Stack gap="xs">
+							<Flex vertical gap={8}>
 								{items.length === 0 && !notesMd.trim() ? (
-									<Text c="dimmed">Пустой список</Text>
+									<Typography.Text type="secondary">Пустой список</Typography.Text>
 								) : (
 									<>
 										{items.map((item, index) => (
-											<Group key={index} gap="xs">
-												<Checkbox checked={item.done} readOnly />
-												<Text td={item.done ? 'line-through' : undefined}>{item.text}</Text>
+											<Flex key={index} gap={8} align="center">
+												<Checkbox checked={item.done} disabled />
+												<Typography.Text delete={item.done}>{item.text}</Typography.Text>
 												{item.due_at ? (
-													<Text size="xs" c="dimmed">
+													<Typography.Text type="secondary" style={{ fontSize: 12 }}>
 														до {dayjs(item.due_at).format('DD.MM.YYYY HH:mm')}
-													</Text>
+													</Typography.Text>
 												) : null}
-											</Group>
+											</Flex>
 										))}
 										{notesMd.trim() ? (
 											<div>
@@ -283,50 +290,42 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 										) : null}
 									</>
 								)}
-							</Stack>
+							</Flex>
 						) : null}
 
-						<Group justify="space-between" mt="sm">
-							<Group gap="xs">
+						<Flex justify="space-between" style={{ marginTop: 12 }}>
+							<Space size={8}>
 								{isOwner ? (
 									<>
-										<Button
-											variant="light"
-											leftSection={<IconShare size={16} />}
-											onClick={() => setShareOpened(true)}
-										>
+										<Button icon={<IconShare size={16} />} onClick={() => setShareOpened(true)}>
 											Поделиться
 										</Button>
-										<Tooltip label="Удалить список">
-											<ActionIcon
-												variant="light"
-												color="red"
+										<Tooltip title="Удалить список">
+											<Button
+												danger
 												aria-label="Удалить"
 												loading={deleteMutation.isPending}
+												icon={<IconTrash size={16} />}
 												onClick={() => {
 													if (window.confirm('Удалить список?')) {
 														deleteMutation.mutate();
 													}
 												}}
-											>
-												<IconTrash size={16} />
-											</ActionIcon>
+											/>
 										</Tooltip>
 									</>
 								) : null}
-							</Group>
-							<Group gap="xs">
-								<Button variant="default" onClick={onClose}>
-									Закрыть
-								</Button>
+							</Space>
+							<Space size={8}>
+								<Button onClick={onClose}>Закрыть</Button>
 								{canWrite ? (
-									<Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+									<Button type="primary" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
 										Сохранить
 									</Button>
 								) : null}
-							</Group>
-						</Group>
-					</Stack>
+							</Space>
+						</Flex>
+					</Flex>
 				)}
 			</Modal>
 

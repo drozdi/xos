@@ -1,15 +1,15 @@
-﻿import { useTransactionCategoryCreate } from '@inccom/entities/transaction-category';
-import { notification } from '@inccom/shared/notification';
-import { getErrorMessage } from '@inccom/shared/utils/error';
-import { ActionIcon, TextInput, type TextInputProps } from '@mantine/core';
+﻿import { Button, Input } from 'antd';
 import { useState } from 'react';
 import { TbPlus } from 'react-icons/tb';
+
+import { useTransactionCategoryCreate } from '@inccom/entities/transaction-category';
+import { notification } from '@inccom/shared/notification';
+import { getErrorMessage } from '@inccom/shared/utils/error';
 
 export function CategotyAdd({
 	account_id,
 	type,
-	...props
-}: TextInputProps & {
+}: {
 	account_id: ICategory['account_id'];
 	type: string;
 }) {
@@ -41,16 +41,18 @@ export function CategotyAdd({
 	}
 
 	return (
-		<TextInput
-			{...props}
+		<Input
 			value={newLabel}
-			onChange={({ target }) => setNewLabel(target.value)}
-			rightSection={
-				<ActionIcon onClick={() => void handlerSave()} loading={createMutation.isPending}>
-					<TbPlus />
-				</ActionIcon>
-			}
+			onChange={(e) => setNewLabel(e.target.value)}
 			onKeyDown={handlerKeyPress}
+			addonAfter={
+				<Button
+					type="text"
+					icon={<TbPlus />}
+					loading={createMutation.isPending}
+					onClick={() => void handlerSave()}
+				/>
+			}
 		/>
 	);
 }

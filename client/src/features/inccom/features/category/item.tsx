@@ -1,13 +1,14 @@
-﻿import {
+﻿import { Button, Flex, Input, Tooltip, Typography } from 'antd';
+import { useState } from 'react';
+import { TbFileDots, TbFileLike, TbX } from 'react-icons/tb';
+
+import {
 	useTransactionCategoryDelete,
 	useTransactionCategoryUpdate,
 } from '@inccom/entities/transaction-category';
 import { useStoreUserProfile } from '@inccom/entities/user';
 import { notification } from '@inccom/shared/notification';
 import { getErrorMessage } from '@inccom/shared/utils/error';
-import { ActionIcon, Group, Text, TextInput, Tooltip } from '@mantine/core';
-import { useState } from 'react';
-import { TbFileDots, TbFileLike, TbX } from 'react-icons/tb';
 
 export function CategotyItem({ category }: { category: ICategory }) {
 	const updateMutation = useTransactionCategoryUpdate();
@@ -46,51 +47,47 @@ export function CategotyItem({ category }: { category: ICategory }) {
 	}
 
 	return (
-		<Group>
+		<Flex align="center" gap={8} style={{ width: '100%' }}>
 			{isEdit && isAction ? (
 				<>
-					<TextInput
-						flex="1"
+					<Input
+						style={{ flex: 1 }}
 						value={label}
-						onChange={({ target }) => setLabel(target.value)}
+						onChange={(e) => setLabel(e.target.value)}
 						onKeyDown={handlerKeyPress}
 					/>
-					<ActionIcon
+					<Button
+						type="primary"
 						loading={isSaving}
-						color="green"
+						icon={<TbFileLike />}
 						onClick={() => void handlerSave()}
-					>
-						<TbFileLike />
-					</ActionIcon>
+					/>
 				</>
 			) : (
-				<Text flex="1">{label}</Text>
+				<Typography.Text style={{ flex: 1 }}>{label}</Typography.Text>
 			)}
-			{isAction && !isEdit && (
-				<Group>
-					<Tooltip label="Переиминовать">
-						<ActionIcon
+			{isAction && !isEdit ? (
+				<Flex gap={4}>
+					<Tooltip title="Переиминовать">
+						<Button
 							loading={isSaving}
-							color="yellow"
+							icon={<TbFileDots />}
 							onClick={() => {
 								setLabel(category.label);
 								setEdit(true);
 							}}
-						>
-							<TbFileDots />
-						</ActionIcon>
+						/>
 					</Tooltip>
-					<Tooltip label="Удалить">
-						<ActionIcon
+					<Tooltip title="Удалить">
+						<Button
+							danger
 							loading={isSaving}
-							color="red"
+							icon={<TbX />}
 							onClick={() => void handlerRemove(category)}
-						>
-							<TbX />
-						</ActionIcon>
+						/>
 					</Tooltip>
-				</Group>
-			)}
-		</Group>
+				</Flex>
+			) : null}
+		</Flex>
 	);
 }

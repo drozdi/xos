@@ -1,4 +1,4 @@
-import { Button, Radio, Stack, Text } from '@mantine/core';
+import { Button, Flex, Radio, Typography } from 'antd';
 import { useState } from 'react';
 
 import { useAppContext } from '@/core/context/AppContext';
@@ -36,30 +36,26 @@ export function NewGameDialog() {
 	};
 
 	return (
-		<Stack gap="md">
-			<Text size="sm" c="dimmed">
+		<Flex vertical gap="middle">
+			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 				Выберите сложность. Размер поля и число фигур в ряд для победы зависят от уровня.
-			</Text>
-			<Radio.Group value={selectedId} onChange={setSelectedId}>
-				<Stack gap="sm">
+			</Typography.Text>
+			<Radio.Group value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+				<Flex vertical gap="small">
 					{DIFFICULTIES.map((difficulty) => (
-						<Radio
-							key={difficulty.id}
-							value={difficulty.id}
-							label={
-								<Text size="sm">
-									<Text span fw={600}>
-										{difficulty.label}
-									</Text>
-									{' — '}
-									{difficulty.size}×{difficulty.size}, победа: {difficulty.winLength} в ряд
-								</Text>
-							}
-						/>
+						<Radio key={difficulty.id} value={difficulty.id}>
+							<span style={{ fontSize: 13 }}>
+								<strong>{difficulty.label}</strong>
+								{' — '}
+								{difficulty.size}×{difficulty.size}, победа: {difficulty.winLength} в ряд
+							</span>
+						</Radio>
 					))}
-				</Stack>
+				</Flex>
 			</Radio.Group>
-			<Button onClick={handleStart}>Начать</Button>
-		</Stack>
+			<Button type="primary" onClick={handleStart}>
+				Начать
+			</Button>
+		</Flex>
 	);
 }

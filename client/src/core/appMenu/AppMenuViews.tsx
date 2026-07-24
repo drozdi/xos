@@ -1,5 +1,6 @@
-import { ActionIcon, Box, Button, Group, Menu, Text } from '@mantine/core';
-import type { MouseEvent, ReactNode } from 'react';
+import { Button, Dropdown, Flex, Typography } from 'antd';
+import type { MenuProps } from 'antd';
+import type { MouseEvent } from 'react';
 
 import type { AppMenuActionContext, AppMenuEntry } from './types';
 import {
@@ -20,74 +21,63 @@ function handleAction(
 	item: { onClick?: (ctx: AppMenuActionContext) => void | Promise<void> },
 	onAction?: () => void,
 ) {
-	return (event: MouseEvent<HTMLButtonElement>) => {
-		event.preventDefault();
-		event.stopPropagation();
+	return (event?: MouseEvent) => {
+		event?.preventDefault();
+		event?.stopPropagation();
 		onAction?.();
 		void item.onClick?.(ctx);
 	};
 }
 
-function renderDropdownEntries({
+function toAntdMenuItems({
 	entries,
 	context,
 	onAction,
-}: MenuEntriesProps): ReactNode {
-	return entries.map((entry, index) => {
+}: MenuEntriesProps): NonNullable<MenuProps['items']> {
+	const result: NonNullable<MenuProps['items']> = [];
+
+	entries.forEach((entry, index) => {
 		if (isAppMenuDivider(entry)) {
-			return <Menu.Divider key={entry.id ?? `divider-${index}`} />;
+			result.push({ type: 'divider', key: entry.id ?? `divider-${index}` });
+			return;
 		}
 
 		if (isAppMenuSubmenu(entry)) {
-			return (
-				<Menu
-					key={entry.id}
-					trigger="hover"
-					position="right-start"
-					offset={2}
-					withinPortal
-				>
-					<Menu.Target>
-						<Menu.Item
-							leftSection={entry.icon}
-							disabled={isMenuEntryDisabled(entry, context)}
-						>
-							{entry.label}
-						</Menu.Item>
-					</Menu.Target>
-					<Menu.Dropdown>
-						{renderDropdownEntries({
-							entries: entry.items,
-							context,
-							onAction,
-						})}
-					</Menu.Dropdown>
-				</Menu>
-			);
+			result.push({
+				key: entry.id,
+				label: entry.label,
+				icon: entry.icon ? <>{entry.icon}</> : undefined,
+				disabled: isMenuEntryDisabled(entry, context),
+				children: toAntdMenuItems({
+					entries: entry.items,
+					context,
+					onAction,
+				}),
+			});
+			return;
 		}
 
 		if (isAppMenuAction(entry)) {
-			return (
-				<Menu.Item
-					key={entry.id}
-					leftSection={entry.icon}
-					disabled={isMenuEntryDisabled(entry, context)}
-					rightSection={
-						entry.shortcut ? (
-							<Text size="xs" c="dimmed">
+			result.push({
+				key: entry.id,
+				label: (
+					<span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, width: '100%' }}>
+						<span style={{ flex: 1 }}>{entry.label}</span>
+						{entry.shortcut ? (
+							<Typography.Text type="secondary" style={{ fontSize: 12 }}>
 								{entry.shortcut}
-							</Text>
-						) : undefined
-					}
-					onClick={handleAction(context, entry, onAction)}
-				>
-					{entry.label}
-				</Menu.Item>
-			);
+							</Typography.Text>
+						) : null}
+					</span>
+				),
+				icon: entry.icon ? <>{entry.icon}</> : undefined,
+				disabled: isMenuEntryDisabled(entry, context),
+				onClick: () => handleAction(context, entry, onAction)(),
+			});
 		}
-
-		return null;
 	});
+
+	return result;
 }
 
 interface AppMenuDropdownBarProps {
@@ -99,25 +89,24 @@ export function AppMenuDropdownBar({ entries, context }: AppMenuDropdownBarProps
 	const groups = entries.filter((entry) => !isAppMenuDivider(entry));
 
 	return (
-		<Group gap={2} wrap="nowrap" px="xs" h="100%">
+		<Flex gap={2} wrap="nowrap" align="center" style={{ height: '100%', paddingInline: 8 }}>
 			{groups.map((entry) => {
 				if (isAppMenuSubmenu(entry)) {
 					return (
-						<Menu key={entry.id} trigger="click" withinPortal>
-							<Menu.Target>
-								<Button
-									variant="default"
-									size="compact-xs"
-									color="gray"
-									disabled={isMenuEntryDisabled(entry, context)}
-								>
-									{entry.label}
-								</Button>
-							</Menu.Target>
-							<Menu.Dropdown>
-								{renderDropdownEntries({ entries: entry.items, context })}
-							</Menu.Dropdown>
-						</Menu>
+						<Dropdown
+							key={entry.id}
+							menu={{
+								items: toAntdMenuItems({ entries: entry.items, context }),
+							}}
+							trigger={['click']}
+						>
+							<Button
+								size="small"
+								disabled={isMenuEntryDisabled(entry, context)}
+							>
+								{entry.label}
+							</Button>
+						</Dropdown>
 					);
 				}
 
@@ -125,10 +114,8 @@ export function AppMenuDropdownBar({ entries, context }: AppMenuDropdownBarProps
 					return (
 						<Button
 							key={entry.id}
-							variant="default"
-							size="compact-xs"
-							color="gray"
-							leftSection={entry.icon}
+							size="small"
+							icon={entry.icon ? <>{entry.icon}</> : undefined}
 							disabled={isMenuEntryDisabled(entry, context)}
 							onClick={handleAction(context, entry)}
 						>
@@ -139,7 +126,7 @@ export function AppMenuDropdownBar({ entries, context }: AppMenuDropdownBarProps
 
 				return null;
 			})}
-		</Group>
+		</Flex>
 	);
 }
 
@@ -150,62 +137,65 @@ interface AppMenuToolbarProps {
 
 export function AppMenuToolbar({ entries, context }: AppMenuToolbarProps) {
 	return (
-		<Group gap={4} wrap="nowrap" px="xs" h="100%">
+		<Flex gap={4} wrap="nowrap" align="center" style={{ height: '100%', paddingInline: 8 }}>
 			{entries.map((entry, index) => {
 				if (isAppMenuDivider(entry)) {
 					return (
-						<Box
+						<div
 							key={entry.id ?? `divider-${index}`}
-							w={1}
-							h={20}
-							style={{ backgroundColor: 'var(--xos-window-titlebar-border)' }}
-							mx={4}
+							style={{
+								width: 1,
+								height: 20,
+								marginInline: 4,
+								backgroundColor: 'var(--xos-window-titlebar-border)',
+							}}
 						/>
 					);
 				}
 
 				if (isAppMenuSubmenu(entry)) {
 					return (
-						<Menu key={entry.id} trigger="click" withinPortal>
-							<Menu.Target>
-								<ActionIcon
-									variant="default"
-									color="gray"
-									aria-label={entry.label}
-									disabled={isMenuEntryDisabled(entry, context)}
-								>
-									{entry.icon ?? <Text size="xs">{entry.label.slice(0, 1)}</Text>}
-								</ActionIcon>
-							</Menu.Target>
-							<Menu.Dropdown>
-								{renderDropdownEntries({ entries: entry.items, context })}
-							</Menu.Dropdown>
-						</Menu>
+						<Dropdown
+							key={entry.id}
+							menu={{
+								items: toAntdMenuItems({ entries: entry.items, context }),
+							}}
+							trigger={['click']}
+						>
+							<Button
+								type="default"
+								aria-label={entry.label}
+								disabled={isMenuEntryDisabled(entry, context)}
+								icon={
+									entry.icon ? (
+										<>{entry.icon}</>
+									) : (
+										<span style={{ fontSize: 12 }}>{entry.label.slice(0, 1)}</span>
+									)
+								}
+							/>
+						</Dropdown>
 					);
 				}
 
 				if (isAppMenuAction(entry)) {
 					if (entry.icon) {
 						return (
-							<ActionIcon
+							<Button
 								key={entry.id}
-								variant="default"
-								color="gray"
+								type="default"
 								aria-label={entry.label}
 								disabled={isMenuEntryDisabled(entry, context)}
+								icon={<>{entry.icon}</>}
 								onClick={handleAction(context, entry)}
-							>
-								{entry.icon}
-							</ActionIcon>
+							/>
 						);
 					}
 
 					return (
 						<Button
 							key={entry.id}
-							variant="default"
-							size="compact-xs"
-							color="gray"
+							size="small"
 							disabled={isMenuEntryDisabled(entry, context)}
 							onClick={handleAction(context, entry)}
 						>
@@ -216,6 +206,6 @@ export function AppMenuToolbar({ entries, context }: AppMenuToolbarProps) {
 
 				return null;
 			})}
-		</Group>
+		</Flex>
 	);
 }

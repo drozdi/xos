@@ -2,16 +2,12 @@ import { apiBaseURL, apiClient } from '@/core/api/client';
 import { extractApiErrorMessage } from '@/core/api/apiError';
 import { refreshResponseSchema } from '@/core/api/endpoints/auth';
 import * as tokenStorage from '@/core/auth/tokenStorage';
-import { notifications } from '@mantine/notifications';
+import { notifications } from '@/ui/toast';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-
-
 
 interface AuthStoreRef {
 	logout: () => Promise<void>;
 }
-
-
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
 	_retry?: boolean;
@@ -41,26 +37,23 @@ function onRefreshFailed(error: unknown): void {
 	refreshSubscribers = [];
 }
 
-
-
 function isAuthBypassUrl(url: string | undefined): boolean {
 	if (!url) {
 		return false;
 	}
 	return (
 		url.includes('/api/login') ||
+		url.includes('/api/auth/login') ||
+		url.includes('/api/auth/register') ||
 		url.includes('/api/token/refresh') ||
-		url.includes('/api/logout')
+		url.includes('/api/logout') ||
+		url.includes('/api/auth/logout')
 	);
 }
-
-
 
 function getErrorMessage(error: AxiosError): string {
 	return extractApiErrorMessage(error, 'Произошла ошибка сети');
 }
-
-
 
 function showErrorToast(error: AxiosError, config: RetryableRequestConfig | undefined): void {
 	if (config?._errorToastShown) {
@@ -110,10 +103,9 @@ function showErrorToast(error: AxiosError, config: RetryableRequestConfig | unde
 	}
 }
 
-
-
 async function performTokenRefresh(): Promise<string> {
-	const refreshToken = tokenStorage.getRefreshToken();
+	const realm = tokenStorage.resolveAuthRealm();
+	const refreshToken = tokenStorage.getRefreshToken(realm);
 	if (!refreshToken) {
 		throw new Error('Refresh token missing');
 	}
@@ -123,7 +115,7 @@ async function performTokenRefresh(): Promise<string> {
 		{ headers: { 'Content-Type': 'application/json' } },
 	);
 	const parsed = refreshResponseSchema.parse(data);
-	tokenStorage.setTokens(parsed.token, parsed.refresh_token);
+	tokenStorage.setTokens(parsed.token, parsed.refresh_token, realm);
 	return parsed.token;
 }
 
@@ -185,7 +177,14 @@ export function setupInterceptors(authStore: AuthStoreRef): void {
 				const isNetworkError =
 					axios.isAxiosError(refreshError) && !refreshError.response;
 				if (!isNetworkError) {
-					await authStore.logout();
+					if (tokenStorage.resolveAuthRealm() === 'desktop') {
+						await authStore.logout();
+					} else {
+						tokenStorage.clearTokens('app');
+						if (window.location.pathname.startsWith('/inccom')) {
+							window.location.assign('/inccom/auth/sign-in');
+						}
+					}
 				}
 				return Promise.reject(refreshError);
 			} finally {

@@ -1,9 +1,4 @@
-import {
-	Stack,
-	Switch,
-	TextInput,
-	Textarea,
-} from '@mantine/core';
+import { Flex, Form, Input, Switch } from 'antd';
 
 import type { UserDetail } from '@/core/api/endpoints/mainApi';
 import { DateTimeField } from '@/core/dates';
@@ -19,7 +14,7 @@ interface UserGeneralTabProps {
 
 export function UserGeneralTab({ data, errors, readOnly, setField }: UserGeneralTabProps) {
 	return (
-		<Stack gap="sm">
+		<Flex vertical gap={12}>
 			<OuSelect
 				value={data.ou_id ?? null}
 				disabled={readOnly}
@@ -32,66 +27,83 @@ export function UserGeneralTab({ data, errors, readOnly, setField }: UserGeneral
 				disabled={readOnly}
 				onChange={(userId) => setField('parent_id', userId)}
 			/>
-			<TextInput
+			<Form.Item
 				label="Логин"
-				withAsterisk
-				value={data.login ?? ''}
-				error={errors.login}
-				readOnly={readOnly}
-				onChange={(e) => setField('login', e.currentTarget.value)}
-			/>
-			<TextInput
+				required
+				validateStatus={errors.login ? 'error' : undefined}
+				help={errors.login}
+				style={{ marginBottom: 0 }}
+			>
+				<Input
+					value={data.login ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('login', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item
 				label="Псевдоним"
-				withAsterisk
-				value={data.alias ?? ''}
-				error={errors.alias}
-				readOnly={readOnly}
-				onChange={(e) => setField('alias', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Email"
-				value={data.email ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('email', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Фамилия"
-				value={data.second_name ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('second_name', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Имя"
-				value={data.first_name ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('first_name', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Отчество"
-				value={data.patronymic ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('patronymic', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Телефон"
-				value={data.phone ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('phone', e.currentTarget.value)}
-			/>
-			<Textarea
-				label="Описание"
-				value={data.description ?? ''}
-				readOnly={readOnly}
-				minRows={3}
-				autosize
-				onChange={(e) => setField('description', e.currentTarget.value)}
-			/>
-			<Switch
-				label="Активен"
-				checked={Boolean(data.active)}
-				disabled={readOnly}
-				onChange={(e) => setField('active', e.currentTarget.checked)}
-			/>
+				required
+				validateStatus={errors.alias ? 'error' : undefined}
+				help={errors.alias}
+				style={{ marginBottom: 0 }}
+			>
+				<Input
+					value={data.alias ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('alias', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Email" style={{ marginBottom: 0 }}>
+				<Input
+					value={data.email ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('email', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Фамилия" style={{ marginBottom: 0 }}>
+				<Input
+					value={data.second_name ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('second_name', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Имя" style={{ marginBottom: 0 }}>
+				<Input
+					value={data.first_name ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('first_name', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Отчество" style={{ marginBottom: 0 }}>
+				<Input
+					value={data.patronymic ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('patronymic', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Телефон" style={{ marginBottom: 0 }}>
+				<Input
+					value={data.phone ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('phone', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Описание" style={{ marginBottom: 0 }}>
+				<Input.TextArea
+					value={data.description ?? ''}
+					readOnly={readOnly}
+					rows={3}
+					autoSize={{ minRows: 3 }}
+					onChange={(e) => setField('description', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Активен" style={{ marginBottom: 0 }}>
+				<Switch
+					checked={Boolean(data.active)}
+					disabled={readOnly}
+					onChange={(checked) => setField('active', checked)}
+				/>
+			</Form.Item>
 			<DateTimeField
 				label="Активен с"
 				value={data.activeFrom as string | null | undefined}
@@ -104,6 +116,6 @@ export function UserGeneralTab({ data, errors, readOnly, setField }: UserGeneral
 				readOnly={readOnly}
 				onChange={(value) => setField('activeTo', value)}
 			/>
-		</Stack>
+		</Flex>
 	);
 }

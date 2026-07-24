@@ -1,18 +1,16 @@
 import {
-	ActionIcon,
 	Alert,
 	Button,
 	Checkbox,
-	Group,
+	Flex,
+	Form,
+	Input,
 	Modal,
-	MultiSelect,
 	Select,
-	Stack,
 	Table,
 	Tabs,
-	TextInput,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+} from 'antd';
+import { notifications } from '@/ui/toast';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -71,7 +69,7 @@ export default function SchooltaskClassApp() {
 	const canDelete = useCanDeleteSchooltaskClass();
 	const canCreate = canCreateSchooltaskClass();
 	const isNew = entityId === 0;
-	const [activeTab, setActiveTab] = useState<string | null>('general');
+	const [activeTab, setActiveTab] = useState('general');
 	const [parallelModalOpen, setParallelModalOpen] = useState(false);
 	const [newParallelName, setNewParallelName] = useState('');
 	const [newParallelGraduates, setNewParallelGraduates] = useState(false);
@@ -185,19 +183,27 @@ export default function SchooltaskClassApp() {
 		createParallelMutation.mutate({ name, graduates: newParallelGraduates });
 	};
 
+	const closeParallelModal = () => {
+		setParallelModalOpen(false);
+		setNewParallelName('');
+		setNewParallelGraduates(false);
+		setParallelNameError(null);
+		setOnParallelCreated(null);
+	};
+
 	if (isNew && !canCreate) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на создание класса
-			</Alert>
+			<div style={{ margin: 16 }}>
+				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на создание класса" />
+			</div>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр класса
-			</Alert>
+			<div style={{ margin: 16 }}>
+				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр класса" />
+			</div>
 		);
 	}
 
@@ -235,304 +241,340 @@ export default function SchooltaskClassApp() {
 					const invalidSubIndexes = getInvalidSubGroupIndexes(data.sub);
 
 					return (
-						<Tabs value={activeTab} onChange={setActiveTab}>
-							<Tabs.List>
-								<Tabs.Tab value="general">Общие</Tabs.Tab>
-								<Tabs.Tab value="subjects">Предметные группы</Tabs.Tab>
-							</Tabs.List>
-
-							<Tabs.Panel value="general" pt="sm">
-								<Stack gap="sm">
-									<TextInput
-										label="Название"
-										withAsterisk
-										value={data.name ?? ''}
-										error={errors.name}
-										readOnly={readOnly}
-										onChange={(event) => setField('name', event.currentTarget.value)}
-									/>
-									<Group align="flex-end" gap="xs" wrap="nowrap">
-										<Select
-											label="Параллель"
-											withAsterisk
-											style={{ flex: 1 }}
-											data={parallelOptions}
-											value={data.parent_id ? String(data.parent_id) : null}
-											error={errors.parent_id}
-											readOnly={readOnly}
-											onChange={(value) => setField('parent_id', value ? Number(value) : null)}
-											searchable
-											clearable
-										/>
-										{canCreateParallel && !readOnly ? (
-											<ActionIcon
-												variant="light"
-												size="lg"
-												aria-label="Добавить параллель"
-												onClick={() => {
-													setOnParallelCreated(() => (parentId: number) => {
-														setField('parent_id', parentId);
-													});
-													setParallelNameError(null);
-													setParallelModalOpen(true);
-												}}
+						<Tabs
+							activeKey={activeTab}
+							onChange={setActiveTab}
+							items={[
+								{
+									key: 'general',
+									label: 'Общие',
+									children: (
+										<Flex vertical gap={12} style={{ paddingTop: 8 }}>
+											<Form.Item
+												label="Название"
+												required
+												validateStatus={errors.name ? 'error' : undefined}
+												help={errors.name}
+												style={{ marginBottom: 0 }}
 											>
-												<IconPlus size={18} />
-											</ActionIcon>
-										) : null}
-									</Group>
-									<Select
-										label="Классный руководитель"
-										data={tutorOptions}
-										value={data.user_id ? String(data.user_id) : null}
-										readOnly={readOnly}
-										onChange={(value) => setField('user_id', value ? Number(value) : null)}
-										searchable
-										clearable
-									/>
-									<MultiSelect
-										label="Ученики"
-										description={
-											!canUpdateZam ? 'Редактирование доступно только завучу' : undefined
-										}
-										data={pupilOptions}
-										value={pupils}
-										disabled={readOnly || !canUpdateZam}
-										onChange={(values) =>
-											setField(
-												'users',
-												values.map((value, index) => ({
-													id: index + 1,
-													user_id: Number(value),
-												})),
-											)
-										}
-										searchable
-										clearable
-									/>
-								</Stack>
-							</Tabs.Panel>
-
-							<Tabs.Panel value="subjects" pt="sm">
-								<Stack gap="sm">
-									<Group justify="space-between">
-										<strong>Предметные группы</strong>
-										{!readOnly ? (
-											<Button
-												size="xs"
-												variant="light"
-												leftSection={<IconPlus size={14} />}
-												onClick={() => setField('sub', addSubGroup(data.sub, data.id))}
+												<Input
+													value={data.name ?? ''}
+													readOnly={readOnly}
+													onChange={(event) => setField('name', event.target.value)}
+												/>
+											</Form.Item>
+											<Flex align="flex-end" gap={8} wrap="nowrap">
+												<Form.Item
+													label="Параллель"
+													required
+													validateStatus={errors.parent_id ? 'error' : undefined}
+													help={errors.parent_id}
+													style={{ marginBottom: 0, flex: 1 }}
+												>
+													<Select
+														options={parallelOptions}
+														value={data.parent_id ? String(data.parent_id) : undefined}
+														disabled={readOnly}
+														onChange={(value) =>
+															setField('parent_id', value ? Number(value) : null)
+														}
+														showSearch
+														allowClear
+														optionFilterProp="label"
+													/>
+												</Form.Item>
+												{canCreateParallel && !readOnly ? (
+													<Button
+														type="default"
+														aria-label="Добавить параллель"
+														icon={<IconPlus size={18} />}
+														onClick={() => {
+															setOnParallelCreated(() => (parentId: number) => {
+																setField('parent_id', parentId);
+															});
+															setParallelNameError(null);
+															setParallelModalOpen(true);
+														}}
+													/>
+												) : null}
+											</Flex>
+											<Form.Item label="Классный руководитель" style={{ marginBottom: 0 }}>
+												<Select
+													options={tutorOptions}
+													value={data.user_id ? String(data.user_id) : undefined}
+													disabled={readOnly}
+													onChange={(value) =>
+														setField('user_id', value ? Number(value) : null)
+													}
+													showSearch
+													allowClear
+													optionFilterProp="label"
+												/>
+											</Form.Item>
+											<Form.Item
+												label="Ученики"
+												extra={
+													!canUpdateZam ? 'Редактирование доступно только завучу' : undefined
+												}
+												style={{ marginBottom: 0 }}
 											>
-												Добавить
-											</Button>
-										) : null}
-									</Group>
-									{errors.sub ? (
-										<Alert color="red" title="Ошибка">
-											{errors.sub}
-										</Alert>
-									) : null}
-									<Table withTableBorder withColumnBorders>
-										<Table.Thead>
-											<Table.Tr>
-												<Table.Th>Предмет</Table.Th>
-												<Table.Th>Название</Table.Th>
-												<Table.Th>Учитель</Table.Th>
-												<Table.Th>Ученики</Table.Th>
-												<Table.Th w={40} />
-											</Table.Tr>
-										</Table.Thead>
-										<Table.Tbody>
-											{(data.sub ?? []).map((row, index) => {
-												const subjectTeachers =
-													subjectOptions.find(
-														(item) => item.value === String(row.subject_id ?? ''),
-													)?.teachers ?? [];
-												const teacherIdSet = new Set(subjectTeachers.map((item) => item.value));
-												const teacherValue =
-													row.user_id && teacherIdSet.has(String(row.user_id))
-														? String(row.user_id)
-														: null;
+												<Select
+													mode="multiple"
+													options={pupilOptions}
+													value={pupils}
+													disabled={readOnly || !canUpdateZam}
+													onChange={(values: string[]) =>
+														setField(
+															'users',
+															values.map((value, index) => ({
+																id: index + 1,
+																user_id: Number(value),
+															})),
+														)
+													}
+													showSearch
+													allowClear
+													optionFilterProp="label"
+												/>
+											</Form.Item>
+										</Flex>
+									),
+								},
+								{
+									key: 'subjects',
+									label: 'Предметные группы',
+									children: (
+										<Flex vertical gap={12} style={{ paddingTop: 8 }}>
+											<Flex justify="space-between" align="center">
+												<strong>Предметные группы</strong>
+												{!readOnly ? (
+													<Button
+														size="small"
+														icon={<IconPlus size={14} />}
+														onClick={() => setField('sub', addSubGroup(data.sub, data.id))}
+													>
+														Добавить
+													</Button>
+												) : null}
+											</Flex>
+											{errors.sub ? (
+												<Alert type="error" showIcon message="Ошибка" description={errors.sub} />
+											) : null}
+											<Table
+												size="small"
+												pagination={false}
+												bordered
+												rowKey={(_, index) => String(index)}
+												dataSource={data.sub ?? []}
+												columns={[
+													{
+														title: 'Предмет',
+														render: (_: unknown, row, index) => (
+															<Select
+																style={{ width: '100%' }}
+																options={subjectOptions}
+																value={row.subject_id ? String(row.subject_id) : undefined}
+																disabled={readOnly}
+																onChange={(value) => {
+																	const subjectId = value ? Number(value) : null;
+																	const subject = subjectOptions.find(
+																		(item) => item.value === value,
+																	);
+																	const subjectLabel = subject?.label ?? '';
+																	const teachers = subject?.teachers ?? [];
+																	const nextTeacherId =
+																		row.user_id &&
+																		teachers.some((item) => item.value === String(row.user_id))
+																			? row.user_id
+																			: teachers.length === 1 && teachers[0]
+																				? Number(teachers[0].value)
+																				: null;
+																	setField(
+																		'sub',
+																		updateSubGroup(data.sub, index, {
+																			subject_id: subjectId,
+																			name: buildSubGroupName(data.name, subjectLabel),
+																			user_id: nextTeacherId,
+																		}),
+																	);
+																}}
+																showSearch
+																allowClear
+																optionFilterProp="label"
+															/>
+														),
+													},
+													{
+														title: 'Название',
+														render: (_: unknown, row, index) => (
+															<>
+																<Input
+																	value={row.name ?? ''}
+																	readOnly={readOnly}
+																	status={
+																		errors.sub && invalidSubIndexes.has(index) ? 'error' : undefined
+																	}
+																	onChange={(event) =>
+																		setField(
+																			'sub',
+																			updateSubGroup(data.sub, index, {
+																				name: event.target.value,
+																			}),
+																		)
+																	}
+																/>
+																{errors.sub && invalidSubIndexes.has(index) ? (
+																	<div style={{ color: '#ff4d4f', fontSize: 12 }}>{errors.sub}</div>
+																) : null}
+															</>
+														),
+													},
+													{
+														title: 'Учитель',
+														render: (_: unknown, row, index) => {
+															const subjectTeachers =
+																subjectOptions.find(
+																	(item) => item.value === String(row.subject_id ?? ''),
+																)?.teachers ?? [];
+															const teacherIdSet = new Set(
+																subjectTeachers.map((item) => item.value),
+															);
+															const teacherValue =
+																row.user_id && teacherIdSet.has(String(row.user_id))
+																	? String(row.user_id)
+																	: undefined;
 
-												return (
-												<Table.Tr key={`${row.id}-${index}`}>
-													<Table.Td>
-														<Select
-															data={subjectOptions}
-															value={row.subject_id ? String(row.subject_id) : null}
-															readOnly={readOnly}
-															onChange={(value) => {
-																const subjectId = value ? Number(value) : null;
-																const subject = subjectOptions.find((item) => item.value === value);
-																const subjectLabel = subject?.label ?? '';
-																const teachers = subject?.teachers ?? [];
-																const nextTeacherId =
-																	row.user_id &&
-																	teachers.some((item) => item.value === String(row.user_id))
-																		? row.user_id
-																		: teachers.length === 1 && teachers[0]
-																			? Number(teachers[0].value)
-																			: null;
-																setField(
-																	'sub',
-																	updateSubGroup(data.sub, index, {
-																		subject_id: subjectId,
-																		name: buildSubGroupName(data.name, subjectLabel),
-																		user_id: nextTeacherId,
-																	}),
-																);
-															}}
-															searchable
-															clearable
-														/>
-													</Table.Td>
-													<Table.Td>
-														<TextInput
-															value={row.name ?? ''}
-															readOnly={readOnly}
-															error={
-																errors.sub && invalidSubIndexes.has(index)
-																	? errors.sub
-																	: undefined
-															}
-															onChange={(event) =>
-																setField(
-																	'sub',
-																	updateSubGroup(data.sub, index, {
-																		name: event.currentTarget.value,
-																	}),
-																)
-															}
-														/>
-													</Table.Td>
-													<Table.Td>
-														<Select
-															data={subjectTeachers}
-															value={teacherValue}
-															readOnly={readOnly}
-															disabled={!row.subject_id}
-															placeholder={
-																!row.subject_id
-																	? 'Сначала выберите предмет'
-																	: subjectTeachers.length === 0
-																		? 'У предмета нет учителей'
+															return (
+																<Select
+																	style={{ width: '100%' }}
+																	options={subjectTeachers}
+																	value={teacherValue}
+																	disabled={readOnly || !row.subject_id}
+																	placeholder={
+																		!row.subject_id
+																			? 'Сначала выберите предмет'
+																			: subjectTeachers.length === 0
+																				? 'У предмета нет учителей'
+																				: undefined
+																	}
+																	onChange={(value) =>
+																		setField(
+																			'sub',
+																			updateSubGroup(data.sub, index, {
+																				user_id: value ? Number(value) : null,
+																			}),
+																		)
+																	}
+																	showSearch
+																	allowClear
+																	optionFilterProp="label"
+																/>
+															);
+														},
+													},
+													{
+														title: 'Ученики',
+														render: (_: unknown, row, index) => (
+															<Select
+																mode="multiple"
+																style={{ width: '100%' }}
+																options={classPupilOptions}
+																placeholder={
+																	classPupilOptions.length === 0
+																		? 'Сначала добавьте учеников в класс'
 																		: undefined
-															}
-															onChange={(value) =>
-																setField(
-																	'sub',
-																	updateSubGroup(data.sub, index, {
-																		user_id: value ? Number(value) : null,
-																	}),
-																)
-															}
-															searchable
-															clearable
-														/>
-													</Table.Td>
-													<Table.Td>
-														<MultiSelect
-															data={classPupilOptions}
-															placeholder={
-																classPupilOptions.length === 0
-																	? 'Сначала добавьте учеников в класс'
-																	: undefined
-															}
-															value={(row.users ?? [])
-																.map((item) => String(item.user_id))
-																.filter((userId) => classPupilIdSet.has(userId))}
-															disabled={readOnly || (!canUpdateZam && !canUpdate)}
-															onChange={(values) =>
-																setField(
-																	'sub',
-																	updateSubGroup(data.sub, index, {
-																		users: values.map((value, userIndex) => ({
-																			id: userIndex + 1,
-																			user_id: Number(value),
-																		})),
-																	}),
-																)
-															}
-															searchable
-															clearable
-														/>
-													</Table.Td>
-													<Table.Td>
-														{!readOnly ? (
-															<ActionIcon
-																color="red"
-																variant="light"
-																onClick={() => setField('sub', removeSubGroup(data.sub, index))}
-															>
-																<IconTrash size={16} />
-															</ActionIcon>
-														) : null}
-													</Table.Td>
-												</Table.Tr>
-												);
-											})}
-										</Table.Tbody>
-									</Table>
-								</Stack>
-							</Tabs.Panel>
-						</Tabs>
+																}
+																value={(row.users ?? [])
+																	.map((item) => String(item.user_id))
+																	.filter((userId) => classPupilIdSet.has(userId))}
+																disabled={readOnly || (!canUpdateZam && !canUpdate)}
+																onChange={(values: string[]) =>
+																	setField(
+																		'sub',
+																		updateSubGroup(data.sub, index, {
+																			users: values.map((value, userIndex) => ({
+																				id: userIndex + 1,
+																				user_id: Number(value),
+																			})),
+																		}),
+																	)
+																}
+																showSearch
+																allowClear
+																optionFilterProp="label"
+															/>
+														),
+													},
+													{
+														title: '',
+														width: 48,
+														render: (_: unknown, __: unknown, index) =>
+															!readOnly ? (
+																<Button
+																	type="text"
+																	danger
+																	icon={<IconTrash size={16} />}
+																	onClick={() => setField('sub', removeSubGroup(data.sub, index))}
+																/>
+															) : null,
+													},
+												]}
+											/>
+										</Flex>
+									),
+								},
+							]}
+						/>
 					);
 				}}
 			</MainEntityForm>
 			<Modal
-				opened={parallelModalOpen}
-				onClose={() => {
-					setParallelModalOpen(false);
-					setNewParallelName('');
-					setNewParallelGraduates(false);
-					setParallelNameError(null);
-					setOnParallelCreated(null);
-				}}
+				open={parallelModalOpen}
+				onCancel={closeParallelModal}
 				title="Новая параллель"
 				centered
-			>
-				<Stack gap="sm">
-					<TextInput
-						label="Название"
-						withAsterisk
-						placeholder="Например: 5"
-						value={newParallelName}
-						error={parallelNameError}
-						onChange={(event) => {
-							setNewParallelName(event.currentTarget.value);
-							setParallelNameError(null);
-						}}
-						data-autofocus
-					/>
-					<Checkbox
-						label="Выпускная параллель"
-						description="Классы этой параллели будут выпускаться, а не переводиться"
-						checked={newParallelGraduates}
-						onChange={(event) => setNewParallelGraduates(event.currentTarget.checked)}
-					/>
-					<Group justify="flex-end" gap="xs">
+				footer={
+					<Flex justify="flex-end" gap={8}>
+						<Button onClick={closeParallelModal}>Отмена</Button>
 						<Button
-							variant="default"
-							onClick={() => {
-								setParallelModalOpen(false);
-								setNewParallelName('');
-								setNewParallelGraduates(false);
-								setParallelNameError(null);
-								setOnParallelCreated(null);
-							}}
-						>
-							Отмена
-						</Button>
-						<Button
+							type="primary"
 							loading={createParallelMutation.isPending}
 							disabled={!newParallelName.trim()}
 							onClick={submitNewParallel}
 						>
 							Создать
 						</Button>
-					</Group>
-				</Stack>
+					</Flex>
+				}
+			>
+				<Flex vertical gap={12}>
+					<Form.Item
+						label="Название"
+						required
+						validateStatus={parallelNameError ? 'error' : undefined}
+						help={parallelNameError}
+						style={{ marginBottom: 0 }}
+					>
+						<Input
+							placeholder="Например: 5"
+							value={newParallelName}
+							autoFocus
+							onChange={(event) => {
+								setNewParallelName(event.target.value);
+								setParallelNameError(null);
+							}}
+						/>
+					</Form.Item>
+					<Checkbox
+						checked={newParallelGraduates}
+						onChange={(event) => setNewParallelGraduates(event.target.checked)}
+					>
+						Выпускная параллель
+					</Checkbox>
+					<div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12, marginTop: -4 }}>
+						Классы этой параллели будут выпускаться, а не переводиться
+					</div>
+				</Flex>
 			</Modal>
 		</>
 	);

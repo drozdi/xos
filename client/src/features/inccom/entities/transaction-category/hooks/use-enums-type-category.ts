@@ -1,14 +1,14 @@
-import { type ComboboxItem } from '@mantine/core';
+export type SelectOption = { value: string; label: string; disabled?: boolean };
 
 const data: Record<string, string> = {
-		expense: 'Расход',
-		income: 'Доход',
-		transfer: 'Перевод',
+	expense: 'Расход',
+	income: 'Доход',
+	transfer: 'Перевод',
 };
 function findLabelByCode(type: string): string {
 	return data[type] || type;
 }
-const dataSelect: ComboboxItem[] = [
+const dataSelect: SelectOption[] = [
 	{
 		label: 'Выберите тип',
 		value: '',

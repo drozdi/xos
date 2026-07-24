@@ -1,24 +1,18 @@
 import {
-	ActionIcon,
-	Anchor,
-	Box,
 	Button,
 	Checkbox,
-	FileButton,
-	Group,
-	ScrollArea,
-	SimpleGrid,
-	Stack,
-	Text,
-	Textarea,
-	TextInput,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { Link, RichTextEditor } from '@mantine/tiptap';
+	Flex,
+	Input,
+	Modal,
+	Typography,
+	Upload,
+} from 'antd';
+import { notifications } from '@/ui/toast';
 import { IconPaperclip, IconTrash, IconUpload, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
-import { useEditor } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -44,9 +38,15 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	const [netResource, setNetResource] = useState('');
 	const [attachedIds, setAttachedIds] = useState<number[]>([]);
 	const [librarySearch, setLibrarySearch] = useState('');
+	const [linkModalOpen, setLinkModalOpen] = useState(false);
+	const [linkUrl, setLinkUrl] = useState('https://');
 
 	const editor = useEditor({
-		extensions: [StarterKit, Underline, Link],
+		extensions: [
+			StarterKit,
+			Underline,
+			Link.configure({ openOnClick: false }),
+		],
 		content: '',
 		onUpdate: ({ editor: current }) => {
 			setDescription(current.getHTML());
@@ -163,212 +163,355 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	}
 
 	return (
-		<Box
+		<div
 			style={{
 				position: 'absolute',
 				inset: 0,
 				zIndex: 200,
 				display: 'flex',
 				flexDirection: 'column',
-				backgroundColor: 'var(--mantine-color-body)',
+				backgroundColor: 'var(--ant-color-bg-container, #fff)',
 			}}
 		>
-			<Group
+			<Flex
 				justify="space-between"
-				px="md"
-				py="sm"
+				align="center"
 				style={{
 					flexShrink: 0,
-					borderBottom: '1px solid var(--mantine-color-default-border)',
+					padding: '12px 16px',
+					borderBottom: '1px solid rgba(0,0,0,0.06)',
 				}}
 			>
-				<Text fw={600}>Задание к уроку</Text>
-				<ActionIcon variant="subtle" aria-label="Закрыть" onClick={onClose}>
-					<IconX size={18} />
-				</ActionIcon>
-			</Group>
+				<Typography.Text strong>Задание к уроку</Typography.Text>
+				<Button type="text" aria-label="Закрыть" icon={<IconX size={18} />} onClick={onClose} />
+			</Flex>
 
-			<Stack gap="md" p="md" style={{ flex: 1, minHeight: 0 }}>
-				<ScrollArea style={{ flex: 1 }} offsetScrollbars>
-					<Stack gap="md" pr="xs">
-						<SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-							<Textarea
-								label="Тема"
-								value={theme}
-								onChange={(event) => setTheme(event.currentTarget.value)}
-								minRows={3}
-								autosize
-							/>
-							<Textarea
-								label="План урока"
-								value={pt}
-								onChange={(event) => setPt(event.currentTarget.value)}
-								minRows={3}
-								autosize
-							/>
-							<Textarea
-								label="Интернет-ресурсы"
-								value={netResource}
-								onChange={(event) => setNetResource(event.currentTarget.value)}
-								minRows={3}
-								autosize
-							/>
-							<Textarea
-								label="Домашнее задание"
-								value={ht}
-								onChange={(event) => setHt(event.currentTarget.value)}
-								minRows={3}
-								autosize
-							/>
-						</SimpleGrid>
+			<Flex vertical gap={16} style={{ flex: 1, minHeight: 0, padding: 16 }}>
+				<div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+					<Flex vertical gap={16} style={{ paddingRight: 8 }}>
+						<div
+							style={{
+								display: 'grid',
+								gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+								gap: 16,
+							}}
+						>
+							<div>
+								<div style={{ marginBottom: 4 }}>Тема</div>
+								<Input.TextArea
+									value={theme}
+									onChange={(event) => setTheme(event.target.value)}
+									autoSize={{ minRows: 3 }}
+								/>
+							</div>
+							<div>
+								<div style={{ marginBottom: 4 }}>План урока</div>
+								<Input.TextArea
+									value={pt}
+									onChange={(event) => setPt(event.target.value)}
+									autoSize={{ minRows: 3 }}
+								/>
+							</div>
+							<div>
+								<div style={{ marginBottom: 4 }}>Интернет-ресурсы</div>
+								<Input.TextArea
+									value={netResource}
+									onChange={(event) => setNetResource(event.target.value)}
+									autoSize={{ minRows: 3 }}
+								/>
+							</div>
+							<div>
+								<div style={{ marginBottom: 4 }}>Домашнее задание</div>
+								<Input.TextArea
+									value={ht}
+									onChange={(event) => setHt(event.target.value)}
+									autoSize={{ minRows: 3 }}
+								/>
+							</div>
+						</div>
 
-						<Box>
-							<Text size="sm" fw={500} mb={6}>
-								Описание
-							</Text>
-							<RichTextEditor editor={editor}>
-								<RichTextEditor.Toolbar sticky stickyOffset={0}>
-									<RichTextEditor.ControlsGroup>
-										<RichTextEditor.Bold />
-										<RichTextEditor.Italic />
-										<RichTextEditor.Underline />
-										<RichTextEditor.Strikethrough />
-										<RichTextEditor.ClearFormatting />
-									</RichTextEditor.ControlsGroup>
-									<RichTextEditor.ControlsGroup>
-										<RichTextEditor.H2 />
-										<RichTextEditor.H3 />
-										<RichTextEditor.BulletList />
-										<RichTextEditor.OrderedList />
-									</RichTextEditor.ControlsGroup>
-									<RichTextEditor.ControlsGroup>
-										<RichTextEditor.Link />
-										<RichTextEditor.Unlink />
-									</RichTextEditor.ControlsGroup>
-									<RichTextEditor.ControlsGroup>
-										<RichTextEditor.Undo />
-										<RichTextEditor.Redo />
-									</RichTextEditor.ControlsGroup>
-								</RichTextEditor.Toolbar>
-								<RichTextEditor.Content mih={180} />
-							</RichTextEditor>
-						</Box>
-
-						<Stack gap="sm">
-							<Group justify="space-between" align="flex-end">
-								<Text fw={600}>Файлы</Text>
-								<FileButton
-									multiple
-									onChange={(files) => {
-										if (files && files.length > 0) {
-											uploadMutation.mutate(files);
-										}
+						<div>
+							<div style={{ marginBottom: 6, fontWeight: 500, fontSize: 13 }}>Описание</div>
+							<div
+								style={{
+									border: '1px solid rgba(0,0,0,0.15)',
+									borderRadius: 6,
+									overflow: 'hidden',
+								}}
+							>
+								<Flex
+									wrap="wrap"
+									gap={4}
+									style={{
+										padding: 6,
+										borderBottom: '1px solid rgba(0,0,0,0.06)',
+										background: 'rgba(0,0,0,0.02)',
 									}}
 								>
-									{(props) => (
-										<Button
-											{...props}
-											size="xs"
-											variant="light"
-											leftSection={<IconUpload size={14} />}
-											loading={uploadMutation.isPending}
-										>
-											Загрузить
-										</Button>
-									)}
-								</FileButton>
-							</Group>
+									<Button
+										size="small"
+										type={editor?.isActive('bold') ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleBold().run()}
+									>
+										B
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('italic') ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleItalic().run()}
+									>
+										I
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('underline') ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleUnderline().run()}
+									>
+										U
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('strike') ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleStrike().run()}
+									>
+										S
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('heading', { level: 2 }) ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+									>
+										H2
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('heading', { level: 3 }) ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+									>
+										H3
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('bulletList') ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleBulletList().run()}
+									>
+										• List
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('orderedList') ? 'primary' : 'default'}
+										onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+									>
+										1. List
+									</Button>
+									<Button
+										size="small"
+										type={editor?.isActive('link') ? 'primary' : 'default'}
+										onClick={() => {
+											if (!editor) {
+												return;
+											}
+											if (editor.isActive('link')) {
+												editor.chain().focus().unsetLink().run();
+												return;
+											}
+											const previous = editor.getAttributes('link').href as string | undefined;
+											setLinkUrl(previous ?? 'https://');
+											setLinkModalOpen(true);
+										}}
+									>
+										Link
+									</Button>
+									<Button size="small" onClick={() => editor?.chain().focus().undo().run()}>
+										Undo
+									</Button>
+									<Button size="small" onClick={() => editor?.chain().focus().redo().run()}>
+										Redo
+									</Button>
+								</Flex>
+								<div className="schooltask-teacher-editor" style={{ minHeight: 180, padding: 8 }}>
+									<style>{`
+										.schooltask-teacher-editor .ProseMirror {
+											min-height: 160px;
+											outline: none;
+										}
+										.schooltask-teacher-editor .ProseMirror p {
+											margin: 0 0 0.5em;
+										}
+									`}</style>
+									<EditorContent editor={editor} />
+								</div>
+							</div>
+							<Modal
+								title="Ссылка"
+								open={linkModalOpen}
+								onCancel={() => setLinkModalOpen(false)}
+								onOk={() => {
+									if (!editor) {
+										setLinkModalOpen(false);
+										return;
+									}
+									const url = linkUrl.trim();
+									if (!url) {
+										editor.chain().focus().extendMarkRange('link').unsetLink().run();
+									} else {
+										editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+									}
+									setLinkModalOpen(false);
+								}}
+								okText="Применить"
+								cancelText="Отмена"
+								destroyOnHidden
+							>
+								<Input
+									value={linkUrl}
+									onChange={(event) => setLinkUrl(event.target.value)}
+									placeholder="https://"
+									onPressEnter={() => {
+										if (!editor) {
+											return;
+										}
+										const url = linkUrl.trim();
+										if (!url) {
+											editor.chain().focus().extendMarkRange('link').unsetLink().run();
+										} else {
+											editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+										}
+										setLinkModalOpen(false);
+									}}
+								/>
+							</Modal>
+						</div>
 
-							<Box>
-								<Text size="sm" fw={500} mb={6}>
+						<Flex vertical gap={12}>
+							<Flex justify="space-between" align="flex-end">
+								<Typography.Text strong>Файлы</Typography.Text>
+								<Upload
+									multiple
+									showUploadList={false}
+									beforeUpload={(file, fileList) => {
+										if (file === fileList[0]) {
+											uploadMutation.mutate(fileList as unknown as File[]);
+										}
+										return false;
+									}}
+								>
+									<Button
+										size="small"
+										icon={<IconUpload size={14} />}
+										loading={uploadMutation.isPending}
+									>
+										Загрузить
+									</Button>
+								</Upload>
+							</Flex>
+
+							<div>
+								<div style={{ marginBottom: 6, fontWeight: 500, fontSize: 13 }}>
 									Прикреплено к уроку
-								</Text>
+								</div>
 								{attachedFiles.length === 0 ? (
-									<Text size="sm" c="dimmed">
+									<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 										Нет прикреплённых файлов
-									</Text>
+									</Typography.Text>
 								) : (
-									<Stack gap={6}>
+									<Flex vertical gap={6}>
 										{attachedFiles.map((file) => (
-											<Group key={file.id} justify="space-between" wrap="nowrap">
-												<Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+											<Flex key={file.id} justify="space-between" align="center" wrap="nowrap">
+												<Flex gap={8} align="center" wrap="nowrap" style={{ minWidth: 0 }}>
 													<IconPaperclip size={16} />
 													{file.src ? (
-														<Anchor href={file.src} target="_blank" size="sm" lineClamp={1}>
+														<Typography.Link
+															href={file.src}
+															target="_blank"
+															style={{
+																fontSize: 13,
+																overflow: 'hidden',
+																textOverflow: 'ellipsis',
+																whiteSpace: 'nowrap',
+															}}
+														>
 															{file.name}
-														</Anchor>
+														</Typography.Link>
 													) : (
-														<Text size="sm" lineClamp={1}>
+														<Typography.Text
+															style={{
+																fontSize: 13,
+																overflow: 'hidden',
+																textOverflow: 'ellipsis',
+																whiteSpace: 'nowrap',
+															}}
+														>
 															{file.name}
-														</Text>
+														</Typography.Text>
 													)}
-												</Group>
-												<ActionIcon
-													color="red"
-													variant="light"
+												</Flex>
+												<Button
+													type="text"
+													danger
 													aria-label="Открепить"
+													icon={<IconTrash size={16} />}
 													onClick={() => detachFile(file.id)}
-												>
-													<IconTrash size={16} />
-												</ActionIcon>
-											</Group>
+												/>
+											</Flex>
 										))}
-									</Stack>
+									</Flex>
 								)}
-								<Text size="xs" c="dimmed" mt={4}>
+								<Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
 									Открепление не удаляет файл — его можно снова выбрать из библиотеки
-								</Text>
-							</Box>
+								</Typography.Text>
+							</div>
 
-							<Box>
-								<Group justify="space-between" mb={6}>
-									<Text size="sm" fw={500}>
-										Моя библиотека
-									</Text>
-									<TextInput
+							<div>
+								<Flex justify="space-between" align="center" style={{ marginBottom: 6 }}>
+									<div style={{ fontWeight: 500, fontSize: 13 }}>Моя библиотека</div>
+									<Input
 										placeholder="Поиск…"
-										size="xs"
+										size="small"
 										value={librarySearch}
-										onChange={(event) => setLibrarySearch(event.currentTarget.value)}
-										w={220}
+										onChange={(event) => setLibrarySearch(event.target.value)}
+										style={{ width: 220 }}
 									/>
-								</Group>
+								</Flex>
 								{filesQuery.isLoading ? (
-									<Text size="sm" c="dimmed">
+									<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 										Загрузка…
-									</Text>
+									</Typography.Text>
 								) : libraryFiles.length === 0 ? (
-									<Text size="sm" c="dimmed">
+									<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 										Библиотека пуста — загрузите файлы
-									</Text>
+									</Typography.Text>
 								) : (
-									<Stack gap={4} mah={220} style={{ overflow: 'auto' }}>
+									<Flex
+										vertical
+										gap={4}
+										style={{ maxHeight: 220, overflow: 'auto' }}
+									>
 										{libraryFiles.map((file) => (
 											<Checkbox
 												key={file.id}
-												label={file.name}
 												checked={attachedSet.has(file.id)}
 												onChange={(event) =>
-													toggleAttach(file.id, event.currentTarget.checked)
+													toggleAttach(file.id, event.target.checked)
 												}
-											/>
+											>
+												{file.name}
+											</Checkbox>
 										))}
-									</Stack>
+									</Flex>
 								)}
-							</Box>
-						</Stack>
-					</Stack>
-				</ScrollArea>
+							</div>
+						</Flex>
+					</Flex>
+				</div>
 
-				<Group justify="flex-end" gap="xs">
-					<Button variant="default" onClick={onClose}>
-						Отмена
-					</Button>
-					<Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+				<Flex justify="flex-end" gap={8}>
+					<Button onClick={onClose}>Отмена</Button>
+					<Button type="primary" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
 						Сохранить
 					</Button>
-				</Group>
-			</Stack>
-		</Box>
+				</Flex>
+			</Flex>
+		</div>
 	);
 }

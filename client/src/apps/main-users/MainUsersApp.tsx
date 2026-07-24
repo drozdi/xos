@@ -1,5 +1,5 @@
-import { Alert, Select, Stack } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert, Flex, Form, Select } from 'antd';
+import { notifications } from '@/ui/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -99,9 +99,12 @@ export default function MainUsersApp() {
 	if (!canRead) {
 		return (
 			<MainListLayout title="Пользователи" isLoading={false} isError={false} onRefresh={() => {}}>
-				<Alert color="red" title="Доступ запрещён">
-					Нет прав на просмотр пользователей
-				</Alert>
+				<Alert
+					type="error"
+					showIcon
+					message="Доступ запрещён"
+					description="Нет прав на просмотр пользователей"
+				/>
 			</MainListLayout>
 		);
 	}
@@ -122,28 +125,32 @@ export default function MainUsersApp() {
 			onCreate={canCreate ? () => openUser(0) : undefined}
 			createLabel="Создать"
 			filters={
-				<Stack gap="xs">
-					<Select
-						label="Подразделение"
-						data={ouOptions}
-						value={String(ouFilter)}
-						onChange={(value) => {
-							setOuFilter(value ? Number(value) : ALL_FILTER);
-							setGroupFilter(ALL_FILTER);
-						}}
-						searchable
-						clearable={false}
-					/>
-					<Select
-						label="Группа"
-						data={groupOptions}
-						value={String(groupFilter)}
-						onChange={(value) => setGroupFilter(value ? Number(value) : ALL_FILTER)}
-						disabled={ouFilter === ALL_FILTER}
-						searchable
-						clearable={false}
-					/>
-				</Stack>
+				<Flex vertical gap={8}>
+					<Form.Item label="Подразделение" style={{ marginBottom: 0 }}>
+						<Select
+							options={ouOptions}
+							value={String(ouFilter)}
+							onChange={(value) => {
+								setOuFilter(value ? Number(value) : ALL_FILTER);
+								setGroupFilter(ALL_FILTER);
+							}}
+							showSearch
+							optionFilterProp="label"
+							style={{ width: '100%' }}
+						/>
+					</Form.Item>
+					<Form.Item label="Группа" style={{ marginBottom: 0 }}>
+						<Select
+							options={groupOptions}
+							value={String(groupFilter)}
+							onChange={(value) => setGroupFilter(value ? Number(value) : ALL_FILTER)}
+							disabled={ouFilter === ALL_FILTER}
+							showSearch
+							optionFilterProp="label"
+							style={{ width: '100%' }}
+						/>
+					</Form.Item>
+				</Flex>
 			}
 		>
 			<DataTable

@@ -11,7 +11,7 @@ function ButtonRemoveRoot({
 	...props
 }: ButtonRemoveProps) {
 	return (
-		<ButtonIcon color="red" {...props}>
+		<ButtonIcon danger {...props}>
 			{children}
 		</ButtonIcon>
 	);

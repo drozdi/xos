@@ -1,12 +1,4 @@
-import {
-	Checkbox,
-	Paper,
-	SegmentedControl,
-	SimpleGrid,
-	Stack,
-	Text,
-	Title,
-} from '@mantine/core';
+import { Card, Checkbox, Flex, Segmented, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -70,12 +62,12 @@ export function UserAccessTab({
 			);
 
 			return (
-				<Paper key={moduleGroup.module} withBorder p="md">
-					<Stack gap="sm">
-						<Text fw={600}>{moduleGroup.moduleLabel}</Text>
-						<SegmentedControl
-							fullWidth
-							data={[...MODULE_MODE_OPTIONS]}
+				<Card key={moduleGroup.module} size="small">
+					<Flex vertical gap={12}>
+						<Typography.Text strong>{moduleGroup.moduleLabel}</Typography.Text>
+						<Segmented
+							block
+							options={[...MODULE_MODE_OPTIONS]}
 							value={mode}
 							disabled={readOnly}
 							onChange={(value) => {
@@ -92,7 +84,13 @@ export function UserAccessTab({
 						/>
 
 						{mode === 'available' && scopeClaimants.length > 0 ? (
-							<SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm">
+							<div
+								style={{
+									display: 'grid',
+									gap: 12,
+									gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+								}}
+							>
 								{scopeClaimants.map((claimant) => {
 									const scopeMap = resolveClaimantAccessMap(claimant.code, moduleMaps);
 									const scopeKeys = Object.keys(scopeMap);
@@ -100,26 +98,20 @@ export function UserAccessTab({
 									const checked = levelToChecked(level, scopeMap);
 
 									return (
-										<Paper
-											key={claimant.id}
-											withBorder
-											p="sm"
-											bg="var(--mantine-color-gray-light)"
-										>
-											<Text fw={500} mb="xs" size="sm">
+										<Card key={claimant.id} size="small" type="inner">
+											<Typography.Text strong style={{ display: 'block', marginBottom: 8, fontSize: 13 }}>
 												{claimant.name}
-											</Text>
-											<Stack gap={4}>
+											</Typography.Text>
+											<Flex vertical gap={4}>
 												{scopeKeys.map((scopeKey) => (
 													<Checkbox
 														key={scopeKey}
-														label={CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
 														checked={checked[scopeKey] ?? false}
 														disabled={readOnly}
 														onChange={(event) => {
 															const nextChecked = {
 																...checked,
-																[scopeKey]: event.currentTarget.checked,
+																[scopeKey]: event.target.checked,
 															};
 															const nextLevel = checkedToLevel(nextChecked, scopeMap);
 															onAccessesChange(
@@ -131,22 +123,24 @@ export function UserAccessTab({
 																),
 															);
 														}}
-													/>
+													>
+														{CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
+													</Checkbox>
 												))}
-											</Stack>
-										</Paper>
+											</Flex>
+										</Card>
 									);
 								})}
-							</SimpleGrid>
+							</div>
 						) : null}
 
 						{mode === 'available' && scopeClaimants.length === 0 ? (
-							<Text size="sm" c="dimmed">
+							<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 								Для модуля нет детализированных правил в setting.json
-							</Text>
+							</Typography.Text>
 						) : null}
-					</Stack>
-				</Paper>
+					</Flex>
+				</Card>
 			);
 		});
 	}, [
@@ -163,26 +157,28 @@ export function UserAccessTab({
 
 	if (isLoading) {
 		return (
-			<Text size="sm" c="dimmed">
+			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 				Загрузка доступа к приложениям…
-			</Text>
+			</Typography.Text>
 		);
 	}
 
 	if (modules.length === 0) {
 		return (
-			<Text size="sm" c="dimmed">
+			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 				Нет доступных приложений
-			</Text>
+			</Typography.Text>
 		);
 	}
 
 	return (
-		<Stack gap="md">
-			<Title order={5}>Приложения</Title>
-			<SimpleGrid cols={1} spacing="md">
+		<Flex vertical gap={16}>
+			<Typography.Title level={5} style={{ margin: 0 }}>
+				Приложения
+			</Typography.Title>
+			<Flex vertical gap={16}>
 				{moduleCards}
-			</SimpleGrid>
-		</Stack>
+			</Flex>
+		</Flex>
 	);
 }

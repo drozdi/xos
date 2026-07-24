@@ -1,4 +1,5 @@
-import { ActionIcon, Box, Burger } from '@mantine/core';
+import { MenuOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
@@ -75,11 +76,14 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 
 	const handlePointerMove = useCallback(
 		(event: React.PointerEvent<HTMLDivElement>) => {
-			if (!dragging.current) {return;}
+			if (!dragging.current) {
+				return;
+			}
 
-			const delta = side === 'left'
-				? event.clientX - dragStartX.current
-				: dragStartX.current - event.clientX;
+			const delta =
+				side === 'left'
+					? event.clientX - dragStartX.current
+					: dragStartX.current - event.clientX;
 			applyWidth(dragStartWidth.current + delta);
 		},
 		[applyWidth, side],
@@ -100,7 +104,7 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 
 	return (
 		<>
-			<Box
+			<div
 				style={{
 					gridArea: areaName,
 					position: 'relative',
@@ -109,16 +113,18 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 					width: gridWidth,
 					overflow: 'hidden',
 					backgroundColor: showCollapsedStrip ? 'transparent' : 'var(--xos-shell-bg)',
-					borderRight: side === 'left' && !showCollapsedStrip
-						? '1px solid var(--xos-shell-border)'
-						: undefined,
-					borderLeft: side === 'right' && !showCollapsedStrip
-						? '1px solid var(--xos-shell-border)'
-						: undefined,
+					borderRight:
+						side === 'left' && !showCollapsedStrip
+							? '1px solid var(--xos-shell-border)'
+							: undefined,
+					borderLeft:
+						side === 'right' && !showCollapsedStrip
+							? '1px solid var(--xos-shell-border)'
+							: undefined,
 				}}
 			>
 				{showCollapsedStrip ? (
-					<Box
+					<div
 						style={{
 							display: 'flex',
 							alignItems: 'flex-start',
@@ -127,18 +133,16 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 							paddingTop: 8,
 						}}
 					>
-						<ActionIcon
-							variant="subtle"
-							color="gray"
+						<Button
+							type="text"
 							aria-label={`Expand ${side} panel`}
+							icon={<MenuOutlined />}
 							onClick={expandFromCollapsed}
-						>
-							<Burger size={16} opened={false} />
-						</ActionIcon>
-					</Box>
+						/>
+					</div>
 				) : (
 					<>
-						<Box
+						<div
 							style={{
 								height: '100%',
 								overflow: 'auto',
@@ -146,8 +150,8 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 							}}
 						>
 							{children}
-						</Box>
-						<Box
+						</div>
+						<div
 							onPointerDown={handlePointerDown}
 							onPointerMove={handlePointerMove}
 							onPointerUp={handlePointerUp}
@@ -164,10 +168,10 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 						/>
 					</>
 				)}
-			</Box>
+			</div>
 
-			{widthCollapsed && overlayOpen && (
-				<Box
+			{widthCollapsed && overlayOpen ? (
+				<div
 					style={{
 						position: 'fixed',
 						top: 0,
@@ -176,39 +180,35 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 						width: Math.max(lastExpandedWidth.current, MIN_PANEL_WIDTH),
 						zIndex: 900,
 						backgroundColor: 'var(--xos-shell-bg)',
-						borderRight: side === 'left'
-							? '1px solid var(--xos-shell-border)'
-							: undefined,
-						borderLeft: side === 'right'
-							? '1px solid var(--xos-shell-border)'
-							: undefined,
+						borderRight:
+							side === 'left' ? '1px solid var(--xos-shell-border)' : undefined,
+						borderLeft:
+							side === 'right' ? '1px solid var(--xos-shell-border)' : undefined,
 						boxShadow: '0 0 24px rgba(0, 0, 0, 0.45)',
 					}}
 				>
-					<Box
+					<div
 						style={{
 							display: 'flex',
 							justifyContent: side === 'left' ? 'flex-end' : 'flex-start',
 							padding: 8,
 						}}
 					>
-						<ActionIcon
-							variant="subtle"
-							color="gray"
+						<Button
+							type="text"
 							aria-label={`Collapse ${side} panel`}
+							icon={<MenuOutlined />}
 							onClick={() => {
 								setOverlayOpen(false);
 								setWidth(0);
 							}}
-						>
-							<Burger size={16} opened />
-						</ActionIcon>
-					</Box>
-					<Box style={{ height: 'calc(100% - 48px)', overflow: 'auto', padding: '0.5rem' }}>
+						/>
+					</div>
+					<div style={{ height: 'calc(100% - 48px)', overflow: 'auto', padding: '0.5rem' }}>
 						{children}
-					</Box>
-				</Box>
-			)}
+					</div>
+				</div>
+			) : null}
 		</>
 	);
 }

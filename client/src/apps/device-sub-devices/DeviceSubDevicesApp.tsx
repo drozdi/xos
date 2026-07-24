@@ -1,5 +1,5 @@
-import { Alert, Checkbox, Select, Stack } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert, Checkbox, Flex, Form, Select } from 'antd';
+import { notifications } from '@/ui/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -106,9 +106,13 @@ export default function DeviceSubDevicesApp() {
 
 	if (!canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр комплектующих
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на просмотр комплектующих"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
@@ -127,22 +131,24 @@ export default function DeviceSubDevicesApp() {
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate && typeId ? () => openSubDevice(0) : undefined}
 			filters={
-				<Stack gap="xs">
-					<Select
-						label="Тип"
-						data={typeOptions}
-						value={typeId}
-						onChange={setTypeId}
-						searchable
-						clearable={false}
-						disabled={typeOptions.length === 0}
-					/>
+				<Flex vertical gap={8}>
+					<Form.Item label="Тип" style={{ marginBottom: 0 }}>
+						<Select
+							options={typeOptions}
+							value={typeId}
+							onChange={setTypeId}
+							showSearch
+							allowClear={false}
+							disabled={typeOptions.length === 0}
+						/>
+					</Form.Item>
 					<Checkbox
-						label="Списан"
 						checked={discardedOnly}
-						onChange={(e) => setDiscardedOnly(e.currentTarget.checked)}
-					/>
-				</Stack>
+						onChange={(e) => setDiscardedOnly(e.target.checked)}
+					>
+						Списан
+					</Checkbox>
+				</Flex>
 			}
 		>
 			<DataTable

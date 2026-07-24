@@ -1,4 +1,3 @@
-import { Box, Center, Text } from '@mantine/core';
 import { useEffect, useRef, useState } from 'react';
 
 import { useExplorerMediaUrl } from '../useExplorerMediaUrl';
@@ -44,15 +43,15 @@ export function ExplorerEntryThumbnail({ entry, path, size = 64 }: ExplorerEntry
 	}, [isImage, path]);
 
 	return (
-		<Box
+		<div
 			ref={containerRef}
-			w={size}
-			h={size}
 			style={{
+				width: size,
+				height: size,
 				borderRadius: 6,
 				overflow: 'hidden',
-				background: 'var(--mantine-color-default-hover)',
-				border: '1px solid var(--mantine-color-default-border)',
+				background: 'var(--xos-shell-hover)',
+				border: '1px solid var(--xos-shell-border)',
 				flexShrink: 0,
 			}}
 		>
@@ -63,16 +62,31 @@ export function ExplorerEntryThumbnail({ entry, path, size = 64 }: ExplorerEntry
 					style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
 				/>
 			) : isImage && shouldLoad && !imageUrl ? (
-				<Center h="100%">
-					<Text size="xs" c="dimmed">
-						…
-					</Text>
-				</Center>
+				<div
+					style={{
+						height: '100%',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						color: 'rgba(0,0,0,0.45)',
+						fontSize: 12,
+					}}
+				>
+					…
+				</div>
 			) : (
-				<Center h="100%" c={iconColor}>
+				<div
+					style={{
+						height: '100%',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						color: iconColor,
+					}}
+				>
 					<EntryIcon size={Math.round(size * 0.55)} stroke={1.5} />
-				</Center>
+				</div>
 			)}
-		</Box>
+		</div>
 	);
 }

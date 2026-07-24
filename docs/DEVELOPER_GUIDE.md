@@ -2,6 +2,14 @@
 
 > Как добавить новое бизнес-приложение в десктоп XOS.
 
+## UI-стек
+
+- **Ant Design** (`antd`, `@ant-design/icons`) — компоненты, формы, модалки, таблицы.
+- Списки сущностей: `@/ui/data-table` / `@/components/table` (`DataTable` на antd `Table`).
+- Тосты: `@/ui/toast` (`notifications.show`).
+- Тема: `ThemeProvider` + `AntdProvider` (`docs/MANTINE_TO_ANTD.md`, отчёты в `docs/migration-reports/`).
+- **Не** добавлять `@mantine/*` (eslint `no-restricted-imports`).
+
 ## Обзор
 
 Каждое приложение — изолированный модуль в `client/src/apps/<app-id>/`. Регистрация автоматическая: `registerApps.ts` подхватывает все `index.ts` через `import.meta.glob`. Ручное добавление в реестр не требуется.

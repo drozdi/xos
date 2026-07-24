@@ -1,28 +1,55 @@
-import { Box, LoadingOverlay, type BoxProps } from '@mantine/core';
+import { Spin } from 'antd';
+import type { CSSProperties, ReactNode } from 'react';
 
-interface LoadingProps extends BoxProps {
-	children: React.ReactNode;
+interface LoadingProps {
+	children: ReactNode;
 	active?: boolean;
 	keepMounted?: boolean;
-	[key: string]: any;
+	style?: CSSProperties;
+	className?: string;
+	h?: string | number;
+	mih?: string | number;
+	miw?: string | number;
 }
 
-export function Loading({ children, active, keepMounted, ...props }: LoadingProps) {
+export function Loading({
+	children,
+	active,
+	keepMounted,
+	style,
+	className,
+	h,
+	mih,
+	miw,
+}: LoadingProps) {
 	const show = !active || keepMounted;
 	return (
-		<Box
-			pos="relative"
-			miw={active ? 300 : undefined}
-			mih={active ? 300 : undefined}
-			{...props}
+		<div
+			className={className}
+			style={{
+				position: 'relative',
+				minWidth: active ? (miw ?? 300) : miw,
+				minHeight: active ? (mih ?? 300) : mih,
+				height: h,
+				...style,
+			}}
 		>
-			<LoadingOverlay
-				visible={active}
-				zIndex={1000}
-				overlayProps={{ radius: 'sm', blur: 2 }}
-				loaderProps={{ color: 'pink', type: 'bars' }}
-			/>
-			{show && children}
-		</Box>
+			{active ? (
+				<div
+					style={{
+						position: 'absolute',
+						inset: 0,
+						zIndex: 1000,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						background: 'rgba(255,255,255,0.45)',
+					}}
+				>
+					<Spin size="large" />
+				</div>
+			) : null}
+			{show ? children : null}
+		</div>
 	);
 }

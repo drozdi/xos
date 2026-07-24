@@ -49,18 +49,6 @@ export default defineConfig(({ mode }) => ({
 					) {
 						return 'vendor';
 					}
-					if (
-						id.includes('node_modules/@mantine/core') ||
-						id.includes('node_modules/@mantine/hooks')
-					) {
-						return 'mantine';
-					}
-					if (id.includes('node_modules/@mantine/form')) {
-						return 'mantine-form';
-					}
-					if (id.includes('node_modules/@mantine/notifications')) {
-						return 'mantine-notifications';
-					}
 					if (id.includes('node_modules/@tanstack/react-query')) {
 						return 'query';
 					}

@@ -1,4 +1,4 @@
-import { Select } from '@mantine/core';
+import { Form, Select } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 
@@ -67,23 +67,30 @@ export function GroupSelect({
 	}, [enabled, onChange, options, query.isLoading, value]);
 
 	return (
-		<Select
+		<Form.Item
 			label={label}
-			withAsterisk={withAsterisk}
-			error={error}
-			data={options}
-			value={value ? String(value) : null}
-			onChange={(next) => onChange(next ? Number(next) : null)}
-			searchable
-			clearable
-			disabled={disabled || !enabled || query.isError}
-			nothingFoundMessage={
-				!resolvedOuId
-					? 'Сначала выберите подразделение'
-					: query.isLoading
-						? 'Загрузка…'
-						: 'Нет групп в этом подразделении'
-			}
-		/>
+			required={withAsterisk}
+			validateStatus={error ? 'error' : undefined}
+			help={error}
+			style={{ marginBottom: 0 }}
+		>
+			<Select
+				options={options}
+				value={value ? String(value) : undefined}
+				onChange={(next) => onChange(next ? Number(next) : null)}
+				showSearch
+				allowClear
+				optionFilterProp="label"
+				disabled={disabled || !enabled || query.isError}
+				notFoundContent={
+					!resolvedOuId
+						? 'Сначала выберите подразделение'
+						: query.isLoading
+							? 'Загрузка…'
+							: 'Нет групп в этом подразделении'
+				}
+				style={{ width: '100%' }}
+			/>
+		</Form.Item>
 	);
 }

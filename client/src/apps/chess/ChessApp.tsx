@@ -1,4 +1,3 @@
-import { Box } from '@mantine/core';
 import { useEffect, useState } from 'react';
 
 import BoardComponent from './components/BoardComponent.jsx';
@@ -40,13 +39,13 @@ export default function ChessApp() {
 	}
 
 	return (
-		<Box className="chess-app" h="100%" style={{ overflow: 'auto' }}>
+		<div className="chess-app" style={{ height: '100%', overflow: 'auto' }}>
 			<BoardComponent
 				currentPlayer={currentPlayer as never}
 				swapPlayer={swapPlayer}
 				board={board}
 				setBoard={setBoard}
 			/>
-		</Box>
+		</div>
 	);
 }

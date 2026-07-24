@@ -1,10 +1,17 @@
-import { Center } from '@mantine/core'
-import { Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom';
 
 export function AuthLayout() {
 	return (
-		<Center w='100vw' h='100vh'>
+		<div
+			style={{
+				width: '100vw',
+				height: '100vh',
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+			}}
+		>
 			<Outlet />
-		</Center>
-	)
+		</div>
+	);
 }

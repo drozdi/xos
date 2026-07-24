@@ -1,13 +1,12 @@
 import {
-	ActionIcon,
 	Button,
-	Group,
-	Menu,
-	Paper,
-	Stack,
-	Text,
-	TextInput,
-} from '@mantine/core';
+	Card,
+	Dropdown,
+	Flex,
+	Form,
+	Input,
+	Typography,
+} from 'antd';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
@@ -58,7 +57,7 @@ export function DevicePropertiesTab({
 	const addOptions = useMemo(
 		() =>
 			(catalogQuery.data ?? []).map((item) => ({
-				value: String(item.value),
+				key: String(item.value),
 				label: item.sublabel ? `${item.label} (${item.sublabel})` : item.label,
 			})),
 		[catalogQuery.data],
@@ -107,43 +106,36 @@ export function DevicePropertiesTab({
 	};
 
 	return (
-		<Stack gap="md">
+		<Flex vertical gap={16}>
 			{!readOnly && typeId ? (
-				<Group justify="flex-end">
-					<Menu shadow="md" width={280} position="bottom-end">
-						<Menu.Target>
-							<Button
-								size="xs"
-								variant="light"
-								leftSection={<IconPlus size={14} />}
-								disabled={addOptions.length === 0}
-								loading={catalogQuery.isLoading}
-							>
-								Добавить
-							</Button>
-						</Menu.Target>
-						<Menu.Dropdown>
-							{addOptions.length === 0 ? (
-								<Menu.Label>Нет доступных свойств</Menu.Label>
-							) : (
-								addOptions.map((option) => (
-									<Menu.Item
-										key={option.value}
-										onClick={() => void addProperty(Number(option.value))}
-									>
-										{option.label}
-									</Menu.Item>
-								))
-							)}
-						</Menu.Dropdown>
-					</Menu>
-				</Group>
+				<Flex justify="flex-end">
+					<Dropdown
+						menu={{
+							items:
+								addOptions.length === 0
+									? [{ key: 'empty', label: 'Нет доступных свойств', disabled: true }]
+									: addOptions.map((option) => ({
+											key: option.key,
+											label: option.label,
+											onClick: () => void addProperty(Number(option.key)),
+										})),
+						}}
+						disabled={addOptions.length === 0}
+					>
+						<Button
+							size="small"
+							icon={<IconPlus size={14} />}
+							disabled={addOptions.length === 0}
+							loading={catalogQuery.isLoading}
+						>
+							Добавить
+						</Button>
+					</Dropdown>
+				</Flex>
 			) : null}
 
 			{sortedEntries.length === 0 ? (
-				<Text size="sm" c="dimmed">
-					Нет свойств
-				</Text>
+				<Typography.Text type="secondary">Нет свойств</Typography.Text>
 			) : (
 				sortedEntries.map(([key, item]) => {
 					const component = isComponentProperty(item);
@@ -152,37 +144,38 @@ export function DevicePropertiesTab({
 					) as Record<string, SubDevicePropertyValue>;
 
 					return (
-						<Paper key={key} withBorder p="sm">
-							<Group justify="space-between" align="flex-start" mb="sm">
-								<Text fw={500} size="sm">
+						<Card key={key} size="small">
+							<Flex justify="space-between" align="flex-start" style={{ marginBottom: 12 }}>
+								<Typography.Text strong style={{ fontSize: 14 }}>
 									{propertyTitle(item)}
-								</Text>
+								</Typography.Text>
 								{!readOnly ? (
-									<ActionIcon
-										color="red"
-										variant="light"
+									<Button
+										type="text"
+										danger
 										aria-label={`Удалить ${propertyTitle(item)}`}
+										icon={<IconTrash size={16} />}
 										onClick={() => removeRecord(key)}
-									>
-										<IconTrash size={16} />
-									</ActionIcon>
+									/>
 								) : null}
-							</Group>
+							</Flex>
 
 							{component ? (
-								<Stack gap="sm">
-									<TextInput
-										label="Название"
-										value={String(item.value ?? '')}
-										readOnly={readOnly}
-										onChange={(e) => updateRecord(key, { value: e.currentTarget.value })}
-									/>
-									<TextInput
-										label="Серийный номер"
-										value={String(item.sn ?? '')}
-										readOnly={readOnly}
-										onChange={(e) => updateRecord(key, { sn: e.currentTarget.value })}
-									/>
+								<Flex vertical gap={12}>
+									<Form.Item label="Название" style={{ marginBottom: 0 }}>
+										<Input
+											value={String(item.value ?? '')}
+											readOnly={readOnly}
+											onChange={(e) => updateRecord(key, { value: e.target.value })}
+										/>
+									</Form.Item>
+									<Form.Item label="Серийный номер" style={{ marginBottom: 0 }}>
+										<Input
+											value={String(item.sn ?? '')}
+											readOnly={readOnly}
+											onChange={(e) => updateRecord(key, { sn: e.target.value })}
+										/>
+									</Form.Item>
 									{Object.keys(nestedProperties).length > 0 ? (
 										<SubDevicePropertiesEditor
 											properties={nestedProperties}
@@ -190,7 +183,7 @@ export function DevicePropertiesTab({
 											onChange={(next) => updateRecord(key, { properties: next })}
 										/>
 									) : null}
-								</Stack>
+								</Flex>
 							) : (
 								<SubDevicePropertiesEditor
 									properties={{
@@ -205,10 +198,10 @@ export function DevicePropertiesTab({
 									}}
 								/>
 							)}
-						</Paper>
+						</Card>
 					);
 				})
 			)}
-		</Stack>
+		</Flex>
 	);
 }

@@ -1,4 +1,4 @@
-import { Button, Stack, Text, Title } from '@mantine/core';
+import { Button, Flex, Typography } from 'antd';
 
 import { BrowserIcon } from './BrowserIcon';
 
@@ -14,19 +14,27 @@ const QUICK_LINKS = [
 
 export function BrowserNewTab({ onNavigate }: BrowserNewTabProps) {
 	return (
-		<Stack align="center" justify="center" gap="md" p="xl" h="100%" style={{ minHeight: 0 }}>
+		<Flex
+			vertical
+			align="center"
+			justify="center"
+			gap="middle"
+			style={{ height: '100%', minHeight: 0, padding: 24 }}
+		>
 			<BrowserIcon size={48} />
-			<Title order={4}>Новая вкладка</Title>
-			<Text size="sm" c="dimmed" ta="center" maw={360}>
+			<Typography.Title level={4} style={{ margin: 0 }}>
+				Новая вкладка
+			</Typography.Title>
+			<Typography.Text type="secondary" style={{ textAlign: 'center', maxWidth: 360, fontSize: 13 }}>
 				Введите адрес в строку поиска или выберите сайт ниже
-			</Text>
-			<Stack gap="xs">
+			</Typography.Text>
+			<Flex vertical gap="small">
 				{QUICK_LINKS.map((link) => (
-					<Button key={link.url} variant="light" onClick={() => onNavigate(link.url)}>
+					<Button key={link.url} type="primary" ghost onClick={() => onNavigate(link.url)}>
 						{link.label}
 					</Button>
 				))}
-			</Stack>
-		</Stack>
+			</Flex>
+		</Flex>
 	);
 }

@@ -7,7 +7,7 @@ CRM-система с **десктоп-окружением в браузере*
 | Часть | Технологии |
 |-------|------------|
 | **Server** | PHP 8.2+, Symfony 7.3, Doctrine ORM, MySQL, JWT (Lexik + Gesdinet refresh) |
-| **Client** | React 19, TypeScript, Vite 8, Tailwind 4, Mantine 9, Zustand, TanStack Query |
+| **Client** | React 19, TypeScript, Vite 8, Tailwind 4, Ant Design, Zustand, TanStack Query |
 
 ## Требования
 

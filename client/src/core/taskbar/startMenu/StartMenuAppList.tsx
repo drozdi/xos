@@ -1,5 +1,5 @@
-import { Box, Collapse, Group, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core';
-import { useMemo, useState } from 'react';
+import { Flex, Typography } from 'antd';
+import { useMemo, useState, type CSSProperties } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { useAppManager } from '@/core/appManager/useAppManager';
@@ -16,6 +16,20 @@ interface StartMenuAppListProps {
 	isPinned: (appId: string) => boolean;
 	onPin: (appId: string) => void;
 }
+
+const itemButtonStyle: CSSProperties = {
+	display: 'flex',
+	alignItems: 'center',
+	gap: 10,
+	padding: '8px 10px',
+	borderRadius: 4,
+	color: 'var(--xos-shell-text)',
+	background: 'transparent',
+	border: 'none',
+	cursor: 'pointer',
+	width: '100%',
+	textAlign: 'left',
+};
 
 function AppListItem({
 	appId,
@@ -57,29 +71,24 @@ function AppListItem({
 
 	return (
 		<>
-			<UnstyledButton
+			<button
+				type="button"
 				onClick={() => onLaunch(appId)}
 				onContextMenu={onContextMenu}
 				style={{
-					display: 'flex',
-					alignItems: 'center',
-					gap: 10,
-					padding: '8px 10px',
-					borderRadius: 4,
-					color: 'var(--xos-shell-text)',
+					...itemButtonStyle,
 					...(borderTop ? startMenuDividerStyle : {}),
 				}}
-				styles={{
-					root: {
-						'&:hover': {
-							background: 'var(--xos-shell-hover)',
-						},
-					},
+				onMouseEnter={(e) => {
+					e.currentTarget.style.background = 'var(--xos-shell-hover)';
+				}}
+				onMouseLeave={(e) => {
+					e.currentTarget.style.background = 'transparent';
 				}}
 			>
 				<AppIcon icon={manifest.icon} size={18} />
-				<Text size="sm">{name}</Text>
-			</UnstyledButton>
+				<Typography.Text style={{ fontSize: 13 }}>{name}</Typography.Text>
+			</button>
 			{menu}
 		</>
 	);
@@ -99,8 +108,9 @@ function GroupSection({
 	const [opened, setOpened] = useState(false);
 
 	return (
-		<Box>
-			<UnstyledButton
+		<div>
+			<button
+				type="button"
 				onClick={() => setOpened((value) => !value)}
 				aria-expanded={opened}
 				aria-label={`${opened ? 'Свернуть' : 'Развернуть'} группу ${group.label}`}
@@ -108,28 +118,30 @@ function GroupSection({
 					width: '100%',
 					padding: '6px 8px',
 					borderRadius: 4,
-					color: 'var(--mantine-color-dimmed)',
+					color: 'rgba(0, 0, 0, 0.45)',
+					background: 'transparent',
+					border: 'none',
+					cursor: 'pointer',
 				}}
-				styles={{
-					root: {
-						'&:hover': {
-							background: 'var(--xos-shell-hover)',
-						},
-					},
+				onMouseEnter={(e) => {
+					e.currentTarget.style.background = 'var(--xos-shell-hover)';
+				}}
+				onMouseLeave={(e) => {
+					e.currentTarget.style.background = 'transparent';
 				}}
 			>
-				<Group gap={8} wrap="nowrap">
+				<Flex gap={8} wrap="nowrap" align="center">
 					<ChevronIcon size={18} expanded={opened} />
-					<Text size="xs" tt="uppercase" fw={700}>
+					<Typography.Text strong style={{ fontSize: 12, textTransform: 'uppercase' }}>
 						{group.label}
-					</Text>
-					<Text size="xs" c="dimmed" ml="auto">
+					</Typography.Text>
+					<Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
 						{group.apps.length}
-					</Text>
-				</Group>
-			</UnstyledButton>
-			<Collapse expanded={opened}>
-				<Stack gap={2} pl="xs">
+					</Typography.Text>
+				</Flex>
+			</button>
+			{opened ? (
+				<Flex vertical gap={2} style={{ paddingLeft: 8 }}>
 					{group.apps.map((app) => (
 						<AppListItem
 							key={app.id}
@@ -141,9 +153,9 @@ function GroupSection({
 							onPin={onPin}
 						/>
 					))}
-				</Stack>
-			</Collapse>
-		</Box>
+				</Flex>
+			) : null}
+		</div>
 	);
 }
 
@@ -157,7 +169,7 @@ export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListP
 	};
 
 	return (
-		<Box
+		<div
 			style={{
 				flex: 1,
 				minWidth: 0,
@@ -165,18 +177,25 @@ export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListP
 				background: 'var(--xos-shell-bg)',
 			}}
 		>
-			<Box px="md" pt="md" pb="xs">
-				<Text size="sm" fw={600} c="dimmed">
+			<div style={{ padding: '16px 16px 8px' }}>
+				<Typography.Text type="secondary" strong style={{ fontSize: 13 }}>
 					Все приложения
-				</Text>
-			</Box>
-			<ScrollArea h={START_MENU_LIST_HEIGHT} type="auto" px="sm" pb="md">
+				</Typography.Text>
+			</div>
+			<div
+				style={{
+					height: START_MENU_LIST_HEIGHT,
+					overflow: 'auto',
+					paddingInline: 12,
+					paddingBottom: 16,
+				}}
+			>
 				{groups.length === 0 ? (
-					<Text size="sm" c="dimmed" p="md">
+					<Typography.Text type="secondary" style={{ fontSize: 13, padding: 16, display: 'block' }}>
 						Нет доступных приложений
-					</Text>
+					</Typography.Text>
 				) : (
-					<Stack gap="sm">
+					<Flex vertical gap="small">
 						{groups.map((group) => (
 							<GroupSection
 								key={group.id}
@@ -186,10 +205,10 @@ export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListP
 								onPin={onPin}
 							/>
 						))}
-					</Stack>
+					</Flex>
 				)}
-			</ScrollArea>
-		</Box>
+			</div>
+		</div>
 	);
 }
 

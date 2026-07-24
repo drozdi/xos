@@ -1,4 +1,4 @@
-import { Box, Button, Stack } from '@mantine/core';
+import { Button, Flex } from 'antd';
 import { useEffect } from 'react';
 
 import { useCoreApi } from '@/core/hooks/useCoreApi';
@@ -53,18 +53,14 @@ export default function TicTacToeApp() {
 	}, [draw, field, isEnd, setWinner, winLines]);
 
 	return (
-		<Box p="md" h="100%">
-			<Stack gap="md" align="stretch">
+		<div style={{ padding: 16, height: '100%' }}>
+			<Flex vertical gap="middle" align="stretch">
 				<Information />
 				<Field />
-				<Button
-					variant="light"
-					leftSection={<ReloadIcon />}
-					onClick={() => openNewGameDialog(coreApi)}
-				>
+				<Button type="primary" ghost icon={<ReloadIcon />} onClick={() => openNewGameDialog(coreApi)}>
 					Новая игра
 				</Button>
-			</Stack>
-		</Box>
+			</Flex>
+		</div>
 	);
 }

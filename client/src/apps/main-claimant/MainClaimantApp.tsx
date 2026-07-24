@@ -1,4 +1,4 @@
-import { Alert, Stack, TextInput } from '@mantine/core';
+import { Alert, Flex, Form, Input } from 'antd';
 
 import { mainClaimantApi, type ClaimantDetail } from '@/core/api/endpoints/mainApi';
 import {
@@ -27,17 +27,25 @@ export default function MainClaimantApp() {
 
 	if (entityId === 0 && !canCreateMainClaimant()) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на создание заявителя
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на создание заявителя"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
 	if (entityId !== 0 && !canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр заявителя
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на просмотр заявителя"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
@@ -56,24 +64,34 @@ export default function MainClaimantApp() {
 			canDelete={canDelete}
 		>
 			{({ data, setField, errors, readOnly }) => (
-				<Stack gap="sm">
-					<TextInput
+				<Flex vertical gap={12}>
+					<Form.Item
 						label="Код"
-						withAsterisk
-						value={data.code ?? ''}
-						error={errors.code}
-						readOnly={readOnly}
-						onChange={(e) => setField('code', e.currentTarget.value)}
-					/>
-					<TextInput
+						required
+						validateStatus={errors.code ? 'error' : undefined}
+						help={errors.code}
+						style={{ marginBottom: 0 }}
+					>
+						<Input
+							value={data.code ?? ''}
+							readOnly={readOnly}
+							onChange={(e) => setField('code', e.target.value)}
+						/>
+					</Form.Item>
+					<Form.Item
 						label="Название"
-						withAsterisk
-						value={data.name ?? ''}
-						error={errors.name}
-						readOnly={readOnly}
-						onChange={(e) => setField('name', e.currentTarget.value)}
-					/>
-				</Stack>
+						required
+						validateStatus={errors.name ? 'error' : undefined}
+						help={errors.name}
+						style={{ marginBottom: 0 }}
+					>
+						<Input
+							value={data.name ?? ''}
+							readOnly={readOnly}
+							onChange={(e) => setField('name', e.target.value)}
+						/>
+					</Form.Item>
+				</Flex>
 			)}
 		</MainEntityForm>
 	);

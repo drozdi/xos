@@ -1,4 +1,4 @@
-import { Button, Group, SegmentedControl, Stack } from '@mantine/core';
+import { Button, Flex, Segmented } from 'antd';
 
 import { hasNote } from '../gameLogic';
 import { useSudokuStore } from '../store';
@@ -22,16 +22,16 @@ export function Toolbar() {
 	const selectedCellValue = selectedIndex !== null ? (values[selectedIndex] ?? 0) : 0;
 
 	return (
-		<Stack gap="sm">
-			<SegmentedControl
+		<Flex vertical gap="small">
+			<Segmented
 				value={inputMode}
 				onChange={(value) => setInputMode(value as 'pen' | 'pencil')}
-				data={[
+				options={[
 					{ value: 'pen', label: 'Ручка' },
 					{ value: 'pencil', label: 'Карандаш' },
 				]}
 			/>
-			<Group gap="xs" wrap="wrap">
+			<Flex gap="small" wrap="wrap">
 				{Array.from({ length: sizeConfig.size }, (_, index) => {
 					const number = index + 1;
 					const isPaintActive = selectedNumber === number;
@@ -41,42 +41,32 @@ export function Toolbar() {
 						selectedCellValue === 0 &&
 						hasNote(selectedCellNotes, number);
 
-					let variant: 'filled' | 'outline' | 'light' = 'light';
-					let color: string | undefined;
-
+					let type: 'primary' | 'default' | 'dashed' = 'default';
 					if (isPaintActive) {
-						variant = 'filled';
+						type = 'primary';
 					} else if (isCellValue) {
-						variant = 'light';
-						color = 'blue';
+						type = 'primary';
 					} else if (isCellNote) {
-						variant = 'outline';
-						color = 'gray';
+						type = 'dashed';
 					}
 
 					return (
 						<Button
 							key={number}
-							variant={variant}
-							color={color}
-							size="sm"
-							w={36}
-							p={0}
+							type={type}
+							ghost={isCellValue && !isPaintActive}
+							size="small"
+							style={{ width: 36, padding: 0 }}
 							onClick={() => selectNumber(number)}
 						>
 							{number}
 						</Button>
 					);
 				})}
-				<Button
-					variant="default"
-					size="sm"
-					onClick={clearCell}
-					disabled={!canEditSelectedCell}
-				>
+				<Button size="small" onClick={clearCell} disabled={!canEditSelectedCell}>
 					Стереть
 				</Button>
-			</Group>
-		</Stack>
+			</Flex>
+		</Flex>
 	);
 }

@@ -1,5 +1,5 @@
-import { Alert } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert } from 'antd';
+import { notifications } from '@/ui/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -58,9 +58,7 @@ export default function DeviceSoftwareTypesApp() {
 
 	if (!canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр типов программ
-			</Alert>
+			<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр типов программ" style={{ margin: 16 }} />
 		);
 	}
 

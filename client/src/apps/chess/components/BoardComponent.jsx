@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Title, Text } from '@mantine/core';
+import { Typography } from 'antd';
 import CellComponent from './CellComponent';
 import PromotionModal from './PromotionModal';
 import GameSettingsPanel from './GameSettingsPanel';
@@ -195,15 +195,15 @@ function BoardComponent({ board, setBoard, currentPlayer = null, swapPlayer = ()
 
 	return (
 		<>
-			<Title order={2} ta="center" mb="md">
+			<Typography.Title level={2} style={{ textAlign: 'center', marginBottom: 16 }}>
 				Ходит «{currentPlayer?.name}»
 				{inCheck && hintLevel >= HintLevel.FULL && (
-					<Text component="span" c="orange" size="lg">
+					<Typography.Text style={{ color: '#fa8c16', fontSize: 18 }}>
 						{' '}
 						— шах!
-					</Text>
+					</Typography.Text>
 				)}
-			</Title>
+			</Typography.Title>
 			<div className="game-layout">
 				<aside className="game-sidebar game-sidebar--left">
 					<GameSettingsPanel

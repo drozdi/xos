@@ -1,40 +1,64 @@
 const ACCESS_TOKEN_KEY = 'xos.access_token';
 const REFRESH_TOKEN_KEY = 'xos.refresh_token';
+const APP_ACCESS_TOKEN_KEY = 'xos.app.access_token';
+const APP_REFRESH_TOKEN_KEY = 'xos.app.refresh_token';
 
-export function getAccessToken(): string | null {
-	return localStorage.getItem(ACCESS_TOKEN_KEY);
+export type AuthRealm = 'desktop' | 'app';
+
+/** Standalone apps live under /inccom (and future /apps/...). */
+export function resolveAuthRealm(pathname = window.location.pathname): AuthRealm {
+	if (pathname === '/inccom' || pathname.startsWith('/inccom/')) {
+		return 'app';
+	}
+	return 'desktop';
 }
 
-export function getRefreshToken(): string | null {
-	return localStorage.getItem(REFRESH_TOKEN_KEY);
+function keysFor(realm: AuthRealm): { access: string; refresh: string } {
+	if (realm === 'app') {
+		return { access: APP_ACCESS_TOKEN_KEY, refresh: APP_REFRESH_TOKEN_KEY };
+	}
+	return { access: ACCESS_TOKEN_KEY, refresh: REFRESH_TOKEN_KEY };
 }
 
-export function setAccessToken(token: string): void {
-	localStorage.setItem(ACCESS_TOKEN_KEY, token);
+export function getAccessToken(realm: AuthRealm = resolveAuthRealm()): string | null {
+	return localStorage.getItem(keysFor(realm).access);
 }
 
-export function setRefreshToken(token: string): void {
-	localStorage.setItem(REFRESH_TOKEN_KEY, token);
+export function getRefreshToken(realm: AuthRealm = resolveAuthRealm()): string | null {
+	return localStorage.getItem(keysFor(realm).refresh);
 }
 
-export function setTokens(accessToken: string, refreshToken: string): void {
-	setAccessToken(accessToken);
-	setRefreshToken(refreshToken);
+export function setAccessToken(token: string, realm: AuthRealm = resolveAuthRealm()): void {
+	localStorage.setItem(keysFor(realm).access, token);
 }
 
-export function clearTokens(): void {
-	localStorage.removeItem(ACCESS_TOKEN_KEY);
-	localStorage.removeItem(REFRESH_TOKEN_KEY);
+export function setRefreshToken(token: string, realm: AuthRealm = resolveAuthRealm()): void {
+	localStorage.setItem(keysFor(realm).refresh, token);
 }
 
-export function hasAccessToken(): boolean {
-	return getAccessToken() !== null;
+export function setTokens(
+	accessToken: string,
+	refreshToken: string,
+	realm: AuthRealm = resolveAuthRealm(),
+): void {
+	setAccessToken(accessToken, realm);
+	setRefreshToken(refreshToken, realm);
 }
 
-export function hasRefreshToken(): boolean {
-	return getRefreshToken() !== null;
+export function clearTokens(realm: AuthRealm = resolveAuthRealm()): void {
+	const keys = keysFor(realm);
+	localStorage.removeItem(keys.access);
+	localStorage.removeItem(keys.refresh);
 }
 
-export function hasStoredSession(): boolean {
-	return hasAccessToken() || hasRefreshToken();
+export function hasAccessToken(realm: AuthRealm = resolveAuthRealm()): boolean {
+	return getAccessToken(realm) !== null;
+}
+
+export function hasRefreshToken(realm: AuthRealm = resolveAuthRealm()): boolean {
+	return getRefreshToken(realm) !== null;
+}
+
+export function hasStoredSession(realm: AuthRealm = resolveAuthRealm()): boolean {
+	return hasAccessToken(realm) || hasRefreshToken(realm);
 }

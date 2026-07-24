@@ -1,4 +1,4 @@
-import { Button, Group, Text, TextInput } from '@mantine/core';
+import { Button, Flex, Input, Typography } from 'antd';
 
 import type { ExplorerPickerMode } from '../explorerPickerStore';
 
@@ -23,44 +23,48 @@ export function ExplorerPickerBar({
 	const canConfirm = mode === 'open' ? Boolean(selectedPath) : Boolean(fileName.trim());
 
 	return (
-		<Group
+		<Flex
 			justify="space-between"
-			px="sm"
-			py={8}
 			wrap="nowrap"
-			style={{ borderTop: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}
+			align="center"
+			gap="small"
+			style={{
+				padding: '8px 12px',
+				borderTop: '1px solid var(--xos-shell-border)',
+				flexShrink: 0,
+			}}
 		>
-			<Group flex={1} gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-				<Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
+			<Flex gap="small" wrap="nowrap" align="center" style={{ minWidth: 0, flex: 1 }}>
+				<Typography.Text type="secondary" style={{ fontSize: 13, flexShrink: 0 }}>
 					{mode === 'save' ? 'Имя файла' : 'Файл'}
-				</Text>
+				</Typography.Text>
 				{mode === 'save' ? (
-					<TextInput
-						flex={1}
-						size="xs"
+					<Input
+						size="small"
 						value={fileName}
-						onChange={(event) => onFileNameChange(event.currentTarget.value)}
+						onChange={(event) => onFileNameChange(event.target.value)}
 						onKeyDown={(event) => {
 							if (event.key === 'Enter' && canConfirm) {
 								onConfirm();
 							}
 						}}
 						placeholder="note.txt"
+						style={{ flex: 1 }}
 					/>
 				) : (
-					<Text size="sm" truncate title={selectedPath ?? ''} style={{ flex: 1 }}>
+					<Typography.Text ellipsis title={selectedPath ?? ''} style={{ flex: 1, fontSize: 13 }}>
 						{selectedPath ?? 'Выберите файл'}
-					</Text>
+					</Typography.Text>
 				)}
-			</Group>
-			<Group gap="xs" wrap="nowrap">
-				<Button variant="default" size="xs" onClick={onCancel}>
+			</Flex>
+			<Flex gap="small" wrap="nowrap">
+				<Button size="small" onClick={onCancel}>
 					Отмена
 				</Button>
-				<Button size="xs" disabled={!canConfirm} onClick={onConfirm}>
+				<Button type="primary" size="small" disabled={!canConfirm} onClick={onConfirm}>
 					{confirmLabel}
 				</Button>
-			</Group>
-		</Group>
+			</Flex>
+		</Flex>
 	);
 }

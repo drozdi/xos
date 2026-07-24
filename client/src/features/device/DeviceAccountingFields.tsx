@@ -1,4 +1,4 @@
-import { NumberInput, Stack, Switch, TextInput } from '@mantine/core';
+import { Flex, Form, Input, InputNumber, Switch } from 'antd';
 
 interface AccountingData {
 	inNo?: string;
@@ -29,53 +29,61 @@ export function DeviceAccountingFields({
 	};
 
 	return (
-		<Stack gap="sm">
-			<TextInput
-				label="Инв. №"
-				value={acc.inNo ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('inNo', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Счёт"
-				value={acc.invoice ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('invoice', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Дата счёта"
-				value={acc.dateInvoice ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('dateInvoice', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Дата списания"
-				value={acc.dateDiscarded ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('dateDiscarded', e.currentTarget.value)}
-			/>
-			<TextInput
-				label="Наименование"
-				value={acc.name ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => setField('name', e.currentTarget.value)}
-			/>
-			<Switch
-				label="Списано"
-				checked={Boolean(acc.discarded)}
-				disabled={readOnly}
-				onChange={(e) => setField('discarded', e.currentTarget.checked)}
-			/>
-			{acc.isChild ? (
-				<NumberInput
-					label="Родительский учёт (ID)"
-					value={acc.parent_id ?? undefined}
+		<Flex vertical gap={12}>
+			<Form.Item label="Инв. №" style={{ marginBottom: 0 }}>
+				<Input
+					value={acc.inNo ?? ''}
 					readOnly={readOnly}
-					onChange={(value) =>
-						setField('parent_id', typeof value === 'number' ? value : null)
-					}
+					onChange={(e) => setField('inNo', e.target.value)}
 				/>
+			</Form.Item>
+			<Form.Item label="Счёт" style={{ marginBottom: 0 }}>
+				<Input
+					value={acc.invoice ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('invoice', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Дата счёта" style={{ marginBottom: 0 }}>
+				<Input
+					value={acc.dateInvoice ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('dateInvoice', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Дата списания" style={{ marginBottom: 0 }}>
+				<Input
+					value={acc.dateDiscarded ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('dateDiscarded', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Наименование" style={{ marginBottom: 0 }}>
+				<Input
+					value={acc.name ?? ''}
+					readOnly={readOnly}
+					onChange={(e) => setField('name', e.target.value)}
+				/>
+			</Form.Item>
+			<Form.Item label="Списано" style={{ marginBottom: 0 }}>
+				<Switch
+					checked={Boolean(acc.discarded)}
+					disabled={readOnly}
+					onChange={(checked) => setField('discarded', checked)}
+				/>
+			</Form.Item>
+			{acc.isChild ? (
+				<Form.Item label="Родительский учёт (ID)" style={{ marginBottom: 0 }}>
+					<InputNumber
+						value={acc.parent_id ?? undefined}
+						disabled={readOnly}
+						style={{ width: '100%' }}
+						onChange={(value) =>
+							setField('parent_id', typeof value === 'number' ? value : null)
+						}
+					/>
+				</Form.Item>
 			) : null}
-		</Stack>
+		</Flex>
 	);
 }

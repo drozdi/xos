@@ -1,37 +1,52 @@
-import { Box } from '@mantine/core'
-import { useMergedRef } from '@mantine/hooks'
-import { forwardRef, memo, useMemo, useRef } from 'react'
-import { cls } from '../../utils'
-import { useListContext } from '../list/ListContext'
-import classes from './style.module.css'
-const clickableTag = ['a', 'label', 'button']
-const disRoleTag = ['label']
-const disDisabledTag = ['div', 'span', 'a', 'label']
+import { forwardRef, memo, useMemo, useRef, type ReactNode } from 'react';
+
+import { cls } from '../../utils';
+import { useListContext } from '../list/ListContext';
+import classes from './style.module.css';
+
+const clickableTag = ['a', 'label', 'button'];
+const disRoleTag = ['label'];
+const disDisabledTag = ['div', 'span', 'a', 'label'];
 
 interface ItemProps {
-	component?: any
-	children?: React.ReactNode
-	className?: string
-	role?: string
-	tabIndex?: number
-	vertical?: boolean
-	dense?: boolean
-	active?: boolean
-	activeClass?: string
-	disabled?: boolean
-	hoverable?: boolean
-	bordered?: boolean
-	onClick?: (e: React.MouseEvent<HTMLElement>) => void
-	onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void
-	onKeyUp?: (e: React.KeyboardEvent<HTMLElement>) => void
-	onKeyPress?: (e: React.KeyboardEvent<HTMLElement>) => void
-	onFocus?: (e: React.FocusEvent<HTMLElement>) => void
-	onBlur?: (e: React.FocusEvent<HTMLElement>) => void
-	[key: string]: any
+	component?: string;
+	children?: ReactNode;
+	className?: string;
+	role?: string;
+	tabIndex?: number;
+	vertical?: boolean;
+	dense?: boolean;
+	active?: boolean;
+	activeClass?: string;
+	disabled?: boolean;
+	hoverable?: boolean;
+	bordered?: boolean;
+	onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+	onKeyDown?: (e: React.KeyboardEvent<HTMLElement>) => void;
+	onKeyUp?: (e: React.KeyboardEvent<HTMLElement>) => void;
+	onKeyPress?: (e: React.KeyboardEvent<HTMLElement>) => void;
+	onFocus?: (e: React.FocusEvent<HTMLElement>) => void;
+	onBlur?: (e: React.FocusEvent<HTMLElement>) => void;
+	[key: string]: unknown;
+}
+
+function mergeRefs<T>(...refs: Array<React.Ref<T> | undefined>) {
+	return (node: T) => {
+		for (const ref of refs) {
+			if (!ref) {
+				continue;
+			}
+			if (typeof ref === 'function') {
+				ref(node);
+			} else {
+				(ref as React.MutableRefObject<T | null>).current = node;
+			}
+		}
+	};
 }
 
 export const Item = memo(
-	forwardRef(
+	forwardRef<HTMLElement, ItemProps>(
 		(
 			{
 				className,
@@ -46,25 +61,27 @@ export const Item = memo(
 				role,
 				onClick,
 				hoverable,
+				component = 'li',
 				...props
-			}: ItemProps,
-			ref
+			},
+			ref,
 		) => {
-			const ctx = useListContext()
-			const elementRef = useRef<HTMLElement>(null)
-			const handleRef = useMergedRef(ref, elementRef)
+			const ctx = useListContext();
+			const elementRef = useRef<HTMLElement>(null);
+			const handleRef = mergeRefs(ref, elementRef);
 			const isActionable = useMemo(() => {
 				return (
-					clickableTag.includes(elementRef.current?.nodeName.toLowerCase() ?? props.component) ||
-					typeof onClick === 'function'
-				)
-			}, [props.component, elementRef.current, onClick])
+					clickableTag.includes(
+						elementRef.current?.nodeName.toLowerCase() ?? String(component),
+					) || typeof onClick === 'function'
+				);
+			}, [component, onClick]);
 
-			const isClickable = !disabled && isActionable
-			const isHoverable = isClickable || hoverable
+			const isClickable = !disabled && isActionable;
+			const isHoverable = isClickable || hoverable;
 
 			const attrs = useMemo(() => {
-				const attrs: Record<string, any> = {
+				const next: Record<string, unknown> = {
 					className: cls(
 						classes.item,
 						{
@@ -75,41 +92,59 @@ export const Item = memo(
 							[classes.item_disabled]: disabled,
 							[classes.item_hoverable]: isHoverable,
 							[classes.item_bordered]: bordered,
-							[activeClass]: active,
+							[activeClass ?? '']: active,
 						},
-						className
+						className,
 					),
-					role: disRoleTag.includes(props.component) ? undefined : role ?? 'listitem',
-					disabled: disabled,
-				}
+					role: disRoleTag.includes(String(component))
+						? undefined
+						: (role ?? 'listitem'),
+					disabled,
+				};
 				if (isActionable) {
-					attrs['aria-disabled'] = disabled
+					next['aria-disabled'] = disabled;
 				}
 				if (isClickable) {
-					attrs.tabIndex = disabled ? -1 : tabIndex ?? -1
+					next.tabIndex = disabled ? -1 : (tabIndex ?? -1);
 				}
-				if (disDisabledTag.includes(props.component)) {
-					delete attrs.disabled
+				if (disDisabledTag.includes(String(component))) {
+					delete next.disabled;
 				}
-				return attrs
-			}, [disabled, tabIndex, role, dense, active, className, activeClass, isHoverable, isClickable, isActionable])
+				return next;
+			}, [
+				disabled,
+				tabIndex,
+				role,
+				dense,
+				active,
+				className,
+				activeClass,
+				isHoverable,
+				isClickable,
+				isActionable,
+				bordered,
+				component,
+				ctx?.dense,
+				vertical,
+			]);
+
+			const Tag = (component || 'li') as 'li';
 
 			return (
-				<Box
-					component='li'
+				<Tag
 					{...props}
 					{...attrs}
-					ref={handleRef}
+					ref={handleRef as React.Ref<HTMLLIElement>}
 					onClick={(event: React.MouseEvent<HTMLElement>) => {
 						if (disabled) {
-							event.preventDefault()
+							event.preventDefault();
 						}
-						onClick?.(event)
+						onClick?.(event);
 					}}
 				>
 					{children}
-				</Box>
-			)
-		}
-	)
-)
+				</Tag>
+			);
+		},
+	),
+);

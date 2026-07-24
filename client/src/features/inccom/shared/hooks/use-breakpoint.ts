@@ -1,7 +1,14 @@
-import { useMantineTheme } from '@mantine/core'
-import { useMediaQuery } from '@mantine/hooks'
+import { useMediaQuery } from './use-media-query';
+
+const BREAKPOINTS: Record<string, string> = {
+	xs: '36em',
+	sm: '48em',
+	md: '62em',
+	lg: '75em',
+	xl: '88em',
+};
 
 export function useBreakpoint(size: string = 'xs') {
-	const theme = useMantineTheme()
-	return useMediaQuery(`(max-width: ${theme.breakpoints[size]})`)
+	const width = BREAKPOINTS[size] ?? size;
+	return useMediaQuery(`(max-width: ${width})`);
 }

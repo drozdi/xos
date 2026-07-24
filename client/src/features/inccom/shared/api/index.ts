@@ -15,6 +15,11 @@ function withBase(url: string): string {
 	return `${BASE}/${url}`;
 }
 
+/** В окне XOS — desktop-токены; на /inccom — отдельные app-токены. */
+function realm(): tokenStorage.AuthRealm {
+	return tokenStorage.resolveAuthRealm();
+}
+
 class IncComApiAdapter {
 	axiosInstance: AxiosInstance = apiClient;
 
@@ -47,33 +52,39 @@ class IncComApiAdapter {
 	}
 
 	getAccessToken(): string | null {
-		return tokenStorage.getAccessToken();
+		return tokenStorage.getAccessToken(realm());
 	}
 
 	getRefreshToken(): string | null {
-		return tokenStorage.getRefreshToken();
+		return tokenStorage.getRefreshToken(realm());
 	}
 
 	setAccessToken(token: string): void {
-		const refresh = tokenStorage.getRefreshToken();
+		const refresh = tokenStorage.getRefreshToken(realm());
 		if (refresh) {
-			tokenStorage.setTokens(token, refresh);
+			tokenStorage.setTokens(token, refresh, realm());
+		} else {
+			tokenStorage.setAccessToken(token, realm());
 		}
 	}
 
 	setRefreshToken(token: string): void {
-		const access = tokenStorage.getAccessToken();
+		const access = tokenStorage.getAccessToken(realm());
 		if (access) {
-			tokenStorage.setTokens(access, token);
+			tokenStorage.setTokens(access, token, realm());
+		} else {
+			tokenStorage.setRefreshToken(token, realm());
 		}
 	}
 
 	setTokens(accessToken: string, refreshToken: string): void {
-		tokenStorage.setTokens(accessToken, refreshToken);
+		tokenStorage.setTokens(accessToken, refreshToken, realm());
 	}
 
 	clearTokens(): void {
-		// XOS manages auth globally; IncCom must not clear session tokens on its own.
+		if (realm() === 'app') {
+			tokenStorage.clearTokens('app');
+		}
 	}
 
 	isRefreshing = false;

@@ -1,4 +1,4 @@
-import { modals } from '@mantine/modals';
+import { Modal } from 'antd';
 
 export interface ConfirmActionOptions {
 	title: string;
@@ -10,17 +10,14 @@ export interface ConfirmActionOptions {
 }
 
 export function confirmAction(options: ConfirmActionOptions): void {
-	modals.openConfirmModal({
+	const danger = options.confirmColor === 'red' || options.confirmColor === 'danger';
+	Modal.confirm({
 		title: options.title,
+		content: options.message,
+		okText: options.confirmLabel ?? 'Подтвердить',
+		cancelText: options.cancelLabel ?? 'Отмена',
+		okButtonProps: danger ? { danger: true } : undefined,
 		centered: true,
-		children: options.message,
-		labels: {
-			confirm: options.confirmLabel ?? 'Подтвердить',
-			cancel: options.cancelLabel ?? 'Отмена',
-		},
-		confirmProps: { color: options.confirmColor ?? 'blue' },
-		onConfirm: () => {
-			void options.onConfirm();
-		},
+		onOk: () => options.onConfirm(),
 	});
 }

@@ -1,7 +1,3 @@
-export * from './context';
-export * from './DataColumn';
-export * from './hooks';
-export * from './TableData';
-export * from './type';
-export * from './ui';
-
+/** Shared Ant Design DataTable facade. */
+export { DataTable } from '@/ui/data-table';
+export type { DataTableColumn, DataTableProps } from '@/ui/data-table';

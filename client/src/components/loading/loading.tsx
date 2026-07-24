@@ -1,48 +1,58 @@
-import { Box, LoadingOverlay, type BoxProps } from '@mantine/core';
-import type { ComponentType, ReactNode } from 'react';
+import { Flex, Spin } from 'antd';
+import type { CSSProperties, ReactNode } from 'react';
 
-export type LoadingProps = BoxProps & {
-    children: ReactNode;
-    active?: boolean;
-    keepMounted?: boolean;
-    component?: ComponentType<BoxProps>;
-    skeleton?: ReactNode;
+export type LoadingProps = {
+	children: ReactNode;
+	active?: boolean;
+	keepMounted?: boolean;
+	skeleton?: ReactNode;
+	style?: CSSProperties;
+	className?: string;
 };
 
-const OVERLAY_PROPS = { radius: 'sm', blur: 2 } as const;
-const LOADER_PROPS = { color: 'pink', type: 'bars' } as const;
-
 export function Loading({
-    children,
-    active,
-    keepMounted,
-    component: Component = Box,
-    skeleton,
-    ...props
+	children,
+	active,
+	keepMounted,
+	skeleton,
+	style,
+	className,
 }: LoadingProps) {
-    const Wrapper = Component as typeof Box;
+	if (active && skeleton) {
+		return (
+			<div className={className} style={{ position: 'relative', ...style }}>
+				{skeleton}
+			</div>
+		);
+	}
 
-    if (active && skeleton) {
-        return (
-            <Wrapper pos="relative" {...props}>
-                {skeleton}
-            </Wrapper>
-        );
-    }
-
-    return (
-        <Wrapper
-            pos="relative"
-            miw={active ? 300 : undefined}
-            mih={active ? 300 : undefined}
-            {...props}
-        >
-            {(keepMounted || !active) && children}
-            <LoadingOverlay
-                visible={active}
-                overlayProps={OVERLAY_PROPS}
-                loaderProps={LOADER_PROPS}
-            />
-        </Wrapper>
-    );
+	return (
+		<div
+			className={className}
+			style={{
+				position: 'relative',
+				minWidth: active ? 300 : undefined,
+				minHeight: active ? 300 : undefined,
+				...style,
+			}}
+		>
+			{(keepMounted || !active) && children}
+			{active ? (
+				<Flex
+					align="center"
+					justify="center"
+					className="xos-loading-overlay"
+					style={{
+						position: 'absolute',
+						inset: 0,
+						zIndex: 10,
+						background: 'color-mix(in srgb, var(--xos-shell-bg-elevated, #fff) 55%, transparent)',
+						backdropFilter: 'blur(2px)',
+					}}
+				>
+					<Spin size="large" />
+				</Flex>
+			) : null}
+		</div>
+	);
 }

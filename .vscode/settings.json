@@ -1,0 +1,10 @@
+{
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        ".env": ".env.*",
+        "package.json": "package-lock.json, yarn.lock, .stylelintrc, .stylelintignore, .eslintrc, .editorconfig, .eslintignore, eslint.config.js, .prettierrc, playwright.config.ts, postcss.config.cjs",
+        "styles.ts": "variants.ts, keyframes.ts",
+        "index.tsx": "data.ts, utils.ts, data.tsx",
+        "index.ts": "data.ts, utils.ts, data.tsx, interfaces.ts"
+    }
+}

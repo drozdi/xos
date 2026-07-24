@@ -1,4 +1,4 @@
-import { Box, Group, Text } from '@mantine/core';
+import { Flex, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
@@ -16,7 +16,7 @@ export function Taskbar() {
 	}, []);
 
 	return (
-		<Box
+		<div
 			style={{
 				width: '100%',
 				height: HKEY_CONFIG_DEFAULTS.taskbar.height,
@@ -29,15 +29,15 @@ export function Taskbar() {
 				zIndex: 1000,
 			}}
 		>
-			<Group gap="sm" wrap="nowrap" style={{ width: '100%' }}>
+			<Flex gap="small" wrap="nowrap" align="center" style={{ width: '100%' }}>
 				<StartMenu />
 				<RunningApps />
-				<Group gap="sm" wrap="nowrap" ml="auto">
-					<Text size="xs" c="dimmed">
+				<Flex gap="small" wrap="nowrap" style={{ marginLeft: 'auto' }}>
+					<Typography.Text type="secondary" style={{ fontSize: 12 }}>
 						{now.format('HH:mm')}
-					</Text>
-				</Group>
-			</Group>
-		</Box>
+					</Typography.Text>
+				</Flex>
+			</Flex>
+		</div>
 	);
 }

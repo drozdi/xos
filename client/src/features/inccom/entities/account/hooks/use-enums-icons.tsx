@@ -1,10 +1,9 @@
-import { type ComboboxItem } from '@mantine/core';
 import { TbCards } from 'react-icons/tb';
 
 const data: Record<string, typeof TbCards> = {
 	cards: TbCards,
 };
-const dataSelect: ComboboxItem[] = Object.entries(data).map(([value]) => ({
+const dataSelect = Object.entries(data).map(([value]) => ({
 	value,
 	label: value,
 }));

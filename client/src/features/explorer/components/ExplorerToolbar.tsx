@@ -1,10 +1,4 @@
-import {
-	ActionIcon,
-	Divider,
-	Group,
-	Menu,
-	Tooltip,
-} from '@mantine/core';
+import { Button, Divider, Dropdown, Flex, Tooltip } from 'antd';
 import {
 	IconArchive,
 	IconArrowBackUp,
@@ -63,30 +57,29 @@ function ToolbarIcon({
 	label,
 	disabled,
 	loading,
-	color,
+	danger,
 	onClick,
 	children,
 }: {
 	label: string;
 	disabled?: boolean;
 	loading?: boolean;
-	color?: string;
+	danger?: boolean;
 	onClick?: () => void;
 	children: ReactNode;
 }) {
 	return (
-		<Tooltip label={label} withArrow>
-			<ActionIcon
-				variant="subtle"
-				size="md"
+		<Tooltip title={label}>
+			<Button
+				type="text"
+				size="middle"
 				disabled={disabled}
 				loading={loading}
-				color={color}
+				danger={danger}
 				onClick={onClick}
 				aria-label={label}
-			>
-				{children}
-			</ActionIcon>
+				icon={<>{children}</>}
+			/>
 		</Tooltip>
 	);
 }
@@ -128,38 +121,42 @@ export function ExplorerToolbar({
 	const sortLabel = `Сортировка: ${sortBy === 'name' ? 'имя' : sortBy === 'size' ? 'размер' : 'тип'}, ${sortDir === 'asc' ? '↑' : '↓'}`;
 
 	return (
-		<Group
+		<Flex
 			gap={4}
-			px="sm"
-			py={6}
 			wrap="nowrap"
+			align="center"
 			style={{
-				borderBottom: '1px solid var(--mantine-color-default-border)',
+				padding: '6px 12px',
+				borderBottom: '1px solid var(--xos-shell-border)',
 				flexShrink: 0,
 			}}
 		>
-			{!pickerMode && !isTrashView && (
+			{!pickerMode && !isTrashView ? (
 				<>
 					<ToolbarIcon label="Новая папка" disabled={!writable} onClick={onNewFolder}>
 						<IconFolderPlus size={18} />
 					</ToolbarIcon>
-					<Tooltip label="Загрузить файл">
-						<ActionIcon variant="subtle" size="md" disabled={!writable} component="label" aria-label="Загрузить файл">
-							<IconUpload size={18} />
-							<input
-								type="file"
-								hidden
-								onChange={(event) => {
-									const file = event.target.files?.[0];
+					<Tooltip title="Загрузить файл">
+						<Button
+							type="text"
+							size="middle"
+							disabled={!writable}
+							aria-label="Загрузить файл"
+							icon={<IconUpload size={18} />}
+							onClick={() => {
+								const input = document.createElement('input');
+								input.type = 'file';
+								input.onchange = () => {
+									const file = input.files?.[0];
 									if (file) {
 										onUpload(file);
 									}
-									event.currentTarget.value = '';
-								}}
-							/>
-						</ActionIcon>
+								};
+								input.click();
+							}}
+						/>
 					</Tooltip>
-					<Divider orientation="vertical" />
+					<Divider type="vertical" style={{ height: 20, margin: '0 4px' }} />
 					<ToolbarIcon label="Копировать" disabled={selectedCount === 0} onClick={onCopy}>
 						<IconCopy size={18} />
 					</ToolbarIcon>
@@ -177,7 +174,7 @@ export function ExplorerToolbar({
 					<ToolbarIcon label="Переименовать" disabled={selectedCount !== 1 || !writable} onClick={onRename}>
 						<IconPencil size={18} />
 					</ToolbarIcon>
-					{canArchive && (
+					{canArchive ? (
 						<>
 							<ToolbarIcon
 								label="Создать ZIP"
@@ -196,85 +193,103 @@ export function ExplorerToolbar({
 								<IconArchive size={18} />
 							</ToolbarIcon>
 						</>
-					)}
-					{canDelete && (
+					) : null}
+					{canDelete ? (
 						<ToolbarIcon
 							label="Удалить"
 							disabled={selectedCount === 0 || !writable}
-							color="orange"
+							danger
 							onClick={onDelete}
 						>
 							<IconTrash size={18} />
 						</ToolbarIcon>
-					)}
+					) : null}
 					<ToolbarIcon label="Корзина" onClick={onOpenTrash}>
 						<IconTrashX size={18} />
 					</ToolbarIcon>
 				</>
-			)}
+			) : null}
 
-			{!pickerMode && isTrashView && (
+			{!pickerMode && isTrashView ? (
 				<>
 					<ToolbarIcon label="Восстановить" disabled={selectedCount === 0 || !canDelete} onClick={onRestore}>
 						<IconArrowBackUp size={18} />
 					</ToolbarIcon>
-					<ToolbarIcon label="Очистить корзину" disabled={!canDelete} color="red" onClick={onEmptyTrash}>
+					<ToolbarIcon label="Очистить корзину" disabled={!canDelete} danger onClick={onEmptyTrash}>
 						<IconTrashOff size={18} />
 					</ToolbarIcon>
 					<ToolbarIcon label="Назад к диску" onClick={() => onDiskChange(`${currentDiskCode}://`)}>
 						<IconArrowBackUp size={18} style={{ transform: 'scaleX(-1)' }} />
 					</ToolbarIcon>
 				</>
-			)}
+			) : null}
 
-			<Group gap={4} ml="auto" wrap="nowrap">
-				<Tooltip label="Таблица" withArrow>
-					<ActionIcon
-						variant={viewMode === 'table' ? 'light' : 'subtle'}
-						size="md"
-						color={viewMode === 'table' ? 'blue' : 'gray'}
+			<Flex gap={4} wrap="nowrap" style={{ marginLeft: 'auto' }}>
+				<Tooltip title="Таблица">
+					<Button
+						type={viewMode === 'table' ? 'primary' : 'text'}
+						ghost={viewMode === 'table'}
+						size="middle"
 						onClick={() => onViewModeChange('table')}
 						aria-label="Таблица"
-					>
-						<IconList size={18} />
-					</ActionIcon>
+						icon={<IconList size={18} />}
+					/>
 				</Tooltip>
-				<Tooltip label="Значки" withArrow>
-					<ActionIcon
-						variant={viewMode === 'icons' ? 'light' : 'subtle'}
-						size="md"
-						color={viewMode === 'icons' ? 'blue' : 'gray'}
+				<Tooltip title="Значки">
+					<Button
+						type={viewMode === 'icons' ? 'primary' : 'text'}
+						ghost={viewMode === 'icons'}
+						size="middle"
 						onClick={() => onViewModeChange('icons')}
 						aria-label="Значки"
-					>
-						<IconLayoutGrid size={18} />
-					</ActionIcon>
+						icon={<IconLayoutGrid size={18} />}
+					/>
 				</Tooltip>
-				<Divider orientation="vertical" />
-				<Menu withinPortal position="bottom-end">
-					<Menu.Target>
-						<Tooltip label={sortLabel}>
-							<ActionIcon variant="subtle" size="md" aria-label={sortLabel}>
-								<IconArrowsSort size={18} />
-							</ActionIcon>
-						</Tooltip>
-					</Menu.Target>
-					<Menu.Dropdown>
-						<Menu.Label>Сортировать по</Menu.Label>
-						<Menu.Item onClick={() => onSortByChange('name')}>Имя {sortBy === 'name' ? '✓' : ''}</Menu.Item>
-						<Menu.Item onClick={() => onSortByChange('size')}>Размер {sortBy === 'size' ? '✓' : ''}</Menu.Item>
-						<Menu.Item onClick={() => onSortByChange('type')}>Тип {sortBy === 'type' ? '✓' : ''}</Menu.Item>
-						<Menu.Divider />
-						<Menu.Item onClick={() => onSortDirChange('asc')}>По возрастанию {sortDir === 'asc' ? '✓' : ''}</Menu.Item>
-						<Menu.Item onClick={() => onSortDirChange('desc')}>По убыванию {sortDir === 'desc' ? '✓' : ''}</Menu.Item>
-					</Menu.Dropdown>
-				</Menu>
-				{!pickerMode && (
+				<Divider type="vertical" style={{ height: 20, margin: '0 4px' }} />
+				<Dropdown
+					menu={{
+						items: [
+							{
+								key: 'name',
+								label: `Имя ${sortBy === 'name' ? '✓' : ''}`,
+								onClick: () => onSortByChange('name'),
+							},
+							{
+								key: 'size',
+								label: `Размер ${sortBy === 'size' ? '✓' : ''}`,
+								onClick: () => onSortByChange('size'),
+							},
+							{
+								key: 'type',
+								label: `Тип ${sortBy === 'type' ? '✓' : ''}`,
+								onClick: () => onSortByChange('type'),
+							},
+							{ type: 'divider' },
+							{
+								key: 'asc',
+								label: `По возрастанию ${sortDir === 'asc' ? '✓' : ''}`,
+								onClick: () => onSortDirChange('asc'),
+							},
+							{
+								key: 'desc',
+								label: `По убыванию ${sortDir === 'desc' ? '✓' : ''}`,
+								onClick: () => onSortDirChange('desc'),
+							},
+						],
+					}}
+					trigger={['click']}
+					placement="bottomRight"
+				>
+					<Tooltip title={sortLabel}>
+						<Button type="text" size="middle" aria-label={sortLabel} icon={<IconArrowsSort size={18} />} />
+					</Tooltip>
+				</Dropdown>
+				{!pickerMode ? (
 					<ToolbarIcon label="Управление дисками" onClick={onOpenDisks}>
 						<IconDatabase size={18} />
 					</ToolbarIcon>
-				)}
-			</Group>
-		</Group>
+				) : null}
+			</Flex>
+		</Flex>
 	);
 }

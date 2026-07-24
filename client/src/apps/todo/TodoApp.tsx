@@ -1,5 +1,5 @@
-import { Alert, Button, Checkbox, Group, Loader, Text } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert, Button, Checkbox, Flex, Spin, Typography } from 'antd';
+import { notifications } from '@/ui/toast';
 import { IconPlus } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -42,38 +42,42 @@ export default function TodoApp() {
 
 	if (!canUseTodo()) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Войдите в систему, чтобы пользоваться заметками
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Войдите в систему, чтобы пользоваться заметками"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
 	return (
 		<div className={classes.root}>
 			<div className={classes.toolbar}>
-				<Group justify="space-between">
-					<Text fw={600}>Заметки</Text>
+				<Flex justify="space-between" align="center">
+					<Typography.Text strong>Заметки</Typography.Text>
 					<Button
-						size="xs"
-						leftSection={<IconPlus size={14} />}
+						size="small"
+						icon={<IconPlus size={14} />}
 						loading={createMutation.isPending}
 						onClick={() => createMutation.mutate()}
 					>
 						Создать
 					</Button>
-				</Group>
+				</Flex>
 			</div>
 
 			<div className={classes.grid}>
 				{listsQuery.isLoading ? (
 					<div className={classes.empty}>
-						<Loader size="sm" />
+						<Spin size="small" />
 					</div>
 				) : null}
 
 				{!listsQuery.isLoading && (listsQuery.data?.length ?? 0) === 0 ? (
 					<div className={classes.empty}>
-						<Text>Пока нет списков. Создайте первый.</Text>
+						<Typography.Text>Пока нет списков. Создайте первый.</Typography.Text>
 					</div>
 				) : null}
 
@@ -88,14 +92,14 @@ export default function TodoApp() {
 						<div className={classes.cardTitle}>{list.title}</div>
 						{(list.items_preview ?? []).map((item, index) => (
 							<div key={item.id ?? index} className={classes.previewItem}>
-								<Checkbox size="xs" checked={item.done} readOnly tabIndex={-1} />
+								<Checkbox checked={item.done} disabled tabIndex={-1} />
 								<span className={item.done ? classes.previewItemDone : undefined}>{item.text}</span>
 							</div>
 						))}
 						{(list.items_count ?? 0) > (list.items_preview?.length ?? 0) ? (
-							<Text size="xs" c="dimmed">
+							<Typography.Text type="secondary" style={{ fontSize: 12 }}>
 								ещё {(list.items_count ?? 0) - (list.items_preview?.length ?? 0)}…
-							</Text>
+							</Typography.Text>
 						) : null}
 						<div className={classes.cardMeta}>
 							{list.is_owner ? 'Мой' : `От ${list.owner?.alias ?? 'другого'}`}

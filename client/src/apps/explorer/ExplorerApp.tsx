@@ -1,10 +1,8 @@
-import { Box } from '@mantine/core';
-
 import { ExplorerWorkspace } from '@/features/explorer/ExplorerWorkspace';
 
 export default function ExplorerApp() {
 	return (
-		<Box
+		<div
 			style={{
 				position: 'absolute',
 				inset: 0,
@@ -15,6 +13,6 @@ export default function ExplorerApp() {
 			}}
 		>
 			<ExplorerWorkspace />
-		</Box>
+		</div>
 	);
 }

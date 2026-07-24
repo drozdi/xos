@@ -1,4 +1,4 @@
-import { Breadcrumbs, Text } from '@mantine/core';
+import { Breadcrumb, Typography } from 'antd';
 
 export interface ExplorerCrumb {
 	label: string;
@@ -12,19 +12,20 @@ interface ExplorerBreadcrumbProps {
 
 export function ExplorerBreadcrumb({ crumbs, onNavigate }: ExplorerBreadcrumbProps) {
 	return (
-		<Breadcrumbs>
-			{crumbs.map((crumb) => (
-				<Text
-					key={crumb.path}
-					component="button"
-					type="button"
-					onClick={() => onNavigate(crumb.path.endsWith('://') ? crumb.path : `${crumb.path}/`)}
-					style={{ background: 'none', border: 0, cursor: 'pointer' }}
-				>
-					{crumb.label}
-				</Text>
-			))}
-		</Breadcrumbs>
+		<Breadcrumb
+			items={crumbs.map((crumb) => ({
+				key: crumb.path,
+				title: (
+					<button
+						type="button"
+						onClick={() => onNavigate(crumb.path.endsWith('://') ? crumb.path : `${crumb.path}/`)}
+						style={{ background: 'none', border: 0, cursor: 'pointer', padding: 0 }}
+					>
+						<Typography.Text>{crumb.label}</Typography.Text>
+					</button>
+				),
+			}))}
+		/>
 	);
 }
 

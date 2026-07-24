@@ -1,15 +1,5 @@
-import {
-	ActionIcon,
-	Alert,
-	Button,
-	Group,
-	Modal,
-	Radio,
-	Stack,
-	Text,
-	TextInput,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert, Button, Flex, Input, Modal, Radio, Space, Typography } from 'antd';
+import { notifications } from '@/ui/toast';
 import { IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
@@ -68,71 +58,70 @@ export function TodoShareModal({ list, opened, onClose, onUpdated }: TodoShareMo
 	};
 
 	return (
-		<Modal opened={opened} onClose={onClose} title="Поделиться списком" centered>
-			<Stack gap="sm">
-				<Text size="sm" c="dimmed">
+		<Modal open={opened} onCancel={onClose} title="Поделиться списком" centered footer={null} destroyOnHidden>
+			<Flex vertical gap={12}>
+				<Typography.Text type="secondary" style={{ fontSize: 14 }}>
 					Найдите пользователя по email и выдайте доступ.
-				</Text>
-				<TextInput
-					label="Email"
-					placeholder="user@example.com"
-					value={email}
-					onChange={(e) => setEmail(e.currentTarget.value)}
-				/>
-				<Radio.Group
-					label="Права"
-					value={permission}
-					onChange={(v) => setPermission(v as 'read' | 'write')}
-				>
-					<Group mt="xs">
-						<Radio value="read" label="Просмотр" />
-						<Radio value="write" label="Редактирование" />
-					</Group>
-				</Radio.Group>
-				{lookupError ? <Alert color="red">{lookupError}</Alert> : null}
-				<Button
-					onClick={() => void handleLookupAndShare()}
-					loading={shareMutation.isPending}
-				>
+				</Typography.Text>
+				<div>
+					<Typography.Text style={{ display: 'block', marginBottom: 4 }}>Email</Typography.Text>
+					<Input
+						placeholder="user@example.com"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+					/>
+				</div>
+				<div>
+					<Typography.Text style={{ display: 'block', marginBottom: 4 }}>Права</Typography.Text>
+					<Radio.Group
+						value={permission}
+						onChange={(e) => setPermission(e.target.value as 'read' | 'write')}
+					>
+						<Space>
+							<Radio value="read">Просмотр</Radio>
+							<Radio value="write">Редактирование</Radio>
+						</Space>
+					</Radio.Group>
+				</div>
+				{lookupError ? <Alert type="error" showIcon message={lookupError} /> : null}
+				<Button type="primary" onClick={() => void handleLookupAndShare()} loading={shareMutation.isPending}>
 					Поделиться
 				</Button>
 
 				{list.shares.length > 0 ? (
-					<Stack gap={6}>
-						<Text fw={600} size="sm">
+					<Flex vertical gap={6}>
+						<Typography.Text strong style={{ fontSize: 14 }}>
 							Уже есть доступ
-						</Text>
+						</Typography.Text>
 						{list.shares.map((share) => (
-							<Group key={share.user_id ?? share.email} justify="space-between" wrap="nowrap">
+							<Flex key={share.user_id ?? share.email} justify="space-between" align="center" wrap="nowrap">
 								<div>
-									<Text size="sm">{share.alias || share.email}</Text>
-									<Text size="xs" c="dimmed">
+									<Typography.Text style={{ fontSize: 14 }}>{share.alias || share.email}</Typography.Text>
+									<br />
+									<Typography.Text type="secondary" style={{ fontSize: 12 }}>
 										{share.email} · {share.permission === 'write' ? 'редактирование' : 'просмотр'}
-									</Text>
+									</Typography.Text>
 								</div>
 								{share.user_id ? (
-									<ActionIcon
-										variant="subtle"
-										color="red"
+									<Button
+										type="text"
+										danger
 										aria-label="Отозвать"
 										loading={unshareMutation.isPending}
+										icon={<IconTrash size={16} />}
 										onClick={() => unshareMutation.mutate(share.user_id!)}
-									>
-										<IconTrash size={16} />
-									</ActionIcon>
+									/>
 								) : null}
-							</Group>
+							</Flex>
 						))}
-					</Stack>
+					</Flex>
 				) : (
-					<Text size="sm" c="dimmed">
+					<Typography.Text type="secondary" style={{ fontSize: 14 }}>
 						Пока ни с кем не поделились
-					</Text>
+					</Typography.Text>
 				)}
-				<Button variant="default" onClick={onClose}>
-					Закрыть
-				</Button>
-			</Stack>
+				<Button onClick={onClose}>Закрыть</Button>
+			</Flex>
 		</Modal>
 	);
 }

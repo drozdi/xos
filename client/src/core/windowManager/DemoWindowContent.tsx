@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core';
+import { Typography } from 'antd';
 
 import type { WindowState } from './types';
 
@@ -8,8 +8,8 @@ interface DemoWindowContentProps {
 
 export function DemoWindowContent({ window }: DemoWindowContentProps) {
 	return (
-		<Text size="sm" c="dimmed">
+		<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 			Demo content — appId: <strong>{window.appId}</strong>, title: <strong>{window.title}</strong>
-		</Text>
+		</Typography.Text>
 	);
 }

@@ -1,4 +1,4 @@
-import { Box, Text, UnstyledButton } from '@mantine/core';
+import { Typography } from 'antd';
 import type { MouseEvent } from 'react';
 
 import type { ExplorerEntry } from '../explorerApi';
@@ -15,9 +15,9 @@ interface ExplorerFileIconGridProps {
 
 export function ExplorerFileIconGrid({ rows, selected, onSelect, onOpen }: ExplorerFileIconGridProps) {
 	return (
-		<Box
-			p="sm"
+		<div
 			style={{
+				padding: 12,
 				display: 'grid',
 				gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
 				gap: 8,
@@ -27,7 +27,8 @@ export function ExplorerFileIconGrid({ rows, selected, onSelect, onOpen }: Explo
 				const isSelected = selected.includes(path);
 
 				return (
-					<UnstyledButton
+					<button
+						type="button"
 						key={path}
 						onClick={(event) => onSelect(path, index, event)}
 						onDoubleClick={() => void onOpen(entry)}
@@ -38,19 +39,29 @@ export function ExplorerFileIconGrid({ rows, selected, onSelect, onOpen }: Explo
 							gap: 6,
 							padding: 8,
 							borderRadius: 8,
-							border: isSelected
-								? '1px solid var(--mantine-color-blue-5)'
-								: '1px solid transparent',
-							background: isSelected ? 'var(--mantine-color-blue-light)' : 'transparent',
+							border: isSelected ? '1px solid #1677ff' : '1px solid transparent',
+							background: isSelected ? 'rgba(22, 119, 255, 0.1)' : 'transparent',
+							cursor: 'pointer',
 						}}
 					>
 						<ExplorerEntryThumbnail entry={entry} path={path} size={72} />
-						<Text size="xs" ta="center" lineClamp={2} w="100%" title={entry.name}>
+						<Typography.Text
+							style={{
+								fontSize: 12,
+								textAlign: 'center',
+								width: '100%',
+								display: '-webkit-box',
+								WebkitLineClamp: 2,
+								WebkitBoxOrient: 'vertical',
+								overflow: 'hidden',
+							}}
+							title={entry.name}
+						>
 							{isExplorerParentEntry(entry) ? '..' : entry.name}
-						</Text>
-					</UnstyledButton>
+						</Typography.Text>
+					</button>
 				);
 			})}
-		</Box>
+		</div>
 	);
 }

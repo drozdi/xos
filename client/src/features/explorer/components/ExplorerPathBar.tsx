@@ -1,4 +1,4 @@
-import { ActionIcon, Group, TextInput, Tooltip } from '@mantine/core';
+import { Button, Flex, Input, Tooltip } from 'antd';
 import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
 import { useEffect, useState, type FormEvent } from 'react';
 
@@ -56,38 +56,45 @@ export function ExplorerPathBar({
 	};
 
 	return (
-		<Group
-			gap="xs"
-			px="sm"
-			py={6}
-			wrap="nowrap"
-			component="form"
-			onSubmit={handleSubmit}
-			style={{
-				flexShrink: 0,
-				borderBottom: '1px solid var(--mantine-color-default-border)',
-			}}
-		>
-			<Tooltip label="Назад">
-				<ActionIcon variant="subtle" size="sm" disabled={!canGoBack} onClick={onBack}>
-					<IconArrowLeft size={16} />
-				</ActionIcon>
-			</Tooltip>
-			<Tooltip label="Вперёд">
-				<ActionIcon variant="subtle" size="sm" disabled={!canGoForward} onClick={onForward}>
-					<IconArrowRight size={16} />
-				</ActionIcon>
-			</Tooltip>
-			<TextInput
-				flex={1}
-				size="xs"
-				value={isTrashView ? `${path} (корзина)` : draft}
-				onChange={(event) => setDraft(event.currentTarget.value)}
-				onBlur={submit}
-				readOnly={isTrashView}
-				placeholder="disk://папка/"
-				styles={{ input: { fontFamily: 'monospace' } }}
-			/>
-		</Group>
+		<form onSubmit={handleSubmit}>
+			<Flex
+				gap="small"
+				wrap="nowrap"
+				align="center"
+				style={{
+					padding: '6px 12px',
+					flexShrink: 0,
+					borderBottom: '1px solid var(--xos-shell-border)',
+				}}
+			>
+				<Tooltip title="Назад">
+					<Button
+						type="text"
+						size="small"
+						disabled={!canGoBack}
+						onClick={onBack}
+						icon={<IconArrowLeft size={16} />}
+					/>
+				</Tooltip>
+				<Tooltip title="Вперёд">
+					<Button
+						type="text"
+						size="small"
+						disabled={!canGoForward}
+						onClick={onForward}
+						icon={<IconArrowRight size={16} />}
+					/>
+				</Tooltip>
+				<Input
+					size="small"
+					value={isTrashView ? `${path} (корзина)` : draft}
+					onChange={(event) => setDraft(event.target.value)}
+					onBlur={submit}
+					readOnly={isTrashView}
+					placeholder="disk://папка/"
+					style={{ flex: 1, fontFamily: 'monospace' }}
+				/>
+			</Flex>
+		</form>
 	);
 }

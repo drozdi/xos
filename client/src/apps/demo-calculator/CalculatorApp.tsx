@@ -1,24 +1,36 @@
-import { Box, Button, Grid, Stack, Text } from '@mantine/core';
+import { Button, Col, Flex, Row, Typography } from 'antd';
+import type { CSSProperties } from 'react';
 
 import {
 	CALCULATOR_BUTTON_MATRIX,
 	formatButtonLabel,
 	getButtonSpan,
-	getCalculatorButtonProps,
+	getCalculatorButtonGroup,
 } from './calculatorLogic';
 import { useCalculator } from './useCalculator';
 
 const DISPLAY_PANEL_HEIGHT = 72;
 const BUTTON_HEIGHT = 48;
 
+function buttonStyle(key: string): CSSProperties {
+	const group = getCalculatorButtonGroup(key);
+	if (group === 'function') {
+		return { background: '#8c8c8c', color: '#fff', borderColor: '#8c8c8c' };
+	}
+	if (group === 'operator') {
+		return { background: '#fa8c16', color: '#fff', borderColor: '#fa8c16' };
+	}
+	return { background: '#262626', color: '#fff', borderColor: '#262626' };
+}
+
 export default function CalculatorApp() {
 	const { state, pressKey, title, subtitle } = useCalculator();
 
 	return (
-		<Box
-			h="100%"
-			p="md"
+		<div
 			style={{
+				height: '100%',
+				padding: 16,
 				display: 'flex',
 				flexDirection: 'column',
 				overflow: 'hidden',
@@ -26,20 +38,20 @@ export default function CalculatorApp() {
 				boxSizing: 'border-box',
 			}}
 		>
-			<Box
+			<div
 				style={{
 					flexShrink: 0,
 					height: DISPLAY_PANEL_HEIGHT,
 					overflow: 'hidden',
 				}}
 			>
-				<Stack gap={4} justify="flex-end" h="100%">
-					<Text
-						ta="right"
-						size="sm"
-						c="dimmed"
-						lh={1.25}
+				<Flex vertical gap={4} justify="flex-end" style={{ height: '100%' }}>
+					<Typography.Text
+						type="secondary"
 						style={{
+							textAlign: 'right',
+							fontSize: 13,
+							lineHeight: 1.25,
 							fontVariantNumeric: 'tabular-nums',
 							overflow: 'hidden',
 							textOverflow: 'ellipsis',
@@ -48,13 +60,13 @@ export default function CalculatorApp() {
 						}}
 					>
 						{subtitle || '\u00A0'}
-					</Text>
-					<Text
-						ta="right"
-						size="xl"
-						fw={600}
-						lh={1.2}
+					</Typography.Text>
+					<Typography.Text
+						strong
 						style={{
+							textAlign: 'right',
+							fontSize: 24,
+							lineHeight: 1.2,
 							fontVariantNumeric: 'tabular-nums',
 							overflow: 'hidden',
 							textOverflow: 'ellipsis',
@@ -63,38 +75,33 @@ export default function CalculatorApp() {
 						}}
 					>
 						{title}
-					</Text>
-				</Stack>
-			</Box>
+					</Typography.Text>
+				</Flex>
+			</div>
 
-			<Box style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-				<Grid gap="xs">
+			<div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+				<Row gutter={[8, 8]}>
 					{CALCULATOR_BUTTON_MATRIX.flatMap((row, rowIndex) =>
 						row.map((value, columnIndex) => {
 							const key = String(value);
-							const { variant, color } = getCalculatorButtonProps(key);
+							const span = getButtonSpan(value) * 2;
 
 							return (
-								<Grid.Col
-									key={`${rowIndex}-${columnIndex}-${key}`}
-									span={getButtonSpan(value)}
-								>
+								<Col key={`${rowIndex}-${columnIndex}-${key}`} span={span}>
 									<Button
-										fullWidth
-										h={BUTTON_HEIGHT}
-										variant={variant}
-										color={color}
+										block
 										disabled={state.disabled.includes(key)}
 										onClick={() => pressKey(key)}
+										style={{ height: BUTTON_HEIGHT, ...buttonStyle(key) }}
 									>
 										{formatButtonLabel(value)}
 									</Button>
-								</Grid.Col>
+								</Col>
 							);
 						}),
 					)}
-				</Grid>
-			</Box>
-		</Box>
+				</Row>
+			</div>
+		</div>
 	);
 }

@@ -1,14 +1,5 @@
-import {
-	Button,
-	Group,
-	Modal,
-	Select,
-	Stack,
-	Table,
-	Text,
-	TextInput,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Button, Flex, Form, Input, Modal, Select, Table, Typography } from 'antd';
+import { notifications } from '@/ui/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -85,61 +76,69 @@ export function ExplorerUserDisksModal({ opened, onClose }: ExplorerUserDisksMod
 	};
 
 	return (
-		<Modal opened={opened} onClose={onClose} title="Пользовательские диски" size="lg">
-			<Stack gap="md">
-				<Text size="sm" c="dimmed">
+		<Modal open={opened} onCancel={onClose} title="Пользовательские диски" width={800} footer={null}>
+			<Flex vertical gap="middle">
+				<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 					Укажите код диска (латиница), название и абсолютный путь на сервере.
-				</Text>
+				</Typography.Text>
 
-				<Group align="flex-end" wrap="wrap">
-					<TextInput label="Код" placeholder="mydisk" value={code} onChange={(e) => setCode(e.currentTarget.value)} w={120} />
-					<TextInput label="Название" placeholder="Мой диск" value={label} onChange={(e) => setLabel(e.currentTarget.value)} w={180} />
-					<Select label="Адаптер" data={ADAPTER_OPTIONS} value={adapter} onChange={(value) => value && setAdapter(value)} w={220} />
-					<TextInput
-						label="Путь на сервере"
-						placeholder="C:/data/mydisk"
-						value={root}
-						onChange={(e) => setRoot(e.currentTarget.value)}
-						style={{ flex: 1, minWidth: 220 }}
-					/>
-					<Button onClick={handleCreate} loading={createMutation.isPending}>
+				<Flex align="flex-end" wrap="wrap" gap="small">
+					<Form.Item label="Код" style={{ marginBottom: 0, width: 120 }}>
+						<Input placeholder="mydisk" value={code} onChange={(e) => setCode(e.target.value)} />
+					</Form.Item>
+					<Form.Item label="Название" style={{ marginBottom: 0, width: 180 }}>
+						<Input placeholder="Мой диск" value={label} onChange={(e) => setLabel(e.target.value)} />
+					</Form.Item>
+					<Form.Item label="Адаптер" style={{ marginBottom: 0, width: 220 }}>
+						<Select
+							options={ADAPTER_OPTIONS}
+							value={adapter}
+							onChange={(value) => setAdapter(value)}
+							style={{ width: '100%' }}
+						/>
+					</Form.Item>
+					<Form.Item label="Путь на сервере" style={{ marginBottom: 0, flex: 1, minWidth: 220 }}>
+						<Input
+							placeholder="C:/data/mydisk"
+							value={root}
+							onChange={(e) => setRoot(e.target.value)}
+						/>
+					</Form.Item>
+					<Button type="primary" onClick={handleCreate} loading={createMutation.isPending}>
 						Добавить
 					</Button>
-				</Group>
+				</Flex>
 
-				<Table striped highlightOnHover>
-					<Table.Thead>
-						<Table.Tr>
-							<Table.Th>Код</Table.Th>
-							<Table.Th>Название</Table.Th>
-							<Table.Th>Адаптер</Table.Th>
-							<Table.Th>Путь</Table.Th>
-							<Table.Th w={80} />
-						</Table.Tr>
-					</Table.Thead>
-					<Table.Tbody>
-						{(disksQuery.data ?? []).map((disk: UserDiskRecord) => (
-							<Table.Tr key={disk.id}>
-								<Table.Td>{disk.code}</Table.Td>
-								<Table.Td>{disk.label}</Table.Td>
-								<Table.Td>{disk.adapter}</Table.Td>
-								<Table.Td>{disk.config?.root ?? '—'}</Table.Td>
-								<Table.Td>
-									<Button
-										size="xs"
-										color="red"
-										variant="light"
-										loading={deleteMutation.isPending}
-										onClick={() => deleteMutation.mutate(disk.id)}
-									>
-										×
-									</Button>
-								</Table.Td>
-							</Table.Tr>
-						))}
-					</Table.Tbody>
-				</Table>
-			</Stack>
+				<Table
+					size="small"
+					pagination={false}
+					rowKey="id"
+					dataSource={disksQuery.data ?? []}
+					columns={[
+						{ title: 'Код', dataIndex: 'code' },
+						{ title: 'Название', dataIndex: 'label' },
+						{ title: 'Адаптер', dataIndex: 'adapter' },
+						{
+							title: 'Путь',
+							render: (_: unknown, disk: UserDiskRecord) => disk.config?.root ?? '—',
+						},
+						{
+							title: '',
+							width: 80,
+							render: (_: unknown, disk: UserDiskRecord) => (
+								<Button
+									size="small"
+									danger
+									loading={deleteMutation.isPending}
+									onClick={() => deleteMutation.mutate(disk.id)}
+								>
+									×
+								</Button>
+							),
+						},
+					]}
+				/>
+			</Flex>
 		</Modal>
 	);
 }

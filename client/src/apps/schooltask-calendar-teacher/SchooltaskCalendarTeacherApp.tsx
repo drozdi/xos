@@ -1,4 +1,4 @@
-import { Alert, Box } from '@mantine/core';
+import { Alert } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
@@ -31,17 +31,17 @@ export default function SchooltaskCalendarTeacherApp() {
 
 	if (!canRead && !canUpdate) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр уроков
-			</Alert>
+			<div style={{ margin: 16 }}>
+				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр уроков" />
+			</div>
 		);
 	}
 
 	return (
-		<Box
-			p="md"
+		<div
 			style={{
 				position: 'relative',
+				padding: 16,
 				height: '100%',
 				minHeight: 0,
 				display: 'flex',
@@ -49,7 +49,7 @@ export default function SchooltaskCalendarTeacherApp() {
 				overflow: 'hidden',
 			}}
 		>
-			<Box style={{ flex: 1, minHeight: 0 }}>
+			<div style={{ flex: 1, minHeight: 0 }}>
 				<WeekCalendar
 					events={eventsQuery.data ?? []}
 					isLoading={eventsQuery.isFetching}
@@ -58,13 +58,13 @@ export default function SchooltaskCalendarTeacherApp() {
 						setSelectedEventId(event.id);
 					}}
 				/>
-			</Box>
+			</div>
 			<EventTeacherModal
 				eventId={selectedEventId}
 				opened={selectedEventId !== null}
 				onClose={() => setSelectedEventId(null)}
 				onSaved={() => void eventsQuery.refetch()}
 			/>
-		</Box>
+		</div>
 	);
 }

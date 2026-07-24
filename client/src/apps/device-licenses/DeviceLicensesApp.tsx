@@ -1,5 +1,5 @@
-import { Alert } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
+import { Alert } from 'antd';
+import { notifications } from '@/ui/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -108,9 +108,7 @@ export default function DeviceLicensesApp() {
 
 	if (!canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр лицензий
-			</Alert>
+			<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр лицензий" style={{ margin: 16 }} />
 		);
 	}
 

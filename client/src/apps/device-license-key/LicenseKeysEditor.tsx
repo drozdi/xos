@@ -1,13 +1,4 @@
-import {
-	ActionIcon,
-	Button,
-	Group,
-	Select,
-	Stack,
-	Table,
-	Text,
-	TextInput,
-} from '@mantine/core';
+import { Button, Flex, Input, Select, Table, Typography } from 'antd';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
@@ -90,104 +81,118 @@ export function LicenseKeysEditor({
 	};
 
 	return (
-		<Stack gap="sm">
-			<Group justify="space-between">
+		<Flex vertical gap={12}>
+			<Flex justify="space-between" align="center">
 				<strong>Ключи</strong>
 				{!readOnly ? (
-					<Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={addItem}>
+					<Button size="small" icon={<IconPlus size={14} />} onClick={addItem}>
 						Добавить
 					</Button>
 				) : null}
-			</Group>
+			</Flex>
 
 			{entries.length === 0 ? (
-				<Text size="sm" c="dimmed">
-					Нет записей
-				</Text>
+				<Typography.Text type="secondary">Нет записей</Typography.Text>
 			) : (
-				<Table highlightOnHover withTableBorder withColumnBorders>
-					<Table.Thead>
-						<Table.Tr>
-							<Table.Th>Программа</Table.Th>
-							<Table.Th w={120}>Тип ключа</Table.Th>
-							<Table.Th>Ключ</Table.Th>
-							<Table.Th>Код активации</Table.Th>
-							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
-						</Table.Tr>
-					</Table.Thead>
-					<Table.Tbody>
-						{entries.map(([key, item]) => (
-							<Table.Tr key={key}>
-								<Table.Td>
-									<Select
-										data={softwareOptions}
-										value={
-											item.software_id != null && item.software_id !== ''
-												? String(item.software_id)
-												: null
-										}
-										readOnly={readOnly}
-										disabled={typeId == null}
-										searchable
-										nothingFoundMessage="Нет программ"
-										onChange={(value) =>
-											updateItem(key, {
-												software_id: value ?? '',
-											})
-										}
-									/>
-								</Table.Td>
-								<Table.Td>
-									<Select
-										data={keyTypeOptions}
-										value={item.typeKey ? String(item.typeKey) : null}
-										readOnly={readOnly}
-										onChange={(value) =>
-											updateItem(key, {
-												typeKey: value ?? '',
-											})
-										}
-									/>
-								</Table.Td>
-								<Table.Td>
-									<TextInput
-										value={String(item.value ?? '')}
-										readOnly={readOnly}
-										onChange={(e) =>
-											updateItem(key, {
-												value: e.currentTarget.value,
-											})
-										}
-									/>
-								</Table.Td>
-								<Table.Td>
-									<TextInput
-										value={String(item.actived ?? '')}
-										readOnly={readOnly}
-										onChange={(e) =>
-											updateItem(key, {
-												actived: e.currentTarget.value,
-											})
-										}
-									/>
-								</Table.Td>
-								{!readOnly ? (
-									<Table.Td>
-										<ActionIcon
-											color="red"
-											variant="light"
-											aria-label="Удалить"
-											onClick={() => removeItem(key)}
-										>
-											<IconTrash size={16} />
-										</ActionIcon>
-									</Table.Td>
-								) : null}
-							</Table.Tr>
-						))}
-					</Table.Tbody>
-				</Table>
+				<Table
+					size="small"
+					bordered
+					pagination={false}
+					rowKey={([key]) => key}
+					dataSource={entries}
+					columns={[
+						{
+							title: 'Программа',
+							key: 'software',
+							render: (_: unknown, [key, item]: [string, KeyRecord]) => (
+								<Select
+									options={softwareOptions}
+									value={
+										item.software_id != null && item.software_id !== ''
+											? String(item.software_id)
+											: undefined
+									}
+									disabled={readOnly || typeId == null}
+									showSearch
+									notFoundContent="Нет программ"
+									style={{ width: '100%' }}
+									onChange={(value) =>
+										updateItem(key, {
+											software_id: value ?? '',
+										})
+									}
+								/>
+							),
+						},
+						{
+							title: 'Тип ключа',
+							key: 'typeKey',
+							width: 120,
+							render: (_: unknown, [key, item]: [string, KeyRecord]) => (
+								<Select
+									options={keyTypeOptions}
+									value={item.typeKey ? String(item.typeKey) : undefined}
+									disabled={readOnly}
+									style={{ width: '100%' }}
+									onChange={(value) =>
+										updateItem(key, {
+											typeKey: value ?? '',
+										})
+									}
+								/>
+							),
+						},
+						{
+							title: 'Ключ',
+							key: 'value',
+							render: (_: unknown, [key, item]: [string, KeyRecord]) => (
+								<Input
+									value={String(item.value ?? '')}
+									readOnly={readOnly}
+									onChange={(e) =>
+										updateItem(key, {
+											value: e.target.value,
+										})
+									}
+								/>
+							),
+						},
+						{
+							title: 'Код активации',
+							key: 'actived',
+							render: (_: unknown, [key, item]: [string, KeyRecord]) => (
+								<Input
+									value={String(item.actived ?? '')}
+									readOnly={readOnly}
+									onChange={(e) =>
+										updateItem(key, {
+											actived: e.target.value,
+										})
+									}
+								/>
+							),
+						},
+						...(!readOnly
+							? [
+									{
+										title: '',
+										key: 'actions',
+										width: 48,
+										render: (_: unknown, [key]: [string, KeyRecord]) => (
+											<Button
+												type="text"
+												danger
+												aria-label="Удалить"
+												icon={<IconTrash size={16} />}
+												onClick={() => removeItem(key)}
+											/>
+										),
+									},
+								]
+							: []),
+					]}
+				/>
 			)}
-		</Stack>
+		</Flex>
 	);
 }

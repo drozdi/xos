@@ -1,17 +1,10 @@
-﻿import {
+﻿import { Button, Flex, Form, Input, Typography } from 'antd';
+import { TbTrash } from 'react-icons/tb';
+
+import {
 	useAccountAddUser,
 	useAccountRemoveUser,
 } from '@inccom/entities/account';
-import {
-	ActionIcon,
-	Button,
-	Group,
-	Stack,
-	Text,
-	TextInput,
-} from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { TbTrash } from 'react-icons/tb';
 
 interface AccountParticipantsPanelProps {
 	accountId: number;
@@ -24,17 +17,11 @@ export function AccountParticipantsPanel({
 }: AccountParticipantsPanelProps) {
 	const addMutation = useAccountAddUser();
 	const removeMutation = useAccountRemoveUser();
-
-	const form = useForm({
-		initialValues: { login: '' },
-		validate: {
-			login: (value) => (value.trim() ? null : 'Введите логин'),
-		},
-	});
+	const [form] = Form.useForm<{ login: string }>();
 
 	async function handleAdd(values: { login: string }) {
 		await addMutation.mutateAsync({ id: accountId, login: values.login.trim() });
-		form.reset();
+		form.resetFields();
 	}
 
 	async function handleRemove(userId: number) {
@@ -42,40 +29,44 @@ export function AccountParticipantsPanel({
 	}
 
 	return (
-		<Stack gap="md">
-			<Text fw={600}>Участники счёта</Text>
+		<Flex vertical gap={16}>
+			<Typography.Text strong>Участники счёта</Typography.Text>
 			{participants.length ? (
 				participants.map((participant) => (
-					<Group key={participant.id} justify="space-between">
-						<Text>{participant.login}</Text>
-						<ActionIcon
-							color="red"
-							variant="subtle"
-							onClick={() => handleRemove(participant.id)}
+					<Flex key={participant.id} justify="space-between" align="center">
+						<Typography.Text>{participant.login}</Typography.Text>
+						<Button
+							type="text"
+							danger
+							icon={<TbTrash />}
 							loading={removeMutation.isPending}
-						>
-							<TbTrash />
-						</ActionIcon>
-					</Group>
+							onClick={() => void handleRemove(participant.id)}
+						/>
+					</Flex>
 				))
 			) : (
-				<Text c="dimmed" size="sm">
-					Участников пока нет
-				</Text>
+				<Typography.Text type="secondary">Участников пока нет</Typography.Text>
 			)}
-			<form onSubmit={form.onSubmit(handleAdd)}>
-				<Group align="flex-end">
-					<TextInput
+			<Form
+				form={form}
+				layout="vertical"
+				onFinish={(v) => void handleAdd(v)}
+				initialValues={{ login: '' }}
+			>
+				<Flex align="flex-end" gap={8}>
+					<Form.Item
 						label="Добавить по логину"
-						placeholder="login"
-						style={{ flex: 1 }}
-						{...form.getInputProps('login')}
-					/>
-					<Button type="submit" loading={addMutation.isPending}>
+						name="login"
+						rules={[{ required: true, message: 'Введите логин' }]}
+						style={{ flex: 1, marginBottom: 0 }}
+					>
+						<Input placeholder="login" />
+					</Form.Item>
+					<Button type="primary" htmlType="submit" loading={addMutation.isPending}>
 						Добавить
 					</Button>
-				</Group>
-			</form>
-		</Stack>
+				</Flex>
+			</Form>
+		</Flex>
 	);
 }

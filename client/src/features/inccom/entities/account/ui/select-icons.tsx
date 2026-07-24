@@ -1,4 +1,4 @@
-import { Select, type SelectProps } from '@mantine/core';
+import { Select, type SelectProps } from 'antd';
 
 export function SelectIcons(props: SelectProps) {
 	return <Select {...props} />;

@@ -1,32 +1,50 @@
 ﻿import { getUser } from '@/core/api/endpoints/auth';
+import { apiClient } from '@/core/api/client';
 import type { ApiUser } from '@inccom/shared/types/api';
 
 import type { IRegisterRequest } from '../model/types';
 
-export async function requestAuthenticationLogin(_credentials: {
+type LoginResponse = {
+	token: string;
+	refresh_token: string;
+};
+
+type RefreshResponse = {
+	token: string;
+	refresh_token: string;
+};
+
+export async function requestAuthenticationLogin(credentials: {
 	username: string;
 	password: string;
-}): Promise<IResponse<{ token: string; refresh_token: string }>> {
-	throw new Error('IncCom auth is managed by XOS');
+}): Promise<IResponse<LoginResponse>> {
+	const { data } = await apiClient.post<LoginResponse>('/api/auth/login', credentials);
+	return data;
 }
 
 export async function requestAuthRegister(
-	_userData: IRegisterRequest,
+	userData: IRegisterRequest,
 ): Promise<IResponse<ApiUser>> {
-	throw new Error('IncCom registration is managed by XOS');
+	const { data } = await apiClient.post<ApiUser>('/api/auth/register', userData);
+	return data;
 }
 
 export async function requestAuthMe(): Promise<IResponse<ApiUser>> {
-	const user = await getUser();
-	return {
-		id: user.id,
-		login: user.login ?? '',
-		email: user.email ?? '',
-		name: user.alias ?? user.login ?? null,
-	};
+	try {
+		const { data } = await apiClient.get<ApiUser>('/api/auth/me');
+		return data;
+	} catch {
+		const user = await getUser();
+		return {
+			id: user.id,
+			login: user.login ?? '',
+			email: user.email ?? '',
+			name: user.alias ?? user.login ?? null,
+		};
+	}
 }
 
-export async function requestAuthenticationRefresh(_refreshToken: string): Promise<
+export async function requestAuthenticationRefresh(refreshToken: string): Promise<
 	IResponse<{
 		token: {
 			access: string;
@@ -34,7 +52,15 @@ export async function requestAuthenticationRefresh(_refreshToken: string): Promi
 		};
 	}>
 > {
-	throw new Error('IncCom token refresh is managed by XOS');
+	const { data } = await apiClient.post<RefreshResponse>('/api/token/refresh', {
+		refresh_token: refreshToken,
+	});
+	return {
+		token: {
+			access: data.token,
+			refresh: data.refresh_token,
+		},
+	};
 }
 
 export function mapAuthMeToUser(data: ApiUser): IUser {

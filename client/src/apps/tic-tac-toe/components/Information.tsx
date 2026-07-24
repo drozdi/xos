@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core';
+import { Typography } from 'antd';
 
 import { useTicTacToeStore } from '../store';
 
@@ -18,22 +18,13 @@ export function Information() {
 	}
 
 	return (
-		<StackInfo
-			message={message}
-			meta={`${difficulty.label} · ${size}×${size} · ${winLength} в ряд`}
-		/>
-	);
-}
-
-function StackInfo({ message, meta }: { message: string; meta: string }) {
-	return (
 		<>
-			<Text ta="center" size="lg" fw={600}>
+			<Typography.Text strong style={{ display: 'block', textAlign: 'center', fontSize: 18 }}>
 				{message}
-			</Text>
-			<Text ta="center" size="xs" c="dimmed">
-				{meta}
-			</Text>
+			</Typography.Text>
+			<Typography.Text type="secondary" style={{ display: 'block', textAlign: 'center', fontSize: 12 }}>
+				{`${difficulty.label} · ${size}×${size} · ${winLength} в ряд`}
+			</Typography.Text>
 		</>
 	);
 }

@@ -1,4 +1,4 @@
-import { Stack, TextInput } from '@mantine/core';
+import { Flex, Form, Input } from 'antd';
 
 import { normalizeIdRecord } from '@/features/device/deviceAppUtils';
 
@@ -11,19 +11,20 @@ export function DeviceImagesTab({ images }: DeviceImagesTabProps) {
 	const entries = Object.entries(records);
 
 	if (entries.length === 0) {
-		return <TextInput label="Нет изображений" value="" readOnly disabled />;
+		return (
+			<Form.Item label="Нет изображений" style={{ marginBottom: 0 }}>
+				<Input value="" readOnly disabled />
+			</Form.Item>
+		);
 	}
 
 	return (
-		<Stack gap="xs">
+		<Flex vertical gap={8}>
 			{entries.map(([key, item]) => (
-				<TextInput
-					key={key}
-					label={String(item.name ?? `Изображение #${key}`)}
-					value={String(item.src ?? '')}
-					readOnly
-				/>
+				<Form.Item key={key} label={String(item.name ?? `Изображение #${key}`)} style={{ marginBottom: 0 }}>
+					<Input value={String(item.src ?? '')} readOnly />
+				</Form.Item>
 			))}
-		</Stack>
+		</Flex>
 	);
 }

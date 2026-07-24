@@ -2,14 +2,14 @@
 @import './window-breakpoints.css';
 @import './shell.css';
 
-@custom-variant dark (&:where([data-mantine-color-scheme="dark"], [data-mantine-color-scheme="dark"] *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
-	--color-body: var(--mantine-color-body);
-	--color-surface: var(--mantine-color-default);
-	--color-surface-elevated: var(--mantine-color-body);
-	--color-surface-hover: var(--mantine-color-default-hover);
-	--color-border: var(--mantine-color-default-border);
-	--color-text: var(--mantine-color-text);
-	--color-dimmed: var(--mantine-color-dimmed);
+	--color-body: var(--xos-shell-bg-elevated);
+	--color-surface: var(--xos-shell-bg);
+	--color-surface-elevated: var(--xos-shell-bg-elevated);
+	--color-surface-hover: var(--xos-shell-hover);
+	--color-border: var(--xos-shell-border);
+	--color-text: var(--xos-shell-text);
+	--color-dimmed: var(--xos-shell-dimmed);
 }

@@ -1,12 +1,13 @@
-import type {
-	UseDisclosureHandlers,
-	UseDisclosureOptions,
-} from "@mantine/hooks";
-import { useDisclosure, useSetState } from "@mantine/hooks";
 import { useEffect, useState } from "react";
+
+import {
+	useDisclosure,
+	type UseDisclosureHandlers,
+	type UseDisclosureOptions,
+} from "../hooks/use-disclosure";
+import { useSetState } from "../hooks/use-set-state";
 import { Config } from "./Config";
 import { storageLocal } from "./storages/storage-local";
-
 export class Setting {
 	config?: Config;
 	parent: Setting | null = null;

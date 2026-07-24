@@ -1,13 +1,14 @@
-﻿import { SignUpForm } from "@inccom/features/auth/sign-up-form";
-import { Stack, Title } from "@mantine/core";
+﻿import { Flex, Typography } from 'antd';
+
+import { SignUpForm } from '@inccom/features/auth/sign-up-form';
 
 export function SignUpPage() {
 	return (
-		<Stack>
-			<Title ta="center" order={1}>
+		<Flex vertical gap={16}>
+			<Typography.Title level={2} style={{ textAlign: 'center', margin: 0 }}>
 				Регистрация
-			</Title>
+			</Typography.Title>
 			<SignUpForm />
-		</Stack>
+		</Flex>
 	);
 }

@@ -1,4 +1,8 @@
-﻿import { useAccountsQuery } from '@inccom/entities/account';
+﻿import { Button, DatePicker, Flex, Form, Input, InputNumber, Select, Switch } from 'antd';
+import dayjs, { type Dayjs } from 'dayjs';
+import { useEffect, useMemo, useState } from 'react';
+
+import { useAccountsQuery } from '@inccom/entities/account';
 import {
 	useTransactionCreate,
 	useTransactionQuery,
@@ -18,26 +22,15 @@ import {
 } from '@inccom/shared/lib/negative-balance';
 import { notification } from '@inccom/shared/notification';
 import { getErrorMessage } from '@inccom/shared/utils/error';
-import {
-	Button,
-	Group,
-	NumberInput,
-	Select,
-	Stack,
-	Switch,
-	TextInput,
-} from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import { isNotEmpty, useForm } from '@mantine/form';
-import { useEffect, useMemo, useState } from 'react';
+
 import { TransactionItemsEditor } from './TransactionItemsEditor';
 
 interface TransactionFormValues {
 	type: TransactionType;
 	accountId: string | null;
 	categoryId: string | null;
-	amount: number | string;
-	date: Date | null;
+	amount: number;
+	date: Dayjs | null;
 	comment: string;
 	isManualAmount: boolean;
 	fn: string;
@@ -55,16 +48,16 @@ interface TransactionFormProps {
 	onSuccess?: (transaction: ITransaction) => void;
 }
 
-function toIsoDate(value: Date | null): string {
-	return (value ?? new Date()).toISOString();
+function toIsoDate(value: Dayjs | null): string {
+	return (value ?? dayjs()).toISOString();
 }
 
-function toFormDate(value?: string | null): Date | null {
+function toFormDate(value?: string | null): Dayjs {
 	if (!value) {
-		return new Date();
+		return dayjs();
 	}
-	const parsed = new Date(value);
-	return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+	const parsed = dayjs(value);
+	return parsed.isValid() ? parsed : dayjs();
 }
 
 export function TransactionForm({
@@ -75,44 +68,18 @@ export function TransactionForm({
 }: TransactionFormProps) {
 	const [qrOpened, setQrOpened] = useState(false);
 	const isExpense = type === 'expense';
+	const [form] = Form.useForm<TransactionFormValues>();
 
-	const form = useForm<TransactionFormValues>({
-		initialValues: {
-			type,
-			accountId: defaultAccountId ? String(defaultAccountId) : null,
-			categoryId: null,
-			amount: 0,
-			date: new Date(),
-			comment: '',
-			isManualAmount: false,
-			fn: '',
-			fpd: '',
-			fp: '',
-			fd: '',
-			mcc: '',
-			items: [],
-		},
-		validate: {
-			accountId: isNotEmpty('Выберите счёт'),
-			categoryId: isNotEmpty('Выберите категорию'),
-			date: (value) => (value ? null : 'Укажите дату'),
-			amount: (value, values) => {
-				if (!isExpense || values.isManualAmount) {
-					return Number(value) > 0 ? null : 'Укажите сумму';
-				}
-				return null;
-			},
-		},
-	});
-
-	const accountId = form.values.accountId ? Number(form.values.accountId) : 0;
+	const accountIdRaw = Form.useWatch('accountId', form);
+	const isManualAmount = Form.useWatch('isManualAmount', form);
+	const accountId = accountIdRaw ? Number(accountIdRaw) : 0;
 
 	const { data: accountsData, isLoading: isAccountsLoading } = useAccountsQuery();
 	const { data: categoriesData, isFetching: isCategoriesFetching } =
 		useTransactionCategoriesQuery(
-		{ accountId, limit: 100, offset: 0 },
-		{ enabled: accountId > 0 },
-	);
+			{ accountId, limit: 100, offset: 0 },
+			{ enabled: accountId > 0 },
+		);
 	const { data: transactionData } = useTransactionQuery(id);
 	const createMutation = useTransactionCreate();
 	const updateMutation = useTransactionUpdate();
@@ -140,7 +107,7 @@ export function TransactionForm({
 
 	useEffect(() => {
 		if (accountId <= 0) {
-			if (form.values.categoryId !== null) {
+			if (form.getFieldValue('categoryId') !== null) {
 				form.setFieldValue('categoryId', null);
 			}
 			return;
@@ -151,13 +118,13 @@ export function TransactionForm({
 		}
 
 		if (categoryOptions.length === 0) {
-			if (form.values.categoryId !== null) {
+			if (form.getFieldValue('categoryId') !== null) {
 				form.setFieldValue('categoryId', null);
 			}
 			return;
 		}
 
-		const currentCategoryId = form.values.categoryId;
+		const currentCategoryId = form.getFieldValue('categoryId');
 		const isCurrentValid = categoryOptions.some(
 			(option) => option.value === currentCategoryId,
 		);
@@ -168,11 +135,11 @@ export function TransactionForm({
 				form.setFieldValue('categoryId', firstCategory.value);
 			}
 		}
-	}, [accountId, categoryOptions, isCategoriesFetching]);
+	}, [accountId, categoryOptions, isCategoriesFetching, form]);
 
 	useEffect(() => {
 		if (transactionData?.id && id) {
-			form.setValues({
+			form.setFieldsValue({
 				type: transactionData.type,
 				accountId: String(transactionData.accountId),
 				categoryId: transactionData.categoryId
@@ -199,7 +166,7 @@ export function TransactionForm({
 		if (!id && defaultAccountId) {
 			form.setFieldValue('accountId', String(defaultAccountId));
 		}
-	}, [transactionData, id, defaultAccountId]);
+	}, [transactionData, id, defaultAccountId, form]);
 
 	function applyQrData(data: ParsedFiscalQr) {
 		if (data.fn) form.setFieldValue('fn', data.fn);
@@ -260,14 +227,11 @@ export function TransactionForm({
 					values.items,
 				);
 				const previousDebit =
-					id &&
-					transactionData?.accountId === Number(values.accountId)
+					id && transactionData?.accountId === Number(values.accountId)
 						? Number(transactionData.amount)
 						: 0;
 
-				if (
-					willBalanceGoNegative(account.balance, debitAmount, previousDebit)
-				) {
+				if (willBalanceGoNegative(account.balance, debitAmount, previousDebit)) {
 					const projectedBalance = getBalanceAfterDebit(
 						account.balance,
 						debitAmount,
@@ -289,9 +253,7 @@ export function TransactionForm({
 				? await updateMutation.mutateAsync({ id, ...payload })
 				: await createMutation.mutateAsync(payload);
 
-			notification.success(
-				id ? 'Транзакция обновлена' : 'Транзакция создана',
-			);
+			notification.success(id ? 'Транзакция обновлена' : 'Транзакция создана');
 			onSuccess?.(result);
 		} catch (e: unknown) {
 			const error = getErrorMessage(e, 'Не удалось сохранить транзакцию');
@@ -300,124 +262,125 @@ export function TransactionForm({
 	}
 
 	const loading = createMutation.isPending || updateMutation.isPending;
-	const isManualAmount = form.values.isManualAmount;
-
-	const accountIdProps = form.getInputProps('accountId');
-	const categoryIdProps = form.getInputProps('categoryId');
 
 	return (
 		<>
-			<form onSubmit={form.onSubmit(handleSubmit)}>
-				<Stack>
-				<Select
+			<Form
+				form={form}
+				layout="vertical"
+				onFinish={(v) => void handleSubmit(v)}
+				initialValues={{
+					type,
+					accountId: defaultAccountId ? String(defaultAccountId) : null,
+					categoryId: null,
+					amount: 0,
+					date: dayjs(),
+					comment: '',
+					isManualAmount: false,
+					fn: '',
+					fpd: '',
+					fp: '',
+					fd: '',
+					mcc: '',
+					items: [],
+				}}
+			>
+				<Form.Item
 					label="Счёт"
-					data={accountOptions}
-					{...accountIdProps}
-					searchable
-					required
-					placeholder={
-						isAccountsLoading && !accountOptions.length
-							? 'Загрузка…'
-							: 'Выберите счёт'
-					}
-					nothingFoundMessage="Счета не найдены"
-					w="100%"
-				/>
-				<Select
+					name="accountId"
+					rules={[{ required: true, message: 'Выберите счёт' }]}
+				>
+					<Select
+						showSearch
+						optionFilterProp="label"
+						options={accountOptions}
+						placeholder={
+							isAccountsLoading && !accountOptions.length
+								? 'Загрузка…'
+								: 'Выберите счёт'
+						}
+						notFoundContent="Счета не найдены"
+					/>
+				</Form.Item>
+				<Form.Item
 					label="Категория"
-					data={categoryOptions}
-					key={`category-${accountId}`}
-					{...categoryIdProps}
-					searchable
-					required
-					disabled={accountId <= 0}
-					placeholder={accountId <= 0 ? 'Сначала выберите счёт' : 'Выберите категорию'}
-					nothingFoundMessage="Категории не найдены"
-					w="100%"
-				/>
-				<DateTimePicker
+					name="categoryId"
+					rules={[{ required: true, message: 'Выберите категорию' }]}
+				>
+					<Select
+						key={`category-${accountId}`}
+						showSearch
+						optionFilterProp="label"
+						options={categoryOptions}
+						disabled={accountId <= 0}
+						placeholder={
+							accountId <= 0 ? 'Сначала выберите счёт' : 'Выберите категорию'
+						}
+						notFoundContent="Категории не найдены"
+					/>
+				</Form.Item>
+				<Form.Item
 					label="Дата"
-					{...form.getInputProps('date')}
-					required
-					w="100%"
-				/>
+					name="date"
+					rules={[{ required: true, message: 'Укажите дату' }]}
+				>
+					<DatePicker showTime style={{ width: '100%' }} />
+				</Form.Item>
 				{isExpense ? (
 					<>
-						<Group>
-							<Button variant="light" onClick={() => setQrOpened(true)}>
-								Сканировать QR
-							</Button>
-						</Group>
-						<TextInput
-							label="ФН"
-							{...form.getInputProps('fn')}
-							w="100%"
-						/>
-						<TextInput
-							label="ФПД"
-							{...form.getInputProps('fpd')}
-							w="100%"
-						/>
-						<TextInput
-							label="ФП"
-							{...form.getInputProps('fp')}
-							w="100%"
-						/>
-						<TextInput
-							label="ФД"
-							{...form.getInputProps('fd')}
-							w="100%"
-						/>
-						<TextInput
-							label="MCC"
-							description="Необязательно"
-							placeholder="Код категории мерчанта"
-							{...form.getInputProps('mcc')}
-							w="100%"
-						/>
-						<Switch
-							label="Ручной ввод суммы"
-							{...form.getInputProps('isManualAmount', { type: 'checkbox' })}
-						/>
+						<Button type="default" onClick={() => setQrOpened(true)} style={{ marginBottom: 16 }}>
+							Сканировать QR
+						</Button>
+						<Form.Item label="ФН" name="fn">
+							<Input />
+						</Form.Item>
+						<Form.Item label="ФПД" name="fpd">
+							<Input />
+						</Form.Item>
+						<Form.Item label="ФП" name="fp">
+							<Input />
+						</Form.Item>
+						<Form.Item label="ФД" name="fd">
+							<Input />
+						</Form.Item>
+						<Form.Item label="MCC" name="mcc" extra="Необязательно">
+							<Input placeholder="Код категории мерчанта" />
+						</Form.Item>
+						<Form.Item name="isManualAmount" valuePropName="checked" label="Ручной ввод суммы">
+							<Switch />
+						</Form.Item>
 						{isManualAmount ? (
-							<NumberInput
+							<Form.Item
 								label="Сумма"
-								decimalScale={2}
-								min={0}
-								{...form.getInputProps('amount')}
-								required
-								w="100%"
-							/>
+								name="amount"
+								rules={[{ required: true, message: 'Укажите сумму' }]}
+							>
+								<InputNumber min={0} precision={2} style={{ width: '100%' }} />
+							</Form.Item>
 						) : (
-							<TransactionItemsEditor
-								items={form.values.items}
-								onChange={(items) => form.setFieldValue('items', items)}
-								disabled={loading}
-							/>
+							<Form.Item name="items">
+								<TransactionItemsEditor disabled={loading} />
+							</Form.Item>
 						)}
 					</>
 				) : (
-					<NumberInput
+					<Form.Item
 						label="Сумма"
-						decimalScale={2}
-						min={0}
-						{...form.getInputProps('amount')}
-						required
-						w="100%"
-					/>
+						name="amount"
+						rules={[{ required: true, message: 'Укажите сумму' }]}
+					>
+						<InputNumber min={0} precision={2} style={{ width: '100%' }} />
+					</Form.Item>
 				)}
-				<TextInput
-					label="Комментарий"
-					{...form.getInputProps('comment')}
-					w="100%"
-				/>
-				<Group>
-					<Button type="submit" loading={loading} color="green">
+				<Form.Item label="Комментарий" name="comment">
+					<Input />
+				</Form.Item>
+				<Flex>
+					<Button type="primary" htmlType="submit" loading={loading}>
 						{id ? 'Сохранить' : 'Создать'}
 					</Button>
-				</Group>
-				</Stack>
-			</form>
+				</Flex>
+			</Form>
 			<QrScannerModal
 				opened={qrOpened}
 				onClose={() => setQrOpened(false)}

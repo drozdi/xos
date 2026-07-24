@@ -1,4 +1,4 @@
-import { Box, Text } from '@mantine/core';
+import { Typography } from 'antd';
 
 import { ResizablePanel } from './ResizablePanel';
 import { AREA_ID_TO_NAME } from './parseView';
@@ -17,16 +17,16 @@ export function LayoutArea({ area, children }: LayoutAreaProps) {
 		return (
 			<ResizablePanel side={area === 'l' ? 'left' : 'right'} areaName={areaName}>
 				{children ?? (
-					<Text size="sm" c="dimmed">
+					<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 						{area === 'l' ? 'Left panel' : 'Right panel'}
-					</Text>
+					</Typography.Text>
 				)}
 			</ResizablePanel>
 		);
 	}
 
 	return (
-		<Box
+		<div
 			style={{
 				gridArea: areaName,
 				position: 'relative',
@@ -38,6 +38,6 @@ export function LayoutArea({ area, children }: LayoutAreaProps) {
 			}}
 		>
 			{children}
-		</Box>
+		</div>
 	);
 }

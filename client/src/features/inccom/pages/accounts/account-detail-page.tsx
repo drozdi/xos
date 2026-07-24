@@ -1,9 +1,10 @@
-﻿import { useAccountQuery } from '@inccom/entities/account';
+﻿import { Divider, Flex, Spin } from 'antd';
+import { useParams } from 'react-router-dom';
+
+import { useAccountQuery } from '@inccom/entities/account';
 import { AccountForm } from '@inccom/features/account/form';
 import { AccountParticipantsPanel } from '@inccom/features/account-participants';
 import { Template } from '@inccom/layouts';
-import { Divider, Loader, Stack } from '@mantine/core';
-import { useParams } from 'react-router-dom';
 
 export function AccountDetailPage() {
 	const { id } = useParams();
@@ -11,7 +12,7 @@ export function AccountDetailPage() {
 	const { data: account, isLoading } = useAccountQuery(accountId);
 
 	if (isLoading) {
-		return <Loader />;
+		return <Spin />;
 	}
 
 	return (
@@ -19,9 +20,9 @@ export function AccountDetailPage() {
 			<Template.Title>
 				{account?.label ? `Счёт: ${account.label}` : 'Счёт'}
 			</Template.Title>
-			<Stack gap="lg">
+			<Flex vertical gap={24}>
 				<AccountForm id={accountId} />
-				{account?.isMaster && (
+				{account?.isMaster ? (
 					<>
 						<Divider />
 						<AccountParticipantsPanel
@@ -29,8 +30,8 @@ export function AccountDetailPage() {
 							participants={account.participants ?? []}
 						/>
 					</>
-				)}
-			</Stack>
+				) : null}
+			</Flex>
 		</>
 	);
 }

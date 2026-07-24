@@ -1,4 +1,4 @@
-import { Checkbox, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Card, Checkbox, Flex, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 
 import { mainUserApi } from '@/core/api/endpoints/mainApi';
@@ -35,37 +35,44 @@ export function UserRolesTab({ roles, readOnly, onRolesChange }: UserRolesTabPro
 
 	if (roleOptionsQuery.isLoading) {
 		return (
-			<Text size="sm" c="dimmed">
+			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 				Загрузка ролей…
-			</Text>
+			</Typography.Text>
 		);
 	}
 
 	if (extraRoleOptions.length === 0) {
 		return (
-			<Text size="sm" c="dimmed">
+			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 				Нет дополнительных ролей
-			</Text>
+			</Typography.Text>
 		);
 	}
 
 	return (
-		<Stack gap="sm">
-			<Text size="sm" c="dimmed">
+		<Flex vertical gap={12}>
+			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 				Роли, не связанные с доступом к приложениям
-			</Text>
-			<SimpleGrid cols={getExtraRolesColumns(windowWidth)}>
+			</Typography.Text>
+			<div
+				style={{
+					display: 'grid',
+					gap: 12,
+					gridTemplateColumns: `repeat(${getExtraRolesColumns(windowWidth)}, minmax(0, 1fr))`,
+				}}
+			>
 				{extraRoleOptions.map((role) => (
-					<Paper key={role} withBorder p="sm" h="100%">
+					<Card key={role} size="small" style={{ height: '100%' }}>
 						<Checkbox
-							label={role}
 							checked={roles.includes(role)}
 							disabled={readOnly}
 							onChange={() => onRolesChange(toggleUserRole(roles, role))}
-						/>
-					</Paper>
+						>
+							{role}
+						</Checkbox>
+					</Card>
 				))}
-			</SimpleGrid>
-		</Stack>
+			</div>
+		</Flex>
 	);
 }

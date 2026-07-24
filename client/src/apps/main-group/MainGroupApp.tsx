@@ -1,4 +1,4 @@
-import { Alert, Tabs, Text } from '@mantine/core';
+import { Alert, Tabs, Typography } from 'antd';
 import { useState } from 'react';
 
 import { mainGroupApi, type GroupDetail } from '@/core/api/endpoints/mainApi';
@@ -45,24 +45,32 @@ export default function MainGroupApp() {
 	const canAccess = useCanAccessMainGroup();
 	const canCreate = canCreateMainGroup();
 	const isNew = entityId === 0;
-	const [activeTab, setActiveTab] = useState<string | null>('general');
+	const [activeTab, setActiveTab] = useState('general');
 
 	const canSave =
 		(isNew ? canCreate : canUpdate) || canUser || canAccess;
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на создание группы
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на создание группы"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр группы
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на просмотр группы"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
@@ -82,9 +90,9 @@ export default function MainGroupApp() {
 			canDelete={canDelete}
 			headerNote={({ data, isNew: isNewRecord }) =>
 				!isNewRecord && data.x_timestamp ? (
-					<Text size="sm" c="dimmed">
+					<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 						Последнее обновление: {String(data.x_timestamp)}
-					</Text>
+					</Typography.Text>
 				) : null
 			}
 		>
@@ -96,39 +104,47 @@ export default function MainGroupApp() {
 				const accesses = data.accesses ?? {};
 
 				return (
-					<Tabs value={activeTab} onChange={setActiveTab}>
-						<Tabs.List>
-							<Tabs.Tab value="general">Общие</Tabs.Tab>
-							<Tabs.Tab value="users">Пользователи</Tabs.Tab>
-							<Tabs.Tab value="access">Права</Tabs.Tab>
-						</Tabs.List>
-
-						<Tabs.Panel value="general" pt="sm">
-							<GroupGeneralTab
-								data={data}
-								errors={errors}
-								readOnly={readOnlyGeneral}
-								entityId={entityId}
-								setField={setField}
-							/>
-						</Tabs.Panel>
-
-						<Tabs.Panel value="users" pt="sm">
-							<GroupUsersTab
-								users={users}
-								readOnly={readOnlyUsers}
-								onChange={(nextUsers) => setField('users', nextUsers)}
-							/>
-						</Tabs.Panel>
-
-						<Tabs.Panel value="access" pt="sm">
-							<GroupAccessTab
-								accesses={accesses}
-								readOnly={readOnlyAccess}
-								onChange={(nextAccesses) => setField('accesses', nextAccesses)}
-							/>
-						</Tabs.Panel>
-					</Tabs>
+					<Tabs
+						activeKey={activeTab}
+						onChange={setActiveTab}
+						items={[
+							{
+								key: 'general',
+								label: 'Общие',
+								children: (
+									<GroupGeneralTab
+										data={data}
+										errors={errors}
+										readOnly={readOnlyGeneral}
+										entityId={entityId}
+										setField={setField}
+									/>
+								),
+							},
+							{
+								key: 'users',
+								label: 'Пользователи',
+								children: (
+									<GroupUsersTab
+										users={users}
+										readOnly={readOnlyUsers}
+										onChange={(nextUsers) => setField('users', nextUsers)}
+									/>
+								),
+							},
+							{
+								key: 'access',
+								label: 'Права',
+								children: (
+									<GroupAccessTab
+										accesses={accesses}
+										readOnly={readOnlyAccess}
+										onChange={(nextAccesses) => setField('accesses', nextAccesses)}
+									/>
+								),
+							},
+						]}
+					/>
 				);
 			}}
 		</MainEntityForm>

@@ -1,20 +1,14 @@
-﻿import { useAccountsQuery } from '@inccom/entities/account';
+﻿import { Button, Checkbox, Flex, Modal, Select, Typography } from 'antd';
+import { useMemo, useState } from 'react';
+
+import { useAccountsQuery } from '@inccom/entities/account';
 import {
-	useTransactionCategoriesQuery,
 	useEnumsTypeCategory,
+	useTransactionCategoriesQuery,
 } from '@inccom/entities/transaction-category';
 import { notification } from '@inccom/shared/notification';
 import { getErrorMessage } from '@inccom/shared/utils/error';
-import {
-	Button,
-	Checkbox,
-	Group,
-	Modal,
-	Select,
-	Stack,
-	Text,
-} from '@mantine/core';
-import { useMemo, useState } from 'react';
+
 import { requestCategoryCopy, type ICategoryCopySkipped } from '../api/copy';
 
 interface CategoryCopyModalProps {
@@ -95,10 +89,7 @@ export function CategoryCopyModal({
 							.join('; ')
 					: undefined;
 
-			notification.success(
-				`Скопировано: ${result.copied}`,
-				skippedText,
-			);
+			notification.success(`Скопировано: ${result.copied}`, skippedText);
 			onClose();
 		} catch (e: unknown) {
 			const error = getErrorMessage(e, 'Не удалось скопировать категории');
@@ -115,62 +106,76 @@ export function CategoryCopyModal({
 	}
 
 	return (
-		<Modal opened={opened} onClose={onClose} title="Копирование категорий">
-			<Stack>
-				<Select
-					label="Исходный счёт"
-					data={accountOptions}
-					value={sourceAccountId}
-					onChange={(value) => {
-						setSourceAccountId(value);
-						setSelectedIds([]);
-					}}
-					placeholder="Выберите счёт"
-					searchable
-				/>
-				<Select
-					label="Целевой счёт"
-					data={accountOptions}
-					value={targetAccountId}
-					onChange={setTargetAccountId}
-					placeholder="Выберите счёт"
-					searchable
-				/>
-				<Select
-					label="Тип категорий"
-					data={typeSelectOptions}
-					value={typeFilter}
-					onChange={(value) => {
-						setTypeFilter(value ?? 'expense');
-						setSelectedIds([]);
-					}}
-				/>
-				<Text size="sm" c="dimmed">
-					Категории для копирования
-				</Text>
+		<Modal
+			open={opened}
+			onCancel={onClose}
+			title="Копирование категорий"
+			footer={
+				<Flex justify="flex-end" gap={8}>
+					<Button onClick={onClose}>Отмена</Button>
+					<Button type="primary" loading={loading} onClick={() => void handleCopy()}>
+						Копировать
+					</Button>
+				</Flex>
+			}
+		>
+			<Flex vertical gap={12}>
+				<div>
+					<div style={{ marginBottom: 4 }}>Исходный счёт</div>
+					<Select
+						style={{ width: '100%' }}
+						options={accountOptions}
+						value={sourceAccountId}
+						onChange={(value) => {
+							setSourceAccountId(value);
+							setSelectedIds([]);
+						}}
+						placeholder="Выберите счёт"
+						showSearch
+						optionFilterProp="label"
+					/>
+				</div>
+				<div>
+					<div style={{ marginBottom: 4 }}>Целевой счёт</div>
+					<Select
+						style={{ width: '100%' }}
+						options={accountOptions}
+						value={targetAccountId}
+						onChange={setTargetAccountId}
+						placeholder="Выберите счёт"
+						showSearch
+						optionFilterProp="label"
+					/>
+				</div>
+				<div>
+					<div style={{ marginBottom: 4 }}>Тип категорий</div>
+					<Select
+						style={{ width: '100%' }}
+						options={typeSelectOptions}
+						value={typeFilter}
+						onChange={(value) => {
+							setTypeFilter(value ?? 'expense');
+							setSelectedIds([]);
+						}}
+					/>
+				</div>
+				<Typography.Text type="secondary">Категории для копирования</Typography.Text>
 				{filteredCategories.length === 0 ? (
-					<Text size="sm">Нет категорий для выбранного счёта и типа</Text>
+					<Typography.Text>Нет категорий для выбранного счёта и типа</Typography.Text>
 				) : (
 					filteredCategories.map((category) => (
 						<Checkbox
 							key={category.id}
-							label={category.label}
 							checked={selectedIds.includes(category.id)}
 							onChange={(event) =>
-								toggleCategory(category.id, event.currentTarget.checked)
+								toggleCategory(category.id, event.target.checked)
 							}
-						/>
+						>
+							{category.label}
+						</Checkbox>
 					))
 				)}
-				<Group justify="flex-end">
-					<Button variant="default" onClick={onClose}>
-						Отмена
-					</Button>
-					<Button loading={loading} onClick={handleCopy}>
-						Копировать
-					</Button>
-				</Group>
-			</Stack>
+			</Flex>
 		</Modal>
 	);
 }

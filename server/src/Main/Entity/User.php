@@ -45,7 +45,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, LegacyP
     #[ORM\Column(name: 'last_login', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $lastLogin = null;
 
-    #[ORM\Column(name: 'email', length: 255, nullable: true)]
+    #[ORM\Column(name: 'email', length: 255, nullable: true, unique: true)]
     #[Assert\Email(
         message: 'Email {{ value }} не является валидным email.',
     )]

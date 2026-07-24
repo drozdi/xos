@@ -1,10 +1,14 @@
-import { Button, SimpleGrid } from '@mantine/core';
+import { Button } from 'antd';
 
 import { useTicTacToeStore } from '../store';
 
 function getCellHeight(size: number): number {
-	if (size <= 3) {return 72;}
-	if (size === 4) {return 56;}
+	if (size <= 3) {
+		return 72;
+	}
+	if (size === 4) {
+		return 56;
+	}
 	return 48;
 }
 
@@ -16,20 +20,25 @@ export function Field() {
 	const cellHeight = getCellHeight(size);
 
 	return (
-		<SimpleGrid cols={size} spacing="xs">
+		<div
+			style={{
+				display: 'grid',
+				gridTemplateColumns: `repeat(${size}, 1fr)`,
+				gap: 8,
+			}}
+		>
 			{field.map((cell, index) => (
 				<Button
 					key={index}
-					fullWidth
-					variant="default"
-					size={size <= 3 ? 'xl' : 'lg'}
-					h={cellHeight}
+					block
+					size={size <= 3 ? 'large' : 'middle'}
+					style={{ height: cellHeight, fontSize: size <= 3 ? 24 : 18 }}
 					onClick={() => playMove(index)}
 					disabled={isEnd || Boolean(cell)}
 				>
 					{cell}
 				</Button>
 			))}
-		</SimpleGrid>
+		</div>
 	);
 }

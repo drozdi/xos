@@ -19,7 +19,7 @@ import { useAppManager } from '../useAppManager';
 
 const notificationsShow = vi.fn();
 
-vi.mock('@mantine/notifications', () => ({
+vi.mock('@/ui/toast', () => ({
 	notifications: {
 		show: (...args: unknown[]) => notificationsShow(...args),
 	},

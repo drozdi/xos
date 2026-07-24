@@ -1,4 +1,4 @@
-import { Alert, NumberInput, Stack, Switch, Text, TextInput } from '@mantine/core';
+import { Alert, Flex, Form, Input, InputNumber, Switch, Typography } from 'antd';
 
 import { mainOuApi, type OuDetail } from '@/core/api/endpoints/mainApi';
 import { canCreateMainOu, useCanDeleteMainOu, useCanReadMainOu, useCanUpdateMainOu } from '@/features/main/mainAccess';
@@ -27,17 +27,25 @@ export default function MainOuApp() {
 
 	if (entityId === 0 && !canCreateMainOu()) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на создание подразделения
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на создание подразделения"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
 	if (entityId !== 0 && !canRead) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр подразделения
-			</Alert>
+			<Alert
+				type="error"
+				showIcon
+				message="Доступ запрещён"
+				description="Нет прав на просмотр подразделения"
+				style={{ margin: 16 }}
+			/>
 		);
 	}
 
@@ -56,48 +64,62 @@ export default function MainOuApp() {
 			canDelete={canDelete}
 			headerNote={({ data, isNew }) =>
 				!isNew && data.x_timestamp ? (
-					<Text size="sm" c="dimmed">
+					<Typography.Text type="secondary" style={{ fontSize: 13 }}>
 						Последнее обновление: {String(data.x_timestamp)}
-					</Text>
+					</Typography.Text>
 				) : null
 			}
 		>
 			{({ data, setField, errors, readOnly }) => (
-				<Stack gap="sm">
-					<TextInput
+				<Flex vertical gap={12}>
+					<Form.Item
 						label="Код"
-						withAsterisk
-						value={data.code ?? ''}
-						error={errors.code}
-						readOnly={readOnly}
-						onChange={(e) => setField('code', e.currentTarget.value)}
-					/>
-					<TextInput
+						required
+						validateStatus={errors.code ? 'error' : undefined}
+						help={errors.code}
+						style={{ marginBottom: 0 }}
+					>
+						<Input
+							value={data.code ?? ''}
+							readOnly={readOnly}
+							onChange={(e) => setField('code', e.target.value)}
+						/>
+					</Form.Item>
+					<Form.Item
 						label="Название"
-						withAsterisk
-						value={data.name ?? ''}
-						error={errors.name}
-						readOnly={readOnly}
-						onChange={(e) => setField('name', e.currentTarget.value)}
-					/>
-					<NumberInput
-						label="Сортировка"
-						value={data.sort ?? 0}
-						readOnly={readOnly}
-						onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-					/>
-					<TextInput
-						label="Описание"
-						value={data.description ?? ''}
-						readOnly={readOnly}
-						onChange={(e) => setField('description', e.currentTarget.value)}
-					/>
-					<Switch
-						label="Руководители"
-						checked={Boolean(data.is_tutors)}
-						disabled={readOnly}
-						onChange={(e) => setField('is_tutors', e.currentTarget.checked)}
-					/>
+						required
+						validateStatus={errors.name ? 'error' : undefined}
+						help={errors.name}
+						style={{ marginBottom: 0 }}
+					>
+						<Input
+							value={data.name ?? ''}
+							readOnly={readOnly}
+							onChange={(e) => setField('name', e.target.value)}
+						/>
+					</Form.Item>
+					<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
+						<InputNumber
+							value={data.sort ?? 0}
+							disabled={readOnly}
+							style={{ width: '100%' }}
+							onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
+						/>
+					</Form.Item>
+					<Form.Item label="Описание" style={{ marginBottom: 0 }}>
+						<Input
+							value={data.description ?? ''}
+							readOnly={readOnly}
+							onChange={(e) => setField('description', e.target.value)}
+						/>
+					</Form.Item>
+					<Form.Item label="Руководители" style={{ marginBottom: 0 }}>
+						<Switch
+							checked={Boolean(data.is_tutors)}
+							disabled={readOnly}
+							onChange={(checked) => setField('is_tutors', checked)}
+						/>
+					</Form.Item>
 					<UserSelect
 						withAsterisk
 						value={data.user_id ?? null}
@@ -106,7 +128,7 @@ export default function MainOuApp() {
 						disabled={readOnly}
 						onChange={(userId) => setField('user_id', userId)}
 					/>
-				</Stack>
+				</Flex>
 			)}
 		</MainEntityForm>
 	);

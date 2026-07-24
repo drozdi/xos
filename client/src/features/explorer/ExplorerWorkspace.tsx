@@ -1,6 +1,5 @@
-import { ActionIcon, Box, Button, Group, Stack, TextInput } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
+import { Button, Flex, Input } from 'antd';
+import { notifications } from '@/ui/toast';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -73,8 +72,12 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 	const [listViewMode, setListViewMode] = useState<ExplorerViewMode>('table');
 	const [sortBy, setSortBy] = useState<ExplorerSortBy>('name');
 	const [sortDir, setSortDir] = useState<ExplorerSortDir>('asc');
-	const [newFolderOpened, { open: openNewFolder, close: closeNewFolder }] = useDisclosure(false);
-	const [disksOpened, { open: openDisks, close: closeDisks }] = useDisclosure(false);
+	const [newFolderOpened, setNewFolderOpened] = useState(false);
+	const [disksOpened, setDisksOpened] = useState(false);
+	const openNewFolder = () => setNewFolderOpened(true);
+	const closeNewFolder = () => setNewFolderOpened(false);
+	const openDisks = () => setDisksOpened(true);
+	const closeDisks = () => setDisksOpened(false);
 	const [newFolderName, setNewFolderName] = useState('');
 	const [conflict, setConflict] = useState<ConflictState | null>(null);
 	const [applyToAll, setApplyToAll] = useState(false);
@@ -465,7 +468,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 	};
 
 	return (
-		<Stack h="100%" gap={0} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+		<Flex vertical gap={0} style={{ height: '100%', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 			<ExplorerToolbar
 				currentDiskCode={parseDisk(currentPath)}
 				sortBy={sortBy}
@@ -499,29 +502,39 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 				onEmptyTrash={menuActions.emptyTrash}
 			/>
 
-			{newFolderOpened && (
-				<Group px="sm" py={4} style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
-					<TextInput
-						size="xs"
+			{newFolderOpened ? (
+				<Flex
+					gap="small"
+					align="center"
+					style={{ padding: '4px 12px', borderBottom: '1px solid var(--xos-shell-border)' }}
+				>
+					<Input
+						size="small"
 						placeholder="Имя папки"
 						value={newFolderName}
-						onChange={(event) => setNewFolderName(event.currentTarget.value)}
+						onChange={(event) => setNewFolderName(event.target.value)}
 						onKeyDown={(event) => {
 							if (event.key === 'Enter' && newFolderName) {
 								mkdirMutation.mutate(newFolderName);
 							}
 						}}
+						style={{ maxWidth: 240 }}
 					/>
-					<Button size="xs" onClick={() => newFolderName && mkdirMutation.mutate(newFolderName)} loading={mkdirMutation.isPending}>
+					<Button
+						size="small"
+						type="primary"
+						onClick={() => newFolderName && mkdirMutation.mutate(newFolderName)}
+						loading={mkdirMutation.isPending}
+					>
 						Создать
 					</Button>
-					<ActionIcon variant="subtle" onClick={closeNewFolder}>
+					<Button type="text" size="small" onClick={closeNewFolder}>
 						×
-					</ActionIcon>
-				</Group>
-			)}
+					</Button>
+				</Flex>
+			) : null}
 
-			<Box style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+			<div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 				{!isTrashView && (
 					<ExplorerSidebar
 						disks={configQuery.data?.disks ?? []}
@@ -529,7 +542,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 						onNavigate={navigateTo}
 					/>
 				)}
-				<Box
+				<div
 					style={{
 						flex: 1,
 						minHeight: 0,
@@ -566,8 +579,8 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 						onSelect={handleSelect}
 						onOpen={openEntry}
 					/>
-				</Box>
-			</Box>
+				</div>
+			</div>
 
 			{picker ? (
 				<ExplorerPickerBar
@@ -594,6 +607,6 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 				onResolve={(policy) => void handleConflictResolve(policy)}
 				onClose={() => setConflict(null)}
 			/>
-		</Stack>
+		</Flex>
 	);
 }

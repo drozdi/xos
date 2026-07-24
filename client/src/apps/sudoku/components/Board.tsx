@@ -1,11 +1,13 @@
-import { Box } from '@mantine/core';
-
 import { useSudokuStore } from '../store';
 import { Cell } from './Cell';
 
 function getCellSize(size: number): number {
-	if (size <= 4) {return 64;}
-	if (size === 6) {return 48;}
+	if (size <= 4) {
+		return 64;
+	}
+	if (size === 6) {
+		return 48;
+	}
 	return 40;
 }
 
@@ -15,11 +17,11 @@ export function Board() {
 	const cellSize = getCellSize(size);
 
 	return (
-		<Box
+		<div
 			style={{
 				display: 'grid',
 				gridTemplateColumns: `repeat(${size}, ${cellSize}px)`,
-				border: '2px solid var(--mantine-color-gray-6)',
+				border: '2px solid #8c8c8c',
 				width: 'fit-content',
 			}}
 		>
@@ -39,6 +41,6 @@ export function Board() {
 					/>
 				);
 			})}
-		</Box>
+		</div>
 	);
 }

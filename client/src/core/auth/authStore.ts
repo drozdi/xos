@@ -62,7 +62,7 @@ async function applyUserSession(user: UserSummary): Promise<void> {
 }
 
 function clearSession(): void {
-	tokenStorage.clearTokens();
+	tokenStorage.clearTokens('desktop');
 	resetUserRoles();
 	resetScopes();
 	resetSettingAdapterState();
@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 		set({ isLoading: true });
 		try {
 			const response = await loginRequest(credentials);
-			tokenStorage.setTokens(response.token, response.refresh_token);
+			tokenStorage.setTokens(response.token, response.refresh_token, 'desktop');
 
 			const user = response.user ?? (await fetchUser());
 			await applyUserSession(user);
@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 	logout: async () => {
 		set({ isLoading: true });
 		try {
-			if (tokenStorage.hasAccessToken()) {
+			if (tokenStorage.hasAccessToken('desktop')) {
 				await logoutRequest();
 			}
 		} catch {
@@ -116,7 +116,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 			const generation = ++hydrateGeneration;
 			set({ isLoading: true });
 
-			if (!tokenStorage.hasStoredSession()) {
+			if (!tokenStorage.hasStoredSession('desktop')) {
 				if (generation === hydrateGeneration) {
 					set({ isLoading: false, isAuthenticated: false });
 				}
@@ -124,7 +124,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 			}
 
 			try {
-				const restored = await restoreAccessToken();
+				const restored = await restoreAccessToken('desktop');
 				if (!restored) {
 					throw new Error('Session restore failed');
 				}
