@@ -2,6 +2,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 import { AppLoader } from '@inccom/app/app-loader';
 import { AppRouters } from '@inccom/app/app-routes';
+import { IncComStandaloneProvider } from '@inccom/app/inccom-standalone';
 
 /** Полноэкранный IncCom на /inccom с входом по email. */
 export default function IncComStandaloneApp() {
@@ -17,11 +18,13 @@ export default function IncComStandaloneApp() {
 				background: 'var(--ant-color-bg-layout, #f5f5f5)',
 			}}
 		>
-			<BrowserRouter basename="/inccom">
-				<AppLoader>
-					<AppRouters />
-				</AppLoader>
-			</BrowserRouter>
+			<IncComStandaloneProvider standalone>
+				<BrowserRouter basename="/inccom">
+					<AppLoader>
+						<AppRouters />
+					</AppLoader>
+				</BrowserRouter>
+			</IncComStandaloneProvider>
 		</div>
 	);
 }

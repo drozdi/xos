@@ -9,7 +9,7 @@ import {
 	Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
 
 import { useWindowSize } from '@/core/windowManager';
@@ -175,7 +175,7 @@ export function DeviceRepairsTab({ repairs, readOnly, onChange }: DeviceRepairsT
 						type="text"
 						danger
 						aria-label="Удалить"
-						icon={<IconTrash size={16} />}
+						icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 						onClick={() => removeItem(key)}
 					/>
 				) : null,
@@ -195,7 +195,7 @@ export function DeviceRepairsTab({ repairs, readOnly, onChange }: DeviceRepairsT
 					type="text"
 					danger
 					aria-label="Удалить"
-					icon={<IconTrash size={16} />}
+					icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 					onClick={() => removeItem(key)}
 				/>
 			) : null;
@@ -261,7 +261,7 @@ export function DeviceRepairsTab({ repairs, readOnly, onChange }: DeviceRepairsT
 			<Flex justify="space-between" align="center">
 				<strong>Ремонты</strong>
 				{!readOnly ? (
-					<Button size="small" icon={<IconPlus size={14} />} onClick={addItem}>
+					<Button size="small" icon={<PlusOutlined style={{ fontSize: 14 }} />} onClick={addItem}>
 						Добавить
 					</Button>
 				) : null}

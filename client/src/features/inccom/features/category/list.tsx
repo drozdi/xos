@@ -1,6 +1,6 @@
 ﻿import { Flex, Spin, Tooltip } from 'antd';
+import { HolderOutlined } from '@ant-design/icons';
 import { useMemo, useState, type CSSProperties, type DragEvent } from 'react';
-import { TbGripVertical } from 'react-icons/tb';
 
 import { useAccountQuery } from '@inccom/entities/account';
 import {
@@ -93,7 +93,7 @@ function SortableCategoryRow({
 				{canDrag ? (
 					<Tooltip title="Перетащите для изменения порядка">
 						<div className={classes.dragHandle} aria-hidden>
-							<TbGripVertical size={16} />
+							<HolderOutlined style={{ fontSize: 16 }} />
 						</div>
 					</Tooltip>
 				) : null}

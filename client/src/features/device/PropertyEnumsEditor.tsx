@@ -1,5 +1,5 @@
 import { Button, Flex, Input, Modal, Radio, Table, Typography } from 'antd';
-import { IconGripVertical, IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, HolderOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 
 import {
@@ -74,7 +74,7 @@ export function PropertyEnumsEditor({
 				<Flex justify="flex-end">
 					<Button
 						size="small"
-						icon={<IconPlus size={14} />}
+						icon={<PlusOutlined style={{ fontSize: 14 }} />}
 						onClick={() => updateEntries(addEnumItem(enums))}
 					>
 						Добавить
@@ -109,7 +109,7 @@ export function PropertyEnumsEditor({
 									<Button
 										type="text"
 										aria-label="Перетащить"
-										icon={<IconGripVertical size={16} />}
+										icon={<HolderOutlined style={{ fontSize: 16 }} />}
 										style={{ cursor: 'grab' }}
 									/>
 								) : null,
@@ -158,7 +158,7 @@ export function PropertyEnumsEditor({
 											<Button
 												type="text"
 												danger
-												icon={<IconTrash size={16} />}
+												icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 												onClick={() => removeItem(key)}
 											/>
 										),

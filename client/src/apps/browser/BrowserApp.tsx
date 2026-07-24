@@ -1,10 +1,5 @@
 import { Alert, Button, Flex, Input, Spin, Tooltip } from 'antd';
-import {
-	IconArrowBackUp,
-	IconArrowForwardUp,
-	IconHome,
-	IconRefresh,
-} from '@tabler/icons-react';
+import { HomeOutlined, RedoOutlined, ReloadOutlined, RollbackOutlined } from '@ant-design/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
@@ -173,7 +168,7 @@ export default function BrowserApp() {
 						disabled={!canGoBack}
 						onClick={goBack}
 						aria-label="Назад"
-						icon={<IconArrowBackUp size={18} />}
+						icon={<RollbackOutlined style={{ fontSize: 18 }} />}
 					/>
 				</Tooltip>
 				<Tooltip title="Вперёд">
@@ -182,7 +177,7 @@ export default function BrowserApp() {
 						disabled={!canGoForward}
 						onClick={goForward}
 						aria-label="Вперёд"
-						icon={<IconArrowForwardUp size={18} />}
+						icon={<RedoOutlined style={{ fontSize: 18 }} />}
 					/>
 				</Tooltip>
 				<Tooltip title="Обновить">
@@ -191,11 +186,11 @@ export default function BrowserApp() {
 						disabled={isHome}
 						onClick={reload}
 						aria-label="Обновить"
-						icon={<IconRefresh size={18} />}
+						icon={<ReloadOutlined style={{ fontSize: 18 }} />}
 					/>
 				</Tooltip>
 				<Tooltip title="Домой">
-					<Button type="text" onClick={goHome} aria-label="Домой" icon={<IconHome size={18} />} />
+					<Button type="text" onClick={goHome} aria-label="Домой" icon={<HomeOutlined style={{ fontSize: 18 }} />} />
 				</Tooltip>
 				<Input
 					style={{ flex: 1 }}

@@ -1,21 +1,20 @@
-﻿import { Flex, Tooltip } from 'antd';
-import { useCallback } from 'react';
+﻿import { Menu, type MenuProps } from 'antd';
 import {
-	TbArrowBigDownLines,
-	TbArrowBigUpLines,
-	TbArrowsExchange,
-	TbCategory,
-	TbListDetails,
-	TbTable,
-	TbTags,
-} from 'react-icons/tb';
-import { Link, useLocation, type Location } from 'react-router-dom';
+	AppstoreOutlined,
+	FallOutlined,
+	RiseOutlined,
+	SwapOutlined,
+	TableOutlined,
+	TagsOutlined,
+	UnorderedListOutlined,
+} from '@ant-design/icons';
+import { useCallback, useMemo } from 'react';
+import { useLocation, useNavigate, type Location } from 'react-router-dom';
 
 import { transactionNewUrl, transferNewUrl } from '@inccom/shared/lib/transaction-url';
 
-import classes from './sidebar.module.css';
-
 interface NavItem {
+	key: string;
 	label: string;
 	icon: React.ReactNode;
 	path: string;
@@ -25,102 +24,60 @@ interface NavItem {
 
 const navItems: NavItem[] = [
 	{
+		key: 'accounts',
 		label: 'Счета',
-		icon: <TbTable />,
+		icon: <TableOutlined style={{ fontSize: 16 }} />,
 		path: '/accounts',
 		matchPrefix: true,
 	},
 	{
+		key: 'income',
 		label: 'Доход',
-		icon: <TbArrowBigUpLines />,
+		icon: <RiseOutlined style={{ fontSize: 16 }} />,
 		path: transactionNewUrl('income'),
 		isActive: (location) =>
-			location.pathname === '/transactions/new' &&
-			location.search.includes('type=income'),
+			location.pathname === '/transactions/new' && location.search.includes('type=income'),
 	},
 	{
+		key: 'expense',
 		label: 'Расход',
-		icon: <TbArrowBigDownLines />,
+		icon: <FallOutlined style={{ fontSize: 16 }} />,
 		path: transactionNewUrl('expense'),
 		isActive: (location) =>
-			location.pathname === '/transactions/new' &&
-			location.search.includes('type=expense'),
+			location.pathname === '/transactions/new' && location.search.includes('type=expense'),
 	},
 	{
+		key: 'transfer',
 		label: 'Перевод',
-		icon: <TbArrowsExchange />,
+		icon: <SwapOutlined style={{ fontSize: 16 }} />,
 		path: transferNewUrl(),
 		isActive: (location) => location.pathname === '/transfers/new',
 	},
 	{
+		key: 'items',
 		label: 'Товары',
-		icon: <TbListDetails />,
+		icon: <UnorderedListOutlined style={{ fontSize: 16 }} />,
 		path: '/items',
 		matchPrefix: true,
 	},
 	{
+		key: 'item-categories',
 		label: 'Категории товаров',
-		icon: <TbTags />,
+		icon: <TagsOutlined style={{ fontSize: 16 }} />,
 		path: '/item-categories',
 	},
 	{
+		key: 'categories',
 		label: 'Категории транзакций',
-		icon: <TbCategory />,
+		icon: <AppstoreOutlined style={{ fontSize: 16 }} />,
 		path: '/categories',
 		matchPrefix: true,
 	},
 ];
 
-function NavbarLink({
-	icon,
-	label,
-	active,
-	path,
-	mini = false,
-}: {
-	icon: React.ReactNode;
-	label: string;
-	active: boolean;
-	path: string;
-	mini?: boolean;
-}) {
-	const link = (
-		<Link
-			to={path}
-			className={classes['link']}
-			data-active={active || undefined}
-			aria-label={label}
-			style={{
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'space-between',
-				gap: 0,
-				padding: '6px 8px',
-				borderRadius: 6,
-				color: 'inherit',
-				textDecoration: 'none',
-			}}
-		>
-			<Flex align="center" gap={mini ? 0 : 12}>
-				<span style={{ display: 'inline-flex', fontSize: 18 }}>{icon}</span>
-				{!mini ? <span>{label}</span> : null}
-			</Flex>
-		</Link>
-	);
-
-	if (!mini) {
-		return link;
-	}
-
-	return (
-		<Tooltip title={label} placement="right">
-			{link}
-		</Tooltip>
-	);
-}
-
 export const MainMenu = ({ mini = false }: { mini?: boolean }) => {
 	const location = useLocation();
+	const navigate = useNavigate();
 
 	const isActive = useCallback(
 		(item: NavItem) => {
@@ -128,21 +85,42 @@ export const MainMenu = ({ mini = false }: { mini?: boolean }) => {
 				return item.isActive(location);
 			}
 			return item.matchPrefix
-				? location.pathname === item.path ||
-						location.pathname.startsWith(`${item.path}/`)
+				? location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)
 				: location.pathname === item.path;
 		},
 		[location],
 	);
 
-	return navItems.map((nav) => (
-		<NavbarLink
-			key={nav.path}
-			mini={mini}
-			icon={nav.icon}
-			label={nav.label}
-			path={nav.path}
-			active={isActive(nav)}
+	const selectedKeys = useMemo(
+		() => navItems.filter((item) => isActive(item)).map((item) => item.key),
+		[isActive],
+	);
+
+	const items = useMemo<MenuProps['items']>(
+		() =>
+			navItems.map((item) => ({
+				key: item.key,
+				icon: item.icon,
+				label: item.label,
+				title: item.label,
+			})),
+		[],
+	);
+
+	return (
+		<Menu
+			mode="inline"
+			theme="dark"
+			inlineCollapsed={mini}
+			selectedKeys={selectedKeys}
+			items={items}
+			onClick={({ key }) => {
+				const item = navItems.find((nav) => nav.key === key);
+				if (item) {
+					navigate(item.path);
+				}
+			}}
+			style={{ borderInlineEnd: 'none', height: '100%' }}
 		/>
-	));
+	);
 };

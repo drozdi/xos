@@ -118,7 +118,7 @@ function GroupSection({
 					width: '100%',
 					padding: '6px 8px',
 					borderRadius: 4,
-					color: 'rgba(0, 0, 0, 0.45)',
+					color: 'var(--xos-shell-text)',
 					background: 'transparent',
 					border: 'none',
 					cursor: 'pointer',
@@ -132,7 +132,10 @@ function GroupSection({
 			>
 				<Flex gap={8} wrap="nowrap" align="center">
 					<ChevronIcon size={18} expanded={opened} />
-					<Typography.Text strong style={{ fontSize: 12, textTransform: 'uppercase' }}>
+					<Typography.Text
+						strong
+						style={{ fontSize: 12, textTransform: 'uppercase', color: 'inherit' }}
+					>
 						{group.label}
 					</Typography.Text>
 					<Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>

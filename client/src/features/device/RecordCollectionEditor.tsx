@@ -9,7 +9,7 @@ import {
 	Typography,
 } from 'antd';
 import dayjs from 'dayjs';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { useWindowSize } from '@/core/windowManager';
 import { nextTempId } from '@/features/device/deviceAppUtils';
@@ -144,7 +144,7 @@ function RecordCollectionEntry({
 			type="text"
 			danger
 			aria-label="Удалить"
-			icon={<IconTrash size={16} />}
+			icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 			onClick={() => onRemove(entryKey)}
 		/>
 	) : null;
@@ -228,7 +228,7 @@ export function RecordCollectionEditor({
 				<Flex justify="space-between" align="center">
 					<strong>{title}</strong>
 					{!readOnly ? (
-						<Button size="small" icon={<IconPlus size={14} />} onClick={addItem}>
+						<Button size="small" icon={<PlusOutlined style={{ fontSize: 14 }} />} onClick={addItem}>
 							Добавить
 						</Button>
 					) : null}
@@ -270,7 +270,7 @@ export function RecordCollectionEditor({
 													type="text"
 													danger
 													aria-label="Удалить"
-													icon={<IconTrash size={16} />}
+													icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 													onClick={() => removeItem(entryKey)}
 												/>
 											) : null,

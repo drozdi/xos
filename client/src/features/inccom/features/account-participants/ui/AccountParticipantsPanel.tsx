@@ -1,5 +1,5 @@
 ﻿import { Button, Flex, Form, Input, Typography } from 'antd';
-import { TbTrash } from 'react-icons/tb';
+import { DeleteOutlined } from '@ant-design/icons';
 
 import {
 	useAccountAddUser,
@@ -38,7 +38,7 @@ export function AccountParticipantsPanel({
 						<Button
 							type="text"
 							danger
-							icon={<TbTrash />}
+							icon={<DeleteOutlined />}
 							loading={removeMutation.isPending}
 							onClick={() => void handleRemove(participant.id)}
 						/>

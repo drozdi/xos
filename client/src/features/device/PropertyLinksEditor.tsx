@@ -9,7 +9,7 @@ import {
 	Typography,
 } from 'antd';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { IconExternalLink, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
 import { useMemo, useState } from 'react';
 
 import { deviceComponentApi, deviceTypeApi } from '@/core/api/endpoints/deviceApi';
@@ -367,7 +367,7 @@ export function PropertyLinksEditor({
 											<Button
 												type="text"
 												aria-label="Открыть тип"
-												icon={<IconExternalLink size={16} />}
+												icon={<ExportOutlined style={{ fontSize: 16 }} />}
 												onClick={() => onOpenType(item.type_kind, item.type_id)}
 											/>
 										) : null}
@@ -376,7 +376,7 @@ export function PropertyLinksEditor({
 												type="text"
 												danger
 												aria-label="Удалить связь"
-												icon={<IconTrash size={16} />}
+												icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 												onClick={() => removeLink(key)}
 											/>
 										) : null}

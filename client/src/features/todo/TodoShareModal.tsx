@@ -1,6 +1,6 @@
 import { Alert, Button, Flex, Input, Modal, Radio, Space, Typography } from 'antd';
 import { notifications } from '@/ui/toast';
-import { IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -108,7 +108,7 @@ export function TodoShareModal({ list, opened, onClose, onUpdated }: TodoShareMo
 										danger
 										aria-label="Отозвать"
 										loading={unshareMutation.isPending}
-										icon={<IconTrash size={16} />}
+										icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 										onClick={() => unshareMutation.mutate(share.user_id!)}
 									/>
 								) : null}

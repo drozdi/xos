@@ -1,5 +1,5 @@
 import { Button } from 'antd';
-import { TbMoon, TbSun } from 'react-icons/tb';
+import { MoonOutlined, SunOutlined } from '@ant-design/icons';
 
 import { useThemePreference } from '@/core/theme/ThemeProvider';
 
@@ -18,7 +18,7 @@ export function ThemeBtn() {
 			size="large"
 			aria-label="Toggle color scheme"
 			onClick={() => setTheme(isDark ? 'light' : 'dark')}
-			icon={isDark ? <TbMoon /> : <TbSun />}
+			icon={isDark ? <MoonOutlined /> : <SunOutlined />}
 		/>
 	);
 }

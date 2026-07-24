@@ -1,5 +1,5 @@
 import { Button, Flex, Input, Tooltip } from 'antd';
-import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useEffect, useState, type FormEvent } from 'react';
 
 function normalizeExplorerPath(input: string): string {
@@ -73,7 +73,7 @@ export function ExplorerPathBar({
 						size="small"
 						disabled={!canGoBack}
 						onClick={onBack}
-						icon={<IconArrowLeft size={16} />}
+						icon={<LeftOutlined style={{ fontSize: 16 }} />}
 					/>
 				</Tooltip>
 				<Tooltip title="Вперёд">
@@ -82,7 +82,7 @@ export function ExplorerPathBar({
 						size="small"
 						disabled={!canGoForward}
 						onClick={onForward}
-						icon={<IconArrowRight size={16} />}
+						icon={<RightOutlined style={{ fontSize: 16 }} />}
 					/>
 				</Tooltip>
 				<Input

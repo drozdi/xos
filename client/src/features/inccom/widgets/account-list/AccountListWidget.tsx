@@ -1,5 +1,5 @@
 ﻿import { Button, Card, Col, Dropdown, Flex, Row, Spin, Typography } from 'antd';
-import { TbDots, TbPlus } from 'react-icons/tb';
+import { MoreOutlined, PlusOutlined } from '@ant-design/icons';
 import { Link, NavLink } from 'react-router-dom';
 
 import {
@@ -105,7 +105,7 @@ export function AccountListWidget() {
 										],
 									}}
 								>
-									<Button type="text" icon={<TbDots />} />
+									<Button type="text" icon={<MoreOutlined />} />
 								</Dropdown>
 							}
 						>
@@ -131,12 +131,12 @@ export function AccountListWidget() {
 			<Col xs={24} sm={12} lg={8}>
 				<Card
 					title="Новый счёт"
-					extra={<Button type="text" icon={<TbPlus />} />}
+					extra={<Button type="text" icon={<PlusOutlined />} />}
 					style={{ borderRadius: 16 }}
 				>
 					<NavLink to="/accounts/new" style={{ color: 'inherit' }}>
 						<Flex style={{ height: 100 }} justify="center" align="center">
-							<TbPlus size={90} />
+							<PlusOutlined style={{ fontSize: 90 }} />
 						</Flex>
 					</NavLink>
 				</Card>

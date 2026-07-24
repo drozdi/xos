@@ -1,10 +1,10 @@
 import { memo } from "react";
-import { TbCircleX } from "react-icons/tb";
+import { CloseCircleOutlined } from "@ant-design/icons";
 import { ButtonIcon, type ButtonIconProps } from "./button-icon";
 
 export interface ButtonRemoveProps extends ButtonIconProps {}
 
-const DEFAULT_ICON = <TbCircleX />;
+const DEFAULT_ICON = <CloseCircleOutlined />;
 
 function ButtonRemoveRoot({
 	children = DEFAULT_ICON,

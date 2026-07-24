@@ -1,6 +1,6 @@
 ﻿import { Button, Flex, InputNumber, Select, Typography } from 'antd';
 import { useMemo } from 'react';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { useItemsQuery } from '@inccom/entities/item';
 import type { ITransactionCreateItem } from '@inccom/entities/transaction';
@@ -58,7 +58,7 @@ export function TransactionItemsEditor({
 				<Typography.Text strong>Позиции чека</Typography.Text>
 				<Button
 					size="small"
-					icon={<FiPlus size={14} />}
+					icon={<PlusOutlined style={{ fontSize: 14 }} />}
 					onClick={addItem}
 					disabled={disabled}
 				>
@@ -119,7 +119,7 @@ export function TransactionItemsEditor({
 							onClick={() => removeItem(index)}
 							disabled={disabled}
 							aria-label="Удалить позицию"
-							icon={<FiTrash2 size={16} />}
+							icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 						/>
 					</Flex>
 				))

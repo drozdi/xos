@@ -1,6 +1,6 @@
 import { Button, Card, Flex, Spin, Typography } from 'antd';
 import { useState, type CSSProperties, type ReactNode } from 'react';
-import { TbArrowsMaximize, TbArrowsMinimize } from 'react-icons/tb';
+import { CompressOutlined, ExpandOutlined } from '@ant-design/icons';
 
 interface ExpandablePanelProps {
 	title: string;
@@ -57,7 +57,7 @@ export function ExpandablePanel({
 					type="text"
 					size="small"
 					onClick={() => setIsExpanded((v) => !v)}
-					icon={isExpanded ? <TbArrowsMinimize /> : <TbArrowsMaximize />}
+					icon={isExpanded ? <CompressOutlined /> : <ExpandOutlined />}
 				>
 					{isExpanded ? 'Свернуть' : 'Развернуть'}
 				</Button>

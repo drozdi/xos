@@ -1,6 +1,6 @@
 ﻿import { Button, Input } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { TbPlus } from 'react-icons/tb';
 
 import { useTransactionCategoryCreate } from '@inccom/entities/transaction-category';
 import { notification } from '@inccom/shared/notification';
@@ -48,7 +48,7 @@ export function CategotyAdd({
 			addonAfter={
 				<Button
 					type="text"
-					icon={<TbPlus />}
+					icon={<PlusOutlined />}
 					loading={createMutation.isPending}
 					onClick={() => void handlerSave()}
 				/>

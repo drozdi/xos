@@ -8,7 +8,7 @@ import {
 	Table,
 	Typography,
 } from 'antd';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -262,7 +262,7 @@ export function DeviceLicensesTab({ licenses, readOnly, onChange }: DeviceLicens
 													type="text"
 													danger
 													aria-label={`Удалить ${buildDisplayLabel(item)}`}
-													icon={<IconTrash size={16} />}
+													icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 													onClick={() => removeItem(key)}
 												/>
 											),
@@ -352,7 +352,7 @@ export function DeviceLicensesTab({ licenses, readOnly, onChange }: DeviceLicens
 						<Flex justify="flex-end">
 							<Button
 								size="small"
-								icon={<IconPlus size={14} />}
+								icon={<PlusOutlined style={{ fontSize: 14 }} />}
 								disabled={!canAdd}
 								onClick={addLicense}
 							>

@@ -1,5 +1,5 @@
 import { Button, Flex, Input, Select, Table, Typography } from 'antd';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -85,7 +85,7 @@ export function LicenseKeysEditor({
 			<Flex justify="space-between" align="center">
 				<strong>Ключи</strong>
 				{!readOnly ? (
-					<Button size="small" icon={<IconPlus size={14} />} onClick={addItem}>
+					<Button size="small" icon={<PlusOutlined style={{ fontSize: 14 }} />} onClick={addItem}>
 						Добавить
 					</Button>
 				) : null}
@@ -183,7 +183,7 @@ export function LicenseKeysEditor({
 												type="text"
 												danger
 												aria-label="Удалить"
-												icon={<IconTrash size={16} />}
+												icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 												onClick={() => removeItem(key)}
 											/>
 										),

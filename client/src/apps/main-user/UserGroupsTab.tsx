@@ -1,5 +1,5 @@
 import { Button, Card, Flex, Form, Select, Table, Typography } from 'antd';
-import { IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -46,7 +46,7 @@ function UserGroupCard({
 						type="text"
 						danger
 						aria-label="Удалить группу пользователя"
-						icon={<IconTrash size={16} />}
+						icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 						onClick={() => onChange(removeUserGroup(groups, entryKey))}
 					/>
 				) : null}
@@ -150,7 +150,7 @@ export function UserGroupsTab({ groups, readOnly, onChange }: UserGroupsTabProps
 								type="text"
 								danger
 								aria-label="Удалить группу пользователя"
-								icon={<IconTrash size={16} />}
+								icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 								onClick={() => onChange(removeUserGroup(groups, row.entryKey))}
 							/>
 						),

@@ -84,7 +84,7 @@ export function ExplorerEntryThumbnail({ entry, path, size = 64 }: ExplorerEntry
 						color: iconColor,
 					}}
 				>
-					<EntryIcon size={Math.round(size * 0.55)} stroke={1.5} />
+					<EntryIcon style={{ fontSize: Math.round(size * 0.55) }} />
 				</div>
 			)}
 		</div>

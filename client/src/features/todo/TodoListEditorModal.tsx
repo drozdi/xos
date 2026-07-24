@@ -11,7 +11,7 @@ import {
 	Typography,
 } from 'antd';
 import { notifications } from '@/ui/toast';
-import { IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined, ShareAltOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
@@ -224,7 +224,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 												danger
 												aria-label="Удалить"
 												style={{ marginTop: 6 }}
-												icon={<IconTrash size={16} />}
+												icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 												onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
 											/>
 										) : null}
@@ -232,7 +232,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 								))}
 								{canWrite ? (
 									<Button
-										icon={<IconPlus size={16} />}
+										icon={<PlusOutlined style={{ fontSize: 16 }} />}
 										onClick={() => setItems((prev) => [...prev, { text: '', done: false, due_at: null }])}
 									>
 										Добавить дело
@@ -297,7 +297,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 							<Space size={8}>
 								{isOwner ? (
 									<>
-										<Button icon={<IconShare size={16} />} onClick={() => setShareOpened(true)}>
+										<Button icon={<ShareAltOutlined style={{ fontSize: 16 }} />} onClick={() => setShareOpened(true)}>
 											Поделиться
 										</Button>
 										<Tooltip title="Удалить список">
@@ -305,7 +305,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 												danger
 												aria-label="Удалить"
 												loading={deleteMutation.isPending}
-												icon={<IconTrash size={16} />}
+												icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 												onClick={() => {
 													if (window.confirm('Удалить список?')) {
 														deleteMutation.mutate();

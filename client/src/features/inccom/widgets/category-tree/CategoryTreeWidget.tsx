@@ -8,13 +8,13 @@ import {
 	type DragEvent,
 } from 'react';
 import {
-	TbCheck,
-	TbGripVertical,
-	TbPencil,
-	TbPlus,
-	TbTrash,
-	TbX,
-} from 'react-icons/tb';
+	CheckOutlined,
+	CloseOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	HolderOutlined,
+	PlusOutlined,
+} from '@ant-design/icons';
 
 import {
 	buildItemCategoriesChildParams,
@@ -100,10 +100,10 @@ function AddChildForm({ parentId, onDone }: AddChildFormProps) {
 					type="primary"
 					htmlType="submit"
 					loading={createMutation.isPending}
-					icon={<TbCheck />}
+					icon={<CheckOutlined />}
 					aria-label="Сохранить"
 				/>
-				<Button onClick={onDone} icon={<TbX />} aria-label="Отмена" />
+				<Button onClick={onDone} icon={<CloseOutlined />} aria-label="Отмена" />
 			</Flex>
 			<Form.Item label="Ключевые слова" name="keywords" style={{ marginTop: 8 }}>
 				<Select mode="tags" placeholder="Введите слово и нажмите Enter" tokenSeparators={[',']} />
@@ -281,10 +281,10 @@ function CategoryRow({
 								type="primary"
 								htmlType="submit"
 								loading={updateMutation.isPending}
-								icon={<TbCheck />}
+								icon={<CheckOutlined />}
 								aria-label="Сохранить"
 							/>
-							<Button onClick={() => setIsEdit(false)} icon={<TbX />} aria-label="Отмена" />
+							<Button onClick={() => setIsEdit(false)} icon={<CloseOutlined />} aria-label="Отмена" />
 						</Flex>
 						<Form.Item label="Ключевые слова" name="keywords" style={{ marginTop: 8 }}>
 							<Select
@@ -300,7 +300,7 @@ function CategoryRow({
 							<Flex gap={6} wrap="nowrap" style={{ flex: 1, minWidth: 0 }} align="center">
 								<Tooltip title="Перетащите в другую категорию">
 									<div className={classes.dragHandle} aria-hidden>
-										<TbGripVertical size={16} />
+										<HolderOutlined style={{ fontSize: 16 }} />
 									</div>
 								</Tooltip>
 								<Typography.Text
@@ -316,7 +316,7 @@ function CategoryRow({
 									<Button
 										type="text"
 										onClick={startEdit}
-										icon={<TbPencil />}
+										icon={<EditOutlined />}
 										aria-label="Редактировать"
 									/>
 								</Tooltip>
@@ -324,7 +324,7 @@ function CategoryRow({
 									<Button
 										type="text"
 										onClick={() => setShowAddChild((value) => !value)}
-										icon={<TbPlus />}
+										icon={<PlusOutlined />}
 										aria-label="Добавить подкатегорию"
 									/>
 								</Tooltip>
@@ -334,7 +334,7 @@ function CategoryRow({
 										danger
 										onClick={() => void handleDelete()}
 										loading={deleteMutation.isPending}
-										icon={<TbTrash />}
+										icon={<DeleteOutlined />}
 										aria-label="Удалить"
 									/>
 								</Tooltip>

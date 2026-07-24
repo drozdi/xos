@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { TbSettings } from 'react-icons/tb';
+import { SettingOutlined } from '@ant-design/icons';
 import { ButtonIcon, type ButtonIconProps } from './button-icon';
 
 const meta = {
@@ -21,7 +21,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
     render: (props) => (
         <ButtonIcon {...props}>
-            <TbSettings />
+            <SettingOutlined />
         </ButtonIcon>
     ),
 };
@@ -30,7 +30,7 @@ export const WithoutTooltip: Story = {
     args: { tooltip: undefined },
     render: (props) => (
         <ButtonIcon {...props}>
-            <TbSettings />
+            <SettingOutlined />
         </ButtonIcon>
     ),
 };

@@ -7,7 +7,7 @@ import {
 	Input,
 	Typography,
 } from 'antd';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -124,7 +124,7 @@ export function DevicePropertiesTab({
 					>
 						<Button
 							size="small"
-							icon={<IconPlus size={14} />}
+							icon={<PlusOutlined style={{ fontSize: 14 }} />}
 							disabled={addOptions.length === 0}
 							loading={catalogQuery.isLoading}
 						>
@@ -154,7 +154,7 @@ export function DevicePropertiesTab({
 										type="text"
 										danger
 										aria-label={`Удалить ${propertyTitle(item)}`}
-										icon={<IconTrash size={16} />}
+										icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 										onClick={() => removeRecord(key)}
 									/>
 								) : null}

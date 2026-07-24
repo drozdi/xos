@@ -1,7 +1,7 @@
-import { TbCards } from 'react-icons/tb';
+import { CreditCardOutlined } from '@ant-design/icons';
 
-const data: Record<string, typeof TbCards> = {
-	cards: TbCards,
+const data: Record<string, typeof CreditCardOutlined> = {
+	cards: CreditCardOutlined,
 };
 const dataSelect = Object.entries(data).map(([value]) => ({
 	value,

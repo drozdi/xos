@@ -1,5 +1,5 @@
 ﻿import { Button } from 'antd';
-import { TbLogin, TbLogout } from 'react-icons/tb';
+import { LoginOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 import { useStoreAuth } from '@inccom/entities/user';
@@ -17,7 +17,7 @@ export const InOutLink = () => {
 					aria-label="Выйти"
 					onClick={() => navigate('/auth/sign-out')}
 					title="Выйти"
-					icon={<TbLogout />}
+					icon={<LogoutOutlined />}
 				/>
 			) : (
 				<Button
@@ -27,7 +27,7 @@ export const InOutLink = () => {
 					aria-label="Войти"
 					onClick={() => navigate('/auth/sign-in')}
 					title="Войти"
-					icon={<TbLogin />}
+					icon={<LoginOutlined />}
 				/>
 			)}
 		</>

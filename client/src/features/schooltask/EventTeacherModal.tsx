@@ -8,7 +8,7 @@ import {
 	Upload,
 } from 'antd';
 import { notifications } from '@/ui/toast';
-import { IconPaperclip, IconTrash, IconUpload, IconX } from '@tabler/icons-react';
+import { CloseOutlined, DeleteOutlined, PaperClipOutlined, UploadOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
@@ -183,7 +183,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 				}}
 			>
 				<Typography.Text strong>Задание к уроку</Typography.Text>
-				<Button type="text" aria-label="Закрыть" icon={<IconX size={18} />} onClick={onClose} />
+				<Button type="text" aria-label="Закрыть" icon={<CloseOutlined style={{ fontSize: 18 }} />} onClick={onClose} />
 			</Flex>
 
 			<Flex vertical gap={16} style={{ flex: 1, minHeight: 0, padding: 16 }}>
@@ -398,7 +398,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 								>
 									<Button
 										size="small"
-										icon={<IconUpload size={14} />}
+										icon={<UploadOutlined style={{ fontSize: 14 }} />}
 										loading={uploadMutation.isPending}
 									>
 										Загрузить
@@ -419,7 +419,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 										{attachedFiles.map((file) => (
 											<Flex key={file.id} justify="space-between" align="center" wrap="nowrap">
 												<Flex gap={8} align="center" wrap="nowrap" style={{ minWidth: 0 }}>
-													<IconPaperclip size={16} />
+													<PaperClipOutlined style={{ fontSize: 16 }} />
 													{file.src ? (
 														<Typography.Link
 															href={file.src}
@@ -450,7 +450,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 													type="text"
 													danger
 													aria-label="Открепить"
-													icon={<IconTrash size={16} />}
+													icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 													onClick={() => detachFile(file.id)}
 												/>
 											</Flex>

@@ -11,7 +11,7 @@ import {
 	Tabs,
 } from 'antd';
 import { notifications } from '@/ui/toast';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -287,7 +287,7 @@ export default function SchooltaskClassApp() {
 													<Button
 														type="default"
 														aria-label="Добавить параллель"
-														icon={<IconPlus size={18} />}
+														icon={<PlusOutlined style={{ fontSize: 18 }} />}
 														onClick={() => {
 															setOnParallelCreated(() => (parentId: number) => {
 																setField('parent_id', parentId);
@@ -350,7 +350,7 @@ export default function SchooltaskClassApp() {
 												{!readOnly ? (
 													<Button
 														size="small"
-														icon={<IconPlus size={14} />}
+														icon={<PlusOutlined style={{ fontSize: 14 }} />}
 														onClick={() => setField('sub', addSubGroup(data.sub, data.id))}
 													>
 														Добавить
@@ -513,7 +513,7 @@ export default function SchooltaskClassApp() {
 																<Button
 																	type="text"
 																	danger
-																	icon={<IconTrash size={16} />}
+																	icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 																	onClick={() => setField('sub', removeSubGroup(data.sub, index))}
 																/>
 															) : null,

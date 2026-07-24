@@ -1,22 +1,21 @@
 import { Button, Divider, Dropdown, Flex, Tooltip } from 'antd';
 import {
-	IconArchive,
-	IconArrowBackUp,
-	IconArrowsSort,
-	IconClipboard,
-	IconCopy,
-	IconCut,
-	IconDatabase,
-	IconFileZip,
-	IconFolderPlus,
-	IconLayoutGrid,
-	IconList,
-	IconPencil,
-	IconTrash,
-	IconTrashOff,
-	IconTrashX,
-	IconUpload,
-} from '@tabler/icons-react';
+	AppstoreOutlined,
+	CopyOutlined,
+	DatabaseOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	FileZipOutlined,
+	FolderAddOutlined,
+	InboxOutlined,
+	ReloadOutlined,
+	ScissorOutlined,
+	SnippetsOutlined,
+	SortAscendingOutlined,
+	UndoOutlined,
+	UnorderedListOutlined,
+	UploadOutlined,
+} from '@ant-design/icons';
 import type { ReactNode } from 'react';
 
 import type { ExplorerSortBy, ExplorerSortDir } from '../explorerApi';
@@ -134,7 +133,7 @@ export function ExplorerToolbar({
 			{!pickerMode && !isTrashView ? (
 				<>
 					<ToolbarIcon label="Новая папка" disabled={!writable} onClick={onNewFolder}>
-						<IconFolderPlus size={18} />
+						<FolderAddOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 					<Tooltip title="Загрузить файл">
 						<Button
@@ -142,7 +141,7 @@ export function ExplorerToolbar({
 							size="middle"
 							disabled={!writable}
 							aria-label="Загрузить файл"
-							icon={<IconUpload size={18} />}
+							icon={<UploadOutlined style={{ fontSize: 18 }} />}
 							onClick={() => {
 								const input = document.createElement('input');
 								input.type = 'file';
@@ -158,10 +157,10 @@ export function ExplorerToolbar({
 					</Tooltip>
 					<Divider type="vertical" style={{ height: 20, margin: '0 4px' }} />
 					<ToolbarIcon label="Копировать" disabled={selectedCount === 0} onClick={onCopy}>
-						<IconCopy size={18} />
+						<CopyOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 					<ToolbarIcon label="Вырезать" disabled={selectedCount === 0 || !writable} onClick={onCut}>
-						<IconCut size={18} />
+						<ScissorOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 					<ToolbarIcon
 						label={clipboardCount > 0 ? `Вставить (${clipboardCount})` : 'Вставить'}
@@ -169,10 +168,10 @@ export function ExplorerToolbar({
 						loading={isPending}
 						onClick={onPaste}
 					>
-						<IconClipboard size={18} />
+						<SnippetsOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 					<ToolbarIcon label="Переименовать" disabled={selectedCount !== 1 || !writable} onClick={onRename}>
-						<IconPencil size={18} />
+						<EditOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 					{canArchive ? (
 						<>
@@ -182,7 +181,7 @@ export function ExplorerToolbar({
 								loading={isPending}
 								onClick={onPack}
 							>
-								<IconFileZip size={18} />
+								<FileZipOutlined style={{ fontSize: 18 }} />
 							</ToolbarIcon>
 							<ToolbarIcon
 								label="Распаковать"
@@ -190,7 +189,7 @@ export function ExplorerToolbar({
 								loading={isPending}
 								onClick={onUnpack}
 							>
-								<IconArchive size={18} />
+								<InboxOutlined style={{ fontSize: 18 }} />
 							</ToolbarIcon>
 						</>
 					) : null}
@@ -201,11 +200,11 @@ export function ExplorerToolbar({
 							danger
 							onClick={onDelete}
 						>
-							<IconTrash size={18} />
+							<DeleteOutlined style={{ fontSize: 18 }} />
 						</ToolbarIcon>
 					) : null}
 					<ToolbarIcon label="Корзина" onClick={onOpenTrash}>
-						<IconTrashX size={18} />
+						<DeleteOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 				</>
 			) : null}
@@ -213,13 +212,13 @@ export function ExplorerToolbar({
 			{!pickerMode && isTrashView ? (
 				<>
 					<ToolbarIcon label="Восстановить" disabled={selectedCount === 0 || !canDelete} onClick={onRestore}>
-						<IconArrowBackUp size={18} />
+						<UndoOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 					<ToolbarIcon label="Очистить корзину" disabled={!canDelete} danger onClick={onEmptyTrash}>
-						<IconTrashOff size={18} />
+						<ReloadOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 					<ToolbarIcon label="Назад к диску" onClick={() => onDiskChange(`${currentDiskCode}://`)}>
-						<IconArrowBackUp size={18} style={{ transform: 'scaleX(-1)' }} />
+						<UndoOutlined style={{ fontSize: 18, transform: 'scaleX(-1)' }} />
 					</ToolbarIcon>
 				</>
 			) : null}
@@ -232,7 +231,7 @@ export function ExplorerToolbar({
 						size="middle"
 						onClick={() => onViewModeChange('table')}
 						aria-label="Таблица"
-						icon={<IconList size={18} />}
+						icon={<UnorderedListOutlined style={{ fontSize: 18 }} />}
 					/>
 				</Tooltip>
 				<Tooltip title="Значки">
@@ -242,7 +241,7 @@ export function ExplorerToolbar({
 						size="middle"
 						onClick={() => onViewModeChange('icons')}
 						aria-label="Значки"
-						icon={<IconLayoutGrid size={18} />}
+						icon={<AppstoreOutlined style={{ fontSize: 18 }} />}
 					/>
 				</Tooltip>
 				<Divider type="vertical" style={{ height: 20, margin: '0 4px' }} />
@@ -281,12 +280,12 @@ export function ExplorerToolbar({
 					placement="bottomRight"
 				>
 					<Tooltip title={sortLabel}>
-						<Button type="text" size="middle" aria-label={sortLabel} icon={<IconArrowsSort size={18} />} />
+						<Button type="text" size="middle" aria-label={sortLabel} icon={<SortAscendingOutlined style={{ fontSize: 18 }} />} />
 					</Tooltip>
 				</Dropdown>
 				{!pickerMode ? (
 					<ToolbarIcon label="Управление дисками" onClick={onOpenDisks}>
-						<IconDatabase size={18} />
+						<DatabaseOutlined style={{ fontSize: 18 }} />
 					</ToolbarIcon>
 				) : null}
 			</Flex>

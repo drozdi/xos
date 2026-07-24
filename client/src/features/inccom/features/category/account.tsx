@@ -1,5 +1,5 @@
 ﻿import { Avatar, Flex, Typography } from 'antd';
-import { TbAccessPoint } from 'react-icons/tb';
+import { ApiOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 
 import { useStoreAccounts } from '@inccom/entities/account';
@@ -33,7 +33,7 @@ function Item({ account }: { account: IAccount }) {
 				textDecoration: 'none',
 			}}
 		>
-			<Avatar style={{ background: '#13c2c2' }} icon={<TbAccessPoint size={24} />} />
+			<Avatar style={{ background: '#13c2c2' }} icon={<ApiOutlined style={{ fontSize: 24 }} />} />
 			<div>
 				<Typography.Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase', fontWeight: 700 }}>
 					{account.owner_id === userData?.id ? 'Мой' : account.owner}

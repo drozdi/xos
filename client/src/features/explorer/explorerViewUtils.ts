@@ -1,42 +1,45 @@
 import {
-	IconFile,
-	IconFileText,
-	IconFileZip,
-	IconFolder,
-	IconMusic,
-	IconPhoto,
-	IconVideo,
-} from '@tabler/icons-react';
+	FileOutlined,
+	FileTextOutlined,
+	FileZipOutlined,
+	FolderOutlined,
+	PictureOutlined,
+	SoundOutlined,
+	VideoCameraOutlined,
+} from '@ant-design/icons';
+import type { AntdIconProps } from '@ant-design/icons/lib/components/AntdIcon';
 import type { ComponentType } from 'react';
 
 import type { ExplorerEntry } from './explorerApi';
 
 export type ExplorerViewMode = 'table' | 'icons';
 
+type ExplorerIconComponent = ComponentType<Partial<AntdIconProps>>;
+
 export function isExplorerImageEntry(entry: ExplorerEntry): boolean {
 	return entry.type === 'file' && entry.fileType === 'image';
 }
 
-export function getExplorerEntryIcon(entry: ExplorerEntry): ComponentType<{ size?: number; stroke?: number }> {
+export function getExplorerEntryIcon(entry: ExplorerEntry): ExplorerIconComponent {
 	if (entry.type === 'folder') {
-		return IconFolder;
+		return FolderOutlined;
 	}
 
 	switch (entry.fileType) {
 		case 'image':
-			return IconPhoto;
+			return PictureOutlined;
 		case 'video':
-			return IconVideo;
+			return VideoCameraOutlined;
 		case 'audio':
-			return IconMusic;
+			return SoundOutlined;
 		case 'archive':
-			return IconFileZip;
+			return FileZipOutlined;
 		case 'text':
-			return IconFileText;
+			return FileTextOutlined;
 		case 'markdown':
-			return IconFileText;
+			return FileTextOutlined;
 		default:
-			return IconFile;
+			return FileOutlined;
 	}
 }
 

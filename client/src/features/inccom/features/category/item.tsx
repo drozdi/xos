@@ -1,6 +1,6 @@
 ﻿import { Button, Flex, Input, Tooltip, Typography } from 'antd';
+import { CloseOutlined, FileDoneOutlined, FileOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { TbFileDots, TbFileLike, TbX } from 'react-icons/tb';
 
 import {
 	useTransactionCategoryDelete,
@@ -59,7 +59,7 @@ export function CategotyItem({ category }: { category: ICategory }) {
 					<Button
 						type="primary"
 						loading={isSaving}
-						icon={<TbFileLike />}
+						icon={<FileDoneOutlined />}
 						onClick={() => void handlerSave()}
 					/>
 				</>
@@ -71,7 +71,7 @@ export function CategotyItem({ category }: { category: ICategory }) {
 					<Tooltip title="Переиминовать">
 						<Button
 							loading={isSaving}
-							icon={<TbFileDots />}
+							icon={<FileOutlined />}
 							onClick={() => {
 								setLabel(category.label);
 								setEdit(true);
@@ -82,7 +82,7 @@ export function CategotyItem({ category }: { category: ICategory }) {
 						<Button
 							danger
 							loading={isSaving}
-							icon={<TbX />}
+							icon={<CloseOutlined />}
 							onClick={() => void handlerRemove(category)}
 						/>
 					</Tooltip>

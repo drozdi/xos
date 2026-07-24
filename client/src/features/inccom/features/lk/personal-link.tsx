@@ -1,5 +1,5 @@
 import { Button } from 'antd';
-import { TbUserCircle } from 'react-icons/tb';
+import { UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 export function PersonalLink() {
@@ -11,7 +11,7 @@ export function PersonalLink() {
 			size="large"
 			aria-label="Личный кабинет"
 			onClick={() => navigate('/lk')}
-			icon={<TbUserCircle />}
+			icon={<UserOutlined />}
 		/>
 	);
 }

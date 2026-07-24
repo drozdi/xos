@@ -1,6 +1,6 @@
 import { Alert, Button, Checkbox, Flex, Spin, Typography } from 'antd';
 import { notifications } from '@/ui/toast';
-import { IconPlus } from '@tabler/icons-react';
+import { PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -59,7 +59,7 @@ export default function TodoApp() {
 					<Typography.Text strong>Заметки</Typography.Text>
 					<Button
 						size="small"
-						icon={<IconPlus size={14} />}
+						icon={<PlusOutlined style={{ fontSize: 14 }} />}
 						loading={createMutation.isPending}
 						onClick={() => createMutation.mutate()}
 					>

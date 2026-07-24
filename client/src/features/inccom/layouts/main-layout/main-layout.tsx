@@ -1,8 +1,9 @@
 ﻿import { Button, Flex, Layout } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { useMemo } from 'react';
-import { TbArrowBarLeft, TbArrowBarRight } from 'react-icons/tb';
 import { Outlet, useNavigate } from 'react-router-dom';
 
+import { useIncComStandalone } from '@inccom/app/inccom-standalone';
 import { PersonalLink } from '@inccom/features/lk/personal-link';
 import { MainMenu } from '@inccom/features/menu/sidebar';
 import { useBreakpoint } from '@inccom/shared/hooks';
@@ -16,6 +17,7 @@ const { Header, Sider, Content, Footer } = Layout;
 
 export function MainLayout() {
 	const navigate = useNavigate();
+	const isStandalone = useIncComStandalone();
 	const isMobile = useBreakpoint('sm');
 	const back = useMemo<boolean>(() => {
 		return (window?.history?.state?.idx ?? 0) > 0;
@@ -41,14 +43,14 @@ export function MainLayout() {
 				collapsedWidth={64}
 				style={{ overflow: 'auto' }}
 			>
-				<div style={{ padding: 8 }}>
-					{isMobile ? (
+				{isMobile ? (
+					<div style={{ padding: 8 }}>
 						<Button type="text" onClick={toggleMobile} block>
 							Меню
 						</Button>
-					) : null}
-					<MainMenu mini={!isMobile && siderCollapsed} />
-				</div>
+					</div>
+				) : null}
+				<MainMenu mini={!isMobile && siderCollapsed} />
 			</Sider>
 			<Layout>
 				<Header
@@ -72,7 +74,7 @@ export function MainLayout() {
 							<Button
 								type="text"
 								onClick={toggleDesktop}
-								icon={desktopOpened ? <TbArrowBarLeft /> : <TbArrowBarRight />}
+								icon={desktopOpened ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
 							/>
 						)}
 						<Title order={1} level={4} fw={400}>
@@ -80,10 +82,14 @@ export function MainLayout() {
 						</Title>
 					</Flex>
 					<Template.Slot name="header" />
-					<Flex align="center" gap={8}>
-						<PersonalLink />
-						<ThemeBtn />
-					</Flex>
+					{isStandalone ? (
+						<Flex align="center" gap={8}>
+							<PersonalLink />
+							<ThemeBtn />
+						</Flex>
+					) : (
+						<span />
+					)}
 				</Header>
 				<Content style={{ minHeight: 0, overflow: 'auto', padding: 16 }}>
 					<div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>

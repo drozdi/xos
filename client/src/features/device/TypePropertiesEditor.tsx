@@ -12,7 +12,7 @@ import {
 	Typography,
 } from 'antd';
 import type { DefaultOptionType } from 'antd/es/select';
-import { IconList, IconPlus, IconTrash } from '@tabler/icons-react';
+import { DeleteOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -278,7 +278,7 @@ function PropertyRowFields({
 	) : (
 		<Button
 			size="small"
-			icon={<IconList size={14} />}
+			icon={<UnorderedListOutlined style={{ fontSize: 14 }} />}
 			disabled={readOnly && Object.keys(normalizeEnumRecord(item.enums)).length === 0}
 			onClick={() => onOpenEnums(entryKey)}
 		>
@@ -300,7 +300,7 @@ function PropertyRowFields({
 			type="text"
 			danger
 			aria-label="Удалить"
-			icon={<IconTrash size={16} />}
+			icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 			onClick={() => onRemove(entryKey)}
 		/>
 	) : null;
@@ -436,7 +436,7 @@ export function TypePropertiesEditor({
 						<Button size="small" onClick={() => setCatalogOpened(true)}>
 							Из справочника
 						</Button>
-						<Button size="small" icon={<IconPlus size={14} />} onClick={addProperty}>
+						<Button size="small" icon={<PlusOutlined style={{ fontSize: 14 }} />} onClick={addProperty}>
 							Новое
 						</Button>
 					</Flex>
