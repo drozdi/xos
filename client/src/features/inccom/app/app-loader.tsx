@@ -7,13 +7,10 @@ import { useEffect } from 'react';
 import { resolveAuthRealm } from '@/core/auth/tokenStorage';
 
 export function AppLoader({ children }: { children: React.ReactNode }) {
-	const isLoadingUser = useStoreUserProfile((s) => s.isLoading);
-	const isLoadingAccounts = useStoreAccounts((s) => s.isLoading);
-	const isLoadingCategories = useStoreCategories((s) => s.isLoading);
-	const isAuth = useStoreAuth((s) => s.isAuth);
+	const isAuthLoading = useStoreAuth((s) => s.isLoading);
+	const isAuthenticated = useStoreAuth((s) => s.isAuthenticated);
 	const realm = resolveAuthRealm();
-	const shouldLoadData = realm === 'desktop' || isAuth;
-	const isLoading = shouldLoadData && (isLoadingUser || isLoadingAccounts || isLoadingCategories);
+	const shouldLoadData = realm === 'desktop' || isAuthenticated;
 
 	useEffect(() => {
 		void useStoreAuth.getState().load();
@@ -28,8 +25,10 @@ export function AppLoader({ children }: { children: React.ReactNode }) {
 		void useStoreCategories.getState().load(true);
 	}, [shouldLoadData]);
 
+	const showBlockingLoader = realm !== 'desktop' && isAuthLoading;
+
 	return (
-		<Loading active={isLoading} keepMounted h="100%" style={{ flex: 1, minHeight: 0 }}>
+		<Loading active={showBlockingLoader} keepMounted h="100%" style={{ flex: 1, minHeight: 0 }}>
 			{children}
 		</Loading>
 	);

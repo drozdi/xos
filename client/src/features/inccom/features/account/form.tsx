@@ -11,6 +11,8 @@ import {
 	useEnumsTypeAccount,
 } from '@inccom/entities/account';
 import { Template } from '@inccom/layouts';
+import { notification } from '@inccom/shared/notification';
+import { getErrorMessage } from '@inccom/shared/utils/error';
 import { formatBalance } from '@inccom/shared/utils/number-format';
 
 interface AccountFormProps {
@@ -46,13 +48,13 @@ export function AccountForm({ id }: AccountFormProps) {
 		return createMutation.mutateAsync({ ...data, balance });
 	}
 
-	async function saveAndNavigate() {
+	async function saveAndNavigate(values?: IAccount) {
 		try {
-			const values = await form.validateFields();
-			await handleSave(values);
-			navigate('/accounts');
-		} catch {
-			// validation / mutation errors
+			const formValues = values ?? (await form.validateFields());
+			await handleSave(formValues);
+			navigate('/accounts', { replace: true });
+		} catch (e: unknown) {
+			notification.error(getErrorMessage(e, 'Не удалось сохранить счёт'));
 		}
 	}
 
@@ -62,9 +64,10 @@ export function AccountForm({ id }: AccountFormProps) {
 			const saved = await handleSave(values);
 			if (saved?.id) {
 				form.setFieldValue('id', saved.id);
+				notification.success('Счёт сохранён');
 			}
-		} catch {
-			// handled upstream
+		} catch (e: unknown) {
+			notification.error(getErrorMessage(e, 'Не удалось сохранить счёт'));
 		}
 	}
 
@@ -73,7 +76,12 @@ export function AccountForm({ id }: AccountFormProps) {
 	}
 
 	return (
-		<Form form={form} layout="vertical" initialValues={{ ...defaultAccount }}>
+		<Form
+			form={form}
+			layout="vertical"
+			initialValues={{ ...defaultAccount }}
+			onFinish={(values) => void saveAndNavigate(values)}
+		>
 			<Form.Item
 				label="Название счета"
 				name="label"
@@ -145,10 +153,15 @@ export function AccountForm({ id }: AccountFormProps) {
 			</Form.Item>
 			<Template.Footer>
 				<Flex gap={8}>
-					<Button type="primary" loading={isSaving} onClick={() => void saveAndNavigate()}>
+					<Button
+						type="primary"
+						htmlType="button"
+						loading={isSaving}
+						onClick={() => void saveAndNavigate()}
+					>
 						Сохранить
 					</Button>
-					<Button loading={isSaving} onClick={() => void saveOnly()}>
+					<Button htmlType="button" loading={isSaving} onClick={() => void saveOnly()}>
 						Применить
 					</Button>
 				</Flex>

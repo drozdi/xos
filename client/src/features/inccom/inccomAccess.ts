@@ -6,6 +6,21 @@ import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
 const INCCOM_SCOPE = 'inccom';
 
+/** Доступ к модулю inccom по списку ролей (ответ login/me). */
+export function canAccessInccomFromRoles(roles: string[] | undefined): boolean {
+	if (!roles?.length) {
+		return false;
+	}
+	if (roles.includes('ROLE_ROOT')) {
+		return true;
+	}
+	return (
+		roles.includes('ROLE_INCCOM') ||
+		roles.includes('ROLE_INCCOM_ROOT') ||
+		roles.includes('ROLE_INCCOM_ADMIN')
+	);
+}
+
 function canInccomScope(actionScope: string): boolean {
 	if (!canAccessApp('inccom')) {
 		return false;

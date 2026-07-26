@@ -7,7 +7,7 @@ export const defaultAccount: IAccount = {
 	label: '',
 	balance: 0,
 	type: '',
-	color: '',
-	icon: '',
+	color: '#228be6',
+	icon: 'cards',
 	currency: 'RUB',
 };

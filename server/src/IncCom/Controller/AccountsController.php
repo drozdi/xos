@@ -20,7 +20,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-#[Route('/api/accounts', name: 'api_accounts_')]
+#[Route('/api/IncCom/accounts', name: 'api_inccom_accounts_')]
 class AccountsController extends AbstractController
 {
     public function __construct(
@@ -267,6 +267,13 @@ class AccountsController extends AbstractController
             if (array_key_exists($field, $data)) {
                 $mapped[$field] = $data[$field];
             }
+        }
+
+        if (!array_key_exists('icon', $mapped) || '' === ($mapped['icon'] ?? '')) {
+            $mapped['icon'] = 'cards';
+        }
+        if (!array_key_exists('color', $mapped) || '' === ($mapped['color'] ?? '')) {
+            $mapped['color'] = '#228be6';
         }
 
         return $mapped;

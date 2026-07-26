@@ -113,9 +113,8 @@ export function useAccountCreate() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (data: Partial<IAccount>) => requestAccountCreate(data),
-		onSuccess: async (account) => {
+		onSuccess: (account) => {
 			upsertAccountInListCache(queryClient, account);
-			await queryClient.refetchQueries({ queryKey: ACCOUNTS_LIST_QUERY_KEY });
 		},
 	});
 }

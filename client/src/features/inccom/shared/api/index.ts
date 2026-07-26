@@ -3,7 +3,7 @@ import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { apiClient } from '@/core/api/client';
 import * as tokenStorage from '@/core/auth/tokenStorage';
 
-const BASE = '/api';
+const BASE = '/api/IncCom';
 
 function withBase(url: string): string {
 	if (url.startsWith('/api')) {

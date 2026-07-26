@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-#[Route('/api/auth', name: 'api_auth_')]
+#[Route('/api/IncCom/auth', name: 'api_inccom_auth_')]
 class ApiAuthController extends AbstractController
 {
     public function __construct(
@@ -86,7 +86,7 @@ class ApiAuthController extends AbstractController
     public function loginDoc(): JsonResponse
     {
         return $this->json([
-            'hint' => 'POST /api/auth/login with JSON {"username":"<email>","password":"..."}',
+            'hint' => 'POST /api/IncCom/auth/login with JSON {"username":"<email>","password":"..."}',
         ]);
     }
 

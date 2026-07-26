@@ -43,7 +43,7 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 
 
-#[Route('/api/transfers', name: 'api_transfers_')]
+#[Route('/api/IncCom/transfers', name: 'api_inccom_transfers_')]
 
 class TransfersController extends AbstractController
 

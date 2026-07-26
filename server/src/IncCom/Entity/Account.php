@@ -60,11 +60,11 @@ class Account
     #[ORM\Column(name: 'type', type: 'string')]
     private string $type;
 
-    #[ORM\Column(name: 'icon', type: 'string')]
-    private string $icon;
+    #[ORM\Column(name: 'icon', type: 'string', options: ['default' => 'cards'])]
+    private string $icon = 'cards';
 
-    #[ORM\Column(name: 'color', type: 'string')]
-    private string $color;
+    #[ORM\Column(name: 'color', type: 'string', options: ['default' => '#228be6'])]
+    private string $color = '#228be6';
 
     public function __construct() {
         $this->categories = new ArrayCollection();

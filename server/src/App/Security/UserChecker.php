@@ -26,8 +26,16 @@ final class UserChecker implements UserCheckerInterface
             return;
         }
 
-        if (!in_array(User::ROLE_USER, $user->getRoles(), true)) {
+        if (!$this->hasBaseLoginRole($user)) {
             throw new CustomUserMessageAccountStatusException('Недостаточно прав для входа');
         }
+    }
+
+    private function hasBaseLoginRole(User $user): bool
+    {
+        $roles = $user->getRoles();
+
+        return in_array(User::ROLE_USER, $roles, true)
+            || in_array('ROLE_ROOT', $roles, true);
     }
 }

@@ -17,7 +17,7 @@ export const useStoreAccounts = create<IStoreAccount>((set, get) => ({
 	list: [],
 	load: async (reload = false) => {
 		if (reload) {
-			queryClient.removeQueries({
+			await queryClient.invalidateQueries({
 				queryKey: ['accounts'],
 			});
 		}

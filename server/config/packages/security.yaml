@@ -30,12 +30,12 @@ security:
 
         # Вход standalone-приложений (email + password)
         app_login:
-            pattern: ^/api/auth/login$
+            pattern: ^/api/IncCom/auth/login$
             stateless: true
             provider: email_user_provider
-            user_checker: App\Security\UserChecker
+            user_checker: App\Security\AppLoginUserChecker
             json_login:
-                check_path: /api/auth/login
+                check_path: /api/IncCom/auth/login
                 username_path: username
                 password_path: password
                 success_handler: App\Security\LoginSuccessHandler
@@ -48,6 +48,14 @@ security:
             user_checker: App\Security\UserChecker
             refresh_jwt:
                 check_path: /api/token/refresh
+
+        app_refresh:
+            pattern: ^/api/IncCom/token/refresh
+            stateless: true
+            provider: login_user_provider
+            user_checker: App\Security\UserChecker
+            refresh_jwt:
+                check_path: /api/IncCom/token/refresh
 
         api:
             pattern: ^/api
@@ -67,10 +75,11 @@ security:
 
     access_control:
         - { path: ^/api/login$, roles: PUBLIC_ACCESS, methods: [POST] }
-        - { path: ^/api/auth/login$, roles: PUBLIC_ACCESS, methods: [POST, GET] }
-        - { path: ^/api/auth/register$, roles: PUBLIC_ACCESS, methods: [POST] }
-        - { path: ^/api/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/IncCom/auth/login$, roles: PUBLIC_ACCESS, methods: [POST, GET] }
+        - { path: ^/api/IncCom/auth/register$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/IncCom/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/IncCom/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/health, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/uploads/, roles: IS_AUTHENTICATED_FULLY, methods: [GET] }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

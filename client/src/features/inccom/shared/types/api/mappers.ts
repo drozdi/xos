@@ -30,6 +30,12 @@ export function mapAccountToApi(
 	for (const field of ['type', 'color', 'icon', 'balance', 'currency'] as const) {
 		if (data[field] !== undefined) mapped[field] = data[field];
 	}
+	if (mapped['icon'] === undefined || mapped['icon'] === '') {
+		mapped['icon'] = 'cards';
+	}
+	if (mapped['color'] === undefined || mapped['color'] === '') {
+		mapped['color'] = '#228be6';
+	}
 	return mapped;
 }
 

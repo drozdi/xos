@@ -1,4 +1,5 @@
 ﻿import { api } from '@inccom/shared/api';
+import { canAccessInccomFromRoles } from '@inccom/inccomAccess';
 import { notification } from '@inccom/shared/notification';
 import { getterZustandMiddleware } from '@inccom/shared/stores';
 import { getErrorMessage } from '@inccom/shared/utils/error';
@@ -7,6 +8,7 @@ import { create } from 'zustand';
 import {
 	mapRegisterResponseToUser,
 	requestAuthenticationLogin,
+	requestAuthMe,
 	requestAuthRegister,
 } from '../api/auth';
 import type { IRegisterRequest } from '../model/types';
@@ -22,16 +24,27 @@ export const useStoreAuth = create<IStoreAuth>(
 		clearAuth() {
 			set({
 				isAuthenticated: false,
+				isLoading: false,
 			});
 			api.clearTokens();
 		},
 		async load() {
-			const isAuthenticated = !!api.getRefreshToken() && !!api.getAccessToken();
-			set({
-				isAuthenticated,
-			});
-			if (!isAuthenticated) {
+			const hasTokens = !!api.getRefreshToken() && !!api.getAccessToken();
+			if (!hasTokens) {
+				set({ isAuthenticated: false, isLoading: false });
 				api.clearTokens();
+				return;
+			}
+			set({ isLoading: true });
+			try {
+				const me = await requestAuthMe();
+				if (!canAccessInccomFromRoles(me.roles)) {
+					get().clearAuth();
+					return;
+				}
+				set({ isAuthenticated: true, isLoading: false });
+			} catch {
+				get().clearAuth();
 			}
 		},
 		async login(username, password) {
@@ -44,6 +57,11 @@ export const useStoreAuth = create<IStoreAuth>(
 					username,
 					password,
 				});
+				if (!canAccessInccomFromRoles(response.user?.roles)) {
+					notification.error('Нет доступа к приложению «Доходы и расходы»');
+					set({ isLoading: false });
+					return false;
+				}
 				api.setTokens(response.token, response.refresh_token);
 				set({
 					isAuthenticated: true,
@@ -92,3 +110,9 @@ export const useStoreAuth = create<IStoreAuth>(
 		},
 	})),
 );
+
+if (typeof window !== 'undefined') {
+	window.addEventListener('xos:app-session-expired', () => {
+		useStoreAuth.getState().clearAuth();
+	});
+}

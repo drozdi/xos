@@ -37,17 +37,32 @@ function onRefreshFailed(error: unknown): void {
 	refreshSubscribers = [];
 }
 
+function resolveRealmForApiUrl(url: string | undefined): tokenStorage.AuthRealm {
+	const path = url ?? '';
+	if (path.includes('/api/IncCom/')) {
+		if (tokenStorage.hasAccessToken('app')) {
+			return 'app';
+		}
+		if (tokenStorage.hasAccessToken('desktop')) {
+			return 'desktop';
+		}
+		return tokenStorage.resolveAuthRealm();
+	}
+	return tokenStorage.resolveAuthRealm();
+}
+
 function isAuthBypassUrl(url: string | undefined): boolean {
 	if (!url) {
 		return false;
 	}
 	return (
 		url.includes('/api/login') ||
-		url.includes('/api/auth/login') ||
-		url.includes('/api/auth/register') ||
+		url.includes('/api/IncCom/auth/login') ||
+		url.includes('/api/IncCom/auth/register') ||
 		url.includes('/api/token/refresh') ||
+		url.includes('/api/IncCom/token/refresh') ||
 		url.includes('/api/logout') ||
-		url.includes('/api/auth/logout')
+		url.includes('/api/IncCom/auth/logout')
 	);
 }
 
@@ -103,8 +118,8 @@ function showErrorToast(error: AxiosError, config: RetryableRequestConfig | unde
 	}
 }
 
-async function performTokenRefresh(): Promise<string> {
-	const realm = tokenStorage.resolveAuthRealm();
+async function performTokenRefresh(requestUrl?: string): Promise<string> {
+	const realm = resolveRealmForApiUrl(requestUrl);
 	const refreshToken = tokenStorage.getRefreshToken(realm);
 	if (!refreshToken) {
 		throw new Error('Refresh token missing');
@@ -121,12 +136,12 @@ async function performTokenRefresh(): Promise<string> {
 
 let refreshPromise: Promise<string> | null = null;
 
-async function refreshAccessToken(): Promise<string> {
+async function refreshAccessToken(requestUrl?: string): Promise<string> {
 	if (refreshPromise) {
 		return refreshPromise;
 	}
 
-	refreshPromise = performTokenRefresh().finally(() => {
+	refreshPromise = performTokenRefresh(requestUrl).finally(() => {
 		refreshPromise = null;
 	});
 
@@ -135,7 +150,9 @@ async function refreshAccessToken(): Promise<string> {
 
 export function setupInterceptors(authStore: AuthStoreRef): void {
 	apiClient.interceptors.request.use((config) => {
-		const accessToken = tokenStorage.getAccessToken();
+		const accessToken = tokenStorage.getAccessToken(
+			resolveRealmForApiUrl(config.url),
+		);
 		if (accessToken) {
 			config.headers.Authorization = `Bearer ${accessToken}`;
 		}
@@ -168,7 +185,7 @@ export function setupInterceptors(authStore: AuthStoreRef): void {
 			originalRequest._retry = true;
 			isRefreshing = true;
 			try {
-				const newToken = await refreshAccessToken();
+				const newToken = await refreshAccessToken(originalRequest.url);
 				onRefreshed(newToken);
 				originalRequest.headers.Authorization = `Bearer ${newToken}`;
 				return apiClient(originalRequest);
@@ -177,13 +194,12 @@ export function setupInterceptors(authStore: AuthStoreRef): void {
 				const isNetworkError =
 					axios.isAxiosError(refreshError) && !refreshError.response;
 				if (!isNetworkError) {
-					if (tokenStorage.resolveAuthRealm() === 'desktop') {
+					const realm = resolveRealmForApiUrl(originalRequest.url);
+					if (realm === 'desktop') {
 						await authStore.logout();
 					} else {
 						tokenStorage.clearTokens('app');
-						if (window.location.pathname.startsWith('/inccom')) {
-							window.location.assign('/inccom/auth/sign-in');
-						}
+						window.dispatchEvent(new Event('xos:app-session-expired'));
 					}
 				}
 				return Promise.reject(refreshError);

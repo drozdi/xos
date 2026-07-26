@@ -47,7 +47,7 @@ class DualAuthApiTest extends AuthWebTestCase
         $client = static::createClient();
         $this->prepareDualAuthDatabase($client);
 
-        $user = $this->createTestUser($client, 'app_user', 'password', ['ROLE_USER']);
+        $user = $this->createTestUser($client, 'app_user', 'password', ['ROLE_USER', 'ROLE_INCCOM']);
         $user->setEmail('app@example.com');
         /** @var EntityManagerInterface $em */
         $em = $client->getContainer()->get(EntityManagerInterface::class);
@@ -55,7 +55,7 @@ class DualAuthApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/auth/login',
+            '/api/IncCom/auth/login',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -68,11 +68,33 @@ class DualAuthApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/auth/login',
+            '/api/IncCom/auth/login',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode(['username' => 'app_user', 'password' => 'password'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testAppLoginRequiresInccomAccess(): void
+    {
+        $client = static::createClient();
+        $this->prepareDualAuthDatabase($client);
+
+        $user = $this->createTestUser($client, 'no_inccom', 'password', ['ROLE_USER']);
+        $user->setEmail('no-inccom@example.com');
+        /** @var EntityManagerInterface $em */
+        $em = $client->getContainer()->get(EntityManagerInterface::class);
+        $em->flush();
+
+        $client->request(
+            'POST',
+            '/api/IncCom/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['username' => 'no-inccom@example.com', 'password' => 'password'], JSON_THROW_ON_ERROR),
         );
         self::assertResponseStatusCodeSame(401);
     }

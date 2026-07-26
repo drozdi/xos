@@ -236,11 +236,11 @@ class IncComManager extends AbstractManager  {
         if (array_key_exists('type', $arAccount)) {
             $account->setType($arAccount['type']);
         }
-        if (array_key_exists('color', $arAccount)) {
-            $account->setColor($arAccount['color']);
+        if (array_key_exists('color', $arAccount) && '' !== ($arAccount['color'] ?? '')) {
+            $account->setColor((string) $arAccount['color']);
         }
-        if (array_key_exists('icon', $arAccount)) {
-            $account->setIcon($arAccount['icon']);
+        if (array_key_exists('icon', $arAccount) && '' !== ($arAccount['icon'] ?? '')) {
+            $account->setIcon((string) $arAccount['icon']);
         }
         if (array_key_exists('description', $arAccount)) {
             $account->setDescription($arAccount['description']);

@@ -1,0 +1,4 @@
+inccom_token_refresh:
+    path: /api/IncCom/token/refresh
+    methods: [POST]
+    controller: gesdinet.jwtrefreshtoken::refresh

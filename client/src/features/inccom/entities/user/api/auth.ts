@@ -1,5 +1,4 @@
-﻿import { getUser } from '@/core/api/endpoints/auth';
-import { apiClient } from '@/core/api/client';
+﻿import { apiClient } from '@/core/api/client';
 import type { ApiUser } from '@inccom/shared/types/api';
 
 import type { IRegisterRequest } from '../model/types';
@@ -7,8 +6,8 @@ import type { IRegisterRequest } from '../model/types';
 type LoginResponse = {
 	token: string;
 	refresh_token: string;
+	user?: ApiUser;
 };
-
 type RefreshResponse = {
 	token: string;
 	refresh_token: string;
@@ -18,32 +17,21 @@ export async function requestAuthenticationLogin(credentials: {
 	username: string;
 	password: string;
 }): Promise<IResponse<LoginResponse>> {
-	const { data } = await apiClient.post<LoginResponse>('/api/auth/login', credentials);
+	const { data } = await apiClient.post<LoginResponse>('/api/IncCom/auth/login', credentials);
 	return data;
 }
 
 export async function requestAuthRegister(
 	userData: IRegisterRequest,
 ): Promise<IResponse<ApiUser>> {
-	const { data } = await apiClient.post<ApiUser>('/api/auth/register', userData);
+	const { data } = await apiClient.post<ApiUser>('/api/IncCom/auth/register', userData);
 	return data;
 }
 
 export async function requestAuthMe(): Promise<IResponse<ApiUser>> {
-	try {
-		const { data } = await apiClient.get<ApiUser>('/api/auth/me');
-		return data;
-	} catch {
-		const user = await getUser();
-		return {
-			id: user.id,
-			login: user.login ?? '',
-			email: user.email ?? '',
-			name: user.alias ?? user.login ?? null,
-		};
-	}
+	const { data } = await apiClient.get<ApiUser>('/api/IncCom/auth/me');
+	return data;
 }
-
 export async function requestAuthenticationRefresh(refreshToken: string): Promise<
 	IResponse<{
 		token: {

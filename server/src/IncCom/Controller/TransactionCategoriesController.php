@@ -20,7 +20,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
-#[Route('/api/accounts/{accountId}/categories', name: 'api_transaction_categories_', requirements: ['accountId' => '\d+'])]
+#[Route('/api/IncCom/accounts/{accountId}/categories', name: 'api_inccom_transaction_categories_', requirements: ['accountId' => '\d+'])]
 class TransactionCategoriesController extends AbstractController
 {
     public function __construct(

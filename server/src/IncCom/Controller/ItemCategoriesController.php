@@ -32,7 +32,7 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 
 
-#[Route('/api/item-categories', name: 'api_item_categories_')]
+#[Route('/api/IncCom/item-categories', name: 'api_inccom_item_categories_')]
 
 class ItemCategoriesController extends AbstractController
 
