@@ -7,6 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -112,5 +113,26 @@ class TodoListController extends AbstractController
         }
 
         return $this->json($found);
+    }
+
+    #[Route('/items/due', name: 'items_due', methods: ['GET'])]
+    public function itemsDue(Request $request, #[CurrentUser] ?User $user, TodoManager $todoManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $startRaw = (string) $request->query->get('start', '');
+        $endRaw = (string) $request->query->get('end', '');
+        if ('' === trim($startRaw) || '' === trim($endRaw)) {
+            throw new BadRequestHttpException('Укажите start и end (ISO datetime)');
+        }
+        try {
+            $start = new \DateTime($startRaw);
+            $end = new \DateTime($endRaw);
+        } catch (\Exception) {
+            throw new BadRequestHttpException('Некорректный start или end');
+        }
+
+        return $this->json($todoManager->findDueItemsInRange($user, $start, $end));
     }
 }

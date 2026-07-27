@@ -60,10 +60,21 @@ export const todoUserSchema = z.object({
 	login: z.string().nullable().optional(),
 });
 
+export const todoDueItemSchema = z.object({
+	id: z.number(),
+	list_id: z.number().nullable().optional(),
+	list_title: z.string().nullable().optional(),
+	list_color: z.string().nullable().optional(),
+	text: z.string(),
+	done: z.boolean(),
+	due_at: z.string().nullable().optional(),
+});
+
 export type TodoListSummary = z.infer<typeof todoListSummarySchema>;
 export type TodoListDetail = z.infer<typeof todoListDetailSchema>;
 export type TodoItem = z.infer<typeof itemSchema>;
 export type TodoShare = z.infer<typeof shareSchema>;
+export type TodoDueItem = z.infer<typeof todoDueItemSchema>;
 
 export type TodoListWritePayload = {
 	title?: string;
@@ -109,4 +120,10 @@ export const todoApi = {
 	},
 	findUserByEmail: (email: string) =>
 		getDetail(`${BASE}/users/by-email?email=${encodeURIComponent(email)}`, todoUserSchema),
+	dueItems: async (start: string, end: string): Promise<TodoDueItem[]> => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/items/due`, {
+			params: { start, end },
+		});
+		return z.array(todoDueItemSchema).parse(data);
+	},
 };

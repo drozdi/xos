@@ -33,6 +33,13 @@ services:
             $module: 'schooltask'
             $deniedMessage: 'Нет доступа к приложению «Школа»'
 
+    # calendar не в ProtectedAppModules → canAccessModule: ROLE_USER / ROLE_ROOT
+    app.security.calendar_login_user_checker:
+        class: App\Security\AppLoginUserChecker
+        arguments:
+            $module: 'calendar'
+            $deniedMessage: 'Нет доступа к приложению «Календарь»'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
@@ -128,6 +135,18 @@ services:
     Todo\Service\TodoMarkdownSync: ~
 
     Todo\Service\TodoManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
+    Calendar\Controller\:
+        resource: '../src/Calendar/Controller/'
+        tags: ['controller.service_arguments']
+
+    Calendar\Repository\:
+        resource: '../src/Calendar/Repository/'
+
+    Calendar\Service\CalendarManager:
         lazy: true
         calls:
             - setContainer: ['@service_container']

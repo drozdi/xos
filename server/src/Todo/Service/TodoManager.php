@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Todo\Entity\TodoItem;
 use Todo\Entity\TodoList;
 use Todo\Entity\TodoListShare;
+use Todo\Repository\TodoItemRepository;
 use Todo\Repository\TodoListRepository;
 
 class TodoManager extends AbstractManager
@@ -37,6 +38,35 @@ class TodoManager extends AbstractManager
     public function getListRepository(): TodoListRepository
     {
         return $this->getEntityManager()->getRepository(TodoList::class);
+    }
+
+    public function getItemRepository(): TodoItemRepository
+    {
+        return $this->getEntityManager()->getRepository(TodoItem::class);
+    }
+
+    /**
+     * Items with due_at in [start, end] from lists accessible to the user.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function findDueItemsInRange(User $user, \DateTimeInterface $start, \DateTimeInterface $end): array
+    {
+        $items = $this->getItemRepository()->findDueInRange($user, $start, $end);
+
+        return array_map(function (TodoItem $item): array {
+            $list = $item->getList();
+
+            return [
+                'id' => $item->getId(),
+                'list_id' => $list?->getId(),
+                'list_title' => $list?->getTitle(),
+                'list_color' => $list?->getColor(),
+                'text' => $item->getText(),
+                'done' => $item->isDone(),
+                'due_at' => $item->getDueAt('Y-m-d\TH:i:s'),
+            ];
+        }, $items);
     }
 
     /** @return list<array<string, mixed>> */

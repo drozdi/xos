@@ -27,6 +27,7 @@ const LoginScreen = lazy(() =>
 
 const IncComStandaloneApp = lazy(() => import('@/apps/inccom/IncComStandaloneApp'));
 const SchooltaskStandaloneApp = lazy(() => import('@/apps/schooltask-standalone/SchooltaskStandaloneApp'));
+const CalendarStandaloneApp = lazy(() => import('@/apps/calendar-standalone/CalendarStandaloneApp'));
 
 function AppShellFallback() {
 	return (
@@ -100,6 +101,9 @@ function StandaloneShell() {
 	const app = resolveStandaloneApp();
 	if (app === 'schooltask') {
 		return <SchooltaskStandaloneApp />;
+	}
+	if (app === 'calendar') {
+		return <CalendarStandaloneApp />;
 	}
 	return <IncComStandaloneApp />;
 }

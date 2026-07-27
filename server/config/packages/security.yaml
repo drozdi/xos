@@ -54,6 +54,19 @@ security:
                 success_handler: App\Security\LoginSuccessHandler
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
+        # Вход standalone Calendar (email + password; модуль открыт для ROLE_USER)
+        calendar_login:
+            pattern: ^/api/calendar/auth/login$
+            stateless: true
+            provider: email_user_provider
+            user_checker: app.security.calendar_login_user_checker
+            json_login:
+                check_path: /api/calendar/auth/login
+                username_path: username
+                password_path: password
+                success_handler: App\Security\LoginSuccessHandler
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
         refresh:
             pattern: ^/api/token/refresh
             stateless: true
@@ -78,6 +91,14 @@ security:
             refresh_jwt:
                 check_path: /api/schooltask/token/refresh
 
+        calendar_refresh:
+            pattern: ^/api/calendar/token/refresh
+            stateless: true
+            provider: login_user_provider
+            user_checker: App\Security\UserChecker
+            refresh_jwt:
+                check_path: /api/calendar/token/refresh
+
         api:
             pattern: ^/api
             stateless: true
@@ -101,9 +122,12 @@ security:
         - { path: ^/api/IncCom/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/schooltask/auth/login$, roles: PUBLIC_ACCESS, methods: [POST, GET] }
         - { path: ^/api/schooltask/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/calendar/auth/login$, roles: PUBLIC_ACCESS, methods: [POST, GET] }
+        - { path: ^/api/calendar/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/IncCom/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/schooltask/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/calendar/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/health, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/uploads/, roles: IS_AUTHENTICATED_FULLY, methods: [GET] }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

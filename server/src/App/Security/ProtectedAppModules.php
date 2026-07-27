@@ -11,6 +11,7 @@ final class ProtectedAppModules
         'explorer',
         'schooltask',
         'inccom',
+        'calendar',
     ];
 
     public static function isProtected(string $module): bool

@@ -39,7 +39,11 @@ function onRefreshFailed(error: unknown): void {
 
 function resolveRealmForApiUrl(url: string | undefined): tokenStorage.AuthRealm {
 	const path = url ?? '';
-	if (path.includes('/api/IncCom/') || path.includes('/api/schooltask/')) {
+	if (
+		path.includes('/api/IncCom/') ||
+		path.includes('/api/schooltask/') ||
+		path.includes('/api/calendar/')
+	) {
 		if (tokenStorage.hasAccessToken('app')) {
 			return 'app';
 		}
@@ -60,12 +64,15 @@ function isAuthBypassUrl(url: string | undefined): boolean {
 		url.includes('/api/IncCom/auth/login') ||
 		url.includes('/api/IncCom/auth/register') ||
 		url.includes('/api/schooltask/auth/login') ||
+		url.includes('/api/calendar/auth/login') ||
 		url.includes('/api/token/refresh') ||
 		url.includes('/api/IncCom/token/refresh') ||
 		url.includes('/api/schooltask/token/refresh') ||
+		url.includes('/api/calendar/token/refresh') ||
 		url.includes('/api/logout') ||
 		url.includes('/api/IncCom/auth/logout') ||
-		url.includes('/api/schooltask/auth/logout')
+		url.includes('/api/schooltask/auth/logout') ||
+		url.includes('/api/calendar/auth/logout')
 	);
 }
 

@@ -133,6 +133,41 @@ class DualAuthApiTest extends AuthWebTestCase
         self::assertResponseStatusCodeSame(401);
     }
 
+    public function testCalendarLoginByEmailForAnyUser(): void
+    {
+        $client = static::createClient();
+        $this->prepareDualAuthDatabase($client);
+
+        $user = $this->createTestUser($client, 'cal_user', 'password', ['ROLE_USER']);
+        $user->setEmail('calendar@example.com');
+        /** @var EntityManagerInterface $em */
+        $em = $client->getContainer()->get(EntityManagerInterface::class);
+        $em->flush();
+
+        $client->request(
+            'POST',
+            '/api/calendar/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['username' => 'calendar@example.com', 'password' => 'password'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseIsSuccessful();
+        /** @var array{token: string} $payload */
+        $payload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertNotEmpty($payload['token']);
+
+        $client->request(
+            'POST',
+            '/api/calendar/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['username' => 'cal_user', 'password' => 'password'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(401);
+    }
+
     private function prepareDualAuthDatabase(KernelBrowser $client): void
     {
         /** @var EntityManagerInterface $entityManager */

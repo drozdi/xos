@@ -1,8 +1,8 @@
-# XOS — План реализации
+# XOS — План: приложение «Календарь»
 
-> Версия: 2026-07-14  
-> Оценка: **~27 рабочих дней** (1 разработчик full-stack + точечная помощь)  
-> Формат: `- [ ]` для трекинга оркестратором
+> Версия: 2026-07-27  
+> Цель: Google Calendar–подобный UI с собственными календарями, share, overlay Todo (due) и SchoolTask (уроки учителя), Desktop-окно + standalone `/calendar`.  
+> Формат: `- [ ]` для трекинга оркестратором.
 
 ## Легенда
 
@@ -12,270 +12,374 @@
 
 ---
 
-## Этап 0. Подготовка клиента (2 дня)
+## Сводка
+
+| | |
+|---|---|
+| **Продукт** | Приложение «Календарь» в XOS |
+| **Клиент** | React 19 + Vite + Mantine 9 (`@mantine/schedule`) + TanStack Query + Zustand |
+| **Сервер** | Symfony-модуль `Calendar` по образцу `Todo` (+ email-auth по образцу IncCom/SchoolTask) |
+| **Точки входа** | Desktop-окно (`AppRegistry`) и SPA `/calendar` |
+| **Не цель MVP** | Полный паритет Google (ресурсы, rooms, conference, сложные RRULE, импорт ICS) |
+
+### Scope MVP (in)
+
+1. Виды **день / неделя / месяц**, навигация по датам (сегодня, prev/next, выбор даты).
+2. **Собственные календари**: несколько штук, заголовок + цвет, список слева с вкл/выкл.
+3. **События** своих календарей: CRUD в видимом диапазоне.
+4. Overlay **Todo**: пункты с `due_at` (только с датой).
+5. Overlay **SchoolTask**: уроки teacher calendar (`/api/schooltask/calendar/teacher/events`).
+6. **Share** календаря по email (read/write) — паттерн Todo.
+7. Standalone **`/calendar`** с email-auth (realm `app`).
+
+### Scope out (позже / по уточнению)
+
+- Recurrence (RRULE), перетаскивание между днями как отдельный UX-полиш, ICS, уведомления, student class calendars SchoolTask, публичные ссылки без аккаунта.
+
+---
+
+## Ограничения и допущения
+
+### Нельзя ломать
+
+- Существующие API Todo (`/api/todo`) и SchoolTask (`/api/schooltask`) — только **расширять** (например, range-query для due items), не менять контракты списков/markdown.
+- Dual auth: `tokenStorage` realms `desktop` | `app`; interceptors и refresh queue.
+- Регистрация desktop-приложений через `apps/*/index.ts` + `registerApps` (`import.meta.glob`).
+- UI: **Mantine** (не Ant Design); иконки Tabler / `react-icons` по проекту.
+
+### Допущения (до ответов на открытые вопросы)
+
+1. **Доступ к модулю Calendar** — как у Todo: любой авторизованный `ROLE_USER` / `ROLE_ROOT` (`canUseAuthenticatedApps`), без отдельного claimant в MVP. Standalone login — email + пароль, без жёсткой привязки к `ROLE_schooltask`.
+2. Overlay SchoolTask показывается **только если** у пользователя есть права teacher events; иначе пункт в sidebar скрыт или disabled.
+3. Overlay Todo: **один системный календарь «Заметки»** (все due-items доступных списков); цвет — нейтральный/фиксированный или от списка (уточнить).
+4. Переключатели видимости календарей хранятся **на клиенте** (user_settings category `calendar` или localStorage) в MVP; серверная подписка — опционально позже.
+5. Агрегация событий на **клиенте** (несколько запросов → единый `CalendarEventViewModel`); server-side feed — оптимизация после MVP.
+6. Собственные события **входят в MVP** (иначе «несколько календарей» бессмысленны без контента).
+
+### Паттерны встройки (изученный контекст)
+
+| Слой | Ориентир |
+|------|----------|
+| Desktop app | `apps/todo/` — manifest, `singleInstance`, `wmGroup: 'tools'` |
+| Standalone shell | `apps/schooltask-standalone/`, `apps/inccom/IncComStandaloneApp.tsx` |
+| Path → realm | `resolveStandaloneApp()` / `resolveAuthRealm()` в `tokenStorage.ts` |
+| App switch | `App.tsx` → `StandaloneShell` |
+| Email firewalls | `security.yaml`: `app_login` / `schooltask_login` + refresh |
+| Share UX/API | `TodoShareModal` + `TodoListShare` + `TodoManager::shareList` |
+| Week UI | `@mantine/schedule` (`DayView` / `WeekView` / `MonthView` уже в пакете); SchoolTask `WeekCalendar` — **не копировать** 1:1 (там 6 дней без выходных) |
+| Teacher lessons | `schooltaskCalendarApi.teacherEvents(range)` |
+| Todo due | `TodoItem.due_at`, markdown `| due:…`; **нет** API «items in range» — нужно добавить |
+
+---
+
+## Архитектура данных (что проектировать Архитектору)
+
+### Сущности (модуль `server/src/Calendar/`)
+
+```
+Calendar
+  id, owner_id → User, title, color, created_at, updated_at
+
+CalendarEvent
+  id, calendar_id → Calendar
+  title, description nullable
+  start_at, end_at
+  all_day bool
+  (без recurrence в MVP)
+
+CalendarShare
+  id, calendar_id, user_id → User
+  permission: read | write
+  UNIQUE(calendar_id, user_id)
+```
+
+### Логические «источники» в UI (не обязательно таблицы)
+
+| source | Тип | Данные |
+|--------|-----|--------|
+| `own:{calendarId}` | persisted | `CalendarEvent` |
+| `shared:{calendarId}` | persisted + share | те же события, read/write по share |
+| `overlay:todo` | virtual | Todo items с `due_at` in range |
+| `overlay:schooltask` | virtual | teacher events in range |
+
+### Клиентская модель события (view-model)
+
+Единый тип для сетки (примерно):
+
+- `uid` (стабильный ключ: `own-123`, `todo-45`, `st-78`)
+- `source`, `calendarId?`, `title`, `start`, `end`, `allDay`, `color`, `editable`, `payload`
+
+Маппинг Todo: `start = end = due_at` (или all-day на дату due); клик → просмотр / deeplink в Todo (MVP: read-only модалка).  
+Маппинг SchoolTask: из `CalendarEvent` schooltask API; клик → переиспользовать `EventTeacherModal` или read-only деталь.
+
+---
+
+## API-контракт (черновик для Архитектора)
+
+Базовый префикс: `/api/calendar`.
+
+### Auth (standalone, зеркало SchoolTask/IncCom)
+
+- `POST /api/calendar/auth/login` — email + password → JWT (email provider + user_checker)
+- `POST /api/calendar/token/refresh`
+- `POST /api/calendar/auth/logout`
+- Access control: login/refresh PUBLIC; остальное `IS_AUTHENTICATED_FULLY`
+
+Клиент: расширить `StandaloneAppId` = `'calendar'`, interceptors (refresh/logout paths), `App.tsx` lazy shell.
+
+### Calendars
+
+- `GET /api/calendar/calendars` — owned + shared (флаги `is_owner`, `can_write`, `owner`)
+- `POST /api/calendar/calendars` — `{ title, color }`
+- `GET|PUT|DELETE /api/calendar/calendars/{id}`
+- `POST /api/calendar/calendars/{id}/share` — `{ email, permission }`
+- `DELETE /api/calendar/calendars/{id}/share/{userId}`
+- `GET /api/calendar/users/by-email?email=` — как Todo (или общий helper)
+
+### Events
+
+- `POST /api/calendar/events/query` — `{ start, end, calendar_ids?: number[] }` → события доступных календарей в диапазоне
+- `POST /api/calendar/events` — create
+- `PUT|DELETE /api/calendar/events/{id}`
+- Права: owner calendar или share `write`
+
+### Overlays (предпочтительно отдельные тонкие эндпоинты / расширения)
+
+1. **Todo** (расширение модуля Todo, не дублировать markdown):  
+   `GET|POST /api/todo/items/due?start&end` (или `/api/calendar/overlays/todo`) — items с `due_at` в диапазоне по спискам, где user owner/share. Поля: `id, list_id, list_title, list_color, text, done, due_at`.
+2. **SchoolTask**: клиент вызывает уже существующий `POST /api/schooltask/calendar/teacher/events` с `{ start, end }`; отдельный proxy в Calendar **не обязателен**. При 403 — скрыть overlay.
+
+### Регистрация сервера
+
+- Doctrine mapping `Calendar\Entity`
+- `services.yaml` Controllers/Repositories/Manager
+- `routes.yaml` prefix `/api/calendar`
+- `setting.json` + claimants — только если решим protected module (сейчас — нет)
+- PHPUnit: CRUD, изоляция owner/share, range query, auth login
+
+---
+
+## Клиентские слои
+
+```
+client/src/core/api/endpoints/calendarApi.ts   # Zod + apiClient
+client/src/core/api/queryKeys.ts               # queryKeys.calendar.*
+client/src/features/calendar/
+  calendarAccess.ts
+  types.ts / mappers (todo, schooltask → view-model)
+  store/uiStore.ts          # view, visibleIds, cursorDate (Zustand)
+  components/
+    CalendarShell.tsx       # sidebar + toolbar + main
+    CalendarSidebar.tsx
+    CalendarToolbar.tsx
+    CalendarGrid.tsx        # DayView | WeekView | MonthView
+    EventFormModal.tsx
+    CalendarShareModal.tsx  # по TodoShareModal
+  standalone/
+    authApi.ts, ProtectedRoute.tsx, routes.tsx, calendar-standalone.tsx
+client/src/apps/calendar/
+  index.ts                  # AppManifest
+  CalendarApp.tsx           # окно Desktop
+  CalendarIcon (AppIcons)
+client/src/apps/calendar-standalone/
+  CalendarStandaloneApp.tsx # /calendar shell
+```
+
+Точки проводки:
+
+- `tokenStorage.resolveStandaloneApp` → `'calendar'`
+- `App.tsx` StandaloneShell
+- `interceptors.ts` — calendar auth/refresh URLs + при необходимости realm для `/api/calendar/`
+- `PROTECTED_APP_MODULES` — **не** добавлять, если доступ как у Todo
+
+---
+
+## UX
+
+### Layout
+
+- **Слева:** «Мои календари» (checkbox + цвет + название), «Другие календари» (shared), «Системные» (Заметки, Моё расписание).
+- **Сверху:** Сегодня | ‹ › | заголовок периода | сегмент День/Неделя/Месяц | (опц.) создать.
+- **Центр:** `@mantine/schedule` view; полная неделя (в отличие от SchoolTask WeekCalendar).
+- **Клики:** слот → создать в выбранном/дефолтном own-календаре; событие → модалка по `source`.
+
+### Share flow
+
+Как Todo: email lookup → permission read/write → список shares → revoke. Shared calendar появляется у получателя в sidebar.
+
+### Toggles
+
+Вкл/выкл только влияет на merge в `CalendarGrid`; не удаляет данные. Персист: `user_settings` key `visible_calendars` (предпочтительно) или localStorage.
+
+---
+
+## Текущие риски / выводы
+
+| Риск | Митигация |
+|------|-----------|
+| Нет Todo range API | Этап 3: добавить endpoint + индекс `due_at` уже есть |
+| SchoolTask права / standalone JWT | Graceful degrade; проверить, что JWT после calendar-login проходит schooltask voters |
+| Путаница WeekCalendar SchoolTask vs Calendar | Новый `CalendarGrid`, не расширять schooltask `WeekCalendar` под Google-UX |
+| Dual-auth regressions | Тесты interceptors; не смешивать desktop/app tokens |
+| Перезапись общего `docs/PLAN.md` | Этот файл — план Calendar; старый migration-план завершён (этапы 0–N done) |
+| Scope creep Google parity | Жёсткий MVP; recurrence/ICS — out |
+| Производительность месяца (много events) | Query строго по visible range + selected calendar_ids |
+
+---
+
+## План (инкременты)
+
+### Этап 0. Уточнение ТЗ и контракт Архитектора (0.5 д)
 
 **Зависимости:** нет  
-**Субагент:** developer
+**Субагент:** architect (+ ответы пользователя на вопросы ниже)
 
-- [x] **0.1** Обновить `client/package.json` до версий из ARCHITECTURE.md §6.1
-- [x] **0.2** Удалить legacy-зависимости (react-draggable, react-resizable, @dnd-kit, tiptap, recharts и т.д.)
-- [x] **0.3** Настроить `tsconfig.json` (strict, paths `@/*`)
-- [x] **0.4** Настроить `vite.config.ts` (Tailwind 4 plugin, proxy, manualChunks)
-- [x] **0.5** Настроить ESLint 9 flat config + Prettier
-- [x] **0.6** Создать каркас директорий `src/core/*`, `src/apps/`, `src/types/`, `src/styles/`
-- [x] **0.7** `main.tsx` + `App.tsx` (MantineProvider, QueryClientProvider, условный Login/Desktop)
-- [x] **0.8** Tailwind globals + Mantine theme (`styles/theme.ts`)
-- [x] **0.9** `.env.example`: `VITE_API_URL`, `VITE_USE_API_SETTINGS=false`
+- [x] **0.1** Зафиксировать ответы на открытые вопросы (доступ, todo overlay granularity, own events в MVP, student vs teacher).
+- [x] **0.2** Детализировать схему БД, OpenAPI/DTO, коды ошибок, миграции.
+- [x] **0.3** Утвердить UX wireframe sidebar + views (без pixel-perfect).
+
+**Проверка:** короткий ADR/секция в PLAN или ARCHITECTURE; чеклист полей API согласован.
 
 ---
 
-## Этап 1. Сервер: Auth & Account доработка (3 дня)
+### Этап 1. Backend: Calendar + Event + Share (2–3 д)
 
-**Зависимости:** нет `[‖ 0]`  
+**Зависимости:** 0  
 **Субагент:** developer
 
-- [x] **1.1** LoginSuccessHandler: ответ `{ token, refresh_token, user: { id, login, email, roles, scopes } }`
-- [x] **1.2** Активировать logout в `security.yaml` + `LogoutHandler` (инвалидация refresh)
-- [x] **1.3** Расширить GET `/api/user` (login, alias, scopes)
-- [x] **1.4** Удалить/закрыть заглушки в `ApiLoginController` (refresh-token stub)
-- [x] **1.5** PHPUnit: login, refresh, login-check, logout
-- [x] **1.6** Проверить CORS для `localhost:5173`
+- [x] **1.1** Entity `Calendar`, `CalendarEvent`, `CalendarShare` + migration.
+- [x] **1.2** `CalendarManager` (доступ owner/share, сериализация как Todo).
+- [x] **1.3** Controllers CRUD calendars / events / share / by-email.
+- [x] **1.4** PHPUnit: изоляция, share read/write, range query.
+- [x] **1.5** Подключить doctrine/services/routes.
+
+**Проверка:** PHPUnit green; ручной smoke через API (create calendar → event → share → second user sees).
 
 ---
 
-## Этап 2. Сервер: Settings API + Device prefix (3 дня)
+### Этап 2. Backend auth standalone + Todo due-range (1–1.5 д) `[‖ часть 1]`
+
+**Зависимости:** 0; due-range можно параллельно с 1  
+**Субагент:** developer
+
+- [x] **2.1** Firewalls `calendar_login` / `calendar_refresh` + logout + access_control (копия schooltask pattern).
+- [x] **2.2** User checker: аутентифицированный пользователь с email (уточнить минимальные роли).
+- [x] **2.3** Todo: endpoint items by `due_at` range + PHPUnit.
+- [x] **2.4** (Опц.) добавить `calendar` в docs API_SPEC.
+
+**Проверка:** login по email на `/api/calendar/auth/login`; due-range возвращает только доступные lists.
+
+---
+
+### Этап 3. Клиент: Desktop shell + own calendars/events (2–3 д)
 
 **Зависимости:** 1  
 **Субагент:** developer
 
-- [x] **2.1** Entity `UserSetting` + Repository + Migration (`user_settings`)
-- [x] **2.2** `ApiSettingsController`: GET all, GET one, POST upsert/batch, DELETE
-- [x] **2.3** Валидация category enum + key length + JSON value
-- [x] **2.4** PHPUnit: settings CRUD, изоляция по user_id
-- [x] **2.5** Перенести Device routes на `/api/device/*` (alias `/device/*` → redirect/deprecated)
-- [x] **2.6** Обновить `security.yaml`: firewall покрывает `/api/device`
+- [x] **3.1** `calendarApi` + `queryKeys.calendar`.
+- [x] **3.2** `apps/calendar` manifest + `CalendarApp` + icon.
+- [x] **3.3** Sidebar (own calendars CRUD title/color, toggles) + toolbar views.
+- [x] **3.4** `CalendarGrid` на Day/Week/Month (`@mantine/schedule`).
+- [x] **3.5** EventFormModal create/edit/delete; ShareModal.
+
+**Проверка:** окно из Start Menu; создать 2 календаря разных цветов; события видны в трёх views; toggle скрывает; share между двумя users.
 
 ---
 
-## Этап 3. Сервер: IBlock API (2 дня) `[‖ 2]`
+### Этап 4. Overlays Todo + SchoolTask (1–2 д)
 
-**Зависимости:** 1  
+**Зависимости:** 2.3, 3  
 **Субагент:** developer
 
-- [x] **3.1** Унифицировать namespace IBlock entities → `IBlock\Entity`
-- [x] **3.2** CRUD controllers: block, element, section, property, type
-- [x] **3.3** POST `/list` паттерн для element
-- [x] **3.4** Миграции (если `#[ORM\Entity]` добавлен)
+- [x] **4.1** Mapper + query Todo due → view-model; системный checkbox «Заметки».
+- [x] **4.2** Mapper teacher events; checkbox «Моё расписание»; hide without access.
+- [x] **4.3** Модалки клика overlay (read-only / teacher modal).
+- [x] **4.4** Юнит-тесты mappers; ручной smoke с due_at и уроками.
+
+**Проверка:** due-задача появляется в дне; урок учителя — в неделе; выключение overlay убирает события.
 
 ---
 
-## Этап 4. Клиент: API layer + Auth (2 дня)
+### Этап 5. Standalone `/calendar` (1–1.5 д)
 
-**Зависимости:** 0, 1  
+**Зависимости:** 2.1–2.2, 3  
 **Субагент:** developer
 
-- [x] **4.1** `core/api/client.ts` — Axios instance, baseURL
-- [x] **4.2** `interceptors.ts` — Bearer, 401 refresh queue, 403/500 toasts
-- [x] **4.3** `endpoints/auth.ts`, `account.ts` — typed + Zod schemas
-- [x] **4.4** `authStore.ts` — login, logout, hydrate, token persistence
-- [x] **4.5** `coreRoles.ts`, `coreScopes.ts` — isRole, isAdmin, checkHasScope, getLevelScope
-- [x] **4.6** `LoginScreen.tsx` — Mantine Form + Zod (username/password)
-- [x] **4.7** TanStack Query: `queryKeys.auth`, useUser, useAccesses
+- [x] **5.1** `apps/calendar-standalone` + routes + ProtectedRoute + sign-in page (упрощённо как schooltask).
+- [x] **5.2** `tokenStorage` + `App.tsx` + interceptors.
+- [x] **5.3** Hydrate realm `app`; settings bootstrap по аналогии SchooltaskStandaloneApp.
+- [ ] **5.4** Проверить overlays под app-token (todo + schooltask).
+
+**Проверка:** `/calendar` без desktop-сессии → login → тот же UI; logout чистит app tokens; desktop `/` не затронут.
 
 ---
 
-## Этап 5. Клиент: SettingManager (2 дня)
+### Этап 6. Полировка, доступы, документация (1 д)
 
-**Зависимости:** 0, 4 `[‖ 2 для ApiAdapter]`  
-**Субагент:** developer
+**Зависимости:** 4, 5  
+**Субагент:** developer / tech-writer / tester
 
-- [x] **5.1** `ISettingAdapter`, `LocalStorageAdapter`
-- [x] **5.2** `Setting`, `Config`, `SettingManager` (get/set/has/remove/sub, priority)
-- [x] **5.3** `config/defaults.ts` — HKEY_CONFIG defaults (layout, window)
-- [x] **5.4** `hooks.ts` — useSetting, useSetState (debounced persist)
-- [x] **5.5** `ApiAdapter` — GET/POST `/api/settings` (после этапа 2)
-- [x] **5.6** `CompositeAdapter` — local + api, fallback on error
-- [x] **5.7** Unit tests: priority resolution, adapter fallback
+- [x] **6.1** Персист visible calendars (settings).
+- [x] **6.2** Empty states, ошибки, loading overlays.
+- [ ] **6.3** E2E/smoke checklist (desktop + standalone).
+- [x] **6.4** Обновить DEVELOPER_GUIDE / API_SPEC краткой секцией Calendar.
+- [ ] **6.5** Регрессия SchoolTask WeekCalendar и Todo share (не сломаны).
 
----
-
-## Этап 6. Клиент: Window Manager (3 дня)
-
-**Зависимости:** 5  
-**Субагент:** developer / react-specialist
-
-- [x] **6.1** `useWmStore.ts` — windows map, zIndex, activeWindow
-- [x] **6.2** `Window.tsx` — react-rnd, titlebar, controls (min/max/close)
-- [x] **6.3** Mobile <768px: fullscreen minus taskbar
-- [x] **6.4** `WindowApi.ts` — close (onClose cancel), minimize, maximize, restore, refresh, setTitle
-- [x] **6.5** Auto-persist WIN settings (debounce 300ms)
-- [x] **6.6** Restore windows on load from settings
-- [x] **6.7** `WindowErrorBoundary.tsx`
-- [x] **6.8** `useWindowSize.ts` + window: Tailwind breakpoints
+**Проверка:** чеклист тестера; lint/typecheck; PHPUnit + ключевые client tests.
 
 ---
 
-## Этап 7. Клиент: App Manager (2 дня)
-
-**Зависимости:** 6  
-**Субагент:** developer
-
-- [x] **7.1** `AppManifest` type, `AppRegistry.ts`
-- [x] **7.2** `registerApps.ts` — `import.meta.glob('../apps/*/index.ts')`
-- [x] **7.3** `useAppManager.ts` — launchApp, singleInstance, focus existing
-- [x] **7.4** `launchHistory.ts` — localStorage APP category, restore on startup
-- [x] **7.5** Role/scope gate перед launch
-- [x] **7.6** Demo app `apps/demo-calculator/index.ts`
-
----
-
-## Этап 8. Клиент: Taskbar + Layout + Desktop (3 дня)
-
-**Зависимости:** 7  
-**Субагент:** react-specialist
-
-- [x] **8.1** `parseView.ts` — парсер `"hhh lmr ffr"` → CSS Grid areas
-- [x] **8.2** `Layout.tsx`, `LayoutArea.tsx`, `ResizablePanel.tsx` — drag resize, collapse <50px
-- [x] **8.3** Persist panel widths (USER settings)
-- [x] **8.4** `mobileView` support (<768px)
-- [x] **8.5** `Taskbar.tsx` — height constant, position bottom
-- [x] **8.6** `StartMenu.tsx` — filtered app list
-- [x] **8.7** `RunningApps.tsx` — wmGroup grouping, dropdown, group minimize/restore
-- [x] **8.8** `Desktop.tsx` — WM container + Layout integration
-
----
-
-## Этап 9. Клиент: CoreApi + Child Windows (2 дня)
-
-**Зависимости:** 8  
-**Субагент:** developer
-
-- [x] **9.1** `createCoreApi.ts` — factory per window instance
-- [x] **9.2** `CoreApiContext.tsx`, `AppContext.tsx`
-- [x] **9.3** `useCoreApi.ts`, `useApp.ts`
-- [x] **9.4** `ChildWindowPortal.tsx` + `createChildWindow` (no taskbar registration)
-- [x] **9.5** Window events: onClose, onFocus, onResize (on/off)
-
----
-
-## Этап 10. Интеграция клиент ↔ сервер (2 дня)
-
-**Зависимости:** 2, 4, 5, 9  
-**Субагент:** developer
-
-- [x] **10.1** End-to-end auth flow (login → desktop → refresh → logout)
-- [x] **10.2** ApiAdapter включение через `VITE_USE_API_SETTINGS=true`
-- [x] **10.3** Preload settings on startup
-- [x] **10.4** `apps/users` — список пользователей (Main API)
-- [x] **10.5** `apps/settings` — профиль (GET/PUT account)
-- [x] **10.6** Error handling polish (network offline toast)
-
----
-
-## Этап 11. Оптимизация (2 дня)
-
-**Зависимости:** 10  
-**Субагент:** react-specialist
-
-- [x] **11.1** `VirtualTable.tsx` — react-window для списков >100
-- [x] **11.2** React.memo / useCallback audit для Window
-- [x] **11.3** Bundle analysis — target <200KB gzip core chunk
-- [x] **11.4** Lazy load apps + modals
-- [x] **11.5** Lighthouse / performance check (drag 60fps)
-
----
-
-## Этап 12. Тестирование и документация (3 дня)
-
-**Зависимости:** 10, 11  
-**Субагент:** tester + tech-writer
-
-- [x] **12.1** PHPUnit: coverage auth, settings, main user list
-- [x] **12.2** Vitest: SettingManager, parseView, coreRoles/scopes
-- [x] **12.3** E2E smoke (Playwright): login → open app → move window → reload → restore
-- [x] **12.4** README: запуск server + client
-- [x] **12.5** Developer guide: «Как создать app в apps/»
-
----
-
-## Сводка по срокам
-
-| Этап | Название | Дни |
-|------|----------|-----|
-| 0 | Подготовка клиента | 2 |
-| 1 | Auth & Account | 3 |
-| 2 | Settings API + Device prefix | 3 |
-| 3 | IBlock API | 2 |
-| 4 | Client API + Auth | 2 |
-| 5 | SettingManager | 2 |
-| 6 | Window Manager | 3 |
-| 7 | App Manager | 2 |
-| 8 | Taskbar + Layout | 3 |
-| 9 | CoreApi + Child Windows | 2 |
-| 10 | Интеграция | 2 |
-| 11 | Оптимизация | 2 |
-| 12 | Тестирование + docs | 3 |
-| **Итого** | | **27** |
-
----
-
-## Граф зависимостей
+## Зависимости от существующих модулей
 
 ```mermaid
 flowchart LR
-    E0[0 Client scaffold]
-    E1[1 Auth server]
-    E2[2 Settings + Device API]
-    E3[3 IBlock API]
-    E4[4 Client auth]
-    E5[5 Settings client]
-    E6[6 Window Manager]
-    E7[7 App Manager]
-    E8[8 Taskbar Layout]
-    E9[9 CoreApi]
-    E10[10 Integration]
-    E11[11 Optimize]
-    E12[12 Test]
-
-    E0 --> E4
-    E1 --> E2
-    E1 --> E4
-    E2 --> E5
-    E2 --> E10
-    E1 --> E3
-    E4 --> E5
-    E5 --> E6
-    E6 --> E7
-    E7 --> E8
-    E8 --> E9
-    E9 --> E10
-    E5 --> E10
-    E4 --> E10
-    E10 --> E11
-    E10 --> E12
-    E11 --> E12
+  CalendarApp --> CalendarAPI
+  CalendarApp --> TodoAPI
+  CalendarApp --> SchoolTaskAPI
+  CalendarAPI --> UserEntity
+  TodoAPI --> TodoItem
+  SchoolTaskAPI --> EpEvent
+  Standalone --> TokenStorage
+  Standalone --> CalendarAuth
 ```
 
----
-
-## Параллельные треки (2 разработчика)
-
-| Dev A (Backend) | Dev B (Frontend) |
-|-----------------|------------------|
-| Этап 1 (дни 1–3) | Этап 0 (дни 1–2) → Этап 4 (дни 3–4) |
-| Этап 2 (дни 4–6) | Этап 5 (дни 5–6) → Этап 6 (дни 7–9) |
-| Этап 3 (дни 7–8) | Этап 7–8 (дни 10–14) |
-| Support integration | Этап 9–11 (дни 15–20) |
-| PHPUnit | Этап 10–12 (дни 21–27) |
+- **Todo** — due overlay + UX share как шаблон.
+- **SchoolTask** — только teacher events API + опционально UI модалки.
+- **Auth/tokenStorage/App.tsx** — третий standalone path.
+- **@mantine/schedule** — уже в `package.json` (^9.4.1).
+- **user_settings** — персист UI (этап 6).
 
 ---
 
-## Рекомендуемый порядок для оркестратора
+## Следующие шаги
 
-1. **developer** → Этап 0 (client scaffold)
-2. **developer** → Этап 1 (auth server) `[‖]` Этап 4 после 0.7
-3. **developer** → Этап 2 (settings API)
-4. **developer** → Этап 5 + 6 (settings + WM)
-5. **react-specialist** → Этап 8 (taskbar/layout)
-6. **developer** → Этап 7, 9, 10
-7. **tester** → Этап 12
+### Архитектор
+
+1. Утвердить ERD + миграции `calendar`, `calendar_event`, `calendar_share`.
+2. Специфицировать JSON request/response (Zod на клиенте / валидаторы на сервере).
+3. Решить: Todo due endpoint в модуле Todo vs `/api/calendar/overlays/*`.
+4. Спроектировать calendar email user_checker (роли).
+5. Не смешивать домен SchoolTask WeekCalendar с новым CalendarGrid.
+
+### Оркестратор
+
+1. После 0.x — нарезать задачи разработчику по этапам 1→6.
+2. На каждом этапе требовать проверки из секции «Проверка».
+3. Не начинать этап 5 до рабочих firewalls (2.1) и desktop UI (3).
+
+### Тестер
+
+- Матрица: owner / shared read / shared write / overlay todo / overlay schooltask denied / standalone login.
+
+---
+
+## Открытые вопросы (нужны ответы до/на этапе 0)
+
+1. **Own events в MVP** — подтвердить (план исходит из «да»).
+2. **Todo overlay** — один календарь «Заметки» или отдельный checkbox на каждый Todo-list (цвет списка)?
+3. **SchoolTask** — только teacher «Моё расписание», или ещё student class calendars?
+4. **Доступ** — как Todo (все USER) или protected module `ROLE_calendar` + claimant?
+5. **Standalone auth** — отдельный firewall `/api/calendar/auth/*` (как в плане) или вход только через desktop без email SPA-login?
+6. **Клик по Todo/уроку** — только просмотр в Calendar или deep-link/открытие окна Todo / SchoolTask?
+7. **All-day / длительность Todo** — due как точка во времени или all-day на дату?
+8. **Дефолтный календарь** при первом входе — автосоздание «Личный»?

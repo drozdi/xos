@@ -96,4 +96,11 @@ export const queryKeys = {
 		lists: ['todo', 'lists'] as const,
 		list: (id: number) => ['todo', 'list', id] as const,
 	},
+	calendar: {
+		calendars: ['calendar', 'calendars'] as const,
+		events: (range: { start: string; end: string }, ids?: number[]) =>
+			['calendar', 'events', range, ids ?? null] as const,
+		dueItems: (range: { start: string; end: string }) =>
+			['calendar', 'dueItems', range] as const,
+	},
 } as const;

@@ -4,7 +4,7 @@ const APP_ACCESS_TOKEN_KEY = 'xos.app.access_token';
 const APP_REFRESH_TOKEN_KEY = 'xos.app.refresh_token';
 
 export type AuthRealm = 'desktop' | 'app';
-export type StandaloneAppId = 'inccom' | 'schooltask';
+export type StandaloneAppId = 'inccom' | 'schooltask' | 'calendar';
 
 /** Standalone apps with email auth under their own path. */
 export function resolveStandaloneApp(
@@ -15,6 +15,9 @@ export function resolveStandaloneApp(
 	}
 	if (pathname === '/schooltask' || pathname.startsWith('/schooltask/')) {
 		return 'schooltask';
+	}
+	if (pathname === '/calendar' || pathname.startsWith('/calendar/')) {
+		return 'calendar';
 	}
 	return null;
 }

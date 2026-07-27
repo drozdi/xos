@@ -639,3 +639,39 @@ export const queryKeys = {
 Token storage keys (localStorage, dev):
 - `xos.access_token`
 - `xos.refresh_token`
+
+---
+
+## Calendar module (`/api/calendar`)
+
+Google-like calendars (own + shared) and standalone SPA `/calendar`.
+
+### Auth (standalone)
+
+| Method | Path | Access |
+|--------|------|--------|
+| POST | `/api/calendar/auth/login` | PUBLIC (email + password) |
+| GET | `/api/calendar/auth/me` | JWT |
+| POST | `/api/calendar/auth/logout` | PUBLIC (body `refresh_token`) |
+| POST | `/api/calendar/token/refresh` | PUBLIC |
+
+### Calendars & events
+
+| Method | Path | Notes |
+|--------|------|--------|
+| GET/POST | `/api/calendar/calendars` | list (auto-creates «Личный» if empty) / create `{ title, color }` |
+| GET/PUT/DELETE | `/api/calendar/calendars/{id}` | |
+| POST | `/api/calendar/calendars/{id}/share` | `{ email, permission: read\|write }` |
+| DELETE | `/api/calendar/calendars/{id}/share/{userId}` | |
+| GET | `/api/calendar/users/by-email?email=` | |
+| POST | `/api/calendar/events/query` | `{ start, end, calendar_ids? }` |
+| POST | `/api/calendar/events` | create |
+| PUT/DELETE | `/api/calendar/events/{id}` | |
+
+### Todo overlay
+
+| Method | Path | Notes |
+|--------|------|--------|
+| GET | `/api/todo/items/due?start=&end=` | due items in range across accessible lists |
+
+SchoolTask overlay uses existing `POST /api/schooltask/calendar/teacher/events`.
