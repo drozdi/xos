@@ -18,6 +18,13 @@ const shareSchema = z.object({
 	permission: z.enum(['read', 'write']),
 });
 
+const groupShareSchema = z.object({
+	group_id: z.number().nullable().optional(),
+	code: z.string().nullable().optional(),
+	name: z.string().nullable().optional(),
+	permission: z.enum(['read', 'write']),
+});
+
 export const calendarSchema = z.object({
 	id: z.number(),
 	title: z.string(),
@@ -26,8 +33,10 @@ export const calendarSchema = z.object({
 	is_owner: z.boolean(),
 	can_write: z.boolean(),
 	can_delete: z.boolean().optional().default(false),
+	via_group: z.boolean().optional().default(false),
 	owner: ownerSchema.optional(),
 	shares: z.array(shareSchema).default([]),
+	group_shares: z.array(groupShareSchema).default([]),
 	created_at: z.string().nullable().optional(),
 	updated_at: z.string().nullable().optional(),
 });
@@ -50,10 +59,18 @@ export const calendarUserSchema = z.object({
 	login: z.string().nullable().optional(),
 });
 
+export const calendarGroupSchema = z.object({
+	id: z.number(),
+	code: z.string().nullable().optional(),
+	name: z.string().nullable().optional(),
+});
+
 export type CalendarDto = z.infer<typeof calendarSchema>;
 export type CalendarEventDto = z.infer<typeof calendarEventSchema>;
 export type CalendarShare = z.infer<typeof shareSchema>;
+export type CalendarGroupShare = z.infer<typeof groupShareSchema>;
 export type CalendarUser = z.infer<typeof calendarUserSchema>;
+export type CalendarGroup = z.infer<typeof calendarGroupSchema>;
 
 export type CalendarWritePayload = {
 	title?: string;
@@ -103,8 +120,18 @@ export const calendarApi = {
 		const { data } = await apiClient.delete<unknown>(`${BASE}/calendars/${id}/share/${userId}`);
 		return calendarSchema.parse(data);
 	},
+	shareGroup: (id: number, payload: { group_id?: number; code?: string; permission: 'read' | 'write' }) =>
+		postJson(`${BASE}/calendars/${id}/share-group`, payload, calendarSchema),
+	unshareGroup: async (id: number, groupId: number): Promise<CalendarDto> => {
+		const { data } = await apiClient.delete<unknown>(
+			`${BASE}/calendars/${id}/share-group/${groupId}`,
+		);
+		return calendarSchema.parse(data);
+	},
 	findUserByEmail: (email: string) =>
 		getDetail(`${BASE}/users/by-email?email=${encodeURIComponent(email)}`, calendarUserSchema),
+	findGroupByCode: (code: string) =>
+		getDetail(`${BASE}/groups/by-code?code=${encodeURIComponent(code)}`, calendarGroupSchema),
 	queryEvents: (query: CalendarEventsQuery) =>
 		postJson(`${BASE}/events/query`, query, z.array(calendarEventSchema)),
 	createEvent: (payload: CalendarEventWritePayload) =>

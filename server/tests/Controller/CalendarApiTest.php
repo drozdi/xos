@@ -143,9 +143,12 @@ class CalendarApiTest extends AuthWebTestCase
             $entityManager->getClassMetadata(\Main\Entity\User\Access::class),
             $entityManager->getClassMetadata(\Main\Entity\Claimant::class),
             $entityManager->getClassMetadata(\App\Entity\UserSetting::class),
+            $entityManager->getClassMetadata(\Main\Entity\Group::class),
+            $entityManager->getClassMetadata(\Main\Entity\User\Group::class),
             $entityManager->getClassMetadata(Calendar::class),
             $entityManager->getClassMetadata(CalendarEvent::class),
             $entityManager->getClassMetadata(CalendarShare::class),
+            $entityManager->getClassMetadata(\Calendar\Entity\CalendarGroupShare::class),
         ];
 
         $schemaTool = new SchemaTool($entityManager);

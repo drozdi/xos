@@ -51,10 +51,15 @@ class Calendar
     #[ORM\OneToMany(mappedBy: 'calendar', targetEntity: CalendarShare::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $shares;
 
+    /** @var Collection<int, CalendarGroupShare> */
+    #[ORM\OneToMany(mappedBy: 'calendar', targetEntity: CalendarGroupShare::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $groupShares;
+
     public function __construct()
     {
         $this->events = new ArrayCollection();
         $this->shares = new ArrayCollection();
+        $this->groupShares = new ArrayCollection();
     }
 
     #[ORM\PrePersist]
@@ -210,6 +215,29 @@ class Calendar
     public function removeShare(CalendarShare $share): self
     {
         $this->shares->removeElement($share);
+
+        return $this;
+    }
+
+    /** @return Collection<int, CalendarGroupShare> */
+    public function getGroupShares(): Collection
+    {
+        return $this->groupShares;
+    }
+
+    public function addGroupShare(CalendarGroupShare $share): self
+    {
+        if (!$this->groupShares->contains($share)) {
+            $this->groupShares->add($share);
+            $share->setCalendar($this);
+        }
+
+        return $this;
+    }
+
+    public function removeGroupShare(CalendarGroupShare $share): self
+    {
+        $this->groupShares->removeElement($share);
 
         return $this;
     }

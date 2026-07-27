@@ -101,6 +101,44 @@ class CalendarController extends AbstractController
         return $this->json($calendarManager->serializeCalendar($calendar, $user));
     }
 
+    #[Route('/calendars/{id}/share-group', name: 'calendars_share_group', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function shareGroup(int $id, Request $request, #[CurrentUser] ?User $user, CalendarManager $calendarManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $data = $request->toArray();
+        $calendar = $calendarManager->getAccessibleCalendar($id, $user);
+        $groupId = (int) ($data['group_id'] ?? 0);
+        if ($groupId <= 0 && !empty($data['code'])) {
+            $found = $calendarManager->findGroupByCode((string) $data['code']);
+            if (null === $found) {
+                throw new NotFoundHttpException('Группа не найдена');
+            }
+            $groupId = (int) $found['id'];
+        }
+        $calendarManager->shareCalendarWithGroup(
+            $calendar,
+            $user,
+            $groupId,
+            (string) ($data['permission'] ?? 'read'),
+        );
+
+        return $this->json($calendarManager->serializeCalendar($calendar, $user));
+    }
+
+    #[Route('/calendars/{id}/share-group/{groupId}', name: 'calendars_unshare_group', methods: ['DELETE'], requirements: ['id' => '\d+', 'groupId' => '\d+'])]
+    public function unshareGroup(int $id, int $groupId, #[CurrentUser] ?User $user, CalendarManager $calendarManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $calendar = $calendarManager->getAccessibleCalendar($id, $user);
+        $calendarManager->unshareCalendarFromGroup($calendar, $user, $groupId);
+
+        return $this->json($calendarManager->serializeCalendar($calendar, $user));
+    }
+
     #[Route('/users/by-email', name: 'users_by_email', methods: ['GET'])]
     public function findByEmail(Request $request, #[CurrentUser] ?User $user, CalendarManager $calendarManager): JsonResponse
     {
@@ -110,6 +148,20 @@ class CalendarController extends AbstractController
         $found = $calendarManager->findUserByEmail((string) $request->query->get('email', ''));
         if (null === $found) {
             throw new NotFoundHttpException('Пользователь не найден');
+        }
+
+        return $this->json($found);
+    }
+
+    #[Route('/groups/by-code', name: 'groups_by_code', methods: ['GET'])]
+    public function findGroupByCode(Request $request, #[CurrentUser] ?User $user, CalendarManager $calendarManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $found = $calendarManager->findGroupByCode((string) $request->query->get('code', ''));
+        if (null === $found) {
+            throw new NotFoundHttpException('Группа не найдена');
         }
 
         return $this->json($found);

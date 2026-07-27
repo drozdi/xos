@@ -22,7 +22,10 @@ class CalendarRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('c')
             ->leftJoin('c.shares', 's')
-            ->andWhere('c.owner = :user OR s.user = :user')
+            ->leftJoin('c.groupShares', 'gs')
+            ->leftJoin('gs.group', 'g')
+            ->leftJoin('g.users', 'ug')
+            ->andWhere('c.owner = :user OR s.user = :user OR ug.user = :user')
             ->setParameter('user', $user)
             ->orderBy('c.xTimestamp', 'DESC')
             ->addOrderBy('c.id', 'DESC')

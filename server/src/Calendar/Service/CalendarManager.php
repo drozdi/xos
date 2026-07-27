@@ -5,10 +5,13 @@ namespace Calendar\Service;
 use AbstractManager;
 use Calendar\Entity\Calendar;
 use Calendar\Entity\CalendarEvent;
+use Calendar\Entity\CalendarGroupShare;
 use Calendar\Entity\CalendarShare;
 use Calendar\Repository\CalendarEventRepository;
 use Calendar\Repository\CalendarRepository;
+use Main\Entity\Group as MainGroup;
 use Main\Entity\User;
+use Main\Repository\GroupRepository;
 use Main\Repository\UserRepository;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -193,6 +196,84 @@ class CalendarManager extends AbstractManager
         throw new NotFoundHttpException('Доступ не найден');
     }
 
+    public function shareCalendarWithGroup(Calendar $calendar, User $owner, int $groupId, string $permission): CalendarGroupShare
+    {
+        if (!$this->isOwner($calendar, $owner)) {
+            throw new AccessDeniedHttpException('Делиться может только владелец');
+        }
+        $permission = strtolower(trim($permission));
+        if (!in_array($permission, [CalendarGroupShare::PERMISSION_READ, CalendarGroupShare::PERMISSION_WRITE], true)) {
+            throw new BadRequestHttpException('permission: read или write');
+        }
+        if ($groupId <= 0) {
+            throw new BadRequestHttpException('Укажите group_id');
+        }
+
+        /** @var GroupRepository $groups */
+        $groups = $this->getEntityManager()->getRepository(MainGroup::class);
+        $group = $groups->find($groupId);
+        if (!$group instanceof MainGroup) {
+            throw new NotFoundHttpException('Группа не найдена');
+        }
+
+        foreach ($calendar->getGroupShares() as $existing) {
+            if ($existing->getGroup()?->getId() === $group->getId()) {
+                $existing->setPermission($permission);
+                $this->getEntityManager()->flush();
+
+                return $existing;
+            }
+        }
+
+        $share = new CalendarGroupShare();
+        $share->setGroup($group);
+        $share->setPermission($permission);
+        $calendar->addGroupShare($share);
+        $this->getEntityManager()->persist($share);
+        $this->getEntityManager()->flush();
+
+        return $share;
+    }
+
+    public function unshareCalendarFromGroup(Calendar $calendar, User $owner, int $groupId): void
+    {
+        if (!$this->isOwner($calendar, $owner)) {
+            throw new AccessDeniedHttpException('Управлять доступом может только владелец');
+        }
+        foreach ($calendar->getGroupShares() as $share) {
+            if ($share->getGroup()?->getId() === $groupId) {
+                $calendar->removeGroupShare($share);
+                $this->getEntityManager()->remove($share);
+                $this->getEntityManager()->flush();
+
+                return;
+            }
+        }
+
+        throw new NotFoundHttpException('Доступ группы не найден');
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findGroupByCode(string $code): ?array
+    {
+        $code = trim($code);
+        if ('' === $code) {
+            return null;
+        }
+        /** @var GroupRepository $groups */
+        $groups = $this->getEntityManager()->getRepository(MainGroup::class);
+        $group = $groups->findOneBy(['code' => $code]);
+        if (!$group instanceof MainGroup) {
+            return null;
+        }
+
+        return [
+            'id' => $group->getId(),
+            'code' => $group->getCode(),
+            'name' => $group->getName(),
+        ];
+    }
+
     /** @return array<string, mixed>|null */
     public function findUserByEmail(string $email): ?array
     {
@@ -215,18 +296,45 @@ class CalendarManager extends AbstractManager
         ];
     }
 
+    /**
+     * Direct user share overrides group share.
+     * Group members get group permission (default read) when no user share.
+     */
+    private function resolveUserShare(Calendar $calendar, User $user): ?CalendarShare
+    {
+        foreach ($calendar->getShares() as $share) {
+            if ($share->getUser()?->getId() === $user->getId()) {
+                return $share;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<CalendarGroupShare> */
+    private function resolveGroupSharesForUser(Calendar $calendar, User $user): array
+    {
+        $matched = [];
+        foreach ($calendar->getGroupShares() as $share) {
+            $group = $share->getGroup();
+            if ($group instanceof MainGroup && $user->isInclude($group)) {
+                $matched[] = $share;
+            }
+        }
+
+        return $matched;
+    }
+
     public function canRead(Calendar $calendar, User $user): bool
     {
         if ($this->isOwner($calendar, $user)) {
             return true;
         }
-        foreach ($calendar->getShares() as $share) {
-            if ($share->getUser()?->getId() === $user->getId()) {
-                return true;
-            }
+        if (null !== $this->resolveUserShare($calendar, $user)) {
+            return true;
         }
 
-        return false;
+        return [] !== $this->resolveGroupSharesForUser($calendar, $user);
     }
 
     public function canWrite(Calendar $calendar, User $user): bool
@@ -234,8 +342,12 @@ class CalendarManager extends AbstractManager
         if ($this->isOwner($calendar, $user)) {
             return true;
         }
-        foreach ($calendar->getShares() as $share) {
-            if ($share->getUser()?->getId() === $user->getId() && $share->canWrite()) {
+        $userShare = $this->resolveUserShare($calendar, $user);
+        if (null !== $userShare) {
+            return $userShare->canWrite();
+        }
+        foreach ($this->resolveGroupSharesForUser($calendar, $user) as $share) {
+            if ($share->canWrite()) {
                 return true;
             }
         }
@@ -252,6 +364,7 @@ class CalendarManager extends AbstractManager
     public function serializeCalendar(Calendar $calendar, User $viewer): array
     {
         $shares = [];
+        $groupShares = [];
         if ($this->isOwner($calendar, $viewer)) {
             foreach ($calendar->getShares() as $share) {
                 $shares[] = [
@@ -261,6 +374,19 @@ class CalendarManager extends AbstractManager
                     'permission' => $share->getPermission(),
                 ];
             }
+            foreach ($calendar->getGroupShares() as $share) {
+                $groupShares[] = [
+                    'group_id' => $share->getGroup()?->getId(),
+                    'code' => $share->getGroup()?->getCode(),
+                    'name' => $share->getGroup()?->getName(),
+                    'permission' => $share->getPermission(),
+                ];
+            }
+        }
+
+        $viaGroup = false;
+        if (!$this->isOwner($calendar, $viewer) && null === $this->resolveUserShare($calendar, $viewer)) {
+            $viaGroup = [] !== $this->resolveGroupSharesForUser($calendar, $viewer);
         }
 
         return [
@@ -271,12 +397,14 @@ class CalendarManager extends AbstractManager
             'is_owner' => $this->isOwner($calendar, $viewer),
             'can_write' => $this->canWrite($calendar, $viewer),
             'can_delete' => $this->isOwner($calendar, $viewer) && $calendar->isSlave(),
+            'via_group' => $viaGroup,
             'owner' => [
                 'id' => $calendar->getOwner()?->getId(),
                 'alias' => $calendar->getOwner()?->getAlias(),
                 'email' => $calendar->getOwner()?->getEmail(),
             ],
             'shares' => $shares,
+            'group_shares' => $groupShares,
             'created_at' => $calendar->getCreatedAt('Y-m-d H:i:s'),
             'updated_at' => $calendar->getXTimestamp('Y-m-d H:i:s'),
         ];

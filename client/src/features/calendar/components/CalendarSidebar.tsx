@@ -211,7 +211,15 @@ export function CalendarSidebar({
 								id={ownCalendarVisibilityId(cal.id)}
 								title={cal.title}
 								color={cal.color}
-								meta={cal.can_write ? undefined : 'просмотр'}
+								meta={
+									cal.via_group
+										? cal.can_write
+											? 'группа · ред.'
+											: 'группа'
+										: cal.can_write
+											? undefined
+											: 'просмотр'
+								}
 							/>
 						))}
 					</Stack>
