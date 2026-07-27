@@ -9,6 +9,7 @@ import { getAccesses, getAccountMap } from '@/core/api/endpoints/account';
 import { resetUserRoles, setUserRoles } from '@/core/auth/coreRoles';
 import { resetScopes, setLevelScopes, setMapScopes } from '@/core/auth/coreScopes';
 import * as tokenStorage from '@/core/auth/tokenStorage';
+import type { AuthRealm } from '@/core/auth/tokenStorage';
 import { resetSettingAdapterState } from '@/core/settings/createSettingAdapter';
 import { settingManager } from '@/core/settings/SettingManager';
 import { restoreAccessToken } from '@/core/auth/sessionRestore';
@@ -24,7 +25,7 @@ export interface AuthStore {
 	isLoading: boolean;
 	login: (credentials: LoginRequest) => Promise<void>;
 	logout: () => Promise<void>;
-	hydrate: () => Promise<void>;
+	hydrate: (realm?: AuthRealm) => Promise<void>;
 }
 
 async function syncScopesFromApi(): Promise<Record<string, number>> {
@@ -61,8 +62,8 @@ async function applyUserSession(user: UserSummary): Promise<void> {
 	});
 }
 
-function clearSession(): void {
-	tokenStorage.clearTokens('desktop');
+function clearSession(realm: AuthRealm = 'desktop'): void {
+	tokenStorage.clearTokens(realm);
 	resetUserRoles();
 	resetScopes();
 	resetSettingAdapterState();
@@ -103,20 +104,22 @@ export const useAuthStore = create<AuthStore>((set) => ({
 		} catch {
 			// session may already be invalid
 		} finally {
-			clearSession();
+			clearSession('desktop');
 		}
 	},
 
-	hydrate: async () => {
+	hydrate: async (realm) => {
 		if (activeHydrate) {
 			return activeHydrate;
 		}
+
+		const resolved = realm ?? tokenStorage.resolveAuthRealm();
 
 		activeHydrate = (async () => {
 			const generation = ++hydrateGeneration;
 			set({ isLoading: true });
 
-			if (!tokenStorage.hasStoredSession('desktop')) {
+			if (!tokenStorage.hasStoredSession(resolved)) {
 				if (generation === hydrateGeneration) {
 					set({ isLoading: false, isAuthenticated: false });
 				}
@@ -124,7 +127,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 			}
 
 			try {
-				const restored = await restoreAccessToken('desktop');
+				const restored = await restoreAccessToken(resolved);
 				if (!restored) {
 					throw new Error('Session restore failed');
 				}
@@ -137,7 +140,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 				await applyUserSession(user);
 			} catch {
 				if (generation === hydrateGeneration) {
-					clearSession();
+					clearSession(resolved);
 				}
 			} finally {
 				if (generation === hydrateGeneration) {

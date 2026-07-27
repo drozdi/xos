@@ -8,14 +8,16 @@ use Symfony\Component\Security\Core\User\UserCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * Вход на standalone-страницу IncCom (/api/IncCom/auth/login):
- * активный пользователь с ROLE_USER или ROLE_ROOT и доступом к модулю inccom.
+ * Вход на standalone-страницу приложения (email):
+ * активный пользователь с доступом к указанному модулю.
  */
 final class AppLoginUserChecker implements UserCheckerInterface
 {
     public function __construct(
         private readonly UserChecker $userChecker,
         private readonly UserScopeResolver $userScopeResolver,
+        private readonly string $module,
+        private readonly string $deniedMessage,
     ) {
     }
 
@@ -32,10 +34,8 @@ final class AppLoginUserChecker implements UserCheckerInterface
             return;
         }
 
-        if (!$this->userScopeResolver->canAccessModule($user, 'inccom')) {
-            throw new CustomUserMessageAccountStatusException(
-                'Нет доступа к приложению «Доходы и расходы»',
-            );
+        if (!$this->userScopeResolver->canAccessModule($user, $this->module)) {
+            throw new CustomUserMessageAccountStatusException($this->deniedMessage);
         }
     }
 }

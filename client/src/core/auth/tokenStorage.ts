@@ -4,13 +4,25 @@ const APP_ACCESS_TOKEN_KEY = 'xos.app.access_token';
 const APP_REFRESH_TOKEN_KEY = 'xos.app.refresh_token';
 
 export type AuthRealm = 'desktop' | 'app';
+export type StandaloneAppId = 'inccom' | 'schooltask';
 
-/** Standalone apps live under /inccom (and future /apps/...). */
-export function resolveAuthRealm(pathname = window.location.pathname): AuthRealm {
+/** Standalone apps with email auth under their own path. */
+export function resolveStandaloneApp(
+	pathname = typeof window !== 'undefined' ? window.location.pathname : '',
+): StandaloneAppId | null {
 	if (pathname === '/inccom' || pathname.startsWith('/inccom/')) {
-		return 'app';
+		return 'inccom';
 	}
-	return 'desktop';
+	if (pathname === '/schooltask' || pathname.startsWith('/schooltask/')) {
+		return 'schooltask';
+	}
+	return null;
+}
+
+export function resolveAuthRealm(
+	pathname = typeof window !== 'undefined' ? window.location.pathname : '',
+): AuthRealm {
+	return resolveStandaloneApp(pathname) ? 'app' : 'desktop';
 }
 
 function keysFor(realm: AuthRealm): { access: string; refresh: string } {

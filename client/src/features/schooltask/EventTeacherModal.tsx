@@ -9,13 +9,19 @@ import {
 import { notifications } from '@/ui/toast';
 import { CloseOutlined, DeleteOutlined, PaperClipOutlined, UploadOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
+import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
 
 import { notifyApiError } from '@/core/api/apiError';
 import { schooltaskCalendarApi, type TeacherEventSavePayload } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
+
+const ReactQuill = lazy(async () => {
+	const [{ default: QuillEditor }] = await Promise.all([
+		import('react-quill-new'),
+		import('react-quill-new/dist/quill.snow.css'),
+	]);
+	return { default: QuillEditor as ComponentType<Record<string, unknown>> };
+});
 
 interface EventTeacherModalProps {
 	eventId: number | null;
@@ -248,14 +254,24 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 								}
 							`}</style>
 							<div className="schooltask-teacher-quill">
-								<ReactQuill
-									theme="snow"
-									value={description}
-									onChange={setDescription}
-									modules={QUILL_MODULES}
-									formats={QUILL_FORMATS}
-									placeholder="Описание урока…"
-								/>
+								{opened ? (
+									<Suspense
+										fallback={
+											<Typography.Text type="secondary" style={{ display: 'block', padding: 12 }}>
+												Загрузка редактора…
+											</Typography.Text>
+										}
+									>
+										<ReactQuill
+											theme="snow"
+											value={description}
+											onChange={setDescription}
+											modules={QUILL_MODULES}
+											formats={QUILL_FORMATS}
+											placeholder="Описание урока…"
+										/>
+									</Suspense>
+								) : null}
 							</div>
 						</div>
 

@@ -39,7 +39,7 @@ function onRefreshFailed(error: unknown): void {
 
 function resolveRealmForApiUrl(url: string | undefined): tokenStorage.AuthRealm {
 	const path = url ?? '';
-	if (path.includes('/api/IncCom/')) {
+	if (path.includes('/api/IncCom/') || path.includes('/api/schooltask/')) {
 		if (tokenStorage.hasAccessToken('app')) {
 			return 'app';
 		}
@@ -59,10 +59,13 @@ function isAuthBypassUrl(url: string | undefined): boolean {
 		url.includes('/api/login') ||
 		url.includes('/api/IncCom/auth/login') ||
 		url.includes('/api/IncCom/auth/register') ||
+		url.includes('/api/schooltask/auth/login') ||
 		url.includes('/api/token/refresh') ||
 		url.includes('/api/IncCom/token/refresh') ||
+		url.includes('/api/schooltask/token/refresh') ||
 		url.includes('/api/logout') ||
-		url.includes('/api/IncCom/auth/logout')
+		url.includes('/api/IncCom/auth/logout') ||
+		url.includes('/api/schooltask/auth/logout')
 	);
 }
 

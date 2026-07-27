@@ -38,6 +38,9 @@ export default defineConfig(({ mode }) => ({
 			'/api': 'http://localhost:8000',
 		},
 	},
+	optimizeDeps: {
+		include: ['react-quill-new', 'quill', 'lodash-es'],
+	},
 	build: {
 		target: 'es2022',
 		rollupOptions: {

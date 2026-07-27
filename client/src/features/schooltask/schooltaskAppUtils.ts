@@ -1,5 +1,6 @@
 import { useAppManager } from '@/core/appManager/useAppManager';
 import { useAppContext } from '@/core/context/AppContext';
+import { useSchooltaskStandalone } from '@/features/schooltask/standalone/schooltask-standalone';
 
 export function useClassId(): number {
 	const { instanceKey } = useAppContext();
@@ -11,10 +12,25 @@ export function useEntityId(): number {
 	return useClassId();
 }
 
+const STANDALONE_ROUTES: Record<string, (id: number) => string> = {
+	'schooltask-calendar': (id) => `/calendar/${id}`,
+	'schooltask-calendar-editor': (id) => `/calendar/${id}/edit`,
+	'schooltask-class': (id) => `/classes/${id}`,
+	'schooltask-subject': (id) => `/subjects/${id}`,
+};
+
 export function useLaunchSchooltaskApp() {
 	const launchApp = useAppManager((state) => state.launchApp);
+	const { standalone, navigate } = useSchooltaskStandalone();
 
 	return (appId: string, id: number, title?: string) => {
+		if (standalone && navigate) {
+			const to = STANDALONE_ROUTES[appId]?.(id);
+			if (to) {
+				navigate(to);
+				return;
+			}
+		}
 		void launchApp(appId, { instanceKey: String(id), title });
 	};
 }

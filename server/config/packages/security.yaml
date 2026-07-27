@@ -6,7 +6,7 @@ security:
         # XOS Desktop: вход по login
         login_user_provider:
             id: App\Security\UserProvider\LoginUserProvider
-        # Standalone apps (IncCom): вход по email
+        # Standalone apps (IncCom, SchoolTask): вход по email
         email_user_provider:
             id: App\Security\UserProvider\EmailUserProvider
 
@@ -28,14 +28,27 @@ security:
                 success_handler: App\Security\LoginSuccessHandler
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-        # Вход standalone-приложений (email + password)
+        # Вход standalone IncCom (email + password)
         app_login:
             pattern: ^/api/IncCom/auth/login$
             stateless: true
             provider: email_user_provider
-            user_checker: App\Security\AppLoginUserChecker
+            user_checker: app.security.inccom_login_user_checker
             json_login:
                 check_path: /api/IncCom/auth/login
+                username_path: username
+                password_path: password
+                success_handler: App\Security\LoginSuccessHandler
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+        # Вход standalone SchoolTask (email + password)
+        schooltask_login:
+            pattern: ^/api/schooltask/auth/login$
+            stateless: true
+            provider: email_user_provider
+            user_checker: app.security.schooltask_login_user_checker
+            json_login:
+                check_path: /api/schooltask/auth/login
                 username_path: username
                 password_path: password
                 success_handler: App\Security\LoginSuccessHandler
@@ -56,6 +69,14 @@ security:
             user_checker: App\Security\UserChecker
             refresh_jwt:
                 check_path: /api/IncCom/token/refresh
+
+        schooltask_refresh:
+            pattern: ^/api/schooltask/token/refresh
+            stateless: true
+            provider: login_user_provider
+            user_checker: App\Security\UserChecker
+            refresh_jwt:
+                check_path: /api/schooltask/token/refresh
 
         api:
             pattern: ^/api
@@ -78,8 +99,11 @@ security:
         - { path: ^/api/IncCom/auth/login$, roles: PUBLIC_ACCESS, methods: [POST, GET] }
         - { path: ^/api/IncCom/auth/register$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/IncCom/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/schooltask/auth/login$, roles: PUBLIC_ACCESS, methods: [POST, GET] }
+        - { path: ^/api/schooltask/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/IncCom/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/schooltask/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
         - { path: ^/api/health, roles: PUBLIC_ACCESS, methods: [GET] }
         - { path: ^/uploads/, roles: IS_AUTHENTICATED_FULLY, methods: [GET] }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

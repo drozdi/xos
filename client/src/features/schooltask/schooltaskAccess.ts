@@ -4,6 +4,25 @@ import { useAuthStore } from '@/core/auth/authStore';
 import { canAccessApp, isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
 import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
+/** Доступ к модулю schooltask по списку ролей (ответ login/me). */
+export function canAccessSchooltaskFromRoles(roles: string[] | undefined): boolean {
+	if (!roles?.length) {
+		return false;
+	}
+	if (roles.includes('ROLE_ROOT')) {
+		return true;
+	}
+	return (
+		roles.includes('ROLE_SCHOOLTASK') ||
+		roles.includes('ROLE_SCHOOLTASK_ROOT') ||
+		roles.includes('ROLE_SCHOOLTASK_ADMIN') ||
+		roles.includes('ROLE_SCHOOLTASK_SUBJECT_ROOT') ||
+		roles.includes('ROLE_SCHOOLTASK_CLASS_ROOT') ||
+		roles.includes('ROLE_SCHOOLTASK_EVENT_ROOT') ||
+		roles.includes('ROLE_SCHOOLTASK_ZAM_ROOT')
+	);
+}
+
 function canSchooltaskScope(scopePath: string, actionScope: string): boolean {
 	if (!canAccessApp('schooltask')) {
 		return false;

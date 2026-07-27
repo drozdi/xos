@@ -99,6 +99,40 @@ class DualAuthApiTest extends AuthWebTestCase
         self::assertResponseStatusCodeSame(401);
     }
 
+    public function testSchooltaskLoginByEmailRequiresAccess(): void
+    {
+        $client = static::createClient();
+        $this->prepareDualAuthDatabase($client);
+
+        $allowed = $this->createTestUser($client, 'st_user', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $allowed->setEmail('school@example.com');
+        $denied = $this->createTestUser($client, 'no_st', 'password', ['ROLE_USER']);
+        $denied->setEmail('no-school@example.com');
+        /** @var EntityManagerInterface $em */
+        $em = $client->getContainer()->get(EntityManagerInterface::class);
+        $em->flush();
+
+        $client->request(
+            'POST',
+            '/api/schooltask/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['username' => 'school@example.com', 'password' => 'password'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseIsSuccessful();
+
+        $client->request(
+            'POST',
+            '/api/schooltask/auth/login',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['username' => 'no-school@example.com', 'password' => 'password'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(401);
+    }
+
     private function prepareDualAuthDatabase(KernelBrowser $client): void
     {
         /** @var EntityManagerInterface $entityManager */

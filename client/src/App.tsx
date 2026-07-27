@@ -5,7 +5,7 @@ import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'rea
 import { queryClient } from '@/core/api/queryClient';
 import { setupInterceptors } from '@/core/api/interceptors';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
-import { resolveAuthRealm } from '@/core/auth/tokenStorage';
+import { resolveStandaloneApp } from '@/core/auth/tokenStorage';
 import { DatesSettingsProvider } from '@/core/dates';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
 import { preloadSettings } from '@/core/settings/preloadSettings';
@@ -22,6 +22,7 @@ const LoginScreen = lazy(() =>
 );
 
 const IncComStandaloneApp = lazy(() => import('@/apps/inccom/IncComStandaloneApp'));
+const SchooltaskStandaloneApp = lazy(() => import('@/apps/schooltask-standalone/SchooltaskStandaloneApp'));
 
 function AppShellFallback() {
 	return (
@@ -96,9 +97,17 @@ function ThemedAntdBridge({ children }: { children: ReactNode }) {
 	return <AntdProvider colorScheme={colorScheme}>{children}</AntdProvider>;
 }
 
+function StandaloneShell() {
+	const app = resolveStandaloneApp();
+	if (app === 'schooltask') {
+		return <SchooltaskStandaloneApp />;
+	}
+	return <IncComStandaloneApp />;
+}
+
 export default function App() {
 	const interceptorsReady = useRef(false);
-	const isAppRealm = resolveAuthRealm() === 'app';
+	const standaloneApp = resolveStandaloneApp();
 
 	useEffect(() => {
 		if (!interceptorsReady.current) {
@@ -112,9 +121,9 @@ export default function App() {
 			<ThemeProvider>
 				<ThemedAntdBridge>
 					<DatesSettingsProvider>
-						{isAppRealm ? (
+						{standaloneApp ? (
 							<Suspense fallback={<AppShellFallback />}>
-								<IncComStandaloneApp />
+								<StandaloneShell />
 							</Suspense>
 						) : (
 							<DesktopShell />

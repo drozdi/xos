@@ -1,16 +1,21 @@
 import { Alert } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useState } from 'react';
 
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
-import { EventTeacherModal } from '@/features/schooltask/EventTeacherModal';
 import {
 	useCanReadSchooltaskEvent,
 	useCanUpdateSchooltaskEvent,
 } from '@/features/schooltask/schooltaskAccess';
 import { formatCalendarRange, WeekCalendar } from '@/features/schooltask/WeekCalendar';
+
+const EventTeacherModal = lazy(() =>
+	import('@/features/schooltask/EventTeacherModal').then((module) => ({
+		default: module.EventTeacherModal,
+	})),
+);
 
 export default function SchooltaskCalendarTeacherApp() {
 	useWindowTitle('Мои уроки');
@@ -59,12 +64,16 @@ export default function SchooltaskCalendarTeacherApp() {
 					}}
 				/>
 			</div>
-			<EventTeacherModal
-				eventId={selectedEventId}
-				opened={selectedEventId !== null}
-				onClose={() => setSelectedEventId(null)}
-				onSaved={() => void eventsQuery.refetch()}
-			/>
+			<Suspense fallback={null}>
+				{selectedEventId !== null ? (
+					<EventTeacherModal
+						eventId={selectedEventId}
+						opened
+						onClose={() => setSelectedEventId(null)}
+						onSaved={() => void eventsQuery.refetch()}
+					/>
+				) : null}
+			</Suspense>
 		</div>
 	);
 }
