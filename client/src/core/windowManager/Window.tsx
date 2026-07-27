@@ -14,19 +14,18 @@ import {
 } from 'react';
 import { Rnd } from 'react-rnd';
 
-import { getOrCreateCoreApi, destroyCoreApi } from '@/core/context/coreApiRegistry';
+import { destroyCoreApi } from '@/core/context/coreApiRegistry';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { WindowContextMenu } from '@/core/contextMenu';
 
-import { getOrCreateWindowApi, destroyWindowApi } from './WindowApi';
-import { useWindowAutoSize } from './useWindowAutoSize';
-import { useChildWindowStore } from './childWindowStore';
-import { emitWindowFocus, emitWindowResize, getWindowApi } from './windowApiRegistry';
-import { getWindowDragBounds } from './windowDragBounds';
+import { destroyWindowApi, getOrCreateWindowApi } from './WindowApi';
 import { useWindowManagerViewport } from './WindowManagerContext';
+import { useChildWindowStore } from './childWindowStore';
+import { useWindowAutoSize } from './useWindowAutoSize';
 import { WindowSizeContext } from './useWindowSize';
 import { useWmStore } from './useWmStore';
+import { emitWindowFocus, emitWindowResize, getWindowApi } from './windowApiRegistry';
 import {
 	buildDragCancelSelector,
 	resolveWindowDragConfig,
@@ -34,6 +33,7 @@ import {
 	XOS_WINDOW_NO_DRAG_CLASS,
 	XOS_WINDOW_TITLEBAR_CLASS,
 } from './windowDrag';
+import { getWindowDragBounds } from './windowDragBounds';
 
 const ChildWindowPortal = lazy(() =>
 	import('./ChildWindowPortal').then((module) => ({ default: module.ChildWindowPortal })),
@@ -369,7 +369,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 
 	if (!windowState) {return null;}
 
-	const controlSize = isMobile ? 36 : 28;
+	const controlSize = isMobile ? 44 : 36;
 	const canDrag = !isMaximizedLayout && !positionFixed;
 	const canResize = !isMaximizedLayout && resizable;
 
@@ -407,15 +407,15 @@ function WindowComponent({ windowId, children }: WindowProps) {
 					backgroundColor: 'var(--xos-window-bg)',
 					color: 'var(--xos-window-text)',
 					border: '1px solid var(--xos-window-border)',
-					borderRadius: isMobile ? 0 : 8,
+					borderRadius: 0,
 					boxShadow: 'var(--mantine-shadow-md)',
 					overflow: 'hidden',
 				}}
 			>
 				<Group
 					className={`${XOS_WINDOW_TITLEBAR_CLASS} ${XOS_WINDOW_DRAG_HANDLE_CLASS}`}
-					gap="xs"
-					px="sm"
+					gap={0}
+					wrap="nowrap"
 					justify="space-between"
 					style={{
 						flexShrink: 0,
@@ -425,13 +425,15 @@ function WindowComponent({ windowId, children }: WindowProps) {
 						borderBottom: '1px solid var(--xos-window-titlebar-border)',
 						color: 'var(--xos-window-text)',
 						userSelect: 'none',
+						paddingLeft: 12,
+						paddingRight: 0,
 					}}
 					onMouseDown={handleFocus}
 				>
-					<Text size="sm" fw={500} truncate style={{ flex: 1 }} c="inherit">
+					<Text size="sm" fw={500} truncate style={{ flex: 1, minWidth: 0 }} c="inherit" pr="xs">
 						{windowState.title}
 					</Text>
-					<Group gap={4} wrap="nowrap">
+					<Group gap={0} wrap="nowrap" style={{ height: '100%' }}>
 						<WindowControl
 							label="Minimize"
 							size={controlSize}
@@ -505,9 +507,17 @@ const WindowControl = memo(({
 		<ActionIcon
 			aria-label={label}
 			className={XOS_WINDOW_NO_DRAG_CLASS}
-			variant={variant === 'close' ? 'subtle' : 'default'}
+			variant='subtle'
 			color={variant === 'close' ? 'red' : 'gray'}
+			radius={0}
 			size={size}
+			style={{
+				height: '100%',
+				width: size,
+				minWidth: size,
+				minHeight: '100%',
+				borderRadius: 0,
+			}}
 			onClick={onClick}
 		>
 			{children}

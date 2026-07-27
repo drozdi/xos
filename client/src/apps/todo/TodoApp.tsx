@@ -1,4 +1,14 @@
-import { Alert, Button, Checkbox, Group, Loader, Text } from '@mantine/core';
+import {
+	Alert,
+	Button,
+	Card,
+	Checkbox,
+	Group,
+	Loader,
+	SimpleGrid,
+	Stack,
+	Text,
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconPlus } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,8 +20,6 @@ import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { TodoListEditorModal } from '@/features/todo/TodoListEditorModal';
 import { canUseTodo } from '@/features/todo/todoAccess';
 import { TODO_COLORS } from '@/features/todo/todoMarkdown';
-
-import classes from './todo.module.css';
 
 export default function TodoApp() {
 	useWindowTitle('Заметки');
@@ -49,67 +57,88 @@ export default function TodoApp() {
 	}
 
 	return (
-		<div className={classes.root}>
-			<div className={classes.toolbar}>
-				<Group justify="space-between">
-					<Text fw={600}>Заметки</Text>
-					<Button
-						size="xs"
-						leftSection={<IconPlus size={14} />}
-						loading={createMutation.isPending}
-						onClick={() => createMutation.mutate()}
-					>
-						Создать
-					</Button>
-				</Group>
-			</div>
+		<Stack gap={0} h="100%" style={{ minHeight: 0 }}>
+			<Group justify="space-between" px="md" py="sm" style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
+				<Text fw={600}>Заметки</Text>
+				<Button
+					size="xs"
+					leftSection={<IconPlus size={14} />}
+					loading={createMutation.isPending}
+					onClick={() => createMutation.mutate()}
+				>
+					Создать
+				</Button>
+			</Group>
 
-			<div className={classes.grid}>
+			<SimpleGrid
+				cols={{ base: 1, xs: 2, sm: 3, md: 4 }}
+				spacing="md"
+				p="md"
+				style={{ flex: 1, minHeight: 0, overflow: 'auto', alignContent: 'start' }}
+			>
 				{listsQuery.isLoading ? (
-					<div className={classes.empty}>
+					<Group justify="center" py="xl" style={{ gridColumn: '1 / -1' }}>
 						<Loader size="sm" />
-					</div>
+					</Group>
 				) : null}
 
 				{!listsQuery.isLoading && (listsQuery.data?.length ?? 0) === 0 ? (
-					<div className={classes.empty}>
-						<Text>Пока нет списков. Создайте первый.</Text>
-					</div>
+					<Text ta="center" c="dimmed" py="xl" style={{ gridColumn: '1 / -1' }}>
+						Пока нет списков. Создайте первый.
+					</Text>
 				) : null}
 
 				{listsQuery.data?.map((list) => (
-					<button
+					<Card
 						key={list.id}
-						type="button"
-						className={classes.card}
-						style={{ background: list.color }}
+						padding="md"
+						radius="md"
+						withBorder
+						shadow="sm"
+						style={{
+							cursor: 'pointer',
+							minHeight: 120,
+							borderTopWidth: 3,
+							borderTopColor: list.color,
+						}}
 						onClick={() => setSelectedId(list.id)}
 					>
-						<div className={classes.cardTitle}>{list.title}</div>
-						{(list.items_preview ?? []).map((item, index) => (
-							<div key={item.id ?? index} className={classes.previewItem}>
-								<Checkbox size="xs" checked={item.done} readOnly tabIndex={-1} />
-								<span className={item.done ? classes.previewItemDone : undefined}>{item.text}</span>
-							</div>
-						))}
-						{(list.items_count ?? 0) > (list.items_preview?.length ?? 0) ? (
-							<Text size="xs" c="dimmed">
-								ещё {(list.items_count ?? 0) - (list.items_preview?.length ?? 0)}…
+						<Stack gap="xs" h="100%">
+							<Text fw={600} size="sm" lineClamp={2}>
+								{list.title}
 							</Text>
-						) : null}
-						<div className={classes.cardMeta}>
-							{list.is_owner ? 'Мой' : `От ${list.owner?.alias ?? 'другого'}`}
-							{list.can_write ? '' : ' · только просмотр'}
-						</div>
-					</button>
+							{(list.items_preview ?? []).map((item, index) => (
+								<Group key={item.id ?? index} gap="xs" wrap="nowrap" align="flex-start">
+									<Checkbox size="xs" checked={item.done} readOnly tabIndex={-1} mt={2} />
+									<Text
+										size="sm"
+										td={item.done ? 'line-through' : undefined}
+										c={item.done ? 'dimmed' : undefined}
+										lineClamp={2}
+									>
+										{item.text}
+									</Text>
+								</Group>
+							))}
+							{(list.items_count ?? 0) > (list.items_preview?.length ?? 0) ? (
+								<Text size="xs" c="dimmed">
+									ещё {(list.items_count ?? 0) - (list.items_preview?.length ?? 0)}…
+								</Text>
+							) : null}
+							<Text size="xs" c="dimmed" mt="auto">
+								{list.is_owner ? 'Мой' : `От ${list.owner?.alias ?? 'другого'}`}
+								{list.can_write ? '' : ' · только просмотр'}
+							</Text>
+						</Stack>
+					</Card>
 				))}
-			</div>
+			</SimpleGrid>
 
 			<TodoListEditorModal
 				listId={selectedId}
 				opened={selectedId !== null}
 				onClose={() => setSelectedId(null)}
 			/>
-		</div>
+		</Stack>
 	);
 }
