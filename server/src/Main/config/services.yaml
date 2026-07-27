@@ -1,0 +1,34 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Main\:
+        resource: '../'
+        exclude:
+            - '../Entity/'
+            - '../config/'
+
+    Main\Controller\FileServeController:
+        arguments:
+            $uploadDir: '%upload_dir%'
+
+    Main\Service\MainManager:
+        public: true
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
+    Main\Service\ClaimantManager:
+        public: true
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
+    Main\Service\FileManager:
+        public: true
+        lazy: true
+        arguments:
+            $uploadDir: '%upload_dir%'
+        calls:
+            - setContainer: ['@service_container']

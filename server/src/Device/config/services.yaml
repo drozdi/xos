@@ -1,0 +1,28 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Device\Controller\:
+        resource: '../Controller/'
+        tags: ['controller.service_arguments']
+
+    Device\Repository\:
+        resource: '../Repository/'
+
+    Device\Service\DevicePropertyValueSerializer: ~
+
+    Device\Service\DeviceManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
+    Device\Service\LicenseManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
+    Device\Service\SoftwareManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']

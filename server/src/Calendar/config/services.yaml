@@ -1,0 +1,22 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    app.security.calendar_login_user_checker:
+        class: App\Security\AppLoginUserChecker
+        arguments:
+            $module: 'calendar'
+            $deniedMessage: 'Нет доступа к приложению «Календарь»'
+
+    Calendar\Controller\:
+        resource: '../Controller/'
+        tags: ['controller.service_arguments']
+
+    Calendar\Repository\:
+        resource: '../Repository/'
+
+    Calendar\Service\CalendarManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']

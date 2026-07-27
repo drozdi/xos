@@ -3,3 +3,8 @@ controllers:
     path: '../Controller/'
     namespace: Calendar\Controller
   type: attribute
+
+calendar_token_refresh:
+  path: /api/calendar/token/refresh
+  methods: [POST]
+  controller: gesdinet.jwtrefreshtoken::refresh

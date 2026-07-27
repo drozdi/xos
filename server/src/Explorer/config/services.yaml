@@ -1,0 +1,27 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Explorer\Controller\:
+        resource: '../Controller/'
+        tags: ['controller.service_arguments']
+
+    Explorer\Repository\:
+        resource: '../Repository/'
+
+    Explorer\Service\:
+        resource: '../Service/'
+        exclude:
+            - '../Service/FileTypeRegistry.php'
+            - '../Service/DiskRegistry.php'
+
+    Explorer\Service\FileTypeRegistry:
+        arguments:
+            $configPath: '%kernel.project_dir%/src/Explorer/config/file-types.json'
+
+    Explorer\Service\DiskRegistry:
+        arguments:
+            $uploadDir: '%upload_dir%'
+            $imgDir: '%explorer_img_dir%'
+            $homeBaseDir: '%explorer_home_dir%'

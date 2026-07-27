@@ -1,0 +1,9 @@
+doctrine:
+    orm:
+        mappings:
+            Calendar:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Calendar/Entity'
+                prefix: 'Calendar\Entity'
+                alias: Calendar

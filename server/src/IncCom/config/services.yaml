@@ -1,0 +1,22 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    app.security.inccom_login_user_checker:
+        class: App\Security\AppLoginUserChecker
+        arguments:
+            $module: 'inccom'
+            $deniedMessage: 'Нет доступа к приложению «Доходы и расходы»'
+
+    IncCom\:
+        resource: '../'
+        exclude:
+            - '../Entity/'
+            - '../config/'
+
+    IncCom\Service\IncComManager:
+        public: true
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']

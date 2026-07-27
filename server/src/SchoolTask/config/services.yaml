@@ -1,0 +1,27 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    app.security.schooltask_login_user_checker:
+        class: App\Security\AppLoginUserChecker
+        arguments:
+            $module: 'schooltask'
+            $deniedMessage: 'Нет доступа к приложению «Школа»'
+
+    SchoolTask\Controller\:
+        resource: '../Controller/'
+        tags: ['controller.service_arguments']
+
+    SchoolTask\Repository\:
+        resource: '../Repository/'
+
+    SchoolTask\Service\SchoolTaskManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']
+
+    SchoolTask\Service\EventManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']

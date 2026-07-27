@@ -1,0 +1,9 @@
+doctrine:
+    orm:
+        mappings:
+            SchoolTask:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/SchoolTask/Entity'
+                prefix: 'SchoolTask\Entity'
+                alias: SchoolTask

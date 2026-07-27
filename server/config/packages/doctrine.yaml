@@ -1,3 +1,7 @@
+# Module ORM mappings: src/<Module>/config/packages/doctrine.yaml
+imports:
+    - { resource: ../../src/*/config/packages/doctrine.yaml }
+
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
@@ -23,61 +27,6 @@ doctrine:
         identity_generation_preferences:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
-        mappings:
-            App:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/App/Entity'
-                prefix: 'App\Entity'
-                alias: App
-            Main:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Main/Entity'
-                prefix: 'Main\Entity'
-                alias: Main
-            Device:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Device/Entity'
-                prefix: 'Device\Entity'
-                alias: Device
-            IBlock:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/IBlock/Entity'
-                prefix: 'IBlock\Entity'
-                alias: IBlock
-            SchoolTask:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/SchoolTask/Entity'
-                prefix: 'SchoolTask\Entity'
-                alias: SchoolTask
-            IncCom:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/IncCom/Entity'
-                prefix: 'IncCom\Entity'
-                alias: IncCom
-            Explorer:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Explorer/Entity'
-                prefix: 'Explorer\Entity'
-                alias: Explorer
-            Todo:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Todo/Entity'
-                prefix: 'Todo\Entity'
-                alias: Todo
-            Calendar:
-                type: attribute
-                is_bundle: false
-                dir: '%kernel.project_dir%/src/Calendar/Entity'
-                prefix: 'Calendar\Entity'
-                alias: Calendar
         controller_resolver:
             auto_mapping: false
 

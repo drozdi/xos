@@ -1,0 +1,12 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../'
+        exclude:
+            - '../Kernel.php'
+            - '../Security/AppLoginUserChecker.php'
+            - '../Entity/'
+            - '../config/'

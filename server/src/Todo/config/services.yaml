@@ -1,0 +1,18 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Todo\Controller\:
+        resource: '../Controller/'
+        tags: ['controller.service_arguments']
+
+    Todo\Repository\:
+        resource: '../Repository/'
+
+    Todo\Service\TodoMarkdownSync: ~
+
+    Todo\Service\TodoManager:
+        lazy: true
+        calls:
+            - setContainer: ['@service_container']

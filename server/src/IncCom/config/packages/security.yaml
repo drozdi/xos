@@ -1,0 +1,27 @@
+security:
+    firewalls:
+        app_login:
+            pattern: ^/api/IncCom/auth/login$
+            stateless: true
+            provider: email_user_provider
+            user_checker: app.security.inccom_login_user_checker
+            json_login:
+                check_path: /api/IncCom/auth/login
+                username_path: username
+                password_path: password
+                success_handler: App\Security\LoginSuccessHandler
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
+        app_refresh:
+            pattern: ^/api/IncCom/token/refresh
+            stateless: true
+            provider: login_user_provider
+            user_checker: App\Security\UserChecker
+            refresh_jwt:
+                check_path: /api/IncCom/token/refresh
+
+    access_control:
+        - { path: ^/api/IncCom/auth/login$, roles: PUBLIC_ACCESS, methods: [POST, GET] }
+        - { path: ^/api/IncCom/auth/register$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/IncCom/auth/logout$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/IncCom/token/refresh$, roles: PUBLIC_ACCESS, methods: [POST] }
