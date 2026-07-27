@@ -72,13 +72,16 @@ export default function CalendarStandaloneApp() {
 				inset: 0,
 				display: 'flex',
 				flexDirection: 'column',
+				height: '100%',
 				minHeight: 0,
 				overflow: 'hidden',
 				background: 'var(--mantine-color-body)',
 			}}
 		>
 			<BrowserRouter basename="/calendar">
-				<StandaloneRouterInner />
+				<div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+					<StandaloneRouterInner />
+				</div>
 			</BrowserRouter>
 		</div>
 	);

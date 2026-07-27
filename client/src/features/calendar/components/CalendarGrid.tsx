@@ -122,11 +122,30 @@ export function CalendarGrid({
 		highlightToday: true,
 		onDateChange,
 		onEventClick: handleEventClick,
-		h: '100%',
+		style: {
+			flex: 1,
+			minHeight: 0,
+			height: '100%',
+			display: 'flex',
+			flexDirection: 'column' as const,
+		},
+		styles: {
+			weekViewRoot: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' as const },
+		},
+		scrollAreaProps: { style: { flex: 1, minHeight: 0 } },
 	};
 
 	return (
-		<Box pos="relative" style={{ flex: 1, minHeight: 0, height: '100%' }}>
+		<Box
+			pos="relative"
+			style={{
+				flex: 1,
+				minHeight: 0,
+				height: '100%',
+				display: 'flex',
+				flexDirection: 'column',
+			}}
+		>
 			<LoadingOverlay visible={Boolean(isLoading)} zIndex={5} />
 			{view === 'day' ? (
 				<DayView
@@ -167,18 +186,27 @@ export function CalendarGrid({
 				/>
 			) : null}
 			{view === 'month' ? (
-				<MonthView
-					{...common}
-					consistentWeeks
-					withOutsideDays
-					onDayClick={(day) => {
-						onSlotClick({
-							start: `${day} 00:00:00`,
-							end: `${day} 23:59:59`,
-							allDay: true,
-						});
-					}}
-				/>
+				<Box style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+					<MonthView
+						date={date}
+						events={scheduleEvents}
+						withHeader={false}
+						withWeekendDays
+						firstDayOfWeek={1}
+						highlightToday
+						onDateChange={onDateChange}
+						onEventClick={handleEventClick}
+						consistentWeeks
+						withOutsideDays
+						onDayClick={(day) => {
+							onSlotClick({
+								start: `${day} 00:00:00`,
+								end: `${day} 23:59:59`,
+								allDay: true,
+							});
+						}}
+					/>
+				</Box>
 			) : null}
 		</Box>
 	);

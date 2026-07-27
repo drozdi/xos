@@ -278,7 +278,7 @@ export function CalendarShell() {
 					}}
 					deletingId={deletingCalendarId}
 				/>
-				<Stack gap={0} style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+				<Stack gap={0} style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
 					<CalendarToolbar
 						view={view}
 						date={date}

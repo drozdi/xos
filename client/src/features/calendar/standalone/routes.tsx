@@ -16,8 +16,10 @@ function CalendarStandaloneHome() {
 			style={{
 				display: 'flex',
 				flexDirection: 'column',
+				flex: 1,
 				height: '100%',
 				minHeight: 0,
+				overflow: 'hidden',
 			}}
 		>
 			{standalone ? (
@@ -25,7 +27,10 @@ function CalendarStandaloneHome() {
 					justify="space-between"
 					px="md"
 					py="xs"
-					style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}
+					style={{
+						flexShrink: 0,
+						borderBottom: '1px solid var(--mantine-color-default-border)',
+					}}
 				>
 					<Text fw={600}>Календарь</Text>
 					<Button
@@ -41,7 +46,7 @@ function CalendarStandaloneHome() {
 					</Button>
 				</Group>
 			) : null}
-			<Box style={{ flex: 1, minHeight: 0 }}>
+			<Box style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
 				<CalendarShell />
 			</Box>
 		</Box>
