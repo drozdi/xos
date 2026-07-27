@@ -1,3 +1,4 @@
+import { Box } from '@mantine/core';
 import { useMemo, type ReactNode } from 'react';
 
 import { getVisibleContextMenuItems } from './resolveMenuItems';
@@ -33,9 +34,9 @@ export function ContextMenu({
 
 	return (
 		<>
-			<span style={{ display: 'contents' }} onContextMenu={onContextMenu}>
+			<Box component="span" style={{ display: 'contents' }} onContextMenu={onContextMenu}>
 				{children}
-			</span>
+			</Box>
 			{menu}
 		</>
 	);

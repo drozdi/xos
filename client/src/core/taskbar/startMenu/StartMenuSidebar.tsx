@@ -1,5 +1,5 @@
-import { Dropdown, Flex, Tooltip, Typography } from 'antd';
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { Box, Menu, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { useState, type ReactNode } from 'react';
 
 import { useAppManager } from '@/core/appManager/useAppManager';
 import { useAuthStore } from '@/core/auth/authStore';
@@ -15,20 +15,6 @@ import type { StartMenuCommand } from './types';
 interface StartMenuSidebarProps {
 	onClose: () => void;
 }
-
-const hoverButtonStyle = (expanded: boolean): CSSProperties => ({
-	display: 'flex',
-	alignItems: 'center',
-	gap: 10,
-	width: '100%',
-	padding: expanded ? '8px 10px' : '8px 0',
-	justifyContent: expanded ? 'flex-start' : 'center',
-	borderRadius: 6,
-	color: 'var(--xos-shell-text)',
-	background: 'transparent',
-	border: 'none',
-	cursor: 'pointer',
-});
 
 export function StartMenuSidebar({ onClose }: StartMenuSidebarProps) {
 	const [expanded, setExpanded] = useState(false);
@@ -52,42 +38,38 @@ export function StartMenuSidebar({ onClose }: StartMenuSidebarProps) {
 	};
 
 	const content = (isExpanded: boolean) => (
-		<Flex
-			vertical
+		<Stack
 			justify="space-between"
 			gap={0}
-			style={{
-				width: isExpanded ? START_MENU_SIDEBAR_EXPANDED_WIDTH : START_MENU_SIDEBAR_WIDTH,
-				minHeight: '100%',
-			}}
+			style={{ width: isExpanded ? START_MENU_SIDEBAR_EXPANDED_WIDTH : START_MENU_SIDEBAR_WIDTH, minHeight: '100%' }}
 		>
-			<Flex vertical gap={4} style={{ padding: 8 }} align="center">
+			<Stack gap={4} p="xs" align="center">
 				<ThemeMenuButton expanded={isExpanded} />
-			</Flex>
+			</Stack>
 
-			<Flex
-				vertical
+			<Stack
 				gap={4}
+				p="xs"
 				align="center"
-				style={{ padding: 8, borderTop: '1px solid var(--xos-shell-border)' }}
+				style={{ borderTop: '1px solid var(--xos-shell-border)' }}
 			>
 				<SidebarButton
 					label={userLabel}
 					icon={
-						<Typography.Text strong style={{ fontSize: 13 }}>
+						<Text size="sm" fw={600}>
 							{userInitial}
-						</Typography.Text>
+						</Text>
 					}
 					expanded={isExpanded}
 					onClick={() => runCommand('settings')}
 				/>
 				<ShutdownMenuButton expanded={isExpanded} onCommand={runCommand} />
-			</Flex>
-		</Flex>
+			</Stack>
+		</Stack>
 	);
 
 	return (
-		<div
+		<Box
 			style={{
 				position: 'relative',
 				width: START_MENU_SIDEBAR_WIDTH,
@@ -101,7 +83,7 @@ export function StartMenuSidebar({ onClose }: StartMenuSidebarProps) {
 			{content(false)}
 
 			{expanded ? (
-				<div
+				<Box
 					style={{
 						position: 'absolute',
 						left: 0,
@@ -111,13 +93,13 @@ export function StartMenuSidebar({ onClose }: StartMenuSidebarProps) {
 						zIndex: 20,
 						background: 'var(--xos-shell-bg-elevated)',
 						borderRight: '1px solid var(--xos-shell-border)',
-						boxShadow: '0 12px 32px rgba(0, 0, 0, 0.28)',
+						boxShadow: 'var(--mantine-shadow-xl)',
 					}}
 				>
 					{content(true)}
-				</div>
+				</Box>
 			) : null}
-		</div>
+		</Box>
 	);
 }
 
@@ -129,17 +111,27 @@ function ShutdownMenuButton({
 	onCommand: (command: StartMenuCommand) => void;
 }) {
 	const button = (
-		<button
-			type="button"
-			style={hoverButtonStyle(expanded)}
-			onMouseEnter={(e) => {
-				e.currentTarget.style.background = 'var(--xos-shell-hover)';
+		<UnstyledButton
+			style={{
+				display: 'flex',
+				alignItems: 'center',
+				gap: 10,
+				width: '100%',
+				padding: expanded ? '8px 10px' : '8px 0',
+				justifyContent: expanded ? 'flex-start' : 'center',
+				borderRadius: 6,
+				color: 'var(--xos-shell-text)',
 			}}
-			onMouseLeave={(e) => {
-				e.currentTarget.style.background = 'transparent';
+			styles={{
+				root: {
+					'&:hover': {
+						background: 'var(--xos-shell-hover)',
+					},
+				},
 			}}
 		>
-			<span
+			<Box
+				component="span"
 				aria-hidden
 				style={{
 					display: 'inline-flex',
@@ -151,47 +143,33 @@ function ShutdownMenuButton({
 				}}
 			>
 				<PowerIcon size={20} />
-			</span>
+			</Box>
 			{expanded ? (
-				<Typography.Text ellipsis style={{ fontSize: 13 }}>
+				<Text size="sm" truncate>
 					Выключение
-				</Typography.Text>
+				</Text>
 			) : null}
-		</button>
+		</UnstyledButton>
 	);
 
-	const target = expanded ? (
-		button
-	) : (
-		<Tooltip title="Выключение" placement="right">
+	const target = expanded ? button : (
+		<Tooltip label="Выключение" position="right" withArrow zIndex={1300}>
 			{button}
 		</Tooltip>
 	);
 
 	return (
-		<Dropdown
-			menu={{
-				items: [
-					{
-						key: 'reload',
-						icon: <ReloadIcon size={16} />,
-						label: 'Перезагрузить',
-						onClick: () => onCommand('reload'),
-					},
-					{
-						key: 'logout',
-						icon: <PowerIcon size={16} />,
-						label: 'Выйти',
-						onClick: () => onCommand('logout'),
-					},
-				],
-			}}
-			trigger={['click']}
-			placement="topRight"
-			overlayStyle={{ zIndex: 2100 }}
-		>
-			{target}
-		</Dropdown>
+		<Menu withinPortal position="right-start" offset={8} zIndex={2100}>
+			<Menu.Target>{target}</Menu.Target>
+			<Menu.Dropdown>
+				<Menu.Item leftSection={<ReloadIcon size={16} />} onClick={() => onCommand('reload')}>
+					Перезагрузить
+				</Menu.Item>
+				<Menu.Item leftSection={<PowerIcon size={16} />} onClick={() => onCommand('logout')}>
+					Выйти
+				</Menu.Item>
+			</Menu.Dropdown>
+		</Menu>
 	);
 }
 
@@ -204,18 +182,28 @@ interface SidebarButtonProps {
 
 function SidebarButton({ label, icon, expanded, onClick }: SidebarButtonProps) {
 	const button = (
-		<button
-			type="button"
+		<UnstyledButton
 			onClick={onClick}
-			style={hoverButtonStyle(expanded)}
-			onMouseEnter={(e) => {
-				e.currentTarget.style.background = 'var(--xos-shell-hover)';
+			style={{
+				display: 'flex',
+				alignItems: 'center',
+				gap: 10,
+				width: '100%',
+				padding: expanded ? '8px 10px' : '8px 0',
+				justifyContent: expanded ? 'flex-start' : 'center',
+				borderRadius: 6,
+				color: 'var(--xos-shell-text)',
 			}}
-			onMouseLeave={(e) => {
-				e.currentTarget.style.background = 'transparent';
+			styles={{
+				root: {
+					'&:hover': {
+						background: 'var(--xos-shell-hover)',
+					},
+				},
 			}}
 		>
-			<span
+			<Box
+				component="span"
 				aria-hidden
 				style={{
 					display: 'inline-flex',
@@ -227,13 +215,13 @@ function SidebarButton({ label, icon, expanded, onClick }: SidebarButtonProps) {
 				}}
 			>
 				{icon}
-			</span>
+			</Box>
 			{expanded ? (
-				<Typography.Text ellipsis style={{ fontSize: 13 }}>
+				<Text size="sm" truncate>
 					{label}
-				</Typography.Text>
+				</Text>
 			) : null}
-		</button>
+		</UnstyledButton>
 	);
 
 	if (expanded) {
@@ -241,7 +229,7 @@ function SidebarButton({ label, icon, expanded, onClick }: SidebarButtonProps) {
 	}
 
 	return (
-		<Tooltip title={label} placement="right">
+		<Tooltip label={label} position="right" withArrow zIndex={1300}>
 			{button}
 		</Tooltip>
 	);

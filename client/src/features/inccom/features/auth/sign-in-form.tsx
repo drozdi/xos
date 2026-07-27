@@ -1,52 +1,66 @@
-﻿import { Button, Form, Input } from 'antd';
+﻿import { useStoreAuth } from '@inccom/entities/user';
+import { Loading } from '@inccom/shared/ui';
+import { Box, Button, PasswordInput, Stack, TextInput } from '@mantine/core';
+import { useForm } from '@mantine/form';
 import { useNavigate } from 'react-router-dom';
 
-import { useStoreAuth } from '@inccom/entities/user';
-import { Loading } from '@inccom/shared/ui';
-
-export const SignInForm = (props: React.HTMLAttributes<HTMLDivElement>) => {
+export const SignInForm = (props: React.ComponentProps<typeof Box>) => {
 	const storeAuth = useStoreAuth();
-	const [form] = Form.useForm<{ username: string; password: string }>();
+	const form = useForm({
+		mode: 'uncontrolled',
+		onSubmitPreventDefault: 'always',
+		name: 'signIn',
+		initialValues: {
+			username: '',
+			password: '',
+		},
+	});
 	const { isLoading } = storeAuth;
 	const navigate = useNavigate();
-
-	const handleFinish = async (values: { username: string; password: string }) => {
-		const res = await storeAuth.login(values.username, values.password);
+	const handleSubmit = async ({
+		username,
+		password,
+	}: {
+		username: string;
+		password: string;
+	}) => {
+		const res = await storeAuth.login(username, password);
 		if (true === res) {
 			navigate('/', { replace: true });
 		}
 	};
 
 	return (
-		<div {...props}>
-			<Form form={form} layout="vertical" onFinish={(v) => void handleFinish(v)}>
+		<Box {...props}>
+			<Stack
+				component="form"
+				onSubmit={(event) => {
+					event.preventDefault();
+					form.onSubmit(handleSubmit)();
+				}}
+			>
 				<Loading active={isLoading} keepMounted>
-					<Form.Item
-						label="Email"
-						name="username"
-						rules={[{ required: true, message: 'Введите email' }]}
-					>
-						<Input
-							placeholder="user@example.com"
-							type="email"
-							autoComplete="email"
-						/>
-					</Form.Item>
-					<Form.Item
+					<TextInput
+						label="Login"
+						placeholder="Login"
+						type="text"
+						autoComplete="login"
+						required
+						{...form.getInputProps('username')}
+					/>
+					<PasswordInput
 						label="Пароль"
-						name="password"
-						rules={[{ required: true, message: 'Введите пароль' }]}
-					>
-						<Input.Password
-							placeholder="Пароль"
-							autoComplete="current-password"
-						/>
-					</Form.Item>
+						placeholder="Пароль"
+						type="password"
+						autoComplete="current-password"
+						required
+						{...form.getInputProps('password')}
+					/>
 				</Loading>
-				<Button type="primary" htmlType="submit" block loading={isLoading}>
+				<Button type="submit" fullWidth loading={isLoading}>
 					Войти
 				</Button>
-			</Form>
-		</div>
+			</Stack>
+		</Box>
 	);
 };

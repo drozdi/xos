@@ -1,8 +1,4 @@
-﻿import { Typography } from 'antd';
-import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
-
-import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
+﻿import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
 import {
 	useTransactionsQuery,
 	type ITransaction,
@@ -10,8 +6,11 @@ import {
 } from '@inccom/entities/transaction';
 import { useStoreUserProfile } from '@inccom/entities/user';
 import { formatTransferCounterparty } from '@inccom/shared/lib/format-transfer-counterparty';
+import { DataColumn, TableData } from '@inccom/shared/ui/table';
 import { formatBalance } from '@inccom/shared/utils/number-format';
-import { DataTable, type DataTableColumn } from '@/ui/data-table';
+import { Anchor, ScrollArea, Text } from '@mantine/core';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 
 interface TransactionTableWidgetProps {
 	accountId: number;
@@ -91,95 +90,92 @@ export function TransactionTableWidget({
 
 	const transactions = data?.items ?? [];
 
-	const columns = useMemo<DataTableColumn<ITransaction>[]>(
-		() => [
-			{
-				field: 'date',
-				header: 'Дата',
-				sortable: true,
-				resizable: true,
-				render: (transaction) => formatDate(transaction.date),
-			},
-			{
-				field: 'type',
-				header: 'Тип',
-				sortable: true,
-				resizable: true,
-				render: (transaction) => {
-					const transferLabel = formatTransferCounterparty(
-						transaction.transferCounterparty,
-						userData?.id,
-					);
-					return (
-						<>
-							{isTransferDebit(transaction) ? (
-								<Typography.Text type="danger">
-									{formatTransactionType(transaction)}
-								</Typography.Text>
-							) : (
-								formatTransactionType(transaction)
-							)}
-							{transferLabel ? (
-								<div>
-									<Typography.Text type="secondary" style={{ fontSize: 12 }}>
-										{transferLabel}
-									</Typography.Text>
-								</div>
-							) : null}
-						</>
-					);
-				},
-			},
-			{
-				field: 'amount',
-				header: 'Сумма',
-				sortable: true,
-				align: 'right',
-				resizable: true,
-				render: (transaction) => (
-					<Link
-						to={getTransactionEditPath(transaction)}
-						style={{
-							color: isTransferDebit(transaction) ? '#ff4d4f' : undefined,
-							fontWeight: isTransferDebit(transaction) ? 600 : undefined,
-						}}
-					>
-						{formatTransactionAmount(transaction)}
-					</Link>
-				),
-			},
-			{
-				field: 'comment',
-				header: 'Комментарий',
-				sortable: true,
-				resizable: true,
-				render: (transaction) => transaction.comment ?? '—',
-			},
-			{
-				field: 'categoryId',
-				header: 'Категория',
-				sortable: true,
-				resizable: true,
-				render: (transaction) =>
-					transaction.categoryId
-						? (categoryMap.get(transaction.categoryId) ?? transaction.categoryId)
-						: '—',
-			},
-		],
-		[categoryMap, userData?.id],
-	);
-
 	return (
-		<div style={{ overflow: 'auto', width: '100%' }}>
-			<DataTable<ITransaction>
-				columns={columns}
+		<ScrollArea type="auto" offsetScrollbars>
+			<TableData<ITransaction>
 				data={transactions}
 				loading={isLoading}
-				storageKey={`transactions.list.${accountId}`}
 				withPagination={false}
+				withTableBorder
+				storage={`transactions.list.${accountId}`}
 				noDataText="Транзакций нет"
-				minHeight={320}
-			/>
-		</div>
+				miw={600}
+				w="100%"
+			>
+				<DataColumn<ITransaction>
+					field="date"
+					header="Дата"
+					sortable
+					resizable
+					body={(transaction) => formatDate(transaction.date)}
+				/>
+				<DataColumn<ITransaction>
+					field="type"
+					header="Тип"
+					sortable
+					resizable
+					body={(transaction) => {
+						const transferLabel = formatTransferCounterparty(
+							transaction.transferCounterparty,
+							userData?.id,
+						);
+
+						return (
+							<>
+								{isTransferDebit(transaction) ? (
+									<Text c="red" size="sm">
+										{formatTransactionType(transaction)}
+									</Text>
+								) : (
+									formatTransactionType(transaction)
+								)}
+								{transferLabel && (
+									<Text size="xs" c="dimmed">
+										{transferLabel}
+									</Text>
+								)}
+							</>
+						);
+					}}
+				/>
+				<DataColumn<ITransaction>
+					field="amount"
+					header="Сумма"
+					sortable
+					align="right"
+					resizable
+					body={(transaction) => (
+						<Anchor
+							component={Link}
+							to={getTransactionEditPath(transaction)}
+							c={isTransferDebit(transaction) ? 'red' : undefined}
+							fw={isTransferDebit(transaction) ? 600 : undefined}
+						>
+							{formatTransactionAmount(transaction)}
+						</Anchor>
+					)}
+				/>
+				<DataColumn<ITransaction>
+					field="comment"
+					header="Комментарий"
+					sortable
+					resizable
+					ellipsis
+					body={(transaction) => transaction.comment ?? '—'}
+				/>
+				<DataColumn<ITransaction>
+					field="categoryId"
+					header="Категория"
+					sortable
+					resizable
+					body={(transaction) =>
+						transaction.categoryId
+							? (categoryMap.get(transaction.categoryId) ??
+								transaction.categoryId)
+							: '—'
+					}
+				/>
+			</TableData>
+		</ScrollArea>
 	);
 }

@@ -1,8 +1,7 @@
-﻿import { Button } from 'antd';
-import { LoginOutlined, LogoutOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-
-import { useStoreAuth } from '@inccom/entities/user';
+﻿import { useStoreAuth } from '@inccom/entities/user';
+import { ActionIcon } from "@mantine/core";
+import { TbLogin, TbLogout } from "react-icons/tb";
+import { useNavigate } from "react-router-dom";
 
 export const InOutLink = () => {
 	const navigate = useNavigate();
@@ -10,25 +9,27 @@ export const InOutLink = () => {
 	return (
 		<>
 			{storeAuth.isAuth ? (
-				<Button
-					type="default"
-					shape="circle"
-					size="large"
+				<ActionIcon
+					variant="default"
 					aria-label="Выйти"
-					onClick={() => navigate('/auth/sign-out')}
+					size="xl"
+					radius="100%"
+					onClick={() => navigate("/auth/sign-out")}
 					title="Выйти"
-					icon={<LogoutOutlined />}
-				/>
+				>
+					<TbLogout />
+				</ActionIcon>
 			) : (
-				<Button
-					type="default"
-					shape="circle"
-					size="large"
+				<ActionIcon
+					variant="default"
 					aria-label="Войти"
-					onClick={() => navigate('/auth/sign-in')}
+					size="xl"
+					radius="100%"
+					onClick={() => navigate("/auth/sign-in")}
 					title="Войти"
-					icon={<LoginOutlined />}
-				/>
+				>
+					<TbLogin />
+				</ActionIcon>
 			)}
 		</>
 	);

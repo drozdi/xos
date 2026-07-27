@@ -1,4 +1,4 @@
-import { Alert, Flex, Form, Input, InputNumber, Select } from 'antd';
+import { Alert, MultiSelect, NumberInput, Stack, TextInput } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -54,17 +54,17 @@ export default function SchooltaskSubjectApp() {
 
 	if (isNew && !canCreate) {
 		return (
-			<div style={{ margin: 16 }}>
-				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на создание предмета" />
-			</div>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание предмета
+			</Alert>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<div style={{ margin: 16 }}>
-				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр предмета" />
-			</div>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр предмета
+			</Alert>
 		);
 	}
 
@@ -91,46 +91,36 @@ export default function SchooltaskSubjectApp() {
 				const selectedTeachers = extractSubjectUserIds(data.users).map(String);
 
 				return (
-					<Flex vertical gap={12}>
-						<Form.Item
+					<Stack gap="sm">
+						<TextInput
 							label="Название"
-							required
-							validateStatus={errors.name ? 'error' : undefined}
-							help={errors.name}
-							style={{ marginBottom: 0 }}
-						>
-							<Input
-								value={data.name ?? ''}
-								readOnly={readOnly}
-								onChange={(event) => setField('name', event.target.value)}
-							/>
-						</Form.Item>
-						<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
-							<InputNumber
-								style={{ width: '100%' }}
-								value={data.sort ?? 100}
-								readOnly={readOnly}
-								onChange={(value) => setField('sort', typeof value === 'number' ? value : 100)}
-							/>
-						</Form.Item>
-						<Form.Item label="Учителя" style={{ marginBottom: 0 }}>
-							<Select
-								mode="multiple"
-								options={teacherOptions}
-								value={selectedTeachers}
-								disabled={readOnly}
-								onChange={(values: string[]) =>
-									setField(
-										'users',
-										values.map((value) => ({ user_id: Number(value) })),
-									)
-								}
-								showSearch
-								allowClear
-								optionFilterProp="label"
-							/>
-						</Form.Item>
-					</Flex>
+							withAsterisk
+							value={data.name ?? ''}
+							error={errors.name}
+							readOnly={readOnly}
+							onChange={(event) => setField('name', event.currentTarget.value)}
+						/>
+						<NumberInput
+							label="Сортировка"
+							value={data.sort ?? 100}
+							readOnly={readOnly}
+							onChange={(value) => setField('sort', typeof value === 'number' ? value : 100)}
+						/>
+						<MultiSelect
+							label="Учителя"
+							data={teacherOptions}
+							value={selectedTeachers}
+							disabled={readOnly}
+							onChange={(values) =>
+								setField(
+									'users',
+									values.map((value) => ({ user_id: Number(value) })),
+								)
+							}
+							searchable
+							clearable
+						/>
+					</Stack>
 				);
 			}}
 		</MainEntityForm>

@@ -1,4 +1,4 @@
-import { Alert, Flex, Form, Input, Table, Tabs, Typography } from 'antd';
+import { Alert, Stack, Table, Tabs, Text, TextInput, Textarea } from '@mantine/core';
 import { useCallback } from 'react';
 
 import { subDeviceApi, type SubDeviceDetail } from '@/core/api/endpoints/deviceApi';
@@ -63,25 +63,17 @@ export default function DeviceSubDeviceApp() {
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на создание комплектующего"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание комплектующего
+			</Alert>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр комплектующего"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр комплектующего
+			</Alert>
 		);
 	}
 
@@ -119,101 +111,93 @@ export default function DeviceSubDeviceApp() {
 				);
 
 				return (
-					<Tabs
-						defaultActiveKey="general"
-						items={[
-							{
-								key: 'general',
-								label: 'Общие',
-								children: (
-									<Flex vertical gap={12}>
-										<Form.Item
-											label="Название"
-											required
-											validateStatus={errors.name ? 'error' : undefined}
-											help={errors.name}
-											style={{ marginBottom: 0 }}
-										>
-											<Input
-												value={data.name ?? ''}
-												readOnly={readOnly}
-												onChange={(e) => setField('name', e.target.value)}
-											/>
-										</Form.Item>
-										<Form.Item label="Серийный номер" style={{ marginBottom: 0 }}>
-											<Input
-												value={data.sn ?? ''}
-												readOnly={readOnly}
-												onChange={(e) => setField('sn', e.target.value)}
-											/>
-										</Form.Item>
-										<Form.Item label="Описание" style={{ marginBottom: 0 }}>
-											<Input.TextArea
-												value={data.description ?? ''}
-												readOnly={readOnly}
-												autoSize={{ minRows: 3 }}
-												onChange={(e) => setField('description', e.target.value)}
-											/>
-										</Form.Item>
-									</Flex>
-								),
-							},
-							{
-								key: 'accounting',
-								label: 'Учёт',
-								children: (
-									<SubDeviceAccountingFields
-										accounting={(data.accounting ?? {}) as Record<string, unknown>}
-										parentAccountings={data.parentAccountings ?? []}
-										readOnly={readOnly}
-										onChange={(accounting) =>
-											setField('accounting', accounting as Record<string, unknown>)
-										}
-									/>
-								),
-							},
-							{
-								key: 'properties',
-								label: 'Свойства',
-								children: (
-									<SubDevicePropertiesEditor
-										properties={properties}
-										readOnly={readOnly}
-										onChange={(next) => setField('properties', next)}
-									/>
-								),
-							},
-							{
-								key: 'info',
-								label: 'Сведения',
-								children: (
-									<Flex vertical gap={24}>
-										<DeviceInfoTab data={data} layout="rows" />
-										<Flex vertical gap={8}>
-											<Typography.Text strong style={{ fontSize: 14 }}>
-												История
-											</Typography.Text>
-											{historyRows.length === 0 ? (
-												<Typography.Text type="secondary">История пуста</Typography.Text>
-											) : (
-												<Table
-													size="small"
-													bordered
-													pagination={false}
-													rowKey={(item) => String(item.id ?? `${item.date}-${item.place}`)}
-													dataSource={historyRows}
-													columns={[
-														{ title: 'Дата', dataIndex: 'date', key: 'date', width: 120 },
-														{ title: 'Устройство', dataIndex: 'place', key: 'place' },
-													]}
-												/>
-											)}
-										</Flex>
-									</Flex>
-								),
-							},
-						]}
-					/>
+					<Tabs defaultValue="general">
+						<Tabs.List>
+							<Tabs.Tab value="general">Общие</Tabs.Tab>
+							<Tabs.Tab value="accounting">Учёт</Tabs.Tab>
+							<Tabs.Tab value="properties">Свойства</Tabs.Tab>
+							<Tabs.Tab value="info">Сведения</Tabs.Tab>
+						</Tabs.List>
+
+						<Tabs.Panel value="general" pt="sm">
+							<Stack gap="sm">
+								<TextInput
+									label="Название"
+									withAsterisk
+									value={data.name ?? ''}
+									error={errors.name}
+									readOnly={readOnly}
+									onChange={(e) => setField('name', e.currentTarget.value)}
+								/>
+								<TextInput
+									label="Серийный номер"
+									value={data.sn ?? ''}
+									readOnly={readOnly}
+									onChange={(e) => setField('sn', e.currentTarget.value)}
+								/>
+								<Textarea
+									label="Описание"
+									value={data.description ?? ''}
+									readOnly={readOnly}
+									minRows={3}
+									autosize
+									onChange={(e) => setField('description', e.currentTarget.value)}
+								/>
+							</Stack>
+						</Tabs.Panel>
+
+						<Tabs.Panel value="accounting" pt="sm">
+							<SubDeviceAccountingFields
+								accounting={(data.accounting ?? {}) as Record<string, unknown>}
+								parentAccountings={data.parentAccountings ?? []}
+								readOnly={readOnly}
+								onChange={(accounting) =>
+									setField('accounting', accounting as Record<string, unknown>)
+								}
+							/>
+						</Tabs.Panel>
+
+						<Tabs.Panel value="properties" pt="sm">
+							<SubDevicePropertiesEditor
+								properties={properties}
+								readOnly={readOnly}
+								onChange={(next) => setField('properties', next)}
+							/>
+						</Tabs.Panel>
+
+						<Tabs.Panel value="info" pt="sm">
+							<Stack gap="lg">
+								<DeviceInfoTab data={data} layout="rows" />
+								<Stack gap="xs">
+									<Text fw={500} size="sm">
+										История
+									</Text>
+									{historyRows.length === 0 ? (
+										<Text c="dimmed" size="sm">
+											История пуста
+										</Text>
+									) : (
+										<Table striped highlightOnHover withTableBorder>
+											<Table.Thead>
+												<Table.Tr>
+													<Table.Th w={120}>Дата</Table.Th>
+													<Table.Th>Устройство</Table.Th>
+												</Table.Tr>
+											</Table.Thead>
+											<Table.Tbody>
+												{historyRows.map((item) => (
+													<Table.Tr key={String(item.id ?? `${item.date}-${item.place}`)}>
+														<Table.Td>{String(item.date ?? '')}</Table.Td>
+														<Table.Td>{String(item.place ?? '')}</Table.Td>
+													</Table.Tr>
+												))}
+											</Table.Tbody>
+										</Table>
+									)}
+								</Stack>
+							</Stack>
+						</Tabs.Panel>
+					</Tabs>
 				);
 			}}
 		</MainEntityForm>

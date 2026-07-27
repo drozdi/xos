@@ -1,55 +1,46 @@
-import { Flex, Typography } from 'antd';
+import { Paper, Stack, Title, Text, Group, Image, Box } from '@mantine/core';
 
 function FigureList({ figures }) {
 	if (!figures.length) {
 		return (
-			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+			<Text size="sm" c="dimmed">
 				Пока нет
-			</Typography.Text>
+			</Text>
 		);
 	}
 
 	return (
-		<Flex gap="small" wrap="wrap">
+		<Group gap="xs">
 			{figures.map((figure) => (
-				<div key={figure.key} style={{ width: 48, height: 48 }}>
-					<img
-						src={figure.img}
-						alt={figure.label}
-						style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-					/>
-				</div>
+				<Box key={figure.key} w={48} h={48}>
+					<Image src={figure.img} alt={figure.label} fit="contain" />
+				</Box>
 			))}
-		</Flex>
+		</Group>
 	);
 }
 
 function CapturedFiguresPanel({ lostWhiteFigures, lostBlackFigures }) {
 	return (
-		<div
-			className="game-sidebar__paper"
-			style={{ padding: 16, borderRadius: 8, border: '1px solid var(--xos-shell-border)' }}
-		>
-			<Flex vertical gap="large">
-				<Typography.Title level={4} style={{ margin: 0 }}>
-					Съеденные фигуры
-				</Typography.Title>
+		<Paper p="md" radius="md" className="game-sidebar__paper">
+			<Stack gap="lg">
+				<Title order={4}>Съеденные фигуры</Title>
 
-				<Flex vertical gap="small">
-					<Typography.Text strong style={{ fontSize: 13 }}>
+				<Stack gap="xs">
+					<Text fw={600} size="sm">
 						Белые
-					</Typography.Text>
+					</Text>
 					<FigureList figures={lostWhiteFigures} />
-				</Flex>
+				</Stack>
 
-				<Flex vertical gap="small">
-					<Typography.Text strong style={{ fontSize: 13 }}>
+				<Stack gap="xs">
+					<Text fw={600} size="sm">
 						Чёрные
-					</Typography.Text>
+					</Text>
 					<FigureList figures={lostBlackFigures} />
-				</Flex>
-			</Flex>
-		</div>
+				</Stack>
+			</Stack>
+		</Paper>
 	);
 }
 

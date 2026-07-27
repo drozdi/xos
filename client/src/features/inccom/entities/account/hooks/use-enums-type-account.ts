@@ -1,4 +1,4 @@
-export type SelectOption = { value: string; label: string };
+import { type ComboboxItem } from '@mantine/core';
 
 /** Значения совпадают с IncCom\Enum\AccountType на backend */
 const data: Record<string, string> = {
@@ -14,7 +14,7 @@ function findLabelByCode(type: string): string {
 	return data[type] || type;
 }
 
-const dataSelect: SelectOption[] = Object.entries(data).map(([value, label]) => ({
+const dataSelect: ComboboxItem[] = Object.entries(data).map(([value, label]) => ({
 	value,
 	label,
 }));

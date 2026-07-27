@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as tokenStorage from '@/core/auth/tokenStorage';
 
-vi.mock('@/ui/toast', () => ({
+vi.mock('@mantine/notifications', () => ({
 	notifications: { show: vi.fn() },
 }));
 

@@ -1,5 +1,5 @@
 ﻿import { formatBalance } from '@inccom/shared/utils/number-format';
-import { Modal } from 'antd';
+import { modals } from '@mantine/modals';
 
 export interface ExpenseAmountItem {
 	quantity: string;
@@ -16,7 +16,10 @@ export function calculateExpenseAmount(
 	}
 
 	return roundMoney(
-		items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.price), 0),
+		items.reduce(
+			(sum, item) => sum + Number(item.quantity) * Number(item.price),
+			0,
+		),
 	);
 }
 
@@ -33,7 +36,13 @@ export function willBalanceGoNegative(
 	debitAmount: number,
 	previousDebitOnSameAccount = 0,
 ): boolean {
-	return getBalanceAfterDebit(currentBalance, debitAmount, previousDebitOnSameAccount) < 0;
+	return (
+		getBalanceAfterDebit(
+			currentBalance,
+			debitAmount,
+			previousDebitOnSameAccount,
+		) < 0
+	);
 }
 
 export function confirmNegativeBalance(params: {
@@ -41,15 +50,15 @@ export function confirmNegativeBalance(params: {
 	projectedBalance: number;
 }): Promise<boolean> {
 	return new Promise((resolve) => {
-		Modal.confirm({
+		modals.openConfirmModal({
 			title: 'Отрицательный баланс',
 			centered: true,
-			content: `Операция приведёт баланс счёта «${params.accountLabel}» к отрицательному значению (${formatBalance(params.projectedBalance)}). Продолжить?`,
-			okText: 'Продолжить',
-			cancelText: 'Отмена',
-			okButtonProps: { danger: true },
-			onOk: () => resolve(true),
+			children: `Операция приведёт баланс счёта «${params.accountLabel}» к отрицательному значению (${formatBalance(params.projectedBalance)}). Продолжить?`,
+			labels: { confirm: 'Продолжить', cancel: 'Отмена' },
+			confirmProps: { color: 'orange' },
+			onConfirm: () => resolve(true),
 			onCancel: () => resolve(false),
+			onClose: () => resolve(false),
 		});
 	});
 }

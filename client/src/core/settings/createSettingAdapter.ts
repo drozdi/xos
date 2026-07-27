@@ -1,4 +1,4 @@
-import { notifications } from '@/ui/toast';
+import { notifications } from '@mantine/notifications';
 
 import type { UserSettingDto } from '@/types/api.types';
 

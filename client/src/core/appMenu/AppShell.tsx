@@ -1,3 +1,4 @@
+import { Box } from '@mantine/core';
 import type { ReactNode } from 'react';
 
 import { useAppContext } from '@/core/context/AppContext';
@@ -24,16 +25,16 @@ export function AppShell({ children }: AppShellProps) {
 
 	return (
 		<AppMenuRuntimeProvider>
-			<div
+			<Box
+				h="100%"
 				style={{
-					height: '100%',
 					display: 'flex',
 					flexDirection: 'column',
 					minHeight: 0,
 				}}
 			>
 				<AppTopMenuRoot config={menuConfig} loader={menuLoader} />
-				<div
+				<Box
 					style={{
 						flex: 1,
 						minHeight: 0,
@@ -41,8 +42,8 @@ export function AppShell({ children }: AppShellProps) {
 					}}
 				>
 					{children}
-				</div>
-			</div>
+				</Box>
+			</Box>
 		</AppMenuRuntimeProvider>
 	);
 }

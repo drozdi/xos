@@ -1,1 +1,15 @@
 @import 'tailwindcss';
+@import 'tailwind-preset-mantine';
+
+@import '@mantine/core/styles.css';
+@import '@mantine/dates/styles.css';
+@import '@mantine/notifications/styles.css';
+
+@import '@mantine/core/styles.layer.css';
+
+/* :root[data-mantine-color-scheme='dark'] {
+	--mantine-color-body: #002650;
+	--mantine-color-text: #ffffffcc;
+	--mantine-color-default-border: rgba(255, 255, 255, 0.2);
+	--app-shell-border-color: rgba(255, 255, 255, 0.2);
+} */

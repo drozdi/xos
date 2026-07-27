@@ -1,4 +1,13 @@
-import { Alert, Divider, Flex, Select, Switch, Typography } from 'antd';
+import {
+	Paper,
+	Stack,
+	Title,
+	Text,
+	Select,
+	Switch,
+	Alert,
+	Divider,
+} from '@mantine/core';
 import { HINT_LEVELS } from '../models/hints/HintLevels';
 import GameRulesModal from './GameRulesModal';
 import ThemeSwitch from './ThemeSwitch';
@@ -15,79 +24,64 @@ function GameSettingsPanel({
 	const currentHint = HINT_LEVELS.find((item) => item.id === hintLevel) ?? HINT_LEVELS[1];
 
 	return (
-		<div className="game-sidebar__paper" style={{ padding: 16, borderRadius: 8, border: '1px solid var(--xos-shell-border)' }}>
-			<Flex vertical gap="middle">
-				<Typography.Title level={4} style={{ margin: 0 }}>
-					Настройки
-				</Typography.Title>
+		<Paper p="md" radius="md" className="game-sidebar__paper">
+			<Stack gap="md">
+				<Title order={4}>Настройки</Title>
 
 				<ThemeSwitch />
 
-				<Divider style={{ margin: 0 }} />
+				<Divider />
 
-				<div>
-					<Typography.Text style={{ display: 'block', marginBottom: 4 }}>Уровень подсказок</Typography.Text>
-					<Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 8 }}>
-						{currentHint.description}
-					</Typography.Text>
-					<Select
-						style={{ width: '100%' }}
-						value={String(hintLevel)}
-						onChange={(value) => onHintLevelChange(Number(value))}
-						options={HINT_LEVELS.map((item) => ({
-							value: String(item.id),
-							label: item.name,
-						}))}
-					/>
-				</div>
+				<Select
+					label="Уровень подсказок"
+					description={currentHint.description}
+					value={String(hintLevel)}
+					onChange={(value) => onHintLevelChange(Number(value))}
+					data={HINT_LEVELS.map((item) => ({
+						value: String(item.id),
+						label: item.name,
+					}))}
+				/>
 
-				<Divider style={{ margin: 0 }} />
+				<Divider />
 
-				<div>
-					<Switch
-						checked={touchMoveEnabled}
-						onChange={(checked) => onTouchMoveChange(checked)}
-					/>
-					<span style={{ marginLeft: 8 }}>Правило «взялся — ходи»</span>
-					<Typography.Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>
-						{touchMoveEnabled
+				<Switch
+					label="Правило «взялся — ходи»"
+					description={
+						touchMoveEnabled
 							? 'Коснулись фигуры — нужно завершить ход ею или взять выбранную цель.'
-							: 'Свободный выбор и отмена выделения фигуры.'}
-					</Typography.Text>
-				</div>
+							: 'Свободный выбор и отмена выделения фигуры.'
+					}
+					checked={touchMoveEnabled}
+					onChange={(event) => onTouchMoveChange(event.currentTarget.checked)}
+				/>
 
-				{touchMoveEnabled && touchLockedCell?.figure ? (
-					<Alert
-						type="warning"
-						showIcon
-						message="Зафиксирован ход"
-						description={
-							<>
-								{touchLockedCell.figure.label}
-								{touchCaptureTarget?.figure ? <> → взять {touchCaptureTarget.figure.label}</> : null}
-							</>
-						}
-					/>
-				) : null}
+				{touchMoveEnabled && touchLockedCell?.figure && (
+					<Alert color="yellow" variant="light" title="Зафиксирован ход">
+						{touchLockedCell.figure.label}
+						{touchCaptureTarget?.figure && (
+							<> → взять {touchCaptureTarget.figure.label}</>
+						)}
+					</Alert>
+				)}
 
-				{touchMoveEnabled && !touchLockedCell && touchCaptureTarget?.figure ? (
-					<Alert
-						type="warning"
-						showIcon
-						message="Нужно взять"
-						description={`${touchCaptureTarget.figure.label} — выберите свою фигуру`}
-					/>
-				) : null}
+				{touchMoveEnabled && !touchLockedCell && touchCaptureTarget?.figure && (
+					<Alert color="yellow" variant="light" title="Нужно взять">
+						{touchCaptureTarget.figure.label} — выберите свою фигуру
+					</Alert>
+				)}
 
-				{touchMessage ? (
-					<Alert type="warning" showIcon message={touchMessage} />
-				) : null}
+				{touchMessage && (
+					<Alert color="orange" variant="light">
+						{touchMessage}
+					</Alert>
+				)}
 
-				<Divider style={{ margin: 0 }} />
+				<Divider />
 
 				<GameRulesModal />
-			</Flex>
-		</div>
+			</Stack>
+		</Paper>
 	);
 }
 

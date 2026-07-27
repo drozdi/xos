@@ -1,5 +1,4 @@
-import { Flex, Popover, Tooltip, Typography } from 'antd';
-import type { CSSProperties } from 'react';
+import { Box, Popover, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
 
 import { useThemePreference, type ThemePreference } from '@/core/theme';
 
@@ -25,36 +24,31 @@ function ThemeIcon({ theme }: { theme: ThemePreference }) {
 	return <MoonIcon size={20} />;
 }
 
-const hoverButtonStyle = (expanded: boolean): CSSProperties => ({
-	display: 'flex',
-	alignItems: 'center',
-	gap: 10,
-	width: '100%',
-	padding: expanded ? '8px 10px' : '8px 0',
-	justifyContent: expanded ? 'flex-start' : 'center',
-	borderRadius: 6,
-	color: 'var(--xos-shell-text)',
-	background: 'transparent',
-	border: 'none',
-	cursor: 'pointer',
-});
-
 export function ThemeMenuButton({ expanded }: ThemeMenuButtonProps) {
 	const { theme, setTheme } = useThemePreference();
 
 	const button = (
-		<button
-			type="button"
-			aria-label="Тема"
-			style={hoverButtonStyle(expanded)}
-			onMouseEnter={(e) => {
-				e.currentTarget.style.background = 'var(--xos-shell-hover)';
+		<UnstyledButton
+			style={{
+				display: 'flex',
+				alignItems: 'center',
+				gap: 10,
+				width: '100%',
+				padding: expanded ? '8px 10px' : '8px 0',
+				justifyContent: expanded ? 'flex-start' : 'center',
+				borderRadius: 6,
+				color: 'var(--xos-shell-text)',
 			}}
-			onMouseLeave={(e) => {
-				e.currentTarget.style.background = 'transparent';
+			styles={{
+				root: {
+					'&:hover': {
+						background: 'var(--xos-shell-hover)',
+					},
+				},
 			}}
 		>
-			<span
+			<Box
+				component="span"
 				aria-hidden
 				style={{
 					display: 'inline-flex',
@@ -66,34 +60,29 @@ export function ThemeMenuButton({ expanded }: ThemeMenuButtonProps) {
 				}}
 			>
 				<ThemeIcon theme={theme} />
-			</span>
+			</Box>
 			{expanded ? (
-				<Typography.Text ellipsis style={{ fontSize: 13 }}>
+				<Text size="sm" truncate>
 					Тема
-				</Typography.Text>
+				</Text>
 			) : null}
-		</button>
+		</UnstyledButton>
 	);
 
-	const target = expanded ? (
-		button
-	) : (
-		<Tooltip title="Тема" placement="right">
+	const target = expanded ? button : (
+		<Tooltip label="Тема" position="right" withArrow zIndex={1300}>
 			{button}
 		</Tooltip>
 	);
 
 	return (
-		<Popover
-			placement="rightTop"
-			trigger="click"
-			overlayStyle={{ zIndex: 2100 }}
-			content={
-				<Flex vertical gap={4}>
+		<Popover position="right-start" offset={8} zIndex={2100} withinPortal>
+			<Popover.Target>{target}</Popover.Target>
+			<Popover.Dropdown p="xs">
+				<Stack gap={4}>
 					{THEME_OPTIONS.map((option) => (
-						<button
+						<UnstyledButton
 							key={option.value}
-							type="button"
 							onClick={() => setTheme(option.value)}
 							style={{
 								display: 'flex',
@@ -104,25 +93,21 @@ export function ThemeMenuButton({ expanded }: ThemeMenuButtonProps) {
 								borderRadius: 6,
 								color: 'var(--xos-shell-text)',
 								fontWeight: theme === option.value ? 600 : 400,
-								background: 'transparent',
-								border: 'none',
-								cursor: 'pointer',
 							}}
-							onMouseEnter={(e) => {
-								e.currentTarget.style.background = 'var(--xos-shell-hover)';
-							}}
-							onMouseLeave={(e) => {
-								e.currentTarget.style.background = 'transparent';
+							styles={{
+								root: {
+									'&:hover': {
+										background: 'var(--xos-shell-hover)',
+									},
+								},
 							}}
 						>
 							<option.icon size={16} />
-							<Typography.Text style={{ fontSize: 13 }}>{option.label}</Typography.Text>
-						</button>
+							<Text size="sm">{option.label}</Text>
+						</UnstyledButton>
 					))}
-				</Flex>
-			}
-		>
-			{target}
+				</Stack>
+			</Popover.Dropdown>
 		</Popover>
 	);
 }

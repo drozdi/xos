@@ -1,5 +1,5 @@
-import { Checkbox, DatePicker, Flex, Form, Input, Select, Switch } from 'antd';
-import dayjs from 'dayjs';
+import { Checkbox, Select, Stack, Switch, TextInput } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 
 import { formatSubDeviceDate, parseSubDeviceDate } from '@/features/device/subDeviceDateUtils';
 
@@ -34,16 +34,6 @@ function hasLinkedParentAccounting(acc: SubDeviceAccountingData): boolean {
 	);
 }
 
-function toDayjs(value: unknown) {
-	const parsed =
-		value instanceof Date ? value : parseSubDeviceDate(value as string | null | undefined);
-	if (!parsed) {
-		return null;
-	}
-	const d = dayjs(parsed);
-	return d.isValid() ? d : null;
-}
-
 export function SubDeviceAccountingFields({
 	accounting,
 	parentAccountings,
@@ -68,114 +58,108 @@ export function SubDeviceAccountingFields({
 		(acc.parent_id ? `Учёт #${acc.parent_id}` : '');
 
 	return (
-		<Flex vertical gap={12}>
+		<Stack gap="sm">
 			{linkedToParent ? (
-				<Form.Item label="Родительский учёт" style={{ marginBottom: 0 }}>
-					<Input value={linkedParentLabel} readOnly />
-				</Form.Item>
+				<TextInput
+					label="Родительский учёт"
+					value={linkedParentLabel}
+					readOnly
+				/>
 			) : null}
 
-			<Form.Item label="Инв. №" style={{ marginBottom: 0 }}>
-				<Input
-					value={acc.inNo ?? ''}
-					readOnly={fieldsDisabled}
-					onChange={(e) => setField('inNo', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item label="Счёт" style={{ marginBottom: 0 }}>
-				<Input
-					value={acc.invoice ?? ''}
-					readOnly={fieldsDisabled}
-					onChange={(e) => setField('invoice', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item label="Дата счёта" style={{ marginBottom: 0 }}>
-				<Input
-					value={acc.dateInvoice ?? ''}
-					readOnly={fieldsDisabled}
-					onChange={(e) => setField('dateInvoice', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item label="Наименование" style={{ marginBottom: 0 }}>
-				<Input
-					value={acc.name ?? ''}
-					readOnly={fieldsDisabled}
-					onChange={(e) => setField('name', e.target.value)}
-				/>
-			</Form.Item>
+			<TextInput
+				label="Инв. №"
+				value={acc.inNo ?? ''}
+				readOnly={fieldsDisabled}
+				onChange={(e) => setField('inNo', e.currentTarget.value)}
+			/>
+			<TextInput
+				label="Счёт"
+				value={acc.invoice ?? ''}
+				readOnly={fieldsDisabled}
+				onChange={(e) => setField('invoice', e.currentTarget.value)}
+			/>
+			<TextInput
+				label="Дата счёта"
+				value={acc.dateInvoice ?? ''}
+				readOnly={fieldsDisabled}
+				onChange={(e) => setField('dateInvoice', e.currentTarget.value)}
+			/>
+			<TextInput
+				label="Наименование"
+				value={acc.name ?? ''}
+				readOnly={fieldsDisabled}
+				onChange={(e) => setField('name', e.currentTarget.value)}
+			/>
 
 			{!linkedToParent ? (
 				<>
-					<Form.Item label="Списано" style={{ marginBottom: 0 }}>
-						<Switch
-							checked={Boolean(acc.discarded)}
-							disabled={readOnly}
-							onChange={(checked) => {
-								onChange({
-									...acc,
-									discarded: checked,
-									dateDiscarded: checked
-										? acc.dateDiscarded || formatSubDeviceDate(new Date())
-										: '',
-								});
+					<Switch
+						label="Списано"
+						checked={Boolean(acc.discarded)}
+						disabled={readOnly}
+						onChange={(e) => {
+							const checked = e.currentTarget.checked;
+							onChange({
+								...acc,
+								discarded: checked,
+								dateDiscarded: checked
+									? acc.dateDiscarded || formatSubDeviceDate(new Date())
+									: '',
+							});
+						}}
+					/>
+					{Boolean(acc.discarded) ? (
+						<DatePickerInput
+							label="Дата списания"
+							value={parseSubDeviceDate(acc.dateDiscarded)}
+							valueFormat="DD.MM.YYYY"
+							readOnly={readOnly}
+							clearable
+							onChange={(value) => {
+								if (!value) {
+									onChange({
+										...acc,
+										discarded: false,
+										dateDiscarded: '',
+									});
+									return;
+								}
+								setField('dateDiscarded', formatSubDeviceDate(value));
 							}}
 						/>
-					</Form.Item>
-					{Boolean(acc.discarded) ? (
-						<Form.Item label="Дата списания" style={{ marginBottom: 0 }}>
-							<DatePicker
-								value={toDayjs(acc.dateDiscarded)}
-								format="DD.MM.YYYY"
-								disabled={readOnly}
-								allowClear
-								style={{ width: '100%' }}
-								onChange={(value) => {
-									if (!value) {
-										onChange({
-											...acc,
-											discarded: false,
-											dateDiscarded: '',
-										});
-										return;
-									}
-									setField('dateDiscarded', formatSubDeviceDate(value.toDate()));
-								}}
-							/>
-						</Form.Item>
 					) : null}
-					<Form.Item label="Родительский учёт" style={{ marginBottom: 0 }}>
-						<Select
-							options={parentOptions}
-							value={acc.parent_id != null ? String(acc.parent_id) : undefined}
-							disabled={readOnly}
-							showSearch
-							allowClear
-							optionFilterProp="label"
-							style={{ width: '100%' }}
-							onChange={(value) => setField('parent_id', value ? Number(value) : null)}
-						/>
-					</Form.Item>
+					<Select
+						label="Родительский учёт"
+						data={parentOptions}
+						value={acc.parent_id != null ? String(acc.parent_id) : null}
+						disabled={readOnly}
+						searchable
+						clearable
+						onChange={(value) =>
+							setField('parent_id', value ? Number(value) : null)
+						}
+					/>
 				</>
 			) : (
 				<>
-					<Form.Item label="Списано" style={{ marginBottom: 0 }}>
-						<Switch checked={Boolean(acc.discarded)} disabled />
-					</Form.Item>
+					<Switch
+						label="Списано"
+						checked={Boolean(acc.discarded)}
+						disabled
+					/>
 					{acc.dateDiscarded ? (
-						<Form.Item label="Дата списания" style={{ marginBottom: 0 }}>
-							<Input value={acc.dateDiscarded} readOnly />
-						</Form.Item>
+						<TextInput label="Дата списания" value={acc.dateDiscarded} readOnly />
 					) : null}
 					{!readOnly ? (
 						<Checkbox
+							label="Отвязать от родительского учёта"
 							checked={Boolean(acc.detachParent)}
-							onChange={(e) => setField('detachParent', e.target.checked)}
-						>
-							Отвязать от родительского учёта
-						</Checkbox>
+							onChange={(e) => setField('detachParent', e.currentTarget.checked)}
+						/>
 					) : null}
 				</>
 			)}
-		</Flex>
+		</Stack>
 	);
 }

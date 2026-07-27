@@ -1,4 +1,4 @@
-import { Alert, Flex, Form, Input, InputNumber, Select, Switch, Tabs } from 'antd';
+import { Alert, NumberInput, Stack, Switch, Tabs, TextInput } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -33,31 +33,37 @@ export default function DeviceComponentApp() {
 	const canDelete = useCanDeleteDeviceComponent();
 	const canCreate = canCreateDeviceComponent();
 	const isNew = entityId === 0;
-	const [activeTab, setActiveTab] = useState('general');
+	const [activeTab, setActiveTab] = useState<string | null>('general');
+
+	const propertiesQuery = useQuery({
+		queryKey: ['device', 'typeProperties'],
+		queryFn: () => deviceTypeApi.properties(),
+	});
+
+	const propertyOptions = useMemo(
+		() =>
+			(propertiesQuery.data ?? []).map((item) => ({
+				value: String(item.value),
+				label: item.label ?? item.sublabel ?? String(item.value),
+			})),
+		[propertiesQuery.data],
+	);
 
 	const canSave = isNew ? canCreate : canUpdate;
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на создание типа комплектующих"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание типа комплектующих
+			</Alert>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр типа комплектующих"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр типа комплектующих
+			</Alert>
 		);
 	}
 
@@ -77,74 +83,55 @@ export default function DeviceComponentApp() {
 			canDelete={canDelete}
 		>
 			{({ data, setField, errors, readOnly }) => (
-				<Tabs
-					activeKey={activeTab}
-					onChange={setActiveTab}
-					items={[
-						{
-							key: 'general',
-							label: 'Общие',
-							children: (
-								<Flex vertical gap={12}>
-									<Form.Item label="Активен" style={{ marginBottom: 0 }}>
-										<Switch
-											checked={Boolean(data.active)}
-											disabled={readOnly}
-											onChange={(checked) => setField('active', checked)}
-										/>
-									</Form.Item>
-									<Form.Item
-										label="Название"
-										required
-										validateStatus={errors.name ? 'error' : undefined}
-										help={errors.name}
-										style={{ marginBottom: 0 }}
-									>
-										<Input
-											value={data.name ?? ''}
-											readOnly={readOnly}
-											onChange={(e) => setField('name', e.target.value)}
-										/>
-									</Form.Item>
-									<Form.Item
-										label="Код"
-										required
-										validateStatus={errors.code ? 'error' : undefined}
-										help={errors.code}
-										style={{ marginBottom: 0 }}
-									>
-										<Input
-											value={data.code ?? ''}
-											readOnly={readOnly}
-											onChange={(e) => setField('code', e.target.value)}
-										/>
-									</Form.Item>
-									<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
-										<InputNumber
-											value={data.sort ?? 0}
-											disabled={readOnly}
-											style={{ width: '100%' }}
-											onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-										/>
-									</Form.Item>
-								</Flex>
-							),
-						},
-						{
-							key: 'properties',
-							label: 'Свойства',
-							children: (
-								<TypePropertiesEditor
-									properties={normalizeIdRecord<TypePropertyItem>(data.properties)}
-									readOnly={readOnly}
-									onChange={(properties) => setField('properties', properties)}
-									catalogApi={deviceComponentApi}
-									catalogQueryKey="component"
-								/>
-							),
-						},
-					]}
-				/>
+				<Tabs value={activeTab} onChange={setActiveTab}>
+					<Tabs.List>
+						<Tabs.Tab value="general">Общие</Tabs.Tab>
+						<Tabs.Tab value="properties">Свойства</Tabs.Tab>
+					</Tabs.List>
+
+					<Tabs.Panel value="general" pt="sm">
+						<Switch
+								label="Активен"
+								checked={Boolean(data.active)}
+								disabled={readOnly}
+								onChange={(e) => setField('active', e.currentTarget.checked)}
+							/>
+						<Stack gap="sm">
+							<TextInput
+								label="Название"
+								withAsterisk
+								value={data.name ?? ''}
+								error={errors.name}
+								readOnly={readOnly}
+								onChange={(e) => setField('name', e.currentTarget.value)}
+							/>
+							<TextInput
+								label="Код"
+								withAsterisk
+								value={data.code ?? ''}
+								error={errors.code}
+								readOnly={readOnly}
+								onChange={(e) => setField('code', e.currentTarget.value)}
+							/>
+							<NumberInput
+								label="Сортировка"
+								value={data.sort ?? 0}
+								readOnly={readOnly}
+								onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
+							/>
+						</Stack>
+					</Tabs.Panel>
+
+					<Tabs.Panel value="properties" pt="sm">
+						<TypePropertiesEditor
+							properties={normalizeIdRecord<TypePropertyItem>(data.properties)}
+							readOnly={readOnly}
+							onChange={(properties) => setField('properties', properties)}
+							catalogApi={deviceComponentApi}
+							catalogQueryKey="component"
+						/>
+					</Tabs.Panel>
+				</Tabs>
 			)}
 		</MainEntityForm>
 	);

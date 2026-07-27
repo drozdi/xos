@@ -1,4 +1,4 @@
-import { Typography } from 'antd';
+import { Box, Text } from '@mantine/core';
 import type { MouseEvent } from 'react';
 
 import { getNoteGrid } from '../difficulty';
@@ -36,11 +36,9 @@ export function Cell({ index, cellSize, isBoxBorderRight, isBoxBorderBottom }: C
 		toggleCellNote(index, number);
 	};
 
-	const fontSize =
-		sizeConfig.size <= 4 ? 24 : sizeConfig.size === 6 ? 18 : 16;
-
 	return (
-		<div
+		<Box
+			component="div"
 			role="gridcell"
 			tabIndex={0}
 			onClick={() => handleCellClick(index)}
@@ -54,31 +52,31 @@ export function Cell({ index, cellSize, isBoxBorderRight, isBoxBorderBottom }: C
 				width: cellSize,
 				height: cellSize,
 				padding: 0,
-				border: '1px solid #d9d9d9',
+				border: '1px solid var(--mantine-color-gray-4)',
 				borderRightWidth: isBoxBorderRight ? 2 : 1,
 				borderBottomWidth: isBoxBorderBottom ? 2 : 1,
-				background: isSelected ? '#bae0ff' : isHighlighted ? '#e6f4ff' : '#fff',
+				background: isSelected
+					? 'var(--mantine-color-blue-1)'
+					: isHighlighted
+						? 'var(--mantine-color-blue-0)'
+						: 'var(--mantine-color-white)',
 				cursor: 'pointer',
 				position: 'relative',
 				overflow: 'hidden',
 			}}
 		>
 			{value !== 0 ? (
-				<Typography.Text
-					strong={Boolean(givenMask)}
-					style={{
-						display: 'block',
-						textAlign: 'center',
-						fontSize,
-						lineHeight: `${cellSize}px`,
-						color: hasError ? '#ff4d4f' : givenMask ? '#000' : '#1677ff',
-						fontWeight: givenMask ? 700 : 500,
-					}}
+				<Text
+					size={sizeConfig.size <= 4 ? 'xl' : sizeConfig.size === 6 ? 'lg' : 'md'}
+					fw={givenMask ? 700 : 500}
+					c={hasError ? 'red' : givenMask ? 'dark' : 'blue'}
+					ta="center"
+					lh={`${cellSize}px`}
 				>
 					{value}
-				</Typography.Text>
+				</Text>
 			) : (notes ?? 0) !== 0 ? (
-				<div
+				<Box
 					style={{
 						display: 'grid',
 						gridTemplateColumns: `repeat(${noteGrid.cols}, 1fr)`,
@@ -91,10 +89,10 @@ export function Cell({ index, cellSize, isBoxBorderRight, isBoxBorderBottom }: C
 						const number = noteValue + 1;
 						const { row, col } = getNotePosition(number, noteGrid.cols);
 						const isActive = hasNote(notes ?? 0, number);
-						const Tag = isActive ? 'button' : 'span';
 						return (
-							<Tag
+							<Box
 								key={number}
+								component={isActive ? 'button' : 'span'}
 								type={isActive ? 'button' : undefined}
 								onClick={
 									isActive
@@ -114,21 +112,22 @@ export function Cell({ index, cellSize, isBoxBorderRight, isBoxBorderBottom }: C
 									visibility: isActive ? 'visible' : 'hidden',
 								}}
 							>
-								<Typography.Text
-									type="secondary"
+								<Text
+									size="xs"
+									c="dimmed"
+									ta="center"
 									style={{
 										fontSize: Math.max(8, Math.floor(cellSize / (noteGrid.rows * 2.5))),
 										lineHeight: 1,
-										textAlign: 'center',
 									}}
 								>
 									{number}
-								</Typography.Text>
-							</Tag>
+								</Text>
+							</Box>
 						);
 					})}
-				</div>
+				</Box>
 			) : null}
-		</div>
+		</Box>
 	);
 }

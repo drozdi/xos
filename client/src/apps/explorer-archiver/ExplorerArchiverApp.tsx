@@ -1,5 +1,5 @@
-import { Button, Flex, Form, Input, Table, Typography } from 'antd';
-import { notifications } from '@/ui/toast';
+import { Button, Group, ScrollArea, Stack, Table, Text, TextInput } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -70,51 +70,52 @@ export default function ExplorerArchiverApp() {
 	);
 
 	return (
-		<Flex vertical gap="small" style={{ height: '100%', padding: 16, minHeight: 0 }}>
-			<Flex justify="space-between">
-				<Typography.Text strong>Архиватор</Typography.Text>
-				<Button size="small" onClick={() => void openFile()}>
+		<Stack h="100%" p="md" gap="sm" style={{ minHeight: 0 }}>
+			<Group justify="space-between">
+				<Text fw={600}>Архиватор</Text>
+				<Button variant="default" size="xs" onClick={() => void openFile()}>
 					Открыть…
 				</Button>
-			</Flex>
-			<Form.Item label="Архив" style={{ marginBottom: 0 }}>
-				<Input value={archivePath} onChange={(e) => setArchivePath(e.target.value)} />
-			</Form.Item>
-			<Form.Item label="Папка назначения" style={{ marginBottom: 0 }}>
-				<Input value={destination} onChange={(e) => setDestination(e.target.value)} />
-			</Form.Item>
-			<Flex gap="small" align="center">
+			</Group>
+			<TextInput label="Архив" value={archivePath} onChange={(e) => setArchivePath(e.currentTarget.value)} />
+			<TextInput
+				label="Папка назначения"
+				value={destination}
+				onChange={(e) => setDestination(e.currentTarget.value)}
+			/>
+			<Group>
 				<Button
-					type="primary"
 					onClick={() => unpackMutation.mutate()}
 					loading={unpackMutation.isPending}
 					disabled={!archivePath || !destination}
 				>
 					Распаковать
 				</Button>
-				{contentsQuery.data ? (
-					<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+				{contentsQuery.data && (
+					<Text size="sm" c="dimmed">
 						Файлов: {contentsQuery.data.items.length}, размер: {totalSize} байт
-					</Typography.Text>
-				) : null}
-			</Flex>
+					</Text>
+				)}
+			</Group>
 
-			<div style={{ flex: 1, overflow: 'auto' }}>
-				<Table
-					size="small"
-					pagination={false}
-					rowKey="name"
-					dataSource={contentsQuery.data?.items ?? []}
-					columns={[
-						{ title: 'Имя', dataIndex: 'name' },
-						{
-							title: 'Размер',
-							render: (_: unknown, item: { folder?: boolean; size: number }) =>
-								item.folder ? '—' : item.size,
-						},
-					]}
-				/>
-			</div>
-		</Flex>
+			<ScrollArea style={{ flex: 1 }}>
+				<Table striped highlightOnHover>
+					<Table.Thead>
+						<Table.Tr>
+							<Table.Th>Имя</Table.Th>
+							<Table.Th>Размер</Table.Th>
+						</Table.Tr>
+					</Table.Thead>
+					<Table.Tbody>
+						{(contentsQuery.data?.items ?? []).map((item) => (
+							<Table.Tr key={item.name}>
+								<Table.Td>{item.name}</Table.Td>
+								<Table.Td>{item.folder ? '—' : item.size}</Table.Td>
+							</Table.Tr>
+						))}
+					</Table.Tbody>
+				</Table>
+			</ScrollArea>
+		</Stack>
 	);
 }

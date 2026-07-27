@@ -1,17 +1,15 @@
-﻿import { Flex, Spin, Tooltip } from 'antd';
-import { HolderOutlined } from '@ant-design/icons';
-import { useMemo, useState, type CSSProperties, type DragEvent } from 'react';
-
-import { useAccountQuery } from '@inccom/entities/account';
-import {
+﻿import {
 	buildTransactionCategoriesQueryParams,
 	useTransactionCategoriesQuery,
 	useTransactionCategoryUpdate,
 } from '@inccom/entities/transaction-category';
+import { useAccountQuery } from '@inccom/entities/account';
 import { useStoreUserProfile } from '@inccom/entities/user';
 import { notification } from '@inccom/shared/notification';
 import { getErrorMessage } from '@inccom/shared/utils/error';
-
+import { Box, Group, Loader, Stack, Tooltip, type StackProps } from '@mantine/core';
+import { useMemo, useState, type DragEvent } from 'react';
+import { TbGripVertical } from 'react-icons/tb';
 import { CategotyItem } from './item';
 import classes from './category-list.module.css';
 
@@ -80,7 +78,7 @@ function SortableCategoryRow({
 	}
 
 	return (
-		<div
+		<Box
 			className={`${classes.row} ${isDragging ? classes.rowDragging : ''} ${isDropTarget ? classes.rowDropTarget : ''}`}
 			draggable={canDrag && !isSaving}
 			onDragStart={handleDragStart}
@@ -89,30 +87,29 @@ function SortableCategoryRow({
 			onDragLeave={() => onDragLeave(index)}
 			onDrop={handleDrop}
 		>
-			<Flex wrap="nowrap" gap={8} align="center">
-				{canDrag ? (
-					<Tooltip title="Перетащите для изменения порядка">
-						<div className={classes.dragHandle} aria-hidden>
-							<HolderOutlined style={{ fontSize: 16 }} />
-						</div>
+			<Group wrap="nowrap" gap="xs">
+				{canDrag && (
+					<Tooltip label="Перетащите для изменения порядка">
+						<Box className={classes.dragHandle} aria-hidden>
+							<TbGripVertical size={16} />
+						</Box>
 					</Tooltip>
-				) : null}
-				<div style={{ flex: 1, minWidth: 0 }}>
+				)}
+				<Box style={{ flex: 1, minWidth: 0 }}>
 					<CategotyItem category={category} />
-				</div>
-			</Flex>
-		</div>
+				</Box>
+			</Group>
+		</Box>
 	);
 }
 
 export function CategoryList({
 	account_id,
 	type,
-	style,
-}: {
+	...props
+}: StackProps & {
 	account_id: ICategory['account_id'];
 	type: string;
-	style?: CSSProperties;
 }) {
 	const [draggedId, setDraggedId] = useState<number | null>(null);
 	const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
@@ -155,7 +152,9 @@ export function CategoryList({
 		}
 
 		try {
-			await Promise.all(updates.map((item) => updateMutation.mutateAsync(item)));
+			await Promise.all(
+				updates.map((item) => updateMutation.mutateAsync(item)),
+			);
 		} catch (error) {
 			notification.error('Ошибка', getErrorMessage(error));
 		}
@@ -184,11 +183,11 @@ export function CategoryList({
 	}
 
 	if (isLoading) {
-		return <Spin size="small" />;
+		return <Loader size="sm" />;
 	}
 
 	return (
-		<Flex vertical gap={8} style={style}>
+		<Stack {...props}>
 			{categories.map((category, index) => (
 				<SortableCategoryRow
 					key={category.id}
@@ -204,14 +203,14 @@ export function CategoryList({
 						setDropTargetIndex(null);
 					}}
 					onDragOver={setDropTargetIndex}
-					onDragLeave={(rowIndex) => {
-						if (dropTargetIndex === rowIndex) {
+					onDragLeave={(index) => {
+						if (dropTargetIndex === index) {
 							setDropTargetIndex(null);
 						}
 					}}
 					onDrop={handleDrop}
 				/>
 			))}
-		</Flex>
+		</Stack>
 	);
 }

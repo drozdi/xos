@@ -1,4 +1,4 @@
-import { Alert, Flex, Tabs } from 'antd';
+import { Alert, Stack, Tabs } from '@mantine/core';
 import { useState } from 'react';
 
 import { deviceApi, type DeviceDetail } from '@/core/api/endpoints/deviceApi';
@@ -43,31 +43,23 @@ export default function DeviceDeviceApp() {
 	const canDelete = useCanDeleteDevice();
 	const canCreate = canCreateDevice();
 	const isNew = entityId === 0;
-	const [activeTab, setActiveTab] = useState('general');
+	const [activeTab, setActiveTab] = useState<string | null>('general');
 
 	const canSave = isNew ? canCreate : canUpdate;
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на создание устройства"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание устройства
+			</Alert>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр устройства"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр устройства
+			</Alert>
 		);
 	}
 
@@ -86,96 +78,80 @@ export default function DeviceDeviceApp() {
 			canDelete={canDelete}
 		>
 			{({ data, setField, errors, readOnly }) => (
-				<Tabs
-					activeKey={activeTab}
-					onChange={setActiveTab}
-					items={[
-						{
-							key: 'general',
-							label: 'Общие',
-							children: (
-								<DeviceGeneralTab
-									data={data}
-									errors={errors}
-									readOnly={readOnly}
-									setField={setField}
-								/>
-							),
-						},
-						{
-							key: 'accounting',
-							label: 'Учёт',
-							children: (
-								<DeviceAccountingFields
-									accounting={(data.accounting ?? {}) as Record<string, unknown>}
-									readOnly={readOnly}
-									onChange={(accounting) =>
-										setField('accounting', accounting as Record<string, unknown>)
-									}
-								/>
-							),
-						},
-						{
-							key: 'locations',
-							label: 'Расположение',
-							children: (
-								<DeviceLocationsTab
-									locations={data.locations}
-									readOnly={readOnly}
-									onChange={(locations) => setField('locations', locations)}
-								/>
-							),
-						},
-						{
-							key: 'repairs',
-							label: 'Ремонт',
-							children: (
-								<DeviceRepairsTab
-									repairs={data.repairs}
-									readOnly={readOnly}
-									onChange={(repairs) => setField('repairs', repairs)}
-								/>
-							),
-						},
-						{
-							key: 'properties',
-							label: 'Свойства',
-							children: (
-								<DevicePropertiesTab
-									typeId={data.typeId}
-									properties={data.properties}
-									readOnly={readOnly}
-									onChange={(properties) => setField('properties', properties)}
-								/>
-							),
-						},
-						{
-							key: 'licenses',
-							label: 'Лицензии',
-							children: (
-								<DeviceLicensesTab
-									licenses={data.licenses}
-									readOnly={readOnly}
-									onChange={(licenses) => setField('licenses', licenses)}
-								/>
-							),
-						},
-						{
-							key: 'images',
-							label: 'Изображения',
-							children: <DeviceImagesTab images={data.images} />,
-						},
-						{
-							key: 'info',
-							label: 'Сведения',
-							children: (
-								<Flex vertical gap={24}>
-									<DeviceInfoTab data={data} layout="rows" />
-								</Flex>
-							),
-						},
-					]}
-				/>
+				<Tabs value={activeTab} onChange={setActiveTab}>
+					<Tabs.List>
+						<Tabs.Tab value="general">Общие</Tabs.Tab>
+						<Tabs.Tab value="accounting">Учёт</Tabs.Tab>
+						<Tabs.Tab value="locations">Расположение</Tabs.Tab>
+						<Tabs.Tab value="repairs">Ремонт</Tabs.Tab>
+						<Tabs.Tab value="properties">Свойства</Tabs.Tab>
+						<Tabs.Tab value="licenses">Лицензии</Tabs.Tab>
+						<Tabs.Tab value="images">Изображения</Tabs.Tab>
+						<Tabs.Tab value="info">Сведения</Tabs.Tab>
+					</Tabs.List>
+
+					<Tabs.Panel value="general" pt="sm">
+						<DeviceGeneralTab
+							data={data}
+							errors={errors}
+							readOnly={readOnly}
+							setField={setField}
+						/>
+					</Tabs.Panel>
+
+					<Tabs.Panel value="accounting" pt="sm">
+						<DeviceAccountingFields
+							accounting={(data.accounting ?? {}) as Record<string, unknown>}
+							readOnly={readOnly}
+							onChange={(accounting) =>
+								setField('accounting', accounting as Record<string, unknown>)
+							}
+						/>
+					</Tabs.Panel>
+
+					<Tabs.Panel value="locations" pt="sm">
+						<DeviceLocationsTab
+							locations={data.locations}
+							readOnly={readOnly}
+							onChange={(locations) => setField('locations', locations)}
+						/>
+					</Tabs.Panel>
+
+					<Tabs.Panel value="repairs" pt="sm">
+						<DeviceRepairsTab
+							repairs={data.repairs}
+							readOnly={readOnly}
+							onChange={(repairs) => setField('repairs', repairs)}
+						/>
+					</Tabs.Panel>
+
+					<Tabs.Panel value="properties" pt="sm">
+						<DevicePropertiesTab
+							typeId={data.typeId}
+							properties={data.properties}
+							readOnly={readOnly}
+							onChange={(properties) => setField('properties', properties)}
+						/>
+					</Tabs.Panel>
+
+					<Tabs.Panel value="licenses" pt="sm">
+						<DeviceLicensesTab
+							licenses={data.licenses}
+							readOnly={readOnly}
+							onChange={(licenses) => setField('licenses', licenses)}
+						/>
+					</Tabs.Panel>
+
+					<Tabs.Panel value="images" pt="sm">
+						<DeviceImagesTab images={data.images} />
+					</Tabs.Panel>
+
+					<Tabs.Panel value="info" pt="sm">
+						<Stack gap="lg">
+							<DeviceInfoTab data={data} layout="rows" />
+						</Stack>
+					</Tabs.Panel>
+				</Tabs>
 			)}
 		</MainEntityForm>
 	);

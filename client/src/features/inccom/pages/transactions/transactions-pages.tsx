@@ -1,26 +1,25 @@
-﻿import { Button, DatePicker, Flex, Select } from 'antd';
-import type { Dayjs } from 'dayjs';
-import { useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-
-import type { TransactionType } from '@inccom/entities/transaction';
+﻿import type { TransactionType } from '@inccom/entities/transaction';
 import { TransactionForm } from '@inccom/features/transaction-form';
 import { TransferForm } from '@inccom/features/transfer-form';
 import { Template } from '@inccom/layouts';
+import { TransactionTableWidget } from '@inccom/widgets';
+import { Button, Group, Select, Stack } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { useMemo, useState } from 'react';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
 	parseAccountIdParam,
 	parseTransactionType,
 	transactionNewUrl,
 	transferNewUrl,
 } from '@inccom/shared/lib/transaction-url';
-import { TransactionTableWidget } from '@inccom/widgets';
 
 export function TransactionsListPage() {
 	const { id } = useParams();
 	const accountId = Number(id);
 	const [typeFilter, setTypeFilter] = useState<string | null>(null);
-	const [dateFrom, setDateFrom] = useState<Dayjs | null>(null);
-	const [dateTo, setDateTo] = useState<Dayjs | null>(null);
+	const [dateFrom, setDateFrom] = useState<Date | null>(null);
+	const [dateTo, setDateTo] = useState<Date | null>(null);
 
 	const filters = useMemo(() => {
 		const result: {
@@ -40,75 +39,113 @@ export function TransactionsListPage() {
 		return result;
 	}, [typeFilter, dateFrom, dateTo]);
 
-	const typeSelect = (
-		<div>
-			<div style={{ marginBottom: 4 }}>Тип</div>
-			<Select
-				allowClear
-				placeholder="Все"
-				style={{ width: 160 }}
-				value={typeFilter}
-				onChange={(value) => setTypeFilter(value ?? null)}
-				options={[
-					{ value: 'income', label: 'Доход' },
-					{ value: 'expense', label: 'Расход' },
-				]}
-			/>
-		</div>
-	);
-
-	const dateFilters = (
-		<>
-			<div>
-				<div style={{ marginBottom: 4 }}>С</div>
-				<DatePicker
-					allowClear
-					value={dateFrom}
-					onChange={(value) => setDateFrom(value)}
-					style={{ width: 160 }}
-				/>
-			</div>
-			<div>
-				<div style={{ marginBottom: 4 }}>По</div>
-				<DatePicker
-					allowClear
-					value={dateTo}
-					onChange={(value) => setDateTo(value)}
-					style={{ width: 160 }}
-				/>
-			</div>
-		</>
-	);
-
-	const actionButtons = (
-		<Flex gap={8} wrap="wrap">
-			<Link to={transactionNewUrl('income', accountId)}>
-				<Button type="primary">Доход</Button>
-			</Link>
-			<Link to={transactionNewUrl('expense', accountId)}>
-				<Button danger type="primary">
-					Расход
-				</Button>
-			</Link>
-			<Link to={transferNewUrl(accountId)}>
-				<Button>Перевод</Button>
-			</Link>
-		</Flex>
-	);
-
 	return (
 		<>
 			<Template.Title>Транзакции</Template.Title>
-			<Flex vertical gap={16}>
-				<Flex gap={12} wrap="wrap" align="flex-end" justify="space-between">
-					<Flex gap={12} wrap="wrap" align="flex-end">
-						{typeSelect}
-						{dateFilters}
-					</Flex>
-					{actionButtons}
-				</Flex>
+			<Stack gap="md">
+				<Stack gap="md" hiddenFrom="sm">
+					<Select
+						label="Тип"
+						placeholder="Все"
+						clearable
+						data={[
+							{ value: 'income', label: 'Доход' },
+							{ value: 'expense', label: 'Расход' },
+						]}
+						value={typeFilter}
+						onChange={setTypeFilter}
+					/>
+					<DatePickerInput
+						label="С"
+						clearable
+						value={dateFrom}
+						onChange={(value) => setDateFrom(value as Date | null)}
+					/>
+					<DatePickerInput
+						label="По"
+						clearable
+						value={dateTo}
+						onChange={(value) => setDateTo(value as Date | null)}
+					/>
+					<Group grow>
+						<Button
+							component={Link}
+							to={transactionNewUrl('income', accountId)}
+							color="green"
+						>
+							Доход
+						</Button>
+						<Button
+							component={Link}
+							to={transactionNewUrl('expense', accountId)}
+							color="red"
+						>
+							Расход
+						</Button>
+						<Button
+							component={Link}
+							to={transferNewUrl(accountId)}
+							variant="light"
+						>
+							Перевод
+						</Button>
+					</Group>
+				</Stack>
+				<Group justify="space-between" wrap="wrap" visibleFrom="sm">
+					<Group wrap="wrap">
+						<Select
+							label="Тип"
+							placeholder="Все"
+							clearable
+							data={[
+								{ value: 'income', label: 'Доход' },
+								{ value: 'expense', label: 'Расход' },
+							]}
+							value={typeFilter}
+							onChange={setTypeFilter}
+							w={160}
+						/>
+						<DatePickerInput
+							label="С"
+							clearable
+							value={dateFrom}
+							onChange={(value) => setDateFrom(value as Date | null)}
+							w={160}
+						/>
+						<DatePickerInput
+							label="По"
+							clearable
+							value={dateTo}
+							onChange={(value) => setDateTo(value as Date | null)}
+							w={160}
+						/>
+					</Group>
+					<Group mt={24}>
+						<Button
+							component={Link}
+							to={transactionNewUrl('income', accountId)}
+							color="green"
+						>
+							Доход
+						</Button>
+						<Button
+							component={Link}
+							to={transactionNewUrl('expense', accountId)}
+							color="red"
+						>
+							Расход
+						</Button>
+						<Button
+							component={Link}
+							to={transferNewUrl(accountId)}
+							variant="light"
+						>
+							Перевод
+						</Button>
+					</Group>
+				</Group>
 				<TransactionTableWidget accountId={accountId} filters={filters} />
-			</Flex>
+			</Stack>
 		</>
 	);
 }
@@ -140,7 +177,12 @@ export function LegacyTransactionCreateRedirect() {
 	const type = parseTransactionType(searchParams.get('type'));
 	const accountId = parseAccountIdParam(id ?? null);
 
-	return <Navigate to={transactionNewUrl(type, accountId)} replace />;
+	return (
+		<Navigate
+			to={transactionNewUrl(type, accountId)}
+			replace
+		/>
+	);
 }
 
 export function TransactionEditPage() {

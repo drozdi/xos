@@ -1,4 +1,4 @@
-﻿import { Spin } from 'antd';
+﻿import { Center, Loader } from '@mantine/core';
 import { Navigate } from 'react-router-dom';
 
 import { api } from '@inccom/shared/api';
@@ -23,17 +23,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 	if (isLoading || (hasTokens && !isAuthenticated)) {
 		return (
-			<div
-				style={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					height: '100%',
-					minHeight: 240,
-				}}
-			>
-				<Spin size="large" />
-			</div>
+			<Center h="100%" mih={240}>
+				<Loader size="lg" />
+			</Center>
 		);
 	}
 

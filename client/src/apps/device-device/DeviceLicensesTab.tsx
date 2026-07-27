@@ -1,14 +1,15 @@
 import {
+	ActionIcon,
 	Button,
-	Card,
-	Flex,
-	Form,
-	Input,
+	Group,
+	Paper,
 	Select,
+	Stack,
 	Table,
-	Typography,
-} from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+	Text,
+	TextInput,
+} from '@mantine/core';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -213,155 +214,138 @@ export function DeviceLicensesTab({ licenses, readOnly, onChange }: DeviceLicens
 			: Boolean(oemRtlKey.trim()));
 
 	return (
-		<Flex vertical gap={16}>
-			<Flex vertical gap={8}>
-				<Typography.Text strong style={{ fontSize: 14 }}>
+		<Stack gap="md">
+			<Stack gap="xs">
+				<Text fw={500} size="sm">
 					Лицензии
-				</Typography.Text>
+				</Text>
 				{entries.length === 0 ? (
-					<Typography.Text type="secondary">Нет лицензий</Typography.Text>
+					<Text size="sm" c="dimmed">
+						Нет лицензий
+					</Text>
 				) : (
-					<Table
-						size="small"
-						bordered
-						pagination={false}
-						rowKey={([key]) => key}
-						dataSource={entries}
-						columns={[
-							{
-								title: 'Тип программы',
-								key: 'type',
-								render: (_: unknown, [, item]: [string, LicenseRecord]) =>
-									String(item.type_name ?? '—'),
-							},
-							{
-								title: 'Программа',
-								key: 'software',
-								render: (_: unknown, [, item]: [string, LicenseRecord]) =>
-									String(item.software_name ?? '—'),
-							},
-							{
-								title: 'Лицензия',
-								key: 'license',
-								render: (_: unknown, [, item]: [string, LicenseRecord]) => licenseKindLabel(item),
-							},
-							{
-								title: 'Ключ',
-								key: 'key',
-								render: (_: unknown, [, item]: [string, LicenseRecord]) =>
-									String(item.key_name ?? '—'),
-							},
-							...(!readOnly
-								? [
-										{
-											title: '',
-											key: 'actions',
-											width: 48,
-											render: (_: unknown, [key, item]: [string, LicenseRecord]) => (
-												<Button
-													type="text"
-													danger
-													aria-label={`Удалить ${buildDisplayLabel(item)}`}
-													icon={<DeleteOutlined style={{ fontSize: 16 }} />}
-													onClick={() => removeItem(key)}
-												/>
-											),
-										},
-									]
-								: []),
-						]}
-					/>
+					<Table highlightOnHover withTableBorder withColumnBorders>
+						<Table.Thead>
+							<Table.Tr>
+								<Table.Th>Тип программы</Table.Th>
+								<Table.Th>Программа</Table.Th>
+								<Table.Th>Лицензия</Table.Th>
+								<Table.Th>Ключ</Table.Th>
+								{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
+							</Table.Tr>
+						</Table.Thead>
+						<Table.Tbody>
+							{entries.map(([key, item]) => (
+								<Table.Tr key={key}>
+									<Table.Td>{String(item.type_name ?? '—')}</Table.Td>
+									<Table.Td>{String(item.software_name ?? '—')}</Table.Td>
+									<Table.Td>{licenseKindLabel(item)}</Table.Td>
+									<Table.Td>{String(item.key_name ?? '—')}</Table.Td>
+									{!readOnly ? (
+										<Table.Td>
+											<ActionIcon
+												color="red"
+												variant="light"
+												aria-label={`Удалить ${buildDisplayLabel(item)}`}
+												onClick={() => removeItem(key)}
+											>
+												<IconTrash size={16} />
+											</ActionIcon>
+										</Table.Td>
+									) : null}
+								</Table.Tr>
+							))}
+						</Table.Tbody>
+					</Table>
 				)}
-			</Flex>
+			</Stack>
 
 			{!readOnly ? (
-				<Card size="small">
-					<Flex vertical gap={12}>
-						<Typography.Text strong style={{ fontSize: 14 }}>
+				<Paper withBorder p="sm">
+					<Stack gap="sm">
+						<Text fw={500} size="sm">
 							Добавить лицензию
-						</Typography.Text>
-						<Form.Item label="Тип программы" style={{ marginBottom: 0 }}>
-							<Select
-								options={typeOptions}
-								value={typeId}
-								showSearch
-								onChange={(value) => {
-									setTypeId(value);
-									setSoftwareId(null);
-									setLicenseSoftwareId(null);
-									setKeyValue(null);
-								}}
-							/>
-						</Form.Item>
-						<Form.Item label="Программа" style={{ marginBottom: 0 }}>
-							<Select
-								options={softwareOptions}
-								value={softwareId}
-								showSearch
-								disabled={!typeId}
-								onChange={(value) => {
-									setSoftwareId(value);
-									setLicenseSoftwareId(null);
-									setKeyValue(null);
-								}}
-							/>
-						</Form.Item>
-						<Form.Item label="Вид лицензии" style={{ marginBottom: 0 }}>
-							<Select
-								options={LICENSE_KIND_OPTIONS}
-								value={licenseKind}
-								disabled={!softwareId}
-								onChange={(value) => {
-									setLicenseKind(value);
-									setLicenseSoftwareId(null);
-									setKeyValue(null);
-									setOemRtlKey('');
-								}}
-							/>
-						</Form.Item>
+						</Text>
+						<Select
+							label="Тип программы"
+							data={typeOptions}
+							value={typeId}
+							searchable
+							onChange={(value) => {
+								setTypeId(value);
+								setSoftwareId(null);
+								setLicenseSoftwareId(null);
+								setKeyValue(null);
+							}}
+						/>
+						<Select
+							label="Программа"
+							data={softwareOptions}
+							value={softwareId}
+							searchable
+							disabled={!typeId}
+							onChange={(value) => {
+								setSoftwareId(value);
+								setLicenseSoftwareId(null);
+								setKeyValue(null);
+							}}
+						/>
+						<Select
+							label="Вид лицензии"
+							data={LICENSE_KIND_OPTIONS}
+							value={licenseKind}
+							disabled={!softwareId}
+							onChange={(value) => {
+								setLicenseKind(value);
+								setLicenseSoftwareId(null);
+								setKeyValue(null);
+								setOemRtlKey('');
+							}}
+						/>
 						{licenseKind === 'standard' ? (
 							<>
-								<Form.Item label="Лицензия" style={{ marginBottom: 0 }}>
-									<Select
-										options={licenseSoftwareOptions}
-										value={licenseSoftwareId}
-										showSearch
-										disabled={!softwareId}
-										onChange={(value) => {
-											setLicenseSoftwareId(value);
-											setKeyValue(null);
-										}}
-									/>
-								</Form.Item>
-								<Form.Item label="Ключ" style={{ marginBottom: 0 }}>
-									<Select
-										options={keyOptions}
-										value={keyValue}
-										showSearch
-										disabled={!licenseSoftwareId}
-										onChange={setKeyValue}
-									/>
-								</Form.Item>
+								<Select
+									label="Лицензия"
+									data={licenseSoftwareOptions}
+									value={licenseSoftwareId}
+									searchable
+									disabled={!softwareId}
+									onChange={(value) => {
+										setLicenseSoftwareId(value);
+										setKeyValue(null);
+									}}
+								/>
+								<Select
+									label="Ключ"
+									data={keyOptions}
+									value={keyValue}
+									searchable
+									disabled={!licenseSoftwareId}
+									onChange={setKeyValue}
+								/>
 							</>
 						) : null}
 						{licenseKind === 'OEM' || licenseKind === 'RTL' ? (
-							<Form.Item label="Ключ" style={{ marginBottom: 0 }}>
-								<Input value={oemRtlKey} onChange={(e) => setOemRtlKey(e.target.value)} />
-							</Form.Item>
+							<TextInput
+								label="Ключ"
+								value={oemRtlKey}
+								onChange={(e) => setOemRtlKey(e.currentTarget.value)}
+							/>
 						) : null}
-						<Flex justify="flex-end">
+						<Group justify="flex-end">
 							<Button
-								size="small"
-								icon={<PlusOutlined style={{ fontSize: 14 }} />}
+								size="xs"
+								variant="light"
+								leftSection={<IconPlus size={14} />}
 								disabled={!canAdd}
 								onClick={addLicense}
 							>
 								Добавить
 							</Button>
-						</Flex>
-					</Flex>
-				</Card>
+						</Group>
+					</Stack>
+				</Paper>
 			) : null}
-		</Flex>
+		</Stack>
 	);
 }

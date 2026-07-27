@@ -1,3 +1,5 @@
+import { type ComboboxItem } from '@mantine/core';
+
 const data: Record<string, string> = {
 	RUB: 'Российский рубль (RUB)',
 	USD: 'Доллар США (USD)',
@@ -12,7 +14,7 @@ function findLabelByCode(code: string): string {
 	return data[code] || code;
 }
 
-const dataSelect = Object.entries(data).map(([value, label]) => ({
+const dataSelect: ComboboxItem[] = Object.entries(data).map(([value, label]) => ({
 	value,
 	label,
 }));

@@ -1,4 +1,4 @@
-import { Button, Flex } from 'antd';
+import { Box, Button, Group, Stack } from '@mantine/core';
 import type { MouseEvent } from 'react';
 
 import { useCoreApi } from '@/core/hooks/useCoreApi';
@@ -37,21 +37,25 @@ export default function SudokuApp() {
 	const clearCellSelection = useSudokuStore((state) => state.clearCellSelection);
 
 	return (
-		<div style={{ padding: 16, height: '100%' }} onClick={() => clearCellSelection()}>
-			<Flex vertical gap="middle" align="center">
+		<Box p="md" h="100%" onClick={() => clearCellSelection()}>
+			<Stack gap="md" align="center">
 				<Information />
-				<div onClick={keepCellSelection}>
+				<Box onClick={keepCellSelection}>
 					<Board />
-				</div>
-				<div onClick={keepCellSelection}>
+				</Box>
+				<Box onClick={keepCellSelection}>
 					<Toolbar />
-				</div>
-				<Flex style={{ width: '100%' }}>
-					<Button type="primary" ghost icon={<ReloadIcon />} onClick={() => openNewGameDialog(coreApi)}>
+				</Box>
+				<Group w="100%">
+					<Button
+						variant="light"
+						leftSection={<ReloadIcon />}
+						onClick={() => openNewGameDialog(coreApi)}
+					>
 						Новая игра
 					</Button>
-				</Flex>
-			</Flex>
-		</div>
+				</Group>
+			</Stack>
+		</Box>
 	);
 }

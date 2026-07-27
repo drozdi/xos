@@ -1,4 +1,4 @@
-import { Button, Flex } from 'antd';
+import { Box, Button, Group, Stack } from '@mantine/core';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
@@ -16,13 +16,13 @@ export default function ExplorerImageViewerApp() {
 	useWindowTitle(currentPath ? getExplorerFileName(currentPath) : 'Изображения');
 
 	return (
-		<Flex vertical gap="small" style={{ height: '100%', padding: 16, minHeight: 0 }}>
-			<Flex justify="flex-end">
-				<Button size="small" onClick={() => void openFile()}>
+		<Stack h="100%" p="md" gap="sm" style={{ minHeight: 0 }}>
+			<Group justify="flex-end">
+				<Button variant="default" size="xs" onClick={() => void openFile()}>
 					Открыть…
 				</Button>
-			</Flex>
-			<div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+			</Group>
+			<Box style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 				{url ? (
 					<img
 						src={url}
@@ -32,7 +32,7 @@ export default function ExplorerImageViewerApp() {
 				) : (
 					'Откройте изображение'
 				)}
-			</div>
-		</Flex>
+			</Box>
+		</Stack>
 	);
 }

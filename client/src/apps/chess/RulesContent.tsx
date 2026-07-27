@@ -1,20 +1,23 @@
-import { Collapse, Flex, Typography } from 'antd';
+import { Accordion, Stack, Text } from '@mantine/core';
 
 import { GAME_RULES } from './data/gameRules.js';
 
 export function RulesContent() {
 	return (
-		<Flex vertical gap="middle" style={{ padding: 16 }}>
-			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+		<Stack gap="md" p="md">
+			<Text size="sm" c="dimmed">
 				Классические правила и особенности программы.
-			</Typography.Text>
-			<Collapse
-				items={GAME_RULES.map((rule) => ({
-					key: rule.id,
-					label: rule.title,
-					children: <Typography.Text style={{ fontSize: 13 }}>{rule.content}</Typography.Text>,
-				}))}
-			/>
-		</Flex>
+			</Text>
+			<Accordion variant="separated" multiple>
+				{GAME_RULES.map((rule) => (
+					<Accordion.Item key={rule.id} value={rule.id}>
+						<Accordion.Control>{rule.title}</Accordion.Control>
+						<Accordion.Panel>
+							<Text size="sm">{rule.content}</Text>
+						</Accordion.Panel>
+					</Accordion.Item>
+				))}
+			</Accordion>
+		</Stack>
 	);
 }

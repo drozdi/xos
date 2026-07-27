@@ -1,4 +1,4 @@
-import { Flex, Typography } from 'antd';
+import { Group, Text } from '@mantine/core';
 
 interface ExplorerFooterProps {
 	itemCount: number;
@@ -8,18 +8,16 @@ interface ExplorerFooterProps {
 
 export function ExplorerFooter({ itemCount, selectedCount, isLoading }: ExplorerFooterProps) {
 	return (
-		<Flex
+		<Group
 			justify="flex-end"
-			style={{
-				padding: '6px 12px',
-				borderTop: '1px solid var(--xos-shell-border)',
-				flexShrink: 0,
-			}}
+			px="sm"
+			py={6}
+			style={{ borderTop: '1px solid var(--mantine-color-default-border)', flexShrink: 0 }}
 		>
-			<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+			<Text size="xs" c="dimmed">
 				{isLoading ? 'Загрузка…' : `${itemCount} элементов`}
 				{selectedCount > 0 ? ` · выбрано ${selectedCount}` : ''}
-			</Typography.Text>
-		</Flex>
+			</Text>
+		</Group>
 	);
 }

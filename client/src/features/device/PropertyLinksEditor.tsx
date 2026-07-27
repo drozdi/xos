@@ -1,15 +1,16 @@
 import {
+	ActionIcon,
 	Button,
 	Checkbox,
-	Flex,
-	Form,
+	Group,
 	Modal,
 	Select,
+	Stack,
 	Table,
-	Typography,
-} from 'antd';
+	Text,
+} from '@mantine/core';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { DeleteOutlined, ExportOutlined } from '@ant-design/icons';
+import { IconExternalLink, IconTrash } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
 import { deviceComponentApi, deviceTypeApi } from '@/core/api/endpoints/deviceApi';
@@ -55,11 +56,13 @@ function linkSignature(item: PropertyLinkItem): string {
 }
 
 function createLinkItem(
-	base: Omit<PropertyLinkItem, 'id'> & { id?: number },
+	base: Pick<PropertyLinkItem, 'type_id' | 'type_kind'> &
+		Partial<Omit<PropertyLinkItem, 'id' | 'type_id' | 'type_kind'>>,
 	propertyName?: string,
 	propertyCode?: string,
 ): PropertyLinkItem {
 	return {
+		...base,
 		id: 0,
 		active: true,
 		required: false,
@@ -68,8 +71,7 @@ function createLinkItem(
 		link_kind: 'property',
 		property_name: propertyName ?? '',
 		property_code: propertyCode ?? '',
-		...base,
-	} as PropertyLinkItem;
+	};
 }
 
 export function PropertyLinksEditor({
@@ -118,7 +120,10 @@ export function PropertyLinksEditor({
 	});
 
 	const componentIds = useMemo(
-		() => componentListQuery.data?.items.map((item) => item.id) ?? [],
+		() =>
+			(componentListQuery.data?.items ?? [])
+				.map((item) => item.id)
+				.filter((id): id is number => typeof id === 'number'),
 		[componentListQuery.data?.items],
 	);
 
@@ -166,7 +171,7 @@ export function PropertyLinksEditor({
 
 		componentDetailsQueries.forEach((query, index) => {
 			const typeId = componentIds[index];
-			if (typeId == null) {
+			if (typeof typeId !== 'number') {
 				return;
 			}
 			const typeItem = componentListQuery.data?.items.find((item) => item.id === typeId);
@@ -176,7 +181,7 @@ export function PropertyLinksEditor({
 			const properties = normalizeIdRecord<TypePropertyItem>(query.data.properties);
 			for (const property of Object.values(properties)) {
 				const parentId = property.id;
-				if (!parentId) {
+				if (typeof parentId !== 'number') {
 					continue;
 				}
 				const signature = `property:${typeId}:${parentId}`;
@@ -282,194 +287,193 @@ export function PropertyLinksEditor({
 	};
 
 	return (
-		<Flex vertical gap={12}>
+		<Stack gap="sm">
 			{!readOnly ? (
-				<Flex gap={8} wrap="wrap">
-					<Button size="small" onClick={() => setModalMode('component')}>
+				<Group gap="xs">
+					<Button size="xs" variant="light" onClick={() => setModalMode('component')}>
 						Присоединить к Типу комплектующему
 					</Button>
-					<Button size="small" onClick={() => setModalMode('device')}>
+					<Button size="xs" variant="light" onClick={() => setModalMode('device')}>
 						Присоединить к Типу устройств
 					</Button>
-					<Button size="small" onClick={() => setModalMode('existing')}>
+					<Button size="xs" variant="default" onClick={() => setModalMode('existing')}>
 						Связать с существующими свойствами
 					</Button>
-				</Flex>
+				</Group>
 			) : null}
 
 			{entries.length === 0 ? (
-				<Typography.Text type="secondary">Нет связанных типов</Typography.Text>
+				<Text size="sm" c="dimmed">
+					Нет связанных типов
+				</Text>
 			) : (
-				<Table
-					size="small"
-					bordered
-					pagination={false}
-					rowKey={([key]) => key}
-					dataSource={entries}
-					columns={[
-						{
-							title: 'Тип',
-							key: 'type',
-							render: (_: unknown, [, item]: [string, PropertyLinkItem]) => (
-								<Typography.Text>{typeTitle(item)}</Typography.Text>
-							),
-						},
-						{
-							title: 'Связь',
-							key: 'link',
-							render: (_: unknown, [, item]: [string, PropertyLinkItem]) => (
-								<Typography.Text>{linkTitle(item)}</Typography.Text>
-							),
-						},
-						{
-							title: 'Флаги',
-							key: 'flags',
-							width: 150,
-							render: (_: unknown, [key, item]: [string, PropertyLinkItem]) => {
-								const isReadonly = readOnly || Boolean(item.readonly);
-								const flagsDisabled = isReadonly || item.link_kind === 'root';
-								return (
-									<Flex vertical gap={4}>
-										<Checkbox
-											checked={Boolean(item.active)}
-											disabled={flagsDisabled}
-											onChange={(e) => updateLink(key, { active: e.target.checked })}
-										>
-											Активно
-										</Checkbox>
-										<Checkbox
-											checked={Boolean(item.required)}
-											disabled={flagsDisabled}
-											onChange={(e) => updateLink(key, { required: e.target.checked })}
-										>
-											Обязательное
-										</Checkbox>
-										<Checkbox
-											checked={Boolean(item.multiple)}
-											disabled={flagsDisabled}
-											onChange={(e) => updateLink(key, { multiple: e.target.checked })}
-										>
-											Множественное
-										</Checkbox>
-									</Flex>
-								);
-							},
-						},
-						{
-							title: '',
-							key: 'actions',
-							width: 72,
-							render: (_: unknown, [key, item]: [string, PropertyLinkItem]) => {
-								const isReadonly = readOnly || Boolean(item.readonly);
-								return (
-									<Flex gap={4} wrap="nowrap">
-										{onOpenType ? (
-											<Button
-												type="text"
-												aria-label="Открыть тип"
-												icon={<ExportOutlined style={{ fontSize: 16 }} />}
-												onClick={() => onOpenType(item.type_kind, item.type_id)}
+				<Table highlightOnHover withTableBorder withColumnBorders>
+					<Table.Thead>
+						<Table.Tr>
+							<Table.Th>Тип</Table.Th>
+							<Table.Th>Связь</Table.Th>
+							<Table.Th w={150}>Флаги</Table.Th>
+							<Table.Th w={72} aria-label="Действия" />
+						</Table.Tr>
+					</Table.Thead>
+					<Table.Tbody>
+						{entries.map(([key, item]) => {
+							const isReadonly = readOnly || Boolean(item.readonly);
+							const flagsDisabled = isReadonly || item.link_kind === 'root';
+							return (
+								<Table.Tr key={key}>
+									<Table.Td>
+										<Text size="sm">{typeTitle(item)}</Text>
+									</Table.Td>
+									<Table.Td>
+										<Text size="sm">{linkTitle(item)}</Text>
+									</Table.Td>
+									<Table.Td>
+										<Stack gap={4}>
+											<Checkbox
+												size="xs"
+												label="Активно"
+												checked={Boolean(item.active)}
+												disabled={flagsDisabled}
+												onChange={(e) =>
+													updateLink(key, { active: e.currentTarget.checked })
+												}
 											/>
-										) : null}
-										{!isReadonly ? (
-											<Button
-												type="text"
-												danger
-												aria-label="Удалить связь"
-												icon={<DeleteOutlined style={{ fontSize: 16 }} />}
-												onClick={() => removeLink(key)}
+											<Checkbox
+												size="xs"
+												label="Обязательное"
+												checked={Boolean(item.required)}
+												disabled={flagsDisabled}
+												onChange={(e) =>
+													updateLink(key, { required: e.currentTarget.checked })
+												}
 											/>
-										) : null}
-									</Flex>
-								);
-							},
-						},
-					]}
-				/>
+											<Checkbox
+												size="xs"
+												label="Множественное"
+												checked={Boolean(item.multiple)}
+												disabled={flagsDisabled}
+												onChange={(e) =>
+													updateLink(key, { multiple: e.currentTarget.checked })
+												}
+											/>
+										</Stack>
+									</Table.Td>
+									<Table.Td>
+										<Group gap={4} wrap="nowrap">
+											{onOpenType ? (
+												<ActionIcon
+													variant="subtle"
+													aria-label="Открыть тип"
+													onClick={() => onOpenType(item.type_kind, item.type_id)}
+												>
+													<IconExternalLink size={16} />
+												</ActionIcon>
+											) : null}
+											{!isReadonly ? (
+												<ActionIcon
+													color="red"
+													variant="light"
+													aria-label="Удалить связь"
+													onClick={() => removeLink(key)}
+												>
+													<IconTrash size={16} />
+												</ActionIcon>
+											) : null}
+										</Group>
+									</Table.Td>
+								</Table.Tr>
+							);
+						})}
+					</Table.Tbody>
+				</Table>
 			)}
 
 			<Modal
-				open={modalMode === 'component'}
-				onCancel={closeModal}
+				opened={modalMode === 'component'}
+				onClose={closeModal}
 				title="Присоединить к Типу комплектующему"
 				centered
-				footer={[
-					<Button key="cancel" onClick={closeModal}>
-						Отмена
-					</Button>,
-					<Button key="submit" type="primary" disabled={!selectedType} onClick={() => addDirectTypeLink('component')}>
-						Присоединить
-					</Button>,
-				]}
 			>
-				<Form.Item label="Тип комплектующего" style={{ marginBottom: 0 }}>
+				<Stack gap="sm">
 					<Select
+						label="Тип комплектующего"
 						placeholder="Выберите тип"
-						options={componentTypeOptions}
+						data={componentTypeOptions}
 						value={selectedType}
 						onChange={setSelectedType}
-						showSearch
-						notFoundContent="Нет доступных типов"
+						searchable
+						nothingFoundMessage="Нет доступных типов"
 					/>
-				</Form.Item>
+					<Group justify="flex-end">
+						<Button variant="default" onClick={closeModal}>
+							Отмена
+						</Button>
+						<Button onClick={() => addDirectTypeLink('component')} disabled={!selectedType}>
+							Присоединить
+						</Button>
+					</Group>
+				</Stack>
 			</Modal>
 
 			<Modal
-				open={modalMode === 'device'}
-				onCancel={closeModal}
+				opened={modalMode === 'device'}
+				onClose={closeModal}
 				title="Присоединить к Типу устройств"
 				centered
-				footer={[
-					<Button key="cancel" onClick={closeModal}>
-						Отмена
-					</Button>,
-					<Button key="submit" type="primary" disabled={!selectedType} onClick={() => addDirectTypeLink('device')}>
-						Присоединить
-					</Button>,
-				]}
 			>
-				<Form.Item label="Тип устройства" style={{ marginBottom: 0 }}>
+				<Stack gap="sm">
 					<Select
+						label="Тип устройства"
 						placeholder="Выберите тип"
-						options={deviceTypeOptions}
+						data={deviceTypeOptions}
 						value={selectedType}
 						onChange={setSelectedType}
-						showSearch
-						notFoundContent="Нет доступных типов"
+						searchable
+						nothingFoundMessage="Нет доступных типов"
 					/>
-				</Form.Item>
+					<Group justify="flex-end">
+						<Button variant="default" onClick={closeModal}>
+							Отмена
+						</Button>
+						<Button onClick={() => addDirectTypeLink('device')} disabled={!selectedType}>
+							Присоединить
+						</Button>
+					</Group>
+				</Stack>
 			</Modal>
 
 			<Modal
-				open={modalMode === 'existing'}
-				onCancel={closeModal}
+				opened={modalMode === 'existing'}
+				onClose={closeModal}
 				title="Связать с существующими свойствами комплектующих"
 				centered
-				width={640}
-				footer={[
-					<Button key="cancel" onClick={closeModal}>
-						Отмена
-					</Button>,
-					<Button key="submit" type="primary" disabled={!selectedExisting} onClick={addExistingPropertyLink}>
-						Связать
-					</Button>,
-				]}
+				size="lg"
 			>
-				<Form.Item label="Свойство типа комплектующего" style={{ marginBottom: 0 }}>
+				<Stack gap="sm">
 					<Select
+						label="Свойство типа комплектующего"
 						placeholder="Выберите свойство"
-						options={existingPropertyOptions}
+						data={existingPropertyOptions}
 						value={selectedExisting}
 						onChange={setSelectedExisting}
-						showSearch
-						notFoundContent={
+						searchable
+						nothingFoundMessage={
 							componentListQuery.isLoading || componentDetailsQueries.some((q) => q.isLoading)
 								? 'Загрузка...'
 								: 'Нет доступных свойств'
 						}
 					/>
-				</Form.Item>
+					<Group justify="flex-end">
+						<Button variant="default" onClick={closeModal}>
+							Отмена
+						</Button>
+						<Button onClick={addExistingPropertyLink} disabled={!selectedExisting}>
+							Связать
+						</Button>
+					</Group>
+				</Stack>
 			</Modal>
-		</Flex>
+		</Stack>
 	);
 }

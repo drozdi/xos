@@ -1,53 +1,37 @@
-import { forwardRef, memo, type CSSProperties, type ReactNode } from 'react';
+import { Box } from '@mantine/core'
+import { forwardRef, memo } from 'react'
+import { cls } from '../../utils'
+import { ListProvider } from './ListContext'
+import classes from './style.module.css'
 
-import { cls } from '../../utils';
-import { ListProvider } from './ListContext';
-import classes from './style.module.css';
-
-const roleAttrExceptions = ['ul', 'ol'];
+const roleAttrExceptions = ['ul', 'ol']
 
 interface ListProps {
-	component?: keyof HTMLElementTagNameMap;
-	children?: ReactNode;
-	className?: string;
-	separator?: boolean;
-	visible?: boolean;
-	dense?: boolean;
-	bordered?: boolean;
-	striped?: boolean;
-	role?: string;
-	style?: CSSProperties;
-	onClick?: () => void;
-	onKeyDown?: () => void;
-	onKeyUp?: () => void;
-	onKeyPress?: () => void;
+	component?: any
+	children?: React.ReactNode
+	className?: string
+	separator?: boolean
+	visible?: boolean
+	dense?: boolean
+	bordered?: boolean
+	striped?: boolean
+	role?: string
+	style?: React.CSSProperties
+	onClick?: () => void
+	onKeyDown?: () => void
+	onKeyUp?: () => void
+	onKeyPress?: () => void
 }
 
 export const List = memo(
-	forwardRef<HTMLElement, ListProps>(
-		(
-			{
-				children,
-				className,
-				separator,
-				dense,
-				visible,
-				bordered,
-				striped,
-				role,
-				component = 'ul',
-				...props
-			},
-			ref,
-		) => {
-			const Tag = component as 'ul';
-			const attrRole = roleAttrExceptions.includes(component)
-				? undefined
-				: (role ?? 'list');
+	forwardRef(
+		({ children, className, separator, dense, visible, bordered, striped, role, ...props }: ListProps, ref) => {
+			const attrRole = roleAttrExceptions.includes(props.component) ? undefined : role ?? 'list'
 			return (
-				<Tag
+				<Box
+					component={props.component || 'ul'}
 					{...props}
-					ref={ref as React.Ref<HTMLUListElement>}
+					ref={ref}
 					className={cls(
 						classes.list,
 						{
@@ -57,7 +41,7 @@ export const List = memo(
 							[classes.list_bordered]: bordered,
 							[classes.list_striped]: striped,
 						},
-						className,
+						className
 					)}
 					role={attrRole}
 				>
@@ -68,8 +52,8 @@ export const List = memo(
 					>
 						{children}
 					</ListProvider>
-				</Tag>
-			);
-		},
-	),
-);
+				</Box>
+			)
+		}
+	)
+)

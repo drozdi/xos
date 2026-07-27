@@ -1,31 +1,6 @@
+import { isMantineColorScheme, type MantineColorSchemeManager } from '@mantine/core';
+
 import { DEFAULT_THEME, THEME_STORAGE_KEY, type ThemePreference } from './types';
-
-export function isThemePreference(value: unknown): value is ThemePreference {
-	return value === 'light' || value === 'dark' || value === 'auto';
-}
-
-export function resolveColorScheme(preference: ThemePreference): 'light' | 'dark' {
-	if (preference === 'light' || preference === 'dark') {
-		return preference;
-	}
-	if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-		return 'dark';
-	}
-	return 'light';
-}
-
-/** Applies resolved light/dark to `<html>` via `data-theme` + class. */
-export function applyDocumentTheme(preference: ThemePreference): void {
-	if (typeof document === 'undefined') {
-		return;
-	}
-	const resolved = resolveColorScheme(preference);
-	const root = document.documentElement;
-	root.setAttribute('data-theme', resolved);
-	root.classList.toggle('dark', resolved === 'dark');
-	root.classList.toggle('light', resolved === 'light');
-	root.style.colorScheme = resolved;
-}
 
 function readStoredTheme(defaultValue: ThemePreference = DEFAULT_THEME): ThemePreference {
 	if (typeof window === 'undefined') {
@@ -39,30 +14,18 @@ function readStoredTheme(defaultValue: ThemePreference = DEFAULT_THEME): ThemePr
 		}
 
 		const parsed = JSON.parse(raw) as unknown;
-		return isThemePreference(parsed) ? parsed : defaultValue;
+		return isMantineColorScheme(parsed) ? parsed : defaultValue;
 	} catch {
 		return defaultValue;
 	}
 }
 
-export interface ColorSchemeManager {
-	get: (defaultValue?: ThemePreference) => ThemePreference;
-	set: (value: ThemePreference) => void;
-	subscribe: (onUpdate: (value: ThemePreference) => void) => void;
-	unsubscribe: () => void;
-	clear: () => void;
-}
-
-/** localStorage-backed theme preference manager (no Mantine). */
-export function xosColorSchemeManager(): ColorSchemeManager {
+export function xosColorSchemeManager(): MantineColorSchemeManager {
 	let handleStorageEvent: ((event: StorageEvent) => void) | null = null;
 
 	return {
 		get: (defaultValue) => readStoredTheme(defaultValue ?? DEFAULT_THEME),
 		set: (value) => {
-			if (!isThemePreference(value)) {
-				return;
-			}
 			try {
 				window.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(value));
 			} catch (error) {
@@ -82,7 +45,7 @@ export function xosColorSchemeManager(): ColorSchemeManager {
 
 				try {
 					const parsed = JSON.parse(event.newValue) as unknown;
-					if (isThemePreference(parsed)) {
+					if (isMantineColorScheme(parsed)) {
 						onUpdate(parsed);
 					}
 				} catch {

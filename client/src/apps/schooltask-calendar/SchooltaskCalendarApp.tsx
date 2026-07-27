@@ -1,4 +1,4 @@
-import { Alert, Flex, Typography } from 'antd';
+import { Alert, Box, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
@@ -36,39 +36,39 @@ export default function SchooltaskCalendarApp() {
 
 	if (!canRead) {
 		return (
-			<div style={{ margin: 16 }}>
-				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр расписания" />
-			</div>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр расписания
+			</Alert>
 		);
 	}
 
 	if (classId <= 0) {
 		return (
-			<div style={{ margin: 16 }}>
-				<Alert type="warning" showIcon message="Класс не выбран" description="Откройте расписание из списка классов" />
-			</div>
+			<Alert color="yellow" title="Класс не выбран" m="md">
+				Откройте расписание из списка классов
+			</Alert>
 		);
 	}
 
 	return (
-		<div style={{ padding: 16, height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-			<Flex vertical gap={4} style={{ marginBottom: 12 }}>
-				<Typography.Text strong>{infoQuery.data?.name ?? `Класс #${classId}`}</Typography.Text>
-			</Flex>
-			<div style={{ flex: 1, minHeight: 0 }}>
+		<Box p="md" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+			<Stack gap="xs" mb="sm">
+				<Text fw={600}>{infoQuery.data?.name ?? `Класс #${classId}`}</Text>
+			</Stack>
+			<Box style={{ flex: 1, minHeight: 0 }}>
 				<WeekCalendar
 					events={eventsQuery.data ?? []}
 					isLoading={eventsQuery.isFetching}
 					onRangeChange={handleRangeChange}
 					onEventClick={(event) => setSelectedEventId(event.id)}
 				/>
-			</div>
+			</Box>
 			<EventDetailModal
 				classId={classId}
 				eventId={selectedEventId}
 				opened={selectedEventId !== null}
 				onClose={() => setSelectedEventId(null)}
 			/>
-		</div>
+		</Box>
 	);
 }

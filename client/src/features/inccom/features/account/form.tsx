@@ -1,8 +1,4 @@
-﻿import { Button, ColorPicker, Flex, Form, Input, InputNumber, Select, Spin } from 'antd';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-import {
+﻿import {
 	defaultAccount,
 	useAccountCreate,
 	useAccountQuery,
@@ -11,9 +7,22 @@ import {
 	useEnumsTypeAccount,
 } from '@inccom/entities/account';
 import { Template } from '@inccom/layouts';
+import {
+	Button,
+	ColorInput,
+	Group,
+	Loader,
+	NumberInput,
+	Select,
+	Stack,
+	TextInput,
+} from '@mantine/core';
+import { isNotEmpty, useForm } from '@mantine/form';
 import { notification } from '@inccom/shared/notification';
 import { getErrorMessage } from '@inccom/shared/utils/error';
-import { formatBalance } from '@inccom/shared/utils/number-format';
+import { balanceInputProps, formatBalance } from '@inccom/shared/utils/number-format';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface AccountFormProps {
 	id?: IAccount['id'];
@@ -27,17 +36,23 @@ export function AccountForm({ id }: AccountFormProps) {
 	const updateMutation = useAccountUpdate();
 	const { dataSelect: types } = useEnumsTypeAccount();
 	const { dataSelect: currencies } = useEnumsCurrency();
-	const [form] = Form.useForm<IAccount>();
 
 	const isSaving = createMutation.isPending || updateMutation.isPending;
 
+	const form = useForm<IAccount>({
+		initialValues: { ...defaultAccount },
+		validate: {
+			label: isNotEmpty('Заполните название'),
+			type: isNotEmpty('Выберите тип счета'),
+			currency: isNotEmpty('Выберите валюту'),
+		},
+	});
+
 	useEffect(() => {
 		if (account && isEdit) {
-			form.setFieldsValue(account);
-		} else if (!isEdit) {
-			form.setFieldsValue({ ...defaultAccount });
+			form.setValues(account);
 		}
-	}, [account, isEdit, form]);
+	}, [account, isEdit]);
 
 	async function handleSave(values: IAccount) {
 		const { id: accountId, balance, ...data } = values;
@@ -48,10 +63,13 @@ export function AccountForm({ id }: AccountFormProps) {
 		return createMutation.mutateAsync({ ...data, balance });
 	}
 
-	async function saveAndNavigate(values?: IAccount) {
+	async function saveAndNavigate() {
+		const validation = form.validate();
+		if (validation.hasErrors) {
+			return;
+		}
 		try {
-			const formValues = values ?? (await form.validateFields());
-			await handleSave(formValues);
+			await handleSave(form.getValues());
 			navigate('/accounts', { replace: true });
 		} catch (e: unknown) {
 			notification.error(getErrorMessage(e, 'Не удалось сохранить счёт'));
@@ -59,9 +77,12 @@ export function AccountForm({ id }: AccountFormProps) {
 	}
 
 	async function saveOnly() {
+		const validation = form.validate();
+		if (validation.hasErrors) {
+			return;
+		}
 		try {
-			const values = await form.validateFields();
-			const saved = await handleSave(values);
+			const saved = await handleSave(form.getValues());
 			if (saved?.id) {
 				form.setFieldValue('id', saved.id);
 				notification.success('Счёт сохранён');
@@ -72,100 +93,93 @@ export function AccountForm({ id }: AccountFormProps) {
 	}
 
 	if (isEdit && isLoadingAccount) {
-		return <Spin />;
+		return <Loader />;
 	}
 
 	return (
-		<Form
-			form={form}
-			layout="vertical"
-			initialValues={{ ...defaultAccount }}
-			onFinish={(values) => void saveAndNavigate(values)}
-		>
-			<Form.Item
+		<Stack>
+			<TextInput
 				label="Название счета"
-				name="label"
-				rules={[{ required: true, message: 'Заполните название' }]}
-			>
-				<Input placeholder="Название счета" />
-			</Form.Item>
-			<Form.Item
+				placeholder="Название счета"
+				required
+				{...form.getInputProps('label')}
+			/>
+			<Select
 				label="Тип"
-				name="type"
-				rules={[{ required: true, message: 'Выберите тип счета' }]}
-			>
-				<Select placeholder="Выберите тип" options={types} />
-			</Form.Item>
-			<Form.Item
+				placeholder="Выберите тип"
+				allowDeselect={false}
+				required
+				data={types}
+				{...form.getInputProps('type')}
+			/>
+			<Select
 				label="Валюта"
-				name="currency"
-				rules={[{ required: true, message: 'Выберите валюту' }]}
-			>
-				<Select
-					placeholder="Выберите валюту"
-					showSearch
-					disabled={isEdit}
-					options={currencies}
-				/>
-			</Form.Item>
+				placeholder="Выберите валюту"
+				allowDeselect={false}
+				required
+				searchable
+				readOnly={isEdit}
+				data={currencies}
+				{...form.getInputProps('currency')}
+			/>
 			{isEdit ? (
-				<Form.Item label="Баланс">
-					<Input
-						readOnly
-						value={formatBalance(form.getFieldValue('balance') ?? account?.balance)}
-						addonAfter="Стартовый капитал задаётся при создании; далее меняется через транзакции"
-					/>
-				</Form.Item>
-			) : (
-				<Form.Item
-					label="Стартовый капитал"
-					name="balance"
-					extra="Указывается один раз при создании счёта"
-					rules={[{ required: true, message: 'Укажите баланс' }]}
-				>
-					<InputNumber min={0} step={0.01} style={{ width: '100%' }} placeholder="0,00" />
-				</Form.Item>
-			)}
-			<Form.Item label="Цвет" name="color" getValueFromEvent={(c) => (typeof c === 'string' ? c : c.toHexString())}>
-				<ColorPicker
-					presets={[
-						{
-							label: 'Палитра',
-							colors: [
-								'#2e2e2e',
-								'#868e96',
-								'#fa5252',
-								'#e64980',
-								'#be4bdb',
-								'#7950f2',
-								'#4c6ef5',
-								'#228be6',
-								'#15aabf',
-								'#12b886',
-								'#40c057',
-								'#82c91e',
-								'#fab005',
-								'#fd7e14',
-							],
-						},
-					]}
+				<TextInput
+					label="Баланс"
+					description="Стартовый капитал задаётся при создании; далее меняется через транзакции"
+					readOnly
+					value={formatBalance(form.values.balance)}
 				/>
-			</Form.Item>
+			) : (
+				<NumberInput
+					label="Стартовый капитал"
+					description="Указывается один раз при создании счёта"
+					placeholder="0,00"
+					min={0}
+					step={0.01}
+					required
+					{...balanceInputProps}
+					{...form.getInputProps('balance')}
+				/>
+			)}
+			<ColorInput
+				label="Цвет"
+				format="hex"
+				swatches={[
+					'#2e2e2e',
+					'#868e96',
+					'#fa5252',
+					'#e64980',
+					'#be4bdb',
+					'#7950f2',
+					'#4c6ef5',
+					'#228be6',
+					'#15aabf',
+					'#12b886',
+					'#40c057',
+					'#82c91e',
+					'#fab005',
+					'#fd7e14',
+				]}
+				{...form.getInputProps('color')}
+			/>
 			<Template.Footer>
-				<Flex gap={8}>
+				<Group>
 					<Button
-						type="primary"
-						htmlType="button"
 						loading={isSaving}
-						onClick={() => void saveAndNavigate()}
+						onClick={saveAndNavigate}
+						color="green"
 					>
 						Сохранить
 					</Button>
-					<Button htmlType="button" loading={isSaving} onClick={() => void saveOnly()}>
+					<Button
+						loading={isSaving}
+						onClick={saveOnly}
+						color="blue"
+					>
 						Применить
 					</Button>
-				</Flex>
+				</Group>
 			</Template.Footer>
-		</Form>
+		</Stack>
 	);
 }

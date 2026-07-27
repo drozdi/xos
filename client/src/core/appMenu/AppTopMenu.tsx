@@ -1,3 +1,4 @@
+import { Box } from '@mantine/core';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
 import { useAppContext } from '@/core/context/AppContext';
@@ -66,9 +67,9 @@ function AppTopMenuContent({
 
 	if (layout === 'toolbar') {
 		return (
-			<div
+			<Box
+				h={36}
 				style={{
-					height: 36,
 					flexShrink: 0,
 					borderBottom: '1px solid var(--xos-window-titlebar-border)',
 					background: 'var(--xos-window-titlebar-bg)',
@@ -76,14 +77,14 @@ function AppTopMenuContent({
 				}}
 			>
 				<AppMenuToolbar entries={items} context={context} />
-			</div>
+			</Box>
 		);
 	}
 
 	if (layout === 'combined') {
 		const menuGroups = groupMenuBarEntries(items);
 		return (
-			<div
+			<Box
 				style={{
 					flexShrink: 0,
 					borderBottom: '1px solid var(--xos-window-titlebar-border)',
@@ -91,25 +92,23 @@ function AppTopMenuContent({
 					color: 'var(--xos-window-text)',
 				}}
 			>
-				<div style={{ height: 28 }}>
+				<Box h={28}>
 					<AppMenuDropdownBar entries={menuGroups} context={context} />
-				</div>
-				<div
-					style={{
-						height: 36,
-						borderTop: '1px solid var(--xos-window-titlebar-border)',
-					}}
+				</Box>
+				<Box
+					h={36}
+					style={{ borderTop: '1px solid var(--xos-window-titlebar-border)' }}
 				>
 					<AppMenuToolbar entries={toolbarItems} context={context} />
-				</div>
-			</div>
+				</Box>
+			</Box>
 		);
 	}
 
 	return (
-		<div
+		<Box
+			h={28}
 			style={{
-				height: 28,
 				flexShrink: 0,
 				borderBottom: '1px solid var(--xos-window-titlebar-border)',
 				background: 'var(--xos-window-titlebar-bg)',
@@ -117,7 +116,7 @@ function AppTopMenuContent({
 			}}
 		>
 			<AppMenuDropdownBar entries={groupMenuBarEntries(items)} context={context} />
-		</div>
+		</Box>
 	);
 }
 

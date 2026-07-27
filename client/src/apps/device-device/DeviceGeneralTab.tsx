@@ -1,4 +1,4 @@
-import { Flex, Form, Input, InputNumber, Select } from 'antd';
+import { NumberInput, Select, Stack, TextInput, Textarea } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -35,59 +35,46 @@ export function DeviceGeneralTab({ data, errors, readOnly, setField }: DeviceGen
 	}, [filterQuery.data]);
 
 	return (
-		<Flex vertical gap={12}>
-			<Form.Item
+		<Stack gap="sm">
+			<TextInput
 				label="Название"
-				required
-				validateStatus={errors.name ? 'error' : undefined}
-				help={errors.name}
-				style={{ marginBottom: 0 }}
-			>
-				<Input
-					value={data.name ?? ''}
-					readOnly={readOnly}
-					onChange={(e) => setField('name', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item
+				withAsterisk
+				value={data.name ?? ''}
+				error={errors.name}
+				readOnly={readOnly}
+				onChange={(e) => setField('name', e.currentTarget.value)}
+			/>
+			<TextInput
 				label="Код"
-				required
-				validateStatus={errors.code ? 'error' : undefined}
-				help={errors.code}
-				style={{ marginBottom: 0 }}
-			>
-				<Input
-					value={data.code ?? ''}
-					readOnly={readOnly}
-					onChange={(e) => setField('code', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item label="Тип" style={{ marginBottom: 0 }}>
-				<Select
-					options={typeOptions}
-					value={data.typeId ? String(data.typeId) : undefined}
-					disabled={readOnly}
-					onChange={(value) => setField('typeId', value ? Number(value) : null)}
-					showSearch
-					allowClear
-				/>
-			</Form.Item>
-			<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
-				<InputNumber
-					value={data.sort ?? 0}
-					disabled={readOnly}
-					style={{ width: '100%' }}
-					onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-				/>
-			</Form.Item>
-			<Form.Item label="Описание" style={{ marginBottom: 0 }}>
-				<Input.TextArea
-					value={data.description ?? ''}
-					readOnly={readOnly}
-					autoSize={{ minRows: 3 }}
-					onChange={(e) => setField('description', e.target.value)}
-				/>
-			</Form.Item>
-		</Flex>
+				withAsterisk
+				value={data.code ?? ''}
+				error={errors.code}
+				readOnly={readOnly}
+				onChange={(e) => setField('code', e.currentTarget.value)}
+			/>
+			<Select
+				label="Тип"
+				data={typeOptions}
+				value={data.typeId ? String(data.typeId) : null}
+				readOnly={readOnly}
+				onChange={(value) => setField('typeId', value ? Number(value) : null)}
+				searchable
+				clearable
+			/>
+			<NumberInput
+				label="Сортировка"
+				value={data.sort ?? 0}
+				readOnly={readOnly}
+				onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
+			/>
+			<Textarea
+				label="Описание"
+				value={data.description ?? ''}
+				readOnly={readOnly}
+				minRows={3}
+				autosize
+				onChange={(e) => setField('description', e.currentTarget.value)}
+			/>
+		</Stack>
 	);
 }

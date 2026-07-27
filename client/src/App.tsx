@@ -1,17 +1,21 @@
-import { Flex, Spin } from 'antd';
+import { Center, Loader, MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
+import { Notifications } from '@mantine/notifications';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
 import { queryClient } from '@/core/api/queryClient';
 import { setupInterceptors } from '@/core/api/interceptors';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
 import { resolveStandaloneApp } from '@/core/auth/tokenStorage';
-import { DatesSettingsProvider } from '@/core/dates';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
 import { preloadSettings } from '@/core/settings/preloadSettings';
 import { settingManager } from '@/core/settings/SettingManager';
-import { ThemeProvider, useThemePreference } from '@/core/theme';
-import { AntdProvider } from '@/ui/AntdProvider';
+import { DEFAULT_THEME, ThemeProvider, xosColorSchemeManager } from '@/core/theme';
+import { DatesSettingsProvider } from '@/core/dates';
+import { theme } from '@/styles/theme';
+
+const colorSchemeManager = xosColorSchemeManager();
 
 const Desktop = lazy(() =>
 	import('@/core/desktop/Desktop').then((module) => ({ default: module.Desktop })),
@@ -26,9 +30,9 @@ const SchooltaskStandaloneApp = lazy(() => import('@/apps/schooltask-standalone/
 
 function AppShellFallback() {
 	return (
-		<Flex align="center" justify="center" style={{ height: '100vh' }}>
-			<Spin size="large" />
-		</Flex>
+		<Center h="100vh">
+			<Loader size="lg" />
+		</Center>
 	);
 }
 
@@ -92,11 +96,6 @@ function DesktopShell() {
 	);
 }
 
-function ThemedAntdBridge({ children }: { children: ReactNode }) {
-	const { theme: colorScheme } = useThemePreference();
-	return <AntdProvider colorScheme={colorScheme}>{children}</AntdProvider>;
-}
-
 function StandaloneShell() {
 	const app = resolveStandaloneApp();
 	if (app === 'schooltask') {
@@ -118,19 +117,26 @@ export default function App() {
 
 	return (
 		<QueryClientProvider client={queryClient}>
-			<ThemeProvider>
-				<ThemedAntdBridge>
-					<DatesSettingsProvider>
-						{standaloneApp ? (
-							<Suspense fallback={<AppShellFallback />}>
-								<StandaloneShell />
-							</Suspense>
-						) : (
-							<DesktopShell />
-						)}
-					</DatesSettingsProvider>
-				</ThemedAntdBridge>
-			</ThemeProvider>
+			<MantineProvider
+				theme={theme}
+				defaultColorScheme={DEFAULT_THEME}
+				colorSchemeManager={colorSchemeManager}
+			>
+				<ModalsProvider>
+					<Notifications position="top-right" />
+					<ThemeProvider>
+						<DatesSettingsProvider>
+							{standaloneApp ? (
+								<Suspense fallback={<AppShellFallback />}>
+									<StandaloneShell />
+								</Suspense>
+							) : (
+								<DesktopShell />
+							)}
+						</DatesSettingsProvider>
+					</ThemeProvider>
+				</ModalsProvider>
+			</MantineProvider>
 		</QueryClientProvider>
 	);
 }

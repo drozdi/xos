@@ -1,4 +1,4 @@
-import { Alert, Button, Flex, Typography } from 'antd';
+import { Alert, Box, Button, Group, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useCallback, useState } from 'react';
@@ -58,48 +58,38 @@ export default function SchooltaskCalendarEditorApp() {
 
 	if (!canRead && !canUpdate) {
 		return (
-			<div style={{ margin: 16 }}>
-				<Alert
-					type="error"
-					showIcon
-					message="Доступ запрещён"
-					description="Нет прав на редактирование расписания"
-				/>
-			</div>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на редактирование расписания
+			</Alert>
 		);
 	}
 
 	if (classId <= 0) {
 		return (
-			<div style={{ margin: 16 }}>
-				<Alert
-					type="warning"
-					showIcon
-					message="Класс не выбран"
-					description="Откройте редактор с указанием classId"
-				/>
-			</div>
+			<Alert color="yellow" title="Класс не выбран" m="md">
+				Откройте редактор с указанием classId
+			</Alert>
 		);
 	}
 
 	return (
-		<div style={{ padding: 16, height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-			<Flex justify="space-between" align="flex-start" style={{ marginBottom: 12 }}>
-				<Flex vertical gap={2}>
-					<Typography.Text strong>{infoQuery.data?.name ?? `Класс #${classId}`}</Typography.Text>
+		<Box p="md" style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+			<Group justify="space-between" mb="sm">
+				<Stack gap={2}>
+					<Text fw={600}>{infoQuery.data?.name ?? `Класс #${classId}`}</Text>
 					{infoQuery.data?.teacher ? (
-						<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+						<Text size="sm" c="dimmed">
 							Классный руководитель: {infoQuery.data.teacher}
-						</Typography.Text>
+						</Text>
 					) : null}
-				</Flex>
+				</Stack>
 				{canUpdate ? (
-					<Button size="small" type="primary" onClick={openNewEvent}>
+					<Button size="xs" onClick={openNewEvent}>
 						Добавить урок
 					</Button>
 				) : null}
-			</Flex>
-			<div style={{ flex: 1, minHeight: 0 }}>
+			</Group>
+			<Box style={{ flex: 1, minHeight: 0 }}>
 				<WeekCalendar
 					events={eventsQuery.data ?? []}
 					isLoading={eventsQuery.isFetching}
@@ -112,7 +102,7 @@ export default function SchooltaskCalendarEditorApp() {
 					}}
 					onSlotClick={canUpdate ? openSlot : undefined}
 				/>
-			</div>
+			</Box>
 			<EventEditorModal
 				classId={classId}
 				eventId={selectedEventId}
@@ -122,6 +112,6 @@ export default function SchooltaskCalendarEditorApp() {
 				onClose={() => setEditorOpen(false)}
 				onSaved={() => void eventsQuery.refetch()}
 			/>
-		</div>
+		</Box>
 	);
 }

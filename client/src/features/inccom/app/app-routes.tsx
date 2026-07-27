@@ -4,9 +4,6 @@ import {
 	AccountDetailPage,
 	AccountsListPage,
 } from '@inccom/pages/accounts';
-import { SignInPage } from '@inccom/pages/auth/sign-in-page';
-import { SignOutPage } from '@inccom/pages/auth/sign-out-page';
-import { SignUpPage } from '@inccom/pages/auth/sign-up-page';
 import { CategoriesAccountPage } from '@inccom/pages/categories/categories-account-page';
 import { CategoriesPage } from '@inccom/pages/categories/categories-page';
 import { ItemCategoriesPage } from '@inccom/pages/item-categories';
@@ -20,7 +17,7 @@ import {
 	TransferCreatePage,
 	TransferEditPage,
 } from '@inccom/pages/transactions';
-import { AuthLayout, MainLayout } from '@inccom/layouts';
+import { MainLayout } from '@inccom/layouts';
 import { Navigate, Outlet, useParams, useRoutes } from 'react-router-dom';
 
 function LegacyAccountRedirect() {
@@ -30,16 +27,6 @@ function LegacyAccountRedirect() {
 
 export function AppRouters() {
 	return useRoutes([
-		{
-			path: '/auth',
-			element: <AuthLayout />,
-			children: [
-				{ path: '', element: <Navigate to="/auth/sign-in" replace /> },
-				{ path: 'sign-in', element: <SignInPage /> },
-				{ path: 'sign-up', element: <SignUpPage /> },
-				{ path: 'sign-out', element: <SignOutPage /> },
-			],
-		},
 		{
 			path: '/',
 			element: (

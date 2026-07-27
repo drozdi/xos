@@ -1,3 +1,4 @@
+import { Box } from '@mantine/core';
 import { useCallback } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
@@ -66,7 +67,7 @@ export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
 	);
 
 	return (
-		<div
+		<Box
 			style={{
 				width: START_MENU_PANEL_WIDTH,
 				height: START_MENU_PANEL_HEIGHT,
@@ -74,19 +75,19 @@ export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
 				overflow: 'hidden',
 				borderRadius: 8,
 				border: '1px solid var(--xos-shell-border)',
-				boxShadow: '0 12px 32px rgba(0, 0, 0, 0.28)',
+				boxShadow: 'var(--mantine-shadow-xl)',
 				background: 'var(--xos-shell-bg)',
 			}}
 		>
 			<StartMenuSidebar onClose={onClose} />
-			<div style={{ display: 'flex', flex: 1, minWidth: 0 }}>
+			<Box style={{ display: 'flex', flex: 1, minWidth: 0 }}>
 				<StartMenuAppList
 					onClose={onClose}
 					isPinned={(appId) => pinnedIdSet.has(appId)}
 					onPin={pinApp}
 				/>
 				<StartMenuTiles apps={pinnedApps} onClose={onClose} onUnpin={unpinApp} />
-			</div>
-		</div>
+			</Box>
+		</Box>
 	);
 }

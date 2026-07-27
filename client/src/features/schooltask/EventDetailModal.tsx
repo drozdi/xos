@@ -1,4 +1,4 @@
-import { Flex, Modal, Spin, Typography } from 'antd';
+import { Anchor, Group, Loader, Modal, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 
@@ -31,69 +31,69 @@ export function EventDetailModal({ classId, eventId, opened, onClose }: EventDet
 	const title = formatLessonTitle(detailQuery.data?.subject, detailQuery.data?.start);
 
 	return (
-		<Modal open={opened} onCancel={onClose} title={title} width={720} footer={null} centered destroyOnHidden>
+		<Modal opened={opened} onClose={onClose} title={title} size="lg" centered>
 			{detailQuery.isLoading ? (
-				<Flex justify="center" style={{ padding: '16px 0' }}>
-					<Spin size="small" />
-				</Flex>
+				<Group justify="center" py="md">
+					<Loader size="sm" />
+				</Group>
 			) : detailQuery.data ? (
-				<Flex vertical gap={12}>
+				<Stack gap="sm">
 					{detailQuery.data.teacher ? (
-						<Typography.Text>
+						<Text>
 							<strong>Учитель:</strong> {detailQuery.data.teacher}
-						</Typography.Text>
+						</Text>
 					) : null}
 					{detailQuery.data.email ? (
-						<Typography.Text>
+						<Text>
 							<strong>Email:</strong> {detailQuery.data.email}
-						</Typography.Text>
+						</Text>
 					) : null}
 					{detailQuery.data.theme ? (
-						<Typography.Text>
+						<Text>
 							<strong>Тема:</strong> {detailQuery.data.theme}
-						</Typography.Text>
+						</Text>
 					) : null}
 					{detailQuery.data.ht ? (
-						<Flex vertical gap={4}>
-							<Typography.Text strong>Домашнее задание</Typography.Text>
-							<div dangerouslySetInnerHTML={{ __html: detailQuery.data.ht }} />
-						</Flex>
+						<Stack gap={4}>
+							<Text fw={600}>Домашнее задание</Text>
+							<Text dangerouslySetInnerHTML={{ __html: detailQuery.data.ht }} />
+						</Stack>
 					) : null}
 					{detailQuery.data.pt ? (
-						<Flex vertical gap={4}>
-							<Typography.Text strong>План урока</Typography.Text>
-							<div dangerouslySetInnerHTML={{ __html: detailQuery.data.pt }} />
-						</Flex>
+						<Stack gap={4}>
+							<Text fw={600}>План урока</Text>
+							<Text dangerouslySetInnerHTML={{ __html: detailQuery.data.pt }} />
+						</Stack>
 					) : null}
 					{detailQuery.data.des ? (
-						<Flex vertical gap={4}>
-							<Typography.Text strong>Описание</Typography.Text>
-							<div dangerouslySetInnerHTML={{ __html: detailQuery.data.des }} />
-						</Flex>
+						<Stack gap={4}>
+							<Text fw={600}>Описание</Text>
+							<Text dangerouslySetInnerHTML={{ __html: detailQuery.data.des }} />
+						</Stack>
 					) : null}
 					{detailQuery.data.net && detailQuery.data.net.length > 0 ? (
-						<Flex vertical gap={4}>
-							<Typography.Text strong>Ссылки</Typography.Text>
+						<Stack gap={4}>
+							<Text fw={600}>Ссылки</Text>
 							{detailQuery.data.net.map((link) => (
-								<Typography.Link key={link} href={link} target="_blank" rel="noreferrer">
+								<Anchor key={link} href={link} target="_blank" rel="noreferrer">
 									{link}
-								</Typography.Link>
+								</Anchor>
 							))}
-						</Flex>
+						</Stack>
 					) : null}
 					{detailQuery.data.files && Object.keys(detailQuery.data.files).length > 0 ? (
-						<Flex vertical gap={4}>
-							<Typography.Text strong>Файлы</Typography.Text>
+						<Stack gap={4}>
+							<Text fw={600}>Файлы</Text>
 							{Object.entries(detailQuery.data.files).map(([name, url]) => (
-								<Typography.Link key={name} href={url} target="_blank" rel="noreferrer">
+								<Anchor key={name} href={url} target="_blank" rel="noreferrer">
 									{name}
-								</Typography.Link>
+								</Anchor>
 							))}
-						</Flex>
+						</Stack>
 					) : null}
-				</Flex>
+				</Stack>
 			) : (
-				<Typography.Text type="secondary">Нет данных</Typography.Text>
+				<Text c="dimmed">Нет данных</Text>
 			)}
 		</Modal>
 	);

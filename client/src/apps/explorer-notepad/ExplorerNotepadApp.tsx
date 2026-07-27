@@ -1,5 +1,5 @@
-import { Button, Flex, Input, Typography } from 'antd';
-import { notifications } from '@/ui/toast';
+import { Box, Button, Group, Text, Textarea } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
@@ -93,7 +93,7 @@ export default function ExplorerNotepadApp() {
 	};
 
 	return (
-		<div
+		<Box
 			style={{
 				position: 'absolute',
 				inset: 0,
@@ -101,35 +101,39 @@ export default function ExplorerNotepadApp() {
 				flexDirection: 'column',
 				minHeight: 0,
 				overflow: 'hidden',
-				padding: 16,
-				gap: 12,
+				padding: 'var(--mantine-spacing-md)',
+				gap: 'var(--mantine-spacing-sm)',
 			}}
 		>
-			<Flex justify="space-between" wrap="nowrap" style={{ flexShrink: 0 }} gap="small">
-				<Typography.Text type="secondary" ellipsis title={savedPath ?? 'Новый файл'} style={{ fontSize: 13 }}>
+			<Group justify="space-between" wrap="nowrap" style={{ flexShrink: 0 }}>
+				<Text size="sm" c="dimmed" truncate title={savedPath ?? 'Новый файл'}>
 					{savedPath ?? 'Новый файл'}
 					{isDirty ? ' *' : ''}
-				</Typography.Text>
-				<Flex gap="small" wrap="nowrap">
-					<Button size="small" onClick={() => void handleOpen()}>
+				</Text>
+				<Group gap="xs" wrap="nowrap">
+					<Button variant="default" size="xs" onClick={() => void handleOpen()}>
 						Открыть…
 					</Button>
-					<Button size="small" onClick={() => void handleSave()} disabled={Boolean(savedPath) && !isDirty}>
+					<Button variant="default" size="xs" onClick={() => void handleSave()} disabled={Boolean(savedPath) && !isDirty}>
 						Сохранить
 					</Button>
-					<Button size="small" onClick={() => void handleSaveAs()}>
+					<Button variant="default" size="xs" onClick={() => void handleSaveAs()}>
 						Сохранить как…
 					</Button>
-				</Flex>
-			</Flex>
-			<Input.TextArea
+				</Group>
+			</Group>
+			<Textarea
 				value={content}
 				onChange={(event) => {
-					setContent(event.target.value);
+					setContent(event.currentTarget.value);
 					setIsDirty(true);
 				}}
-				style={{ flex: 1, minHeight: 0, resize: 'none' }}
+				styles={{
+					root: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
+					wrapper: { flex: 1, minHeight: 0 },
+					input: { height: '100%', minHeight: 0, resize: 'none' },
+				}}
 			/>
-		</div>
+		</Box>
 	);
 }

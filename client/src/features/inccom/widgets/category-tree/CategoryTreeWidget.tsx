@@ -1,22 +1,4 @@
-﻿import { Button, Flex, Form, Input, Select, Spin, Tooltip, Typography } from 'antd';
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useMemo,
-	useState,
-	type DragEvent,
-} from 'react';
-import {
-	CheckOutlined,
-	CloseOutlined,
-	DeleteOutlined,
-	EditOutlined,
-	HolderOutlined,
-	PlusOutlined,
-} from '@ant-design/icons';
-
-import {
+﻿import {
 	buildItemCategoriesChildParams,
 	ITEM_CATEGORIES_ALL_PARAMS,
 	useItemCategoriesQuery,
@@ -27,7 +9,34 @@ import {
 import type { IItemCategory } from '@inccom/entities/item-category/model/types';
 import { notification } from '@inccom/shared/notification';
 import { getErrorMessage } from '@inccom/shared/utils/error';
-
+import {
+	ActionIcon,
+	Box,
+	Group,
+	Loader,
+	Stack,
+	TagsInput,
+	Text,
+	TextInput,
+	Tooltip,
+} from '@mantine/core';
+import { isNotEmpty, useForm } from '@mantine/form';
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useMemo,
+	useState,
+	type DragEvent,
+} from 'react';
+import {
+	TbCheck,
+	TbGripVertical,
+	TbPencil,
+	TbPlus,
+	TbTrash,
+	TbX,
+} from 'react-icons/tb';
 import {
 	buildCategoryParentMap,
 	canMoveCategoryToParent,
@@ -67,48 +76,50 @@ interface AddChildFormProps {
 
 function AddChildForm({ parentId, onDone }: AddChildFormProps) {
 	const createMutation = useItemCategoryCreate();
-	const [form] = Form.useForm<CategoryFormValues>();
+	const form = useForm<CategoryFormValues>({
+		initialValues: { name: '', keywords: [] },
+		validate: { name: isNotEmpty('Введите название') },
+	});
 
 	async function handleAdd(values: CategoryFormValues) {
 		await createMutation.mutateAsync({
 			name: values.name.trim(),
 			parentId,
-			keywords: (values.keywords ?? []).map((word) => word.trim()).filter(Boolean),
+			keywords: values.keywords.map((word) => word.trim()).filter(Boolean),
 		});
-		form.resetFields();
+		form.reset();
 		onDone();
 	}
 
 	return (
-		<Form
-			form={form}
-			layout="vertical"
-			onFinish={(v) => void handleAdd(v)}
-			initialValues={{ name: '', keywords: [] }}
-			style={{ paddingLeft: 24 }}
-		>
-			<Flex align="flex-end" gap={8} wrap="nowrap">
-				<Form.Item
-					label="Подкатегория"
-					name="name"
-					rules={[{ required: true, message: 'Введите название' }]}
-					style={{ flex: 1, marginBottom: 0 }}
-				>
-					<Input placeholder="Название" />
-				</Form.Item>
-				<Button
-					type="primary"
-					htmlType="submit"
-					loading={createMutation.isPending}
-					icon={<CheckOutlined />}
-					aria-label="Сохранить"
+		<form onSubmit={form.onSubmit(handleAdd)}>
+			<Stack gap="xs" pl={24}>
+				<Group align="flex-end" wrap="nowrap">
+					<TextInput
+						label="Подкатегория"
+						placeholder="Название"
+						style={{ flex: 1 }}
+						{...form.getInputProps('name')}
+					/>
+					<ActionIcon
+						type="submit"
+						color="green"
+						loading={createMutation.isPending}
+						aria-label="Сохранить"
+					>
+						<TbCheck />
+					</ActionIcon>
+					<ActionIcon onClick={onDone} aria-label="Отмена">
+						<TbX />
+					</ActionIcon>
+				</Group>
+				<TagsInput
+					label="Ключевые слова"
+					placeholder="Введите слово и нажмите Enter"
+					{...form.getInputProps('keywords')}
 				/>
-				<Button onClick={onDone} icon={<CloseOutlined />} aria-label="Отмена" />
-			</Flex>
-			<Form.Item label="Ключевые слова" name="keywords" style={{ marginTop: 8 }}>
-				<Select mode="tags" placeholder="Введите слово и нажмите Enter" tokenSeparators={[',']} />
-			</Form.Item>
-		</Form>
+			</Stack>
+		</form>
 	);
 }
 
@@ -129,7 +140,7 @@ function CategoryTreeNode({ parentId, level = 0 }: CategoryTreeNodeProps) {
 	const categories = data?.items ?? [];
 
 	if (isLoading) {
-		return <Spin size="small" />;
+		return <Loader size="sm" />;
 	}
 
 	if (!categories.length) {
@@ -137,11 +148,11 @@ function CategoryTreeNode({ parentId, level = 0 }: CategoryTreeNodeProps) {
 	}
 
 	return (
-		<Flex vertical gap={8} style={{ paddingLeft: level * 16 }}>
+		<Stack gap="xs" pl={level * 16}>
 			{categories.map((category) => (
 				<CategoryRow key={category.id} category={category} level={level} />
 			))}
-		</Flex>
+		</Stack>
 	);
 }
 
@@ -151,9 +162,9 @@ function CategoryKeywords({ keywords }: { keywords: string[] }) {
 	}
 
 	return (
-		<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+		<Text size="xs" c="dimmed">
 			Ключевые слова: {keywords.join(', ')}
-		</Typography.Text>
+		</Text>
 	);
 }
 
@@ -177,7 +188,14 @@ function CategoryRow({
 	const [showAddChild, setShowAddChild] = useState(false);
 	const updateMutation = useItemCategoryUpdate();
 	const deleteMutation = useItemCategoryDelete();
-	const [form] = Form.useForm<CategoryFormValues>();
+
+	const form = useForm<CategoryFormValues>({
+		initialValues: {
+			name: category.name,
+			keywords: category.keywords ?? [],
+		},
+		validate: { name: isNotEmpty('Введите название') },
+	});
 
 	const isDragging = draggedId === category.id;
 	const isDropTarget = dropTargetId === category.id;
@@ -190,7 +208,7 @@ function CategoryRow({
 		await updateMutation.mutateAsync({
 			id: category.id,
 			name: values.name.trim(),
-			keywords: (values.keywords ?? []).map((word) => word.trim()).filter(Boolean),
+			keywords: values.keywords.map((word) => word.trim()).filter(Boolean),
 		});
 		setIsEdit(false);
 	}
@@ -200,7 +218,7 @@ function CategoryRow({
 	}
 
 	function startEdit() {
-		form.setFieldsValue({
+		form.setValues({
 			name: category.name,
 			keywords: category.keywords ?? [],
 		});
@@ -248,109 +266,103 @@ function CategoryRow({
 	}
 
 	return (
-		<Flex vertical gap={8}>
-			<div
+		<Stack gap="xs">
+			<Box
 				className={`${classes.row} ${isDragging ? classes.rowDragging : ''} ${isDropTarget && canAcceptDrop ? classes.rowDropTarget : ''}`}
 				draggable={!isEdit && !isMoving}
 				onDragStart={handleDragStart}
 				onDragEnd={handleDragEnd}
 				onDragOver={handleDragOver}
 				onDragLeave={handleDragLeave}
-				onDrop={(e) => void handleDrop(e)}
+				onDrop={handleDrop}
 			>
 				{isEdit ? (
-					<Form
-						form={form}
-						layout="vertical"
-						onFinish={(v) => void handleSave(v)}
-						initialValues={{
-							name: category.name,
-							keywords: category.keywords ?? [],
-						}}
-					>
-						<Flex align="flex-end" gap={8} wrap="nowrap">
-							<Form.Item
-								label="Название"
-								name="name"
-								rules={[{ required: true, message: 'Введите название' }]}
-								style={{ flex: 1, marginBottom: 0 }}
-							>
-								<Input />
-							</Form.Item>
-							<Button
-								type="primary"
-								htmlType="submit"
-								loading={updateMutation.isPending}
-								icon={<CheckOutlined />}
-								aria-label="Сохранить"
-							/>
-							<Button onClick={() => setIsEdit(false)} icon={<CloseOutlined />} aria-label="Отмена" />
-						</Flex>
-						<Form.Item label="Ключевые слова" name="keywords" style={{ marginTop: 8 }}>
-							<Select
-								mode="tags"
-								placeholder="Введите слово и нажмите Enter"
-								tokenSeparators={[',']}
-							/>
-						</Form.Item>
-					</Form>
-				) : (
-					<Flex vertical gap={2}>
-						<Flex justify="space-between" wrap="nowrap" align="center">
-							<Flex gap={6} wrap="nowrap" style={{ flex: 1, minWidth: 0 }} align="center">
-								<Tooltip title="Перетащите в другую категорию">
-									<div className={classes.dragHandle} aria-hidden>
-										<HolderOutlined style={{ fontSize: 16 }} />
-									</div>
-								</Tooltip>
-								<Typography.Text
-									strong={level === 0}
-									ellipsis
+					<form onSubmit={form.onSubmit(handleSave)}>
+						<Stack gap="xs">
+							<Group align="flex-end" wrap="nowrap">
+								<TextInput
+									label="Название"
 									style={{ flex: 1 }}
+									{...form.getInputProps('name')}
+								/>
+								<ActionIcon
+									type="submit"
+									color="green"
+									loading={updateMutation.isPending}
+									aria-label="Сохранить"
 								>
+									<TbCheck />
+								</ActionIcon>
+								<ActionIcon onClick={() => setIsEdit(false)} aria-label="Отмена">
+									<TbX />
+								</ActionIcon>
+							</Group>
+							<TagsInput
+								label="Ключевые слова"
+								placeholder="Введите слово и нажмите Enter"
+								{...form.getInputProps('keywords')}
+							/>
+						</Stack>
+					</form>
+				) : (
+					<Stack gap={2}>
+						<Group justify="space-between" wrap="nowrap">
+							<Group gap={6} wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+								<Tooltip label="Перетащите в другую категорию">
+									<Box className={classes.dragHandle} aria-hidden>
+										<TbGripVertical size={16} />
+									</Box>
+								</Tooltip>
+								<Text fw={level === 0 ? 600 : 400} truncate>
 									{category.name}
-								</Typography.Text>
-							</Flex>
-							<Flex gap={4} wrap="nowrap">
-								<Tooltip title="Редактировать">
-									<Button
-										type="text"
+								</Text>
+							</Group>
+							<Group gap={4} wrap="nowrap">
+								<Tooltip label="Редактировать">
+									<ActionIcon
+										variant="subtle"
 										onClick={startEdit}
-										icon={<EditOutlined />}
 										aria-label="Редактировать"
-									/>
+									>
+										<TbPencil />
+									</ActionIcon>
 								</Tooltip>
-								<Tooltip title="Добавить подкатегорию">
-									<Button
-										type="text"
+								<Tooltip label="Добавить подкатегорию">
+									<ActionIcon
+										variant="subtle"
 										onClick={() => setShowAddChild((value) => !value)}
-										icon={<PlusOutlined />}
 										aria-label="Добавить подкатегорию"
-									/>
+									>
+										<TbPlus />
+									</ActionIcon>
 								</Tooltip>
-								<Tooltip title="Удалить">
-									<Button
-										type="text"
-										danger
-										onClick={() => void handleDelete()}
+								<Tooltip label="Удалить">
+									<ActionIcon
+										variant="subtle"
+										color="red"
+										onClick={handleDelete}
 										loading={deleteMutation.isPending}
-										icon={<DeleteOutlined />}
 										aria-label="Удалить"
-									/>
+									>
+										<TbTrash />
+									</ActionIcon>
 								</Tooltip>
-							</Flex>
-						</Flex>
+							</Group>
+						</Group>
 						<CategoryKeywords keywords={category.keywords ?? []} />
-					</Flex>
+					</Stack>
 				)}
-			</div>
-			{showAddChild ? (
-				<AddChildForm parentId={category.id} onDone={() => setShowAddChild(false)} />
-			) : null}
-			{category.childrenCount > 0 ? (
+			</Box>
+			{showAddChild && (
+				<AddChildForm
+					parentId={category.id}
+					onDone={() => setShowAddChild(false)}
+				/>
+			)}
+			{category.childrenCount > 0 && (
 				<CategoryTreeNode parentId={category.id} level={level + 1} />
-			) : null}
-		</Flex>
+			)}
+		</Stack>
 	);
 }
 
@@ -370,7 +382,8 @@ function RootDropZone() {
 
 	const currentParent = parentById.get(draggedId) ?? null;
 	const canAcceptDrop =
-		currentParent !== null && canMoveCategoryToParent(draggedId, null, parentById);
+		currentParent !== null &&
+		canMoveCategoryToParent(draggedId, null, parentById);
 	const isActive = dropTargetId === 'root' && canAcceptDrop;
 
 	function handleDragOver(event: DragEvent<HTMLDivElement>) {
@@ -399,21 +412,25 @@ function RootDropZone() {
 	}
 
 	return (
-		<div
+		<Box
 			className={`${classes.rootDropZone} ${isActive ? classes.rootDropZoneActive : ''}`}
 			onDragOver={handleDragOver}
 			onDragLeave={handleDragLeave}
-			onDrop={(e) => void handleDrop(e)}
+			onDrop={handleDrop}
 		>
 			Переместить в корень
-		</div>
+		</Box>
 	);
 }
 
 export function CategoryTreeWidget() {
 	const [draggedId, setDraggedId] = useState<number | null>(null);
-	const [dropTargetId, setDropTargetId] = useState<number | 'root' | null>(null);
-	const { data: allCategoriesData } = useItemCategoriesQuery(ITEM_CATEGORIES_ALL_PARAMS);
+	const [dropTargetId, setDropTargetId] = useState<number | 'root' | null>(
+		null,
+	);
+	const { data: allCategoriesData } = useItemCategoriesQuery(
+		ITEM_CATEGORIES_ALL_PARAMS,
+	);
 	const updateMutation = useItemCategoryUpdate();
 
 	const parentById = useMemo(
@@ -459,15 +476,21 @@ export function CategoryTreeWidget() {
 			moveCategory,
 			isMoving: updateMutation.isPending,
 		}),
-		[draggedId, dropTargetId, parentById, moveCategory, updateMutation.isPending],
+		[
+			draggedId,
+			dropTargetId,
+			parentById,
+			moveCategory,
+			updateMutation.isPending,
+		],
 	);
 
 	return (
 		<CategoryDragContext.Provider value={contextValue}>
-			<Flex vertical gap={16}>
+			<Stack gap="md">
 				<RootDropZone />
 				<CategoryTreeNode parentId="null" />
-			</Flex>
+			</Stack>
 		</CategoryDragContext.Provider>
 	);
 }

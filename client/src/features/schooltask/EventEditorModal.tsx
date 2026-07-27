@@ -1,5 +1,5 @@
-import { Button, Flex, Form, Modal, Radio, Select } from 'antd';
-import { notifications } from '@/ui/toast';
+import { Button, Group, Modal, Radio, Select, Stack } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
@@ -163,79 +163,70 @@ export function EventEditorModal({
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
 
-	const selectedSubgroup = form.group_id ? String(form.group_id) : undefined;
+	const selectedSubgroup = form.group_id ? String(form.group_id) : null;
 
 	return (
 		<Modal
-			open={opened}
-			onCancel={onClose}
+			opened={opened}
+			onClose={onClose}
 			title={isNew ? 'Новый урок' : `Урок #${eventId}`}
-			width={520}
-			footer={null}
-			destroyOnHidden
+			size="md"
 		>
-			<Flex vertical gap={12}>
-				<Form.Item label="Подгруппа" style={{ marginBottom: 0 }}>
-					<Select
-						options={subgroupOptions}
-						value={selectedSubgroup}
-						disabled={!isNew}
-						onChange={(value) => {
-							const groupId = value ? Number(value) : null;
-							const subgroup = (classQuery.data?.sub ?? []).find(
-								(item) => item.id === groupId || item.group_id === groupId,
-							);
-							setForm((current) => ({
+			<Stack gap="sm">
+				<Select
+					label="Подгруппа"
+					data={subgroupOptions}
+					value={selectedSubgroup}
+					disabled={!isNew}
+					onChange={(value) => {
+						const groupId = value ? Number(value) : null;
+						const subgroup = (classQuery.data?.sub ?? []).find(
+							(item) => item.id === groupId || item.group_id === groupId,
+						);
+						setForm((current) => ({
+							...current,
+							group_id: groupId,
+							subject_id: subgroup?.subject_id ?? null,
+							user_id: subgroup?.user_id ?? null,
+						}));
+					}}
+					searchable
+					clearable={isNew}
+				/>
+				<Select
+					label="Учитель"
+					data={teacherOptions}
+					value={form.user_id ? String(form.user_id) : null}
+					onChange={(value) => setForm((current) => ({ ...current, user_id: value ? Number(value) : null }))}
+					searchable
+					clearable
+					disabled={resolvedSubjectId <= 0}
+				/>
+				<Select
+					label="Номер урока"
+					data={Array.from({ length: 8 }, (_, index) => ({
+						value: String(index + 1),
+						label: `Урок ${index + 1}`,
+					}))}
+					value={form.lesson_number ? String(form.lesson_number) : null}
+					clearable
+					onChange={(value) => {
+						const lessonNumber = value ? Number(value) : null;
+						setForm((current) => {
+							if (!lessonNumber) {
+								return { ...current, lesson_number: null };
+							}
+							const date = current.start?.slice(0, 10) ?? dayjs().format('YYYY-MM-DD');
+							const times = applyLessonTemplate(date, lessonNumber);
+							return {
 								...current,
-								group_id: groupId,
-								subject_id: subgroup?.subject_id ?? null,
-								user_id: subgroup?.user_id ?? null,
-							}));
-						}}
-						showSearch
-						allowClear={isNew}
-						optionFilterProp="label"
-					/>
-				</Form.Item>
-				<Form.Item label="Учитель" style={{ marginBottom: 0 }}>
-					<Select
-						options={teacherOptions}
-						value={form.user_id ? String(form.user_id) : undefined}
-						onChange={(value) =>
-							setForm((current) => ({ ...current, user_id: value ? Number(value) : null }))
-						}
-						showSearch
-						allowClear
-						disabled={resolvedSubjectId <= 0}
-						optionFilterProp="label"
-					/>
-				</Form.Item>
-				<Form.Item label="Номер урока" style={{ marginBottom: 0 }}>
-					<Select
-						options={Array.from({ length: 8 }, (_, index) => ({
-							value: String(index + 1),
-							label: `Урок ${index + 1}`,
-						}))}
-						value={form.lesson_number ? String(form.lesson_number) : undefined}
-						allowClear
-						onChange={(value) => {
-							const lessonNumber = value ? Number(value) : null;
-							setForm((current) => {
-								if (!lessonNumber) {
-									return { ...current, lesson_number: null };
-								}
-								const date = current.start?.slice(0, 10) ?? dayjs().format('YYYY-MM-DD');
-								const times = applyLessonTemplate(date, lessonNumber);
-								return {
-									...current,
-									lesson_number: lessonNumber,
-									start: times?.start ?? current.start,
-									end: times?.end ?? current.end,
-								};
-							});
-						}}
-					/>
-				</Form.Item>
+								lesson_number: lessonNumber,
+								start: times?.start ?? current.start,
+								end: times?.end ?? current.end,
+							};
+						});
+					}}
+				/>
 				<DateTimeField
 					label="Начало"
 					value={form.start}
@@ -270,23 +261,23 @@ export function EventEditorModal({
 					/>
 				) : null}
 				{!isNew ? (
-					<Form.Item label="Изменить" style={{ marginBottom: 0 }}>
-						<Radio.Group
-							value={editType}
-							onChange={(event) => setEditType(event.target.value as typeof editType)}
-						>
-							<Flex vertical gap={8}>
-								<Radio value="one">Только этот урок</Radio>
-								<Radio value="after">Этот и следующие</Radio>
-								<Radio value="all">Всю серию</Radio>
-							</Flex>
-						</Radio.Group>
-					</Form.Item>
+					<Radio.Group
+						label="Изменить"
+						value={editType}
+						onChange={(value) => setEditType((value as typeof editType) || 'one')}
+					>
+						<Stack gap="xs" mt={6}>
+							<Radio value="one" label="Только этот урок" />
+							<Radio value="after" label="Этот и следующие" />
+							<Radio value="all" label="Всю серию" />
+						</Stack>
+					</Radio.Group>
 				) : null}
-				<Flex justify="space-between">
+				<Group justify="space-between">
 					{!isNew ? (
 						<Button
-							danger
+							color="red"
+							variant="light"
 							loading={deleteMutation.isPending}
 							onClick={() => {
 								confirmAction({
@@ -303,14 +294,16 @@ export function EventEditorModal({
 					) : (
 						<span />
 					)}
-					<Flex gap={8}>
-						<Button onClick={onClose}>Отмена</Button>
-						<Button type="primary" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+					<Group gap="xs">
+						<Button variant="default" onClick={onClose}>
+							Отмена
+						</Button>
+						<Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
 							Сохранить
 						</Button>
-					</Flex>
-				</Flex>
-			</Flex>
+					</Group>
+				</Group>
+			</Stack>
 		</Modal>
 	);
 }

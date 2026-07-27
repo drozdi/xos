@@ -1,4 +1,4 @@
-import { Alert, Flex, Tabs, Typography } from 'antd';
+import { Alert, Stack, Tabs, Text } from '@mantine/core';
 import { useState } from 'react';
 
 import { mainUserApi, type UserDetail } from '@/core/api/endpoints/mainApi';
@@ -56,32 +56,24 @@ export default function MainUserApp() {
 	const canRole = useCanRoleMainUser();
 	const canCreate = canCreateMainUser();
 	const isNew = entityId === 0;
-	const [activeTab, setActiveTab] = useState('general');
+	const [activeTab, setActiveTab] = useState<string | null>('general');
 
 	const canSave =
 		(isNew ? canCreate : canUpdate) || canGroup || canAccess || canRole;
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на создание пользователя"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание пользователя
+			</Alert>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр пользователя"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр пользователя
+			</Alert>
 		);
 	}
 
@@ -117,13 +109,13 @@ export default function MainUserApp() {
 				}
 
 				return (
-					<Flex vertical gap={2}>
+					<Stack gap={2}>
 						{notes.map((note) => (
-							<Typography.Text key={note} type="secondary" style={{ fontSize: 13 }}>
+							<Text key={note} size="sm" c="dimmed">
 								{note}
-							</Typography.Text>
+							</Text>
 						))}
-					</Flex>
+					</Stack>
 				);
 			}}
 		>
@@ -136,63 +128,59 @@ export default function MainUserApp() {
 				const accesses = normalizeUserAccesses(data.accesses);
 				const roles = normalizeUserRoles(data.roles);
 
-				const items = [
-					{
-						key: 'general',
-						label: 'Общие',
-						children: (
+				return (
+					<Tabs value={activeTab} onChange={setActiveTab}>
+						<Tabs.List>
+							<Tabs.Tab value="general">Общие</Tabs.Tab>
+							<Tabs.Tab value="groups">Группы</Tabs.Tab>
+							{canAccess ? (
+								<Tabs.Tab value="app-access">Доступ к приложениям</Tabs.Tab>
+							) : null}
+							{canRole ? (
+								<Tabs.Tab value="extra-roles">Дополнительные роли</Tabs.Tab>
+							) : null}
+						</Tabs.List>
+
+						<Tabs.Panel value="general" pt="sm">
 							<UserGeneralTab
 								data={data}
 								errors={errors}
 								readOnly={readOnlyGeneral}
 								setField={setField}
 							/>
-						),
-					},
-					{
-						key: 'groups',
-						label: 'Группы',
-						children: (
+						</Tabs.Panel>
+
+						<Tabs.Panel value="groups" pt="sm">
 							<UserGroupsTab
 								groups={groups}
 								readOnly={readOnlyGroups}
 								onChange={(nextGroups) => setField('groups', nextGroups)}
 							/>
-						),
-					},
-				];
+						</Tabs.Panel>
 
-				if (canAccess) {
-					items.push({
-						key: 'app-access',
-						label: 'Доступ к приложениям',
-						children: (
-							<UserAccessTab
-								accesses={accesses}
-								roles={roles}
-								readOnly={readOnlyAccess}
-								onAccessesChange={(nextAccesses) => setField('accesses', nextAccesses)}
-								onRolesChange={(nextRoles) => setField('roles', nextRoles)}
-							/>
-						),
-					});
-				}
+						{canAccess ? (
+							<Tabs.Panel value="app-access" pt="sm">
+								<UserAccessTab
+									accesses={accesses}
+									roles={roles}
+									readOnly={readOnlyAccess}
+									onAccessesChange={(nextAccesses) => setField('accesses', nextAccesses)}
+									onRolesChange={(nextRoles) => setField('roles', nextRoles)}
+								/>
+							</Tabs.Panel>
+						) : null}
 
-				if (canRole) {
-					items.push({
-						key: 'extra-roles',
-						label: 'Дополнительные роли',
-						children: (
-							<UserRolesTab
-								roles={roles}
-								readOnly={readOnlyRoles}
-								onRolesChange={(nextRoles) => setField('roles', nextRoles)}
-							/>
-						),
-					});
-				}
-
-				return <Tabs activeKey={activeTab} onChange={setActiveTab} items={items} />;
+						{canRole ? (
+							<Tabs.Panel value="extra-roles" pt="sm">
+								<UserRolesTab
+									roles={roles}
+									readOnly={readOnlyRoles}
+									onRolesChange={(nextRoles) => setField('roles', nextRoles)}
+								/>
+							</Tabs.Panel>
+						) : null}
+					</Tabs>
+				);
 			}}
 		</MainEntityForm>
 	);

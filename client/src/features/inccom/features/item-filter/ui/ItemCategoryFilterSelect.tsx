@@ -1,11 +1,14 @@
-﻿import { Select, Spin } from 'antd';
-import { useMemo } from 'react';
-
-import {
+﻿import {
 	ITEM_CATEGORIES_ALL_PARAMS,
 	useItemCategoriesQuery,
 } from '@inccom/entities/item-category';
-import { buildCategoryComboboxOptions } from '@inccom/entities/item-category/lib/category-options';
+import {
+	buildCategoryComboboxOptions,
+	buildCategoryLabel,
+	buildCategoriesById,
+} from '@inccom/entities/item-category/lib/category-options';
+import { Loader, Select } from '@mantine/core';
+import { useMemo } from 'react';
 
 interface ItemCategoryFilterSelectProps {
 	value: number | null;
@@ -24,20 +27,20 @@ export function ItemCategoryFilterSelect({
 	);
 
 	return (
-		<div style={{ width: '100%', maxWidth: 400 }}>
-			<div style={{ marginBottom: 4 }}>Категория</div>
-			<Select
-				style={{ width: '100%' }}
-				placeholder="Введите название категории"
-				options={categoryOptions}
-				value={value !== null ? String(value) : undefined}
-				onChange={(nextValue) => onChange(nextValue ? Number(nextValue) : null)}
-				showSearch
-				allowClear
-				notFoundContent={isLoading ? <Spin size="small" /> : 'Категории не найдены'}
-				suffixIcon={isLoading ? <Spin size="small" /> : undefined}
-				optionFilterProp="label"
-			/>
-		</div>
+		<Select
+			label="Категория"
+			placeholder="Введите название категории"
+			data={categoryOptions}
+			value={value !== null ? String(value) : null}
+			onChange={(nextValue) =>
+				onChange(nextValue ? Number(nextValue) : null)
+			}
+			searchable
+			clearable
+			nothingFoundMessage="Категории не найдены"
+			rightSection={isLoading ? <Loader size="xs" /> : undefined}
+			w="100%"
+			maw={400}
+		/>
 	);
 }

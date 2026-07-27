@@ -1,17 +1,18 @@
-import { Button } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { ActionIcon } from "@mantine/core";
+import { TbUserCircle } from "react-icons/tb";
+import { useNavigate } from "react-router-dom";
 
 export function PersonalLink() {
 	const navigate = useNavigate();
 	return (
-		<Button
-			type="default"
-			shape="circle"
-			size="large"
-			aria-label="Личный кабинет"
-			onClick={() => navigate('/lk')}
-			icon={<UserOutlined />}
-		/>
+		<ActionIcon
+			onClick={() => navigate("/lk")}
+			variant="default"
+			aria-label="Toggle color scheme"
+			size="xl"
+			radius="100%"
+		>
+			<TbUserCircle />
+		</ActionIcon>
 	);
 }

@@ -24,9 +24,7 @@ export function isAccessTokenExpired(token: string, skewSeconds = 30): boolean {
 	}
 }
 
-export async function restoreAccessToken(
-	realm: AuthRealm = tokenStorage.resolveAuthRealm(),
-): Promise<boolean> {
+export async function restoreAccessToken(realm: AuthRealm = tokenStorage.resolveAuthRealm()): Promise<boolean> {
 	const accessToken = tokenStorage.getAccessToken(realm);
 	const refreshToken = tokenStorage.getRefreshToken(realm);
 

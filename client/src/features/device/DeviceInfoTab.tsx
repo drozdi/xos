@@ -1,4 +1,4 @@
-import { Flex, Form, Input, Typography } from 'antd';
+import { Group, Stack, Text, Textarea, TextInput } from '@mantine/core';
 
 interface DeviceInfoTabProps {
 	data: {
@@ -23,53 +23,36 @@ function infoRows(data: DeviceInfoTabProps['data']) {
 export function DeviceInfoTab({ data, layout = 'fields' }: DeviceInfoTabProps) {
 	if (layout === 'rows') {
 		return (
-			<Flex vertical gap={8}>
+			<Stack gap="xs">
 				{infoRows(data).map((row) => (
-					<Flex key={row.label} justify="space-between" align="flex-start" gap={16} wrap="nowrap">
-						<Typography.Text type="secondary" style={{ flexShrink: 0, fontSize: 13 }}>
+					<Group key={row.label} justify="space-between" align="flex-start" wrap="nowrap" gap="md">
+						<Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
 							{row.label}
-						</Typography.Text>
-						<Typography.Text style={{ fontSize: 13, textAlign: 'right', wordBreak: 'break-word' }}>
+						</Text>
+						<Text size="sm" ta="right" style={{ wordBreak: 'break-word' }}>
 							{row.value?.trim() ? row.value : '—'}
-						</Typography.Text>
-					</Flex>
+						</Text>
+					</Group>
 				))}
-				<Flex justify="space-between" align="flex-start" gap={16} wrap="nowrap">
-					<Typography.Text type="secondary" style={{ flexShrink: 0, fontSize: 13 }}>
+				<Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
+					<Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
 						Журнал
-					</Typography.Text>
-					<Typography.Text
-						style={{
-							fontSize: 13,
-							textAlign: 'right',
-							whiteSpace: 'pre-wrap',
-							wordBreak: 'break-word',
-						}}
-					>
+					</Text>
+					<Text size="sm" ta="right" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
 						{data.log?.trim() ? data.log : '—'}
-					</Typography.Text>
-				</Flex>
-			</Flex>
+					</Text>
+				</Group>
+			</Stack>
 		);
 	}
 
 	return (
-		<Flex vertical gap={12}>
-			<Form.Item label="Дата создания" style={{ marginBottom: 0 }}>
-				<Input value={data.dateCreated ?? ''} readOnly />
-			</Form.Item>
-			<Form.Item label="Создал" style={{ marginBottom: 0 }}>
-				<Input value={data.createdBy ?? ''} readOnly />
-			</Form.Item>
-			<Form.Item label="Изменено" style={{ marginBottom: 0 }}>
-				<Input value={data.xTimestamp ?? ''} readOnly />
-			</Form.Item>
-			<Form.Item label="Изменил" style={{ marginBottom: 0 }}>
-				<Input value={data.modifiedBy ?? ''} readOnly />
-			</Form.Item>
-			<Form.Item label="Журнал" style={{ marginBottom: 0 }}>
-				<Input.TextArea value={data.log ?? ''} readOnly rows={4} autoSize={{ minRows: 4 }} />
-			</Form.Item>
-		</Flex>
+		<Stack gap="sm">
+			<TextInput label="Дата создания" value={data.dateCreated ?? ''} readOnly />
+			<TextInput label="Создал" value={data.createdBy ?? ''} readOnly />
+			<TextInput label="Изменено" value={data.xTimestamp ?? ''} readOnly />
+			<TextInput label="Изменил" value={data.modifiedBy ?? ''} readOnly />
+			<Textarea label="Журнал" value={data.log ?? ''} readOnly minRows={4} autosize />
+		</Stack>
 	);
 }

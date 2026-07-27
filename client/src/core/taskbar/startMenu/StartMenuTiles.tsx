@@ -1,5 +1,5 @@
-import { Typography } from 'antd';
-import { useMemo, type CSSProperties } from 'react';
+import { Box, ScrollArea, SimpleGrid, Text, UnstyledButton } from '@mantine/core';
+import { useMemo } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
 import { useAppManager } from '@/core/appManager/useAppManager';
@@ -14,21 +14,6 @@ interface StartMenuTilesProps {
 	onUnpin: (appId: string) => void;
 }
 
-const tileButtonStyle: CSSProperties = {
-	display: 'flex',
-	flexDirection: 'column',
-	alignItems: 'center',
-	gap: 6,
-	padding: '10px 6px',
-	borderRadius: 6,
-	color: 'var(--xos-shell-text)',
-	minHeight: 88,
-	background: 'transparent',
-	border: 'none',
-	cursor: 'pointer',
-	width: '100%',
-};
-
 export function StartMenuTiles({ apps, onClose, onUnpin }: StartMenuTilesProps) {
 	const launchApp = useAppManager((state) => state.launchApp);
 
@@ -38,31 +23,25 @@ export function StartMenuTiles({ apps, onClose, onUnpin }: StartMenuTilesProps) 
 	};
 
 	return (
-		<div
+		<Box
+			w={START_MENU_TILES_WIDTH}
 			style={{
-				width: START_MENU_TILES_WIDTH,
 				flexShrink: 0,
 				background: 'var(--xos-shell-bg)',
 			}}
 		>
-			<div style={{ padding: '16px 16px 8px' }}>
-				<Typography.Text type="secondary" strong style={{ fontSize: 13 }}>
+			<Box px="md" pt="md" pb="xs">
+				<Text size="sm" fw={600} c="dimmed">
 					Быстрый доступ
-				</Typography.Text>
-			</div>
-			<div style={{ height: 468, overflow: 'auto', paddingInline: 16, paddingBottom: 16 }}>
+				</Text>
+			</Box>
+			<ScrollArea h={468} px="md" pb="md" type="auto">
 				{apps.length === 0 ? (
-					<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+					<Text size="sm" c="dimmed">
 						Добавьте приложения из списка через контекстное меню
-					</Typography.Text>
+					</Text>
 				) : (
-					<div
-						style={{
-							display: 'grid',
-							gridTemplateColumns: 'repeat(3, 1fr)',
-							gap: 12,
-						}}
-					>
+					<SimpleGrid cols={3} spacing="sm">
 						{apps.map((app) => (
 							<StartMenuTile
 								key={app.id}
@@ -71,10 +50,10 @@ export function StartMenuTiles({ apps, onClose, onUnpin }: StartMenuTilesProps) 
 								onUnpin={onUnpin}
 							/>
 						))}
-					</div>
+					</SimpleGrid>
 				)}
-			</div>
-		</div>
+			</ScrollArea>
+		</Box>
 	);
 }
 
@@ -106,32 +85,32 @@ function StartMenuTile({
 
 	return (
 		<>
-			<button
-				type="button"
+			<UnstyledButton
 				onClick={() => onLaunch(app.id)}
 				onContextMenu={onContextMenu}
-				style={tileButtonStyle}
-				onMouseEnter={(e) => {
-					e.currentTarget.style.background = 'var(--xos-shell-hover)';
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					gap: 6,
+					padding: '10px 6px',
+					borderRadius: 6,
+					color: 'var(--xos-shell-text)',
+					minHeight: 88,
 				}}
-				onMouseLeave={(e) => {
-					e.currentTarget.style.background = 'transparent';
+				styles={{
+					root: {
+						'&:hover': {
+							background: 'var(--xos-shell-hover)',
+						},
+					},
 				}}
 			>
 				<AppIcon icon={app.icon} size={28} />
-				<Typography.Text
-					style={{
-						fontSize: 12,
-						textAlign: 'center',
-						display: '-webkit-box',
-						WebkitLineClamp: 2,
-						WebkitBoxOrient: 'vertical',
-						overflow: 'hidden',
-					}}
-				>
+				<Text size="xs" ta="center" lineClamp={2}>
 					{app.name}
-				</Typography.Text>
-			</button>
+				</Text>
+			</UnstyledButton>
 			{menu}
 		</>
 	);

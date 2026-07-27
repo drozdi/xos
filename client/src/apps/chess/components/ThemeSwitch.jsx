@@ -1,26 +1,24 @@
-import { Flex, Segmented, Typography } from 'antd';
-
-import { useThemePreference } from '@/core/theme';
+import { SegmentedControl, Stack, Text } from '@mantine/core';
+import { useMantineColorScheme } from '@mantine/core';
 
 function ThemeSwitch() {
-	const { theme, setTheme } = useThemePreference();
-	const value = theme === 'auto' ? 'light' : theme;
+	const { colorScheme, setColorScheme } = useMantineColorScheme();
 
 	return (
-		<Flex vertical gap="small">
-			<Typography.Text strong style={{ fontSize: 13 }}>
+		<Stack gap="xs">
+			<Text size="sm" fw={500}>
 				Тема оформления
-			</Typography.Text>
-			<Segmented
-				value={value}
-				onChange={(next) => setTheme(next)}
-				block
-				options={[
+			</Text>
+			<SegmentedControl
+				value={colorScheme}
+				onChange={setColorScheme}
+				fullWidth
+				data={[
 					{ label: 'Светлая', value: 'light' },
 					{ label: 'Тёмная', value: 'dark' },
 				]}
 			/>
-		</Flex>
+		</Stack>
 	);
 }
 

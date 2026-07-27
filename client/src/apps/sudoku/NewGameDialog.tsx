@@ -1,4 +1,4 @@
-import { Button, Flex, Radio, Typography } from 'antd';
+import { Button, Radio, Stack, Text, Title } from '@mantine/core';
 import { useState } from 'react';
 
 import { useAppContext } from '@/core/context/AppContext';
@@ -36,38 +36,32 @@ export function NewGameDialog() {
 	const clueCount = getClueCount(sizeId, difficultyId);
 
 	return (
-		<Flex vertical gap="middle">
-			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+		<Stack gap="md">
+			<Text size="sm" c="dimmed">
 				Выберите размер поля и сложность. Чем выше сложность, тем меньше цифр дано изначально.
-			</Typography.Text>
-			<Typography.Title level={5} style={{ margin: 0 }}>
-				Размер
-			</Typography.Title>
-			<Radio.Group value={sizeId} onChange={(e) => setSizeId(e.target.value)}>
-				<Flex vertical gap="small">
+			</Text>
+			<Title order={6}>Размер</Title>
+			<Radio.Group value={sizeId} onChange={setSizeId}>
+				<Stack gap="xs">
 					{SUDOKU_SIZES.map((size) => (
-						<Radio key={size.id} value={size.id}>
-							{size.label}
-						</Radio>
+						<Radio key={size.id} value={size.id} label={size.label} />
 					))}
-				</Flex>
+				</Stack>
 			</Radio.Group>
-			<Typography.Title level={5} style={{ margin: 0 }}>
-				Сложность
-			</Typography.Title>
-			<Radio.Group value={difficultyId} onChange={(e) => setDifficultyId(e.target.value)}>
-				<Flex vertical gap="small">
+			<Title order={6}>Сложность</Title>
+			<Radio.Group value={difficultyId} onChange={setDifficultyId}>
+				<Stack gap="xs">
 					{SUDOKU_DIFFICULTIES.map((difficulty) => (
-						<Radio key={difficulty.id} value={difficulty.id}>
-							{`${difficulty.label} — ${getClueCount(sizeId, difficulty.id)} цифр`}
-						</Radio>
+						<Radio
+							key={difficulty.id}
+							value={difficulty.id}
+							label={`${difficulty.label} — ${getClueCount(sizeId, difficulty.id)} цифр`}
+						/>
 					))}
-				</Flex>
+				</Stack>
 			</Radio.Group>
-			<Typography.Text style={{ fontSize: 13 }}>Будет дано {clueCount} цифр.</Typography.Text>
-			<Button type="primary" onClick={handleStart}>
-				Начать
-			</Button>
-		</Flex>
+			<Text size="sm">Будет дано {clueCount} цифр.</Text>
+			<Button onClick={handleStart}>Начать</Button>
+		</Stack>
 	);
 }

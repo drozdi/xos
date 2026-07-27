@@ -1,5 +1,13 @@
-import { Button, Card, Flex, Table, Typography } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import {
+	ActionIcon,
+	Button,
+	Group,
+	Paper,
+	Stack,
+	Table,
+	Text,
+} from '@mantine/core';
+import { IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -26,47 +34,75 @@ interface GroupUserEntryProps {
 	user: GroupUserItem;
 	users: Record<string, GroupUserItem>;
 	readOnly: boolean;
+	layout: 'table' | 'card';
 	onChange: (users: Record<string, GroupUserItem>) => void;
 }
 
-function GroupUserCard({
+function GroupUserEntry({
 	entryKey,
 	user,
 	users,
 	readOnly,
+	layout,
 	onChange,
 }: GroupUserEntryProps) {
 	const label = user.name ?? `Пользователь #${user.user_id}`;
 
+	const removeButton = !readOnly ? (
+		<ActionIcon
+			variant="subtle"
+			color="red"
+			aria-label="Удалить пользователя из группы"
+			onClick={() => onChange(removeGroupUser(users, entryKey))}
+		>
+			<IconTrash size={16} />
+		</ActionIcon>
+	) : null;
+
+	const activeFromField = (
+		<DateTimeField
+			label="С"
+			value={user.activeFrom}
+			readOnly={readOnly}
+			onChange={(value) => onChange(updateGroupUser(users, entryKey, { activeFrom: value }))}
+		/>
+	);
+
+	const activeToField = (
+		<DateTimeField
+			label="По"
+			value={user.activeTo}
+			readOnly={readOnly}
+			onChange={(value) => onChange(updateGroupUser(users, entryKey, { activeTo: value }))}
+		/>
+	);
+
+	if (layout === 'table') {
+		return (
+			<Table.Tr>
+				<Table.Td>
+					<Text fw={500} size="sm">
+						{label}
+					</Text>
+				</Table.Td>
+				<Table.Td>{activeFromField}</Table.Td>
+				<Table.Td>{activeToField}</Table.Td>
+				{!readOnly ? <Table.Td w={48}>{removeButton}</Table.Td> : null}
+			</Table.Tr>
+		);
+	}
+
 	return (
-		<Card size="small">
-			<Flex justify="space-between" align="flex-start" style={{ marginBottom: 8 }}>
-				<Typography.Text strong>{label}</Typography.Text>
-				{!readOnly ? (
-					<Button
-						type="text"
-						danger
-						aria-label="Удалить пользователя из группы"
-						icon={<DeleteOutlined style={{ fontSize: 16 }} />}
-						onClick={() => onChange(removeGroupUser(users, entryKey))}
-					/>
-				) : null}
-			</Flex>
-			<Flex vertical gap={8}>
-				<DateTimeField
-					label="С"
-					value={user.activeFrom}
-					readOnly={readOnly}
-					onChange={(value) => onChange(updateGroupUser(users, entryKey, { activeFrom: value }))}
-				/>
-				<DateTimeField
-					label="По"
-					value={user.activeTo}
-					readOnly={readOnly}
-					onChange={(value) => onChange(updateGroupUser(users, entryKey, { activeTo: value }))}
-				/>
-			</Flex>
-		</Card>
+		<Paper withBorder p="sm">
+			<Group justify="space-between" align="flex-start" mb="xs">
+				<Text fw={500}>{label}</Text>
+				{removeButton}
+			</Group>
+			<Stack gap="xs">
+				{activeFromField}
+				{activeToField}
+			</Stack>
+		</Paper>
 	);
 }
 
@@ -93,105 +129,64 @@ export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps)
 		setSelectedUserId(null);
 	};
 
-	const columns = [
-		{
-			title: 'Пользователь',
-			key: 'name',
-			render: (_: unknown, row: { entryKey: string; user: GroupUserItem }) => (
-				<Typography.Text strong style={{ fontSize: 13 }}>
-					{row.user.name ?? `Пользователь #${row.user.user_id}`}
-				</Typography.Text>
-			),
-		},
-		{
-			title: 'С',
-			key: 'activeFrom',
-			render: (_: unknown, row: { entryKey: string; user: GroupUserItem }) => (
-				<DateTimeField
-					label=""
-					value={row.user.activeFrom}
-					readOnly={readOnly}
-					onChange={(value) =>
-						onChange(updateGroupUser(users, row.entryKey, { activeFrom: value }))
-					}
-				/>
-			),
-		},
-		{
-			title: 'По',
-			key: 'activeTo',
-			render: (_: unknown, row: { entryKey: string; user: GroupUserItem }) => (
-				<DateTimeField
-					label=""
-					value={row.user.activeTo}
-					readOnly={readOnly}
-					onChange={(value) =>
-						onChange(updateGroupUser(users, row.entryKey, { activeTo: value }))
-					}
-				/>
-			),
-		},
-		...(!readOnly
-			? [
-					{
-						title: '',
-						key: 'actions',
-						width: 48,
-						render: (_: unknown, row: { entryKey: string; user: GroupUserItem }) => (
-							<Button
-								type="text"
-								danger
-								aria-label="Удалить пользователя из группы"
-								icon={<DeleteOutlined style={{ fontSize: 16 }} />}
-								onClick={() => onChange(removeGroupUser(users, row.entryKey))}
-							/>
-						),
-					},
-				]
-			: []),
-	];
+	const layout = isTableLayout ? 'table' : 'card';
 
 	return (
-		<Flex vertical gap={12}>
+		<Stack gap="sm">
 			{!readOnly ? (
-				<Flex align="flex-end" gap={8} wrap="nowrap">
-					<div style={{ flex: 1 }}>
-						<UserSelect
-							label="Добавить пользователя"
-							value={selectedUserId}
-							onChange={(userId) => setSelectedUserId(userId)}
-						/>
-					</div>
-					<Button type="primary" onClick={handleAdd} disabled={!selectedUserId}>
+				<Group align="flex-end" wrap="nowrap">
+					<UserSelect
+						label="Добавить пользователя"
+						value={selectedUserId}
+						onChange={(userId) => setSelectedUserId(userId)}
+					/>
+					<Button onClick={handleAdd} disabled={!selectedUserId}>
 						Добавить
 					</Button>
-				</Flex>
+				</Group>
 			) : null}
 
 			{entries.length === 0 ? (
-				<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+				<Text size="sm" c="dimmed">
 					В группе нет пользователей
-				</Typography.Text>
+				</Text>
 			) : isTableLayout ? (
-				<Table
-					size="small"
-					pagination={false}
-					rowKey="entryKey"
-					dataSource={entries.map(([entryKey, user]) => ({ entryKey, user }))}
-					columns={columns}
-				/>
+				<Table highlightOnHover withTableBorder withColumnBorders>
+					<Table.Thead>
+						<Table.Tr>
+							<Table.Th>Пользователь</Table.Th>
+							<Table.Th>С</Table.Th>
+							<Table.Th>По</Table.Th>
+							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
+						</Table.Tr>
+					</Table.Thead>
+					<Table.Tbody>
+						{entries.map(([key, user]) => (
+							<GroupUserEntry
+								key={key}
+								entryKey={key}
+								user={user}
+								users={users}
+								readOnly={readOnly}
+								layout={layout}
+								onChange={onChange}
+							/>
+						))}
+					</Table.Tbody>
+				</Table>
 			) : (
 				entries.map(([key, user]) => (
-					<GroupUserCard
+					<GroupUserEntry
 						key={key}
 						entryKey={key}
 						user={user}
 						users={users}
 						readOnly={readOnly}
+						layout={layout}
 						onChange={onChange}
 					/>
 				))
 			)}
-		</Flex>
+		</Stack>
 	);
 }

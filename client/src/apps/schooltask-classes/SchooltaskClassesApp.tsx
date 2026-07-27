@@ -1,5 +1,5 @@
-import { Alert, Button, Checkbox, Flex } from 'antd';
-import { notifications } from '@/ui/toast';
+import { Alert, Button, Checkbox, Group } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -131,8 +131,9 @@ export default function SchooltaskClassesApp() {
 								if (action === 'graduate') {
 									return (
 										<Button
-											size="small"
-											style={{ color: '#d46b08', borderColor: '#ffd591' }}
+											size="compact-xs"
+											variant="light"
+											color="orange"
 											loading={graduateMutation.isPending}
 											onClick={(event) => {
 												event.stopPropagation();
@@ -151,7 +152,8 @@ export default function SchooltaskClassesApp() {
 								}
 								return (
 									<Button
-										size="small"
+										size="compact-xs"
+										variant="light"
 										loading={promoteMutation.isPending}
 										onClick={(event) => {
 											event.stopPropagation();
@@ -179,7 +181,9 @@ export default function SchooltaskClassesApp() {
 	if (!canRead) {
 		return (
 			<MainListLayout title="Классы" isLoading={false} isError={false} onRefresh={() => {}}>
-				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр классов" />
+				<Alert color="red" title="Доступ запрещён">
+					Нет прав на просмотр классов
+				</Alert>
 			</MainListLayout>
 		);
 	}
@@ -199,16 +203,16 @@ export default function SchooltaskClassesApp() {
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate ? () => openClass(0) : undefined}
 			filters={
-				<Flex justify="space-between" wrap="wrap" gap={8}>
+				<Group justify="space-between" wrap="wrap">
 					<Checkbox
+						label="Показать выпускников"
 						checked={showGraduated}
-						onChange={(event) => setShowGraduated(event.target.checked)}
-					>
-						Показать выпускников
-					</Checkbox>
+						onChange={(event) => setShowGraduated(event.currentTarget.checked)}
+					/>
 					{canUpdate ? (
 						<Button
-							size="small"
+							size="xs"
+							variant="light"
 							loading={promoteAllMutation.isPending}
 							onClick={() => {
 								confirmAction({
@@ -223,7 +227,7 @@ export default function SchooltaskClassesApp() {
 							Перевести всех
 						</Button>
 					) : null}
-				</Flex>
+				</Group>
 			}
 		>
 			<DataTable

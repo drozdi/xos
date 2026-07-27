@@ -1,4 +1,4 @@
-import { Flex, Form, Input } from 'antd';
+import { Stack, TextInput } from '@mantine/core';
 
 interface ReadOnlyRecordListProps {
 	records: Record<string, Record<string, unknown>> | undefined;
@@ -14,15 +14,11 @@ export function ReadOnlyRecordList({
 	const entries = Object.entries(records ?? {});
 
 	if (entries.length === 0) {
-		return (
-			<Form.Item label={emptyLabel} style={{ marginBottom: 0 }}>
-				<Input value="" readOnly disabled />
-			</Form.Item>
-		);
+		return <TextInput label={emptyLabel} value="" readOnly disabled />;
 	}
 
 	return (
-		<Flex vertical gap={8}>
+		<Stack gap="xs">
 			{entries.map(([key, item]) => {
 				const label =
 					labelFields.map((field) => item[field]).find((v) => v != null && v !== '') ??
@@ -33,11 +29,14 @@ export function ReadOnlyRecordList({
 					.join(', ');
 
 				return (
-					<Form.Item key={key} label={String(label)} style={{ marginBottom: 0 }}>
-						<Input value={details || String(label)} readOnly />
-					</Form.Item>
+					<TextInput
+						key={key}
+						label={String(label)}
+						value={details || String(label)}
+						readOnly
+					/>
 				);
 			})}
-		</Flex>
+		</Stack>
 	);
 }

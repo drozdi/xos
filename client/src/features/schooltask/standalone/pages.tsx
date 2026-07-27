@@ -1,4 +1,4 @@
-import { Button, Flex, Layout, Menu, Typography } from 'antd';
+import { AppShell, Button, Center, NavLink, Stack, Text } from '@mantine/core';
 import { lazy, Suspense, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -17,8 +17,6 @@ import {
 
 import { schooltaskEmailLogout } from './authApi';
 import { createSchooltaskStandaloneCoreApi } from './createStandaloneCoreApi';
-
-const { Header, Sider, Content } = Layout;
 
 const SchooltaskCalendarsApp = lazy(() => import('@/apps/schooltask-calendars/SchooltaskCalendarsApp'));
 const SchooltaskCalendarApp = lazy(() => import('@/apps/schooltask-calendar/SchooltaskCalendarApp'));
@@ -44,7 +42,7 @@ function AppHost({
 }) {
 	const manifest = AppRegistry.get(appId);
 	if (!manifest) {
-		return <Typography.Text type="danger">Приложение не найдено: {appId}</Typography.Text>;
+		return <Text c="red">Приложение не найдено: {appId}</Text>;
 	}
 
 	return (
@@ -77,9 +75,9 @@ function AppHost({
 
 function Fallback() {
 	return (
-		<Flex align="center" justify="center" style={{ height: '100%', padding: 24 }}>
+		<Center h="100%" p="md">
 			Загрузка…
-		</Flex>
+		</Center>
 	);
 }
 
@@ -111,59 +109,62 @@ export function SchooltaskStandaloneLayout() {
 			?.key ?? menuItems[0]?.key;
 
 	return (
-		<Layout style={{ height: '100%', minHeight: '100vh', overflow: 'hidden' }}>
-			<Sider
-				breakpoint="lg"
-				collapsedWidth={64}
-				width={220}
-				style={{ flexShrink: 0, zIndex: 2, overflow: 'auto' }}
-			>
-				<div style={{ padding: '16px 12px', color: '#fff', fontWeight: 600 }}>Школа</div>
-				<Menu
-					theme="dark"
-					mode="inline"
-					selectedKeys={selectedKey ? [selectedKey] : []}
-					items={menuItems}
-					onClick={({ key }) => navigate(key)}
-				/>
-			</Sider>
-			<Layout style={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
-				<Header
+		<AppShell
+			navbar={{ width: 220, breakpoint: 'sm' }}
+			header={{ height: 52 }}
+			padding={0}
+			style={{ height: '100%', minHeight: '100vh' }}
+		>
+			<AppShell.Navbar p="xs">
+				<Text fw={600} mb="sm" px="xs">
+					Школа
+				</Text>
+				<Stack gap={4}>
+					{menuItems.map((item) => (
+						<NavLink
+							key={item.key}
+							label={item.label}
+							active={selectedKey === item.key}
+							onClick={() => navigate(item.key)}
+						/>
+					))}
+				</Stack>
+			</AppShell.Navbar>
+			<AppShell.Header px="md">
+				<div
 					style={{
-						background: 'var(--ant-color-bg-container, #fff)',
-						paddingInline: 16,
+						height: '100%',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'space-between',
-						borderBottom: '1px solid rgba(0,0,0,0.06)',
-						flexShrink: 0,
 					}}
 				>
-					<Typography.Text>{user?.alias ?? user?.email ?? user?.login ?? ''}</Typography.Text>
+					<Text size="sm">{user?.alias ?? user?.email ?? user?.login ?? ''}</Text>
 					<Button
+						variant="default"
+						size="compact-sm"
 						onClick={() => {
 							void schooltaskEmailLogout().then(() => navigate('/auth/sign-in', { replace: true }));
 						}}
 					>
 						Выйти
 					</Button>
-				</Header>
-				<Content
-					style={{
-						position: 'relative',
-						flex: 1,
-						minHeight: 0,
-						minWidth: 0,
-						padding: 0,
-						overflow: 'hidden',
-					}}
-				>
-					<Suspense fallback={<Fallback />}>
-						<Outlet />
-					</Suspense>
-				</Content>
-			</Layout>
-		</Layout>
+				</div>
+			</AppShell.Header>
+			<AppShell.Main
+				style={{
+					position: 'relative',
+					height: 'calc(100vh - 52px)',
+					minHeight: 0,
+					minWidth: 0,
+					overflow: 'hidden',
+				}}
+			>
+				<Suspense fallback={<Fallback />}>
+					<Outlet />
+				</Suspense>
+			</AppShell.Main>
+		</AppShell>
 	);
 }
 

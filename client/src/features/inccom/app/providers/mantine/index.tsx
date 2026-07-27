@@ -1,6 +1,17 @@
-import type { ReactNode } from 'react';
+import { MantineProvider } from '@mantine/core'
+import { DatesProvider } from '@mantine/dates'
+import { ModalsProvider } from '@mantine/modals'
+import { Notifications } from '@mantine/notifications'
+import 'dayjs/locale/ru'
+import { themeMantine } from './theme'
 
-/** Legacy IncCom provider — оболочка больше не нужна: Ant/Mantine на корневом App. */
-export function ProviderMantine({ children }: { children: ReactNode }) {
-	return children;
+export function ProviderMantine({ children }: { children: React.ReactNode }) {
+	return (
+		<MantineProvider theme={themeMantine}>
+			<DatesProvider settings={{ locale: 'ru' }}>
+				<Notifications />
+				<ModalsProvider>{children}</ModalsProvider>
+			</DatesProvider>
+		</MantineProvider>
+	)
 }

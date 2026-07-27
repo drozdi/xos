@@ -1,5 +1,5 @@
-import { Alert } from 'antd';
-import { notifications } from '@/ui/toast';
+import { Alert } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -60,13 +60,9 @@ export default function MainOusApp() {
 
 	if (!canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр подразделений"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр подразделений
+			</Alert>
 		);
 	}
 

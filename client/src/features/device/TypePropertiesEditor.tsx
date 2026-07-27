@@ -1,18 +1,18 @@
 import {
+	ActionIcon,
 	Button,
-	Card,
 	Checkbox,
-	Flex,
-	Form,
-	Input,
-	InputNumber,
+	Group,
 	Modal,
+	NumberInput,
+	Paper,
 	Select,
+	Stack,
 	Table,
-	Typography,
-} from 'antd';
-import type { DefaultOptionType } from 'antd/es/select';
-import { DeleteOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
+	Text,
+	TextInput,
+} from '@mantine/core';
+import { IconList, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
@@ -92,114 +92,71 @@ function PropertyRowFields({
 	const withLabels = layout === 'card';
 
 	const checkboxes = (
-		<Flex vertical gap={4}>
+		<Stack gap={4}>
 			<Checkbox
+				label="Активный"
 				checked={Boolean(item.active)}
 				disabled={readOnly}
-				onChange={(e) => onFieldChange(entryKey, { active: e.target.checked })}
-			>
-				Активный
-			</Checkbox>
+				onChange={(e) => onFieldChange(entryKey, { active: e.currentTarget.checked })}
+			/>
 			<Checkbox
+				label="Обязательный"
 				checked={Boolean(item.required)}
 				disabled={readOnly}
-				onChange={(e) => onFieldChange(entryKey, { required: e.target.checked })}
-			>
-				Обязательный
-			</Checkbox>
+				onChange={(e) => onFieldChange(entryKey, { required: e.currentTarget.checked })}
+			/>
 			<Checkbox
+				label="Множественное"
 				checked={Boolean(item.multiple)}
 				disabled={readOnly}
-				onChange={(e) => onFieldChange(entryKey, { multiple: e.target.checked })}
-			>
-				Множественное
-			</Checkbox>
-		</Flex>
+				onChange={(e) => onFieldChange(entryKey, { multiple: e.currentTarget.checked })}
+			/>
+		</Stack>
 	);
 
 	const prototypeHint = fromTemplate ? (
-		<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+		<Text size="xs" c="dimmed">
 			Шаблон #{item.prototype_id ?? item.property_id}
-		</Typography.Text>
+		</Text>
 	) : null;
 
-	const codeField = withLabels ? (
-		<Form.Item label="Код" style={{ marginBottom: 0 }}>
-			<Input
-				value={item.code ?? ''}
-				readOnly={readOnly}
-				onChange={(e) => onFieldChange(entryKey, { code: e.target.value })}
-			/>
-		</Form.Item>
-	) : (
-		<Input
+	const codeField = (
+		<TextInput
+			label={withLabels ? 'Код' : undefined}
 			value={item.code ?? ''}
 			readOnly={readOnly}
-			onChange={(e) => onFieldChange(entryKey, { code: e.target.value })}
+			onChange={(e) => onFieldChange(entryKey, { code: e.currentTarget.value })}
 		/>
 	);
 
-	const nameField = withLabels ? (
-		<Flex vertical gap={2}>
-			<Form.Item label="Название" style={{ marginBottom: 0 }}>
-				<Input
-					value={item.name ?? ''}
-					readOnly={readOnly}
-					onChange={(e) => onFieldChange(entryKey, { name: e.target.value })}
-				/>
-			</Form.Item>
-			{prototypeHint}
-		</Flex>
-	) : (
-		<Flex vertical gap={2}>
-			<Input
+	const nameField = (
+		<Stack gap={2}>
+			<TextInput
+				label={withLabels ? 'Название' : undefined}
 				value={item.name ?? ''}
 				readOnly={readOnly}
-				onChange={(e) => onFieldChange(entryKey, { name: e.target.value })}
+				onChange={(e) => onFieldChange(entryKey, { name: e.currentTarget.value })}
 			/>
 			{prototypeHint}
-		</Flex>
+		</Stack>
 	);
 
-	const postfixField = withLabels ? (
-		<Form.Item label="Ед. изм." style={{ marginBottom: 0 }}>
-			<Input
-				value={item.postfix ?? ''}
-				readOnly={readOnly || fromTemplate}
-				onChange={(e) => onFieldChange(entryKey, { postfix: e.target.value })}
-			/>
-		</Form.Item>
-	) : (
-		<Input
+	const postfixField = (
+		<TextInput
+			label={withLabels ? 'Ед. изм.' : undefined}
 			value={item.postfix ?? ''}
 			readOnly={readOnly || fromTemplate}
-			onChange={(e) => onFieldChange(entryKey, { postfix: e.target.value })}
+			onChange={(e) => onFieldChange(entryKey, { postfix: e.currentTarget.value })}
 		/>
 	);
 
-	const fieldTypeSelect = withLabels ? (
-		<Form.Item label="Тип поля" style={{ marginBottom: 0 }}>
-			<Select
-				options={[...FIELD_TYPE_OPTIONS]}
-				value={item.fieldType ?? 'S'}
-				disabled={readOnly || fromTemplate}
-				onChange={(value) => {
-					const fieldType = value ?? 'S';
-					const patch: Partial<TypePropertyItem> = { fieldType };
-					if (fieldType === 'L') {
-						patch.listType = item.listType || 'S';
-					} else {
-						patch.listType = '';
-					}
-					onFieldChange(entryKey, patch);
-				}}
-			/>
-		</Form.Item>
-	) : (
+	const fieldTypeSelect = (
 		<Select
-			options={[...FIELD_TYPE_OPTIONS]}
+			label={withLabels ? 'Тип поля' : undefined}
+			data={[...FIELD_TYPE_OPTIONS]}
 			value={item.fieldType ?? 'S'}
-			disabled={readOnly || fromTemplate}
+			readOnly={readOnly || fromTemplate}
+			allowDeselect={false}
 			onChange={(value) => {
 				const fieldType = value ?? 'S';
 				const patch: Partial<TypePropertyItem> = { fieldType };
@@ -214,71 +171,41 @@ function PropertyRowFields({
 	);
 
 	const listTypeSelect = isList ? (
-		withLabels ? (
-			<Form.Item label="Тип списка" style={{ marginBottom: 0 }}>
-				<Select
-					options={[...LIST_TYPE_OPTIONS]}
-					value={item.listType ?? 'S'}
-					disabled={readOnly || fromTemplate}
-					onChange={(value) => onFieldChange(entryKey, { listType: value ?? 'S' })}
-				/>
-			</Form.Item>
-		) : (
-			<Select
-				options={[...LIST_TYPE_OPTIONS]}
-				value={item.listType ?? 'S'}
-				disabled={readOnly || fromTemplate}
-				onChange={(value) => onFieldChange(entryKey, { listType: value ?? 'S' })}
-			/>
-		)
+		<Select
+			label={withLabels ? 'Тип списка' : undefined}
+			data={[...LIST_TYPE_OPTIONS]}
+			value={item.listType ?? 'S'}
+			readOnly={readOnly || fromTemplate}
+			allowDeselect={false}
+			onChange={(value) => onFieldChange(entryKey, { listType: value ?? 'S' })}
+		/>
 	) : null;
 
 	const defaultField = !isList ? (
 		isNumber ? (
-			withLabels ? (
-				<Form.Item label="Значение по умолчанию" style={{ marginBottom: 0 }}>
-					<InputNumber
-						value={item.defaultValue != null && item.defaultValue !== '' ? Number(item.defaultValue) : undefined}
-						disabled={readOnly}
-						style={{ width: '100%' }}
-						onChange={(value) =>
-							onFieldChange(entryKey, {
-								defaultValue: typeof value === 'number' ? value : '',
-							})
-						}
-					/>
-				</Form.Item>
-			) : (
-				<InputNumber
-					value={item.defaultValue != null && item.defaultValue !== '' ? Number(item.defaultValue) : undefined}
-					disabled={readOnly}
-					style={{ width: '100%' }}
-					onChange={(value) =>
-						onFieldChange(entryKey, {
-							defaultValue: typeof value === 'number' ? value : '',
-						})
-					}
-				/>
-			)
-		) : withLabels ? (
-			<Form.Item label="Значение по умолчанию" style={{ marginBottom: 0 }}>
-				<Input
-					value={String(item.defaultValue ?? '')}
-					readOnly={readOnly}
-					onChange={(e) => onFieldChange(entryKey, { defaultValue: e.target.value })}
-				/>
-			</Form.Item>
+			<NumberInput
+				label={withLabels ? 'Значение по умолчанию' : undefined}
+				value={item.defaultValue != null && item.defaultValue !== '' ? Number(item.defaultValue) : ''}
+				readOnly={readOnly}
+				onChange={(value) =>
+					onFieldChange(entryKey, {
+						defaultValue: typeof value === 'number' ? value : '',
+					})
+				}
+			/>
 		) : (
-			<Input
+			<TextInput
+				label={withLabels ? 'Значение по умолчанию' : undefined}
 				value={String(item.defaultValue ?? '')}
 				readOnly={readOnly}
-				onChange={(e) => onFieldChange(entryKey, { defaultValue: e.target.value })}
+				onChange={(e) => onFieldChange(entryKey, { defaultValue: e.currentTarget.value })}
 			/>
 		)
 	) : (
 		<Button
-			size="small"
-			icon={<UnorderedListOutlined style={{ fontSize: 14 }} />}
+			variant="light"
+			size="xs"
+			leftSection={<IconList size={14} />}
 			disabled={readOnly && Object.keys(normalizeEnumRecord(item.enums)).length === 0}
 			onClick={() => onOpenEnums(entryKey)}
 		>
@@ -287,47 +214,43 @@ function PropertyRowFields({
 	);
 
 	const extraFieldColumn = isList ? (
-		<Flex vertical gap={8}>
+		<Stack gap="xs">
 			{listTypeSelect}
 			{defaultField}
-		</Flex>
+		</Stack>
 	) : (
 		defaultField
 	);
 
 	const removeButton = !readOnly ? (
-		<Button
-			type="text"
-			danger
-			aria-label="Удалить"
-			icon={<DeleteOutlined style={{ fontSize: 16 }} />}
-			onClick={() => onRemove(entryKey)}
-		/>
+		<ActionIcon color="red" variant="light" aria-label="Удалить" onClick={() => onRemove(entryKey)}>
+			<IconTrash size={16} />
+		</ActionIcon>
 	) : null;
 
 	if (layout === 'table') {
 		return (
-			<>
-				<td>{checkboxes}</td>
-				<td>{codeField}</td>
-				<td>{nameField}</td>
-				<td>{postfixField}</td>
-				<td>{fieldTypeSelect}</td>
-				<td>{extraFieldColumn}</td>
-				{!readOnly ? <td style={{ width: 48 }}>{removeButton}</td> : null}
-			</>
+			<Table.Tr>
+				<Table.Td>{checkboxes}</Table.Td>
+				<Table.Td>{codeField}</Table.Td>
+				<Table.Td>{nameField}</Table.Td>
+				<Table.Td>{postfixField}</Table.Td>
+				<Table.Td>{fieldTypeSelect}</Table.Td>
+				<Table.Td>{extraFieldColumn}</Table.Td>
+				{!readOnly ? <Table.Td w={48}>{removeButton}</Table.Td> : null}
+			</Table.Tr>
 		);
 	}
 
 	return (
-		<Card size="small">
-			<Flex justify="space-between" align="flex-start" style={{ marginBottom: 8 }}>
-				<Typography.Text strong style={{ fontSize: 14 }}>
+		<Paper withBorder p="sm">
+			<Group justify="space-between" align="flex-start" mb="xs">
+				<Text fw={500} size="sm">
 					{item.name || item.code || 'Свойство'}
-				</Typography.Text>
+				</Text>
 				{removeButton}
-			</Flex>
-			<Flex vertical gap={8}>
+			</Group>
+			<Stack gap="xs">
 				{checkboxes}
 				{codeField}
 				{nameField}
@@ -335,8 +258,8 @@ function PropertyRowFields({
 				{fieldTypeSelect}
 				{listTypeSelect}
 				{defaultField}
-			</Flex>
-		</Card>
+			</Stack>
+		</Paper>
 	);
 }
 
@@ -428,52 +351,53 @@ export function TypePropertiesEditor({
 			: 'Значения списка';
 
 	return (
-		<Flex vertical gap={12}>
-			<Flex justify="space-between" align="center">
+		<Stack gap="sm">
+			<Group justify="space-between">
 				<strong>Свойства</strong>
 				{!readOnly ? (
-					<Flex gap={8}>
-						<Button size="small" onClick={() => setCatalogOpened(true)}>
+					<Group gap="xs">
+						<Button size="xs" variant="default" onClick={() => setCatalogOpened(true)}>
 							Из справочника
 						</Button>
-						<Button size="small" icon={<PlusOutlined style={{ fontSize: 14 }} />} onClick={addProperty}>
+						<Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={addProperty}>
 							Новое
 						</Button>
-					</Flex>
+					</Group>
 				) : null}
-			</Flex>
+			</Group>
 
 			{entries.length === 0 ? (
-				<Typography.Text type="secondary">Нет свойств</Typography.Text>
+				<Text size="sm" c="dimmed">
+					Нет свойств
+				</Text>
 			) : isTableLayout ? (
-				<table className="ant-table ant-table-bordered" style={{ width: '100%', borderCollapse: 'collapse' }}>
-					<thead className="ant-table-thead">
-						<tr>
-							<th>Флаги</th>
-							<th>Код</th>
-							<th>Название</th>
-							<th>Ед. изм.</th>
-							<th>Тип поля</th>
-							<th>По умолчанию / значения</th>
-							{!readOnly ? <th style={{ width: 48 }} aria-label="Действия" /> : null}
-						</tr>
-					</thead>
-					<tbody className="ant-table-tbody">
+				<Table highlightOnHover withTableBorder withColumnBorders horizontalSpacing="xs">
+					<Table.Thead>
+						<Table.Tr>
+							<Table.Th>Флаги</Table.Th>
+							<Table.Th>Код</Table.Th>
+							<Table.Th>Название</Table.Th>
+							<Table.Th>Ед. изм.</Table.Th>
+							<Table.Th>Тип поля</Table.Th>
+							<Table.Th>По умолчанию / значения</Table.Th>
+							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
+						</Table.Tr>
+					</Table.Thead>
+					<Table.Tbody>
 						{entries.map(([key, item]) => (
-							<tr key={key}>
-								<PropertyRowFields
-									entryKey={key}
-									item={item}
-									readOnly={readOnly}
-									layout="table"
-									onFieldChange={updateProperty}
-									onRemove={removeProperty}
-									onOpenEnums={setEnumsEditorKey}
-								/>
-							</tr>
+							<PropertyRowFields
+								key={key}
+								entryKey={key}
+								item={item}
+								readOnly={readOnly}
+								layout="table"
+								onFieldChange={updateProperty}
+								onRemove={removeProperty}
+								onOpenEnums={setEnumsEditorKey}
+							/>
 						))}
-					</tbody>
-				</table>
+					</Table.Tbody>
+				</Table>
 			) : (
 				entries.map(([key, item]) => (
 					<PropertyRowFields
@@ -499,45 +423,34 @@ export function TypePropertiesEditor({
 			/>
 
 			<Modal
-				open={catalogOpened}
-				onCancel={() => {
+				opened={catalogOpened}
+				onClose={() => {
 					setCatalogOpened(false);
 					setCatalogValue(null);
 				}}
 				title="Добавить из справочника"
 				centered
-				footer={[
-					<Button
-						key="cancel"
-						onClick={() => {
-							setCatalogOpened(false);
-							setCatalogValue(null);
-						}}
-					>
-						Отмена
-					</Button>,
-					<Button
-						key="submit"
-						type="primary"
-						loading={catalogLoading}
-						disabled={!catalogValue}
-						onClick={() => void addFromCatalog()}
-					>
-						Добавить
-					</Button>,
-				]}
 			>
-				<Form.Item label="Свойство" style={{ marginBottom: 0 }}>
+				<Stack gap="sm">
 					<Select
+						label="Свойство"
 						placeholder="Выберите свойство"
-						options={catalogSelectData as DefaultOptionType[]}
+						data={catalogSelectData}
 						value={catalogValue}
 						onChange={setCatalogValue}
-						showSearch
-						notFoundContent={catalogQuery.isLoading ? 'Загрузка…' : 'Нет свойств'}
+						searchable
+						nothingFoundMessage={catalogQuery.isLoading ? 'Загрузка…' : 'Нет свойств'}
 					/>
-				</Form.Item>
+					<Group justify="flex-end">
+						<Button variant="default" onClick={() => setCatalogOpened(false)}>
+							Отмена
+						</Button>
+						<Button loading={catalogLoading} disabled={!catalogValue} onClick={() => void addFromCatalog()}>
+							Добавить
+						</Button>
+					</Group>
+				</Stack>
 			</Modal>
-		</Flex>
+		</Stack>
 	);
 }

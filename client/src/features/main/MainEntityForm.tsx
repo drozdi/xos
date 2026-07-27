@@ -1,5 +1,14 @@
-import { Alert, Button, Flex, Spin, Typography } from 'antd';
-import { notifications } from '@/ui/toast';
+import {
+	Alert,
+	Box,
+	Button,
+	Group,
+	Loader,
+	ScrollArea,
+	Stack,
+	Text,
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 
@@ -138,21 +147,17 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 
 	if (isLoading) {
 		return (
-			<Flex justify="center" style={{ padding: '48px 0' }}>
-				<Spin size="small" />
-			</Flex>
+			<Group justify="center" py="xl">
+				<Loader size="sm" />
+			</Group>
 		);
 	}
 
 	if (isError) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Ошибка"
-				description={extractApiErrorMessage(error, 'Не удалось загрузить')}
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Ошибка" m="md">
+				{extractApiErrorMessage(error, 'Не удалось загрузить')}
+			</Alert>
 		);
 	}
 
@@ -171,20 +176,19 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	const readOnly = !isNew && !canSave;
 
 	return (
-		<div style={{ height: '100%', overflow: 'auto', padding: 16 }}>
-			<Flex vertical gap={16}>
-				<Flex justify="space-between" align="flex-start">
-					<Flex vertical gap={2}>
-						<Typography.Text strong>
-							{isNew ? `${title} — новый` : `${title} #${entityId}`}
-						</Typography.Text>
+		<ScrollArea h="100%" p="md">
+			<Stack gap="md">
+				<Group justify="space-between" align="flex-start">
+					<Stack gap={2}>
+						<Text fw={600}>{isNew ? `${title} — новый` : `${title} #${entityId}`}</Text>
 						{headerNote?.({ data: form, isNew })}
-					</Flex>
-					<Flex gap={8}>
+					</Stack>
+					<Group gap="xs">
 						{canDelete && !isNew && remove ? (
 							<Button
-								size="small"
-								danger
+								size="xs"
+								color="red"
+								variant="light"
 								loading={deleteMutation.isPending}
 								onClick={() => {
 									confirmAction({
@@ -201,8 +205,7 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 						) : null}
 						{canSave ? (
 							<Button
-								type="primary"
-								size="small"
+								size="xs"
 								loading={mutation.isPending}
 								onClick={() => {
 									if (isNew) {
@@ -220,10 +223,10 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 								Сохранить
 							</Button>
 						) : null}
-					</Flex>
-				</Flex>
-				<div>{children({ data: form, setField, isNew, readOnly, errors })}</div>
-			</Flex>
-		</div>
+					</Group>
+				</Group>
+				<Box>{children({ data: form, setField, isNew, readOnly, errors })}</Box>
+			</Stack>
+		</ScrollArea>
 	);
 }

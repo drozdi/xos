@@ -1,5 +1,5 @@
-import { Alert } from 'antd';
-import { notifications } from '@/ui/toast';
+import { Alert } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -60,7 +60,9 @@ export default function SchooltaskSubjectsApp() {
 	if (!canRead) {
 		return (
 			<MainListLayout title="Предметы" isLoading={false} isError={false} onRefresh={() => {}}>
-				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр предметов" />
+				<Alert color="red" title="Доступ запрещён">
+					Нет прав на просмотр предметов
+				</Alert>
 			</MainListLayout>
 		);
 	}

@@ -1,72 +1,81 @@
-import { Button, Card, Flex, Spin, Typography } from 'antd';
-import { useState, type CSSProperties, type ReactNode } from 'react';
-import { CompressOutlined, ExpandOutlined } from '@ant-design/icons';
-
-interface ExpandablePanelProps {
-	title: string;
-	loading?: boolean;
-	keepMounted?: boolean;
-	children: ReactNode;
-	style?: CSSProperties;
-	className?: string;
-}
+import {
+	Box,
+	Button,
+	Group,
+	LoadingOverlay,
+	Paper,
+	Text,
+	type PaperProps,
+} from '@mantine/core';
+import { useState } from 'react';
+import { TbArrowsMaximize, TbArrowsMinimize } from 'react-icons/tb';
 
 export function ExpandablePanel({
 	title,
 	loading = false,
 	children,
 	keepMounted = true,
-	style,
-	className,
-}: ExpandablePanelProps) {
+	component,
+	...otherProps
+}: PaperProps & {
+	title: string;
+	loading?: boolean;
+	keepMounted?: boolean;
+	children: React.ReactNode;
+	component?: any;
+}) {
+	// Управляем состоянием компонента
 	const [isExpanded, setIsExpanded] = useState(false);
 
+	// Обработчик переключения состояния
+	const toggleExpanded = () => {
+		setIsExpanded((v) => !v);
+	};
+
 	return (
-		<Card
-			size="small"
-			className={className}
+		<Paper
+			shadow="xl"
+			p="xs"
+			{...otherProps}
 			style={{
 				position: isExpanded ? 'fixed' : 'relative',
-				top: isExpanded ? 0 : undefined,
-				left: isExpanded ? 0 : undefined,
+				top: isExpanded ? 0 : 'auto',
+				left: isExpanded ? 0 : 'auto',
 				width: isExpanded ? '100vw' : '100%',
-				height: isExpanded ? '100vh' : undefined,
-				zIndex: isExpanded ? 1100 : 1,
+				height: isExpanded ? '100vh' : 'auto',
+				zIndex: isExpanded ? 'calc(var(--mantine-z-index-app) + 10)' : 1,
 				overflow: 'auto',
-				...style,
 			}}
 		>
-			{loading ? (
-				<div
-					style={{
-						position: 'absolute',
-						inset: 0,
-						zIndex: 1000,
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						background: 'rgba(255,255,255,0.45)',
-					}}
-				>
-					<Spin />
-				</div>
-			) : null}
-			<Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
-				<Typography.Text strong>{title}</Typography.Text>
+			<LoadingOverlay visible={loading} zIndex={1000} />
+			<Group justify="space-between" mb="xs">
+				<Text fw={500}>{title}</Text>
 				<Button
-					type="text"
-					size="small"
-					onClick={() => setIsExpanded((v) => !v)}
-					icon={isExpanded ? <CompressOutlined /> : <ExpandOutlined />}
+					variant="subtle"
+					size="compact-xs"
+					onClick={toggleExpanded}
+					rightSection={
+						isExpanded ? (
+							<TbArrowsMinimize size="1rem" />
+						) : (
+							<TbArrowsMaximize size="1rem" />
+						)
+					}
 				>
 					{isExpanded ? 'Свернуть' : 'Развернуть'}
 				</Button>
-			</Flex>
+			</Group>
+
+			{/* Содержимое компонента */}
 			{(keepMounted || isExpanded) && (
-				<div style={{ minHeight: loading ? 300 : undefined, minWidth: loading ? 300 : undefined }}>
+				<Box
+					component={component}
+					mih={loading ? 300 : undefined}
+					miw={loading ? 300 : undefined}
+				>
 					{children}
-				</div>
+				</Box>
 			)}
-		</Card>
+		</Paper>
 	);
 }

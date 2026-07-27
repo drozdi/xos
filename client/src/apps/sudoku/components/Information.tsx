@@ -1,4 +1,4 @@
-import { Typography } from 'antd';
+import { Text } from '@mantine/core';
 
 import { useSudokuStore } from '../store';
 
@@ -11,11 +11,11 @@ export function Information() {
 	const total = config.size.size * config.size.size;
 
 	return (
-		<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+		<Text size="sm" c="dimmed">
 			{config.size.label} · {config.difficulty.label} · дано {config.clueCount} цифр
 			{' · '}
 			заполнено {filledCount}/{total}
 			{isComplete ? ' · Готово!' : ''}
-		</Typography.Text>
+		</Text>
 	);
 }

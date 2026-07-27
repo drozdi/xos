@@ -1,5 +1,5 @@
-import { Alert, Flex, Form, Select } from 'antd';
-import { notifications } from '@/ui/toast';
+import { Alert, Select, Stack } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -132,13 +132,9 @@ export default function DeviceSoftwaresApp() {
 
 	if (!canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр программ"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр программ
+			</Alert>
 		);
 	}
 
@@ -157,18 +153,17 @@ export default function DeviceSoftwaresApp() {
 			onRefresh={() => void listQuery.refetch()}
 			onCreate={canCreate && typeId ? () => openSoftware(0) : undefined}
 			filters={
-				<Flex vertical gap={8}>
-					<Form.Item label="Тип программы" style={{ marginBottom: 0 }}>
-						<Select
-							placeholder="Выберите тип"
-							options={typeOptions}
-							value={typeId}
-							onChange={setTypeId}
-							showSearch
-							allowClear={false}
-						/>
-					</Form.Item>
-				</Flex>
+				<Stack gap="xs">
+					<Select
+						label="Тип программы"
+						placeholder="Выберите тип"
+						data={typeOptions}
+						value={typeId}
+						onChange={setTypeId}
+						searchable
+						clearable={false}
+					/>
+				</Stack>
 			}
 		>
 			<DataTable

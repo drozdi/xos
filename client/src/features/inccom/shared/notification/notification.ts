@@ -1,26 +1,30 @@
-import { notification as antdNotification } from 'antd';
+import type { NotificationData } from '@mantine/notifications'
+import { notifications, notificationsStore } from '@mantine/notifications'
 
-const recent = new Set<string>();
-
-function dedupeKey(title: string | undefined, message: string): string {
-	return `${title ?? ''}::${message}`;
+function checkMessage(notifications: NotificationData[], message: string) {
+	if (notifications.length) {
+		if (notifications.findIndex(notification => notification.message === message) > -1) {
+			return false
+		}
+	}
+	return true
 }
 
-function send(item: { title?: string; message: string; type?: 'success' | 'error' | 'warning' | 'info' }) {
-	const key = dedupeKey(item.title, item.message);
-	if (recent.has(key)) {
-		return;
+function send(item: { title?: string; message: string; color?: string }) {
+	const store = notificationsStore.getState()
+	if (false === checkMessage(store.notifications, item.message)) {
+		return
 	}
-	recent.add(key);
-	window.setTimeout(() => recent.delete(key), 2000);
-
-	antdNotification.open({
-		message: item.title,
-		description: item.message,
-		type: item.type ?? 'info',
-		placement: 'top',
-		duration: 10,
-	});
+	if (false === checkMessage(store.queue, item.message)) {
+		return
+	}
+	return notifications.show({
+		autoClose: 10000,
+		withBorder: true,
+		withCloseButton: true,
+		position: 'top-center',
+		...item,
+	})
 }
 
 export const notification = {
@@ -28,28 +32,27 @@ export const notification = {
 		send({
 			title: message ? title : undefined,
 			message: message || title,
-			type: 'error',
-		});
+			color: 'red',
+		})
 	},
 	success: (title: string, message?: string) => {
 		send({
 			title: message ? title : undefined,
 			message: message || title,
-			type: 'success',
-		});
+			color: 'green',
+		})
 	},
 	danger: (title: string, message?: string) => {
 		send({
 			title: message ? title : undefined,
 			message: message || title,
-			type: 'warning',
-		});
+			color: 'orange',
+		})
 	},
 	alert: (title: string, message?: string) => {
 		send({
 			title: message ? title : undefined,
 			message: message || title,
-			type: 'info',
-		});
+		})
 	},
-};
+}

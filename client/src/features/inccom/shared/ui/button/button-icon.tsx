@@ -1,23 +1,19 @@
-import { Button, Tooltip } from 'antd';
-import type { ButtonProps } from 'antd';
-import { memo, type ReactNode } from 'react';
+import { ActionIcon, type ActionIconProps, Tooltip } from "@mantine/core";
+import { memo } from "react";
 
-export interface ButtonIconProps extends Omit<ButtonProps, 'children'> {
+export interface ButtonIconProps extends ActionIconProps {
 	tooltip?: string;
-	children?: ReactNode;
 	onClick?: () => void;
 }
 
 function ButtonIconRoot({ children, tooltip, ...props }: ButtonIconProps) {
-	const button = (
-		<Button type="text" {...props}>
-			{children}
-		</Button>
+	return (
+		<Tooltip disabled={!tooltip} label={tooltip}>
+			<ActionIcon {...props}>
+				{children}
+			</ActionIcon>
+		</Tooltip>
 	);
-	if (!tooltip) {
-		return button;
-	}
-	return <Tooltip title={tooltip}>{button}</Tooltip>;
 }
 
 export const ButtonIcon = memo(ButtonIconRoot);

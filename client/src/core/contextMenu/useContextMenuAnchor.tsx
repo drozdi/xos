@@ -1,5 +1,5 @@
-import { Dropdown } from 'antd';
-import type { MenuProps } from 'antd';
+import { Box, Menu } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import {
 	useCallback,
 	useMemo,
@@ -21,7 +21,7 @@ export function useContextMenuAnchor(
 	context: ContextMenuContext,
 	{ position = 'bottom', zIndex = 1200 }: UseContextMenuAnchorOptions = {},
 ) {
-	const [opened, setOpened] = useState(false);
+	const [opened, { open, close }] = useDisclosure(false);
 	const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 });
 	const visibleItems = useMemo(() => getVisibleContextMenuItems(items), [items]);
 	const hasEntries = useMemo(
@@ -37,64 +37,66 @@ export function useContextMenuAnchor(
 			event.preventDefault();
 			event.stopPropagation();
 			setAnchorPoint({ x: event.clientX, y: event.clientY });
-			setOpened(true);
+			open();
 		},
-		[hasEntries, visibleItems.length],
+		[hasEntries, open, visibleItems.length],
 	);
 
 	const handleItemClick = useCallback(
-		(item: ContextMenuItemDef) => {
-			setOpened(false);
+		(item: ContextMenuItemDef) => (event: ReactMouseEvent<HTMLButtonElement>) => {
+			event.preventDefault();
+			event.stopPropagation();
+			close();
 			void item.onClick(context);
 		},
-		[context],
+		[close, context],
 	);
-
-	const menuItems: MenuProps['items'] = useMemo(() => {
-		const result: NonNullable<MenuProps['items']> = [];
-		items.forEach((entry, index) => {
-			if (isContextMenuDivider(entry)) {
-				result.push({ type: 'divider', key: entry.id ?? `divider-${index}` });
-				return;
-			}
-			if (entry.hidden) {
-				return;
-			}
-			result.push({
-				key: entry.id,
-				label: entry.label,
-				icon: entry.icon ? <>{entry.icon}</> : undefined,
-				disabled: entry.disabled,
-				danger: entry.danger,
-				onClick: () => handleItemClick(entry),
-			});
-		});
-		return result;
-	}, [handleItemClick, items]);
 
 	const menu =
 		hasEntries && visibleItems.length > 0 ? (
-			<Dropdown
-				open={opened}
-				onOpenChange={setOpened}
-				menu={{ items: menuItems }}
-				trigger={['click']}
-				placement={position === 'top' ? 'topLeft' : 'bottomLeft'}
-				overlayStyle={{ zIndex }}
-				getPopupContainer={() => document.body}
+			<Menu
+				opened={opened}
+				onClose={close}
+				position={position}
+				offset={4}
+				zIndex={zIndex}
+				withinPortal
 			>
-				<span
-					aria-hidden
-					style={{
-						position: 'fixed',
-						left: anchorPoint.x,
-						top: anchorPoint.y,
-						width: 1,
-						height: 1,
-						pointerEvents: 'none',
-					}}
-				/>
-			</Dropdown>
+				<Menu.Target>
+					<Box
+						style={{
+							position: 'fixed',
+							left: anchorPoint.x,
+							top: anchorPoint.y,
+							width: 1,
+							height: 1,
+							pointerEvents: 'none',
+						}}
+					/>
+				</Menu.Target>
+				<Menu.Dropdown>
+					{items.map((entry, index) => {
+						if (isContextMenuDivider(entry)) {
+							return <Menu.Divider key={entry.id ?? `divider-${index}`} />;
+						}
+						if (entry.hidden) {
+							return null;
+						}
+
+						return (
+							<Menu.Item
+								key={entry.id}
+								leftSection={entry.icon}
+								disabled={entry.disabled}
+								color={entry.danger ? 'red' : undefined}
+								onClick={handleItemClick(entry)}
+							>
+								{entry.label}
+							</Menu.Item>
+						);
+					})}
+				</Menu.Dropdown>
+			</Menu>
 		) : null;
 
 	return {

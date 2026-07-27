@@ -1,4 +1,4 @@
-import { Alert, Flex, Form, Input, InputNumber } from 'antd';
+import { Alert, NumberInput, Stack, TextInput } from '@mantine/core';
 
 import { deviceSoftwareTypeApi, type SoftwareTypeDetail } from '@/core/api/endpoints/deviceApi';
 import {
@@ -30,25 +30,17 @@ export default function DeviceSoftwareTypeApp() {
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на создание типа программы"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание типа программы
+			</Alert>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр типа программы"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр типа программы
+			</Alert>
 		);
 	}
 
@@ -67,42 +59,30 @@ export default function DeviceSoftwareTypeApp() {
 			canDelete={canDelete}
 		>
 			{({ data, setField, errors, readOnly }) => (
-				<Flex vertical gap={12}>
-					<Form.Item
+				<Stack gap="sm">
+					<TextInput
 						label="Название"
-						required
-						validateStatus={errors.name ? 'error' : undefined}
-						help={errors.name}
-						style={{ marginBottom: 0 }}
-					>
-						<Input
-							value={data.name ?? ''}
-							readOnly={readOnly}
-							onChange={(e) => setField('name', e.target.value)}
-						/>
-					</Form.Item>
-					<Form.Item
+						withAsterisk
+						value={data.name ?? ''}
+						error={errors.name}
+						readOnly={readOnly}
+						onChange={(e) => setField('name', e.currentTarget.value)}
+					/>
+					<TextInput
 						label="Код"
-						required
-						validateStatus={errors.code ? 'error' : undefined}
-						help={errors.code}
-						style={{ marginBottom: 0 }}
-					>
-						<Input
-							value={data.code ?? ''}
-							readOnly={readOnly}
-							onChange={(e) => setField('code', e.target.value)}
-						/>
-					</Form.Item>
-					<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
-						<InputNumber
-							value={data.sort ?? 0}
-							disabled={readOnly}
-							style={{ width: '100%' }}
-							onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-						/>
-					</Form.Item>
-				</Flex>
+						withAsterisk
+						value={data.code ?? ''}
+						error={errors.code}
+						readOnly={readOnly}
+						onChange={(e) => setField('code', e.currentTarget.value)}
+					/>
+					<NumberInput
+						label="Сортировка"
+						value={data.sort ?? 0}
+						readOnly={readOnly}
+						onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
+					/>
+				</Stack>
 			)}
 		</MainEntityForm>
 	);

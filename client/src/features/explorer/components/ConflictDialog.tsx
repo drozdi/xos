@@ -1,4 +1,4 @@
-import { Button, Checkbox, Flex, Modal, Typography } from 'antd';
+import { Button, Group, Modal, Stack, Text } from '@mantine/core';
 
 export type ConflictPolicy = 'replace' | 'skip' | 'rename';
 
@@ -24,36 +24,34 @@ export function ConflictDialog({
 	onClose,
 }: ConflictDialogProps) {
 	return (
-		<Modal
-			open={Boolean(conflict)}
-			onCancel={onClose}
-			title="Конфликт имён"
-			centered
-			footer={null}
-		>
-			{conflict ? (
-				<Flex vertical gap="middle">
-					<Typography.Text style={{ fontSize: 13 }}>{conflict.message}</Typography.Text>
-					<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+		<Modal opened={Boolean(conflict)} onClose={onClose} title="Конфликт имён" centered>
+			{conflict && (
+				<Stack gap="md">
+					<Text size="sm">{conflict.message}</Text>
+					<Text size="xs" c="dimmed">
 						{conflict.source} → {conflict.target}
-					</Typography.Text>
-					<Checkbox
-						checked={applyToAll}
-						onChange={(event) => onApplyToAllChange(event.target.checked)}
-					>
-						Применить ко всем
-					</Checkbox>
-					<Flex justify="flex-end" gap="small">
-						<Button onClick={() => onResolve('skip')}>Пропустить</Button>
-						<Button type="dashed" onClick={() => onResolve('rename')}>
+					</Text>
+					<label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+						<input
+							type="checkbox"
+							checked={applyToAll}
+							onChange={(event) => onApplyToAllChange(event.currentTarget.checked)}
+						/>
+						<Text size="sm">Применить ко всем</Text>
+					</label>
+					<Group justify="flex-end">
+						<Button variant="default" onClick={() => onResolve('skip')}>
+							Пропустить
+						</Button>
+						<Button variant="light" onClick={() => onResolve('rename')}>
 							Переименовать
 						</Button>
-						<Button type="primary" onClick={() => onResolve('replace')}>
+						<Button onClick={() => onResolve('replace')}>
 							Заменить
 						</Button>
-					</Flex>
-				</Flex>
-			) : null}
+					</Group>
+				</Stack>
+			)}
 		</Modal>
 	);
 }

@@ -1,4 +1,4 @@
-import { Alert, Flex, Form, Input, InputNumber, Select } from 'antd';
+import { Alert, NumberInput, Select, Stack, TextInput } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -42,6 +42,7 @@ export default function DeviceSoftwareApp() {
 
 	const typeOptions = useMemo(
 		() => {
+			// Mantine Select не поддерживает дублирующие value.
 			const byValue = new Map<string, { value: string; label: string }>();
 			for (const item of typesQuery.data?.items ?? []) {
 				const value = String(item.id);
@@ -57,6 +58,7 @@ export default function DeviceSoftwareApp() {
 
 	const rootSoftwareOptions = useMemo(
 		() => {
+			// Mantine Select не поддерживает дублирующие value.
 			const byValue = new Map<string, { value: string; label: string; typeId: number | null }>();
 			for (const item of softwareQuery.data?.items ?? []) {
 				if (item.id === entityId) {
@@ -78,25 +80,17 @@ export default function DeviceSoftwareApp() {
 
 	if (isNew && !canCreate) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на создание программы"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на создание программы
+			</Alert>
 		);
 	}
 
 	if (!isNew && !canRead) {
 		return (
-			<Alert
-				type="error"
-				showIcon
-				message="Доступ запрещён"
-				description="Нет прав на просмотр программы"
-				style={{ margin: 16 }}
-			/>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр программы
+			</Alert>
 		);
 	}
 
@@ -120,60 +114,51 @@ export default function DeviceSoftwareApp() {
 					.map(({ value, label }) => ({ value, label }));
 
 				return (
-					<Flex vertical gap={12}>
-						<Form.Item
-							label="Название"
-							required
-							validateStatus={errors.name ? 'error' : undefined}
-							help={errors.name}
-							style={{ marginBottom: 0 }}
-						>
-							<Input
-								value={data.name ?? ''}
-								readOnly={readOnly}
-								onChange={(e) => setField('name', e.target.value)}
-							/>
-						</Form.Item>
-						<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
-							<InputNumber
-								value={data.sort ?? 0}
-								disabled={readOnly}
-								style={{ width: '100%' }}
-								onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-							/>
-						</Form.Item>
-						<Form.Item label="Тип" style={{ marginBottom: 0 }}>
-							<Select
-								options={typeOptions}
-								value={data.type_id ? String(data.type_id) : undefined}
-								disabled={readOnly}
-								onChange={(value) => {
-									const nextTypeId = value ? Number(value) : null;
-									setField('type_id', nextTypeId);
-									if (data.parent_id) {
-										const parentExists = rootSoftwareOptions.some(
-											(item) => item.value === String(data.parent_id) && item.typeId === nextTypeId,
-										);
-										if (!parentExists) {
-											setField('parent_id', null);
-										}
-									}
-								}}
-								showSearch
-								allowClear
-							/>
-						</Form.Item>
-						<Form.Item label="Родитель" style={{ marginBottom: 0 }}>
-							<Select
-								options={parentOptions}
-								value={data.parent_id ? String(data.parent_id) : undefined}
-								disabled={readOnly}
-								onChange={(value) => setField('parent_id', value ? Number(value) : null)}
-								showSearch
-								allowClear
-							/>
-						</Form.Item>
-					</Flex>
+				<Stack gap="sm">
+					<TextInput
+						label="Название"
+						withAsterisk
+						value={data.name ?? ''}
+						error={errors.name}
+						readOnly={readOnly}
+						onChange={(e) => setField('name', e.currentTarget.value)}
+					/>
+					<NumberInput
+						label="Сортировка"
+						value={data.sort ?? 0}
+						readOnly={readOnly}
+						onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
+					/>
+					<Select
+						label="Тип"
+						data={typeOptions}
+						value={data.type_id ? String(data.type_id) : null}
+						readOnly={readOnly}
+						onChange={(value) => {
+							const nextTypeId = value ? Number(value) : null;
+							setField('type_id', nextTypeId);
+							if (data.parent_id) {
+								const parentExists = rootSoftwareOptions.some(
+									(item) => item.value === String(data.parent_id) && item.typeId === nextTypeId,
+								);
+								if (!parentExists) {
+									setField('parent_id', null);
+								}
+							}
+						}}
+						searchable
+						clearable
+					/>
+					<Select
+						label="Родитель"
+						data={parentOptions}
+						value={data.parent_id ? String(data.parent_id) : null}
+						readOnly={readOnly}
+						onChange={(value) => setField('parent_id', value ? Number(value) : null)}
+						searchable
+						clearable
+					/>
+				</Stack>
 				);
 			}}
 		</MainEntityForm>

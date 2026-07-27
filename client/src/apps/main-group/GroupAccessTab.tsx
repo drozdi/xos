@@ -1,4 +1,4 @@
-import { Card, Checkbox, Collapse, Flex, Typography } from 'antd';
+import { Accordion, Checkbox, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -45,35 +45,34 @@ function renderScopeClaimantCard(
 	const checked = levelToChecked(level, scopeMap);
 
 	return (
-		<Card key={claimant.id} size="small" style={{ height: '100%' }}>
-			<Typography.Text strong style={{ display: 'block', marginBottom: 4 }}>
+		<Paper key={claimant.id} withBorder p="sm" h="100%">
+			<Text fw={500} mb="xs">
 				{claimant.name}
-			</Typography.Text>
-			<Typography.Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
+			</Text>
+			<Text size="xs" c="dimmed" mb="xs">
 				{claimant.code}
-			</Typography.Text>
-			<Flex vertical gap={4}>
+			</Text>
+			<Stack gap={4}>
 				{scopeKeys.map((scopeKey) => (
 					<Checkbox
 						key={scopeKey}
+						label={CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
 						checked={checked[scopeKey] ?? false}
 						disabled={readOnly}
 						onChange={(event) => {
 							const nextChecked = {
 								...checked,
-								[scopeKey]: event.target.checked,
+								[scopeKey]: event.currentTarget.checked,
 							};
 							const nextLevel = checkedToLevel(nextChecked, scopeMap);
 							onChange(
 								updateAccessLevel(accesses, claimant.id, claimant.name, nextLevel),
 							);
 						}}
-					>
-						{CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
-					</Checkbox>
+					/>
 				))}
-			</Flex>
-		</Card>
+			</Stack>
+		</Paper>
 	);
 }
 
@@ -105,51 +104,44 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 
 	if (modulesQuery.isLoading || mapQuery.isLoading) {
 		return (
-			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+			<Text size="sm" c="dimmed">
 				Загрузка прав…
-			</Typography.Text>
+			</Text>
 		);
 	}
 
 	if (visibleModules.length === 0) {
 		return (
-			<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+			<Text size="sm" c="dimmed">
 				Нет доступных правил
-			</Typography.Text>
+			</Text>
 		);
 	}
 
 	return (
-		<Collapse
-			accordion={false}
-			items={visibleModules.map((moduleGroup) => {
+		<Accordion variant="separated" multiple>
+			{visibleModules.map((moduleGroup) => {
 				const scopeClaimants = getModuleScopeClaimants(moduleGroup, moduleMaps);
 
-				return {
-					key: moduleGroup.module,
-					label: moduleGroup.moduleLabel,
-					children: (
-						<div
-							style={{
-								display: 'grid',
-								gap: 12,
-								marginTop: 8,
-								gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-							}}
-						>
-							{scopeClaimants.map((claimant) =>
-								renderScopeClaimantCard(
-									claimant,
-									resolveClaimantAccessMap(claimant.code, moduleMaps),
-									accesses,
-									readOnly,
-									onChange,
-								),
-							)}
-						</div>
-					),
-				};
+				return (
+					<Accordion.Item key={moduleGroup.module} value={moduleGroup.module}>
+						<Accordion.Control>{moduleGroup.moduleLabel}</Accordion.Control>
+						<Accordion.Panel>
+							<SimpleGrid cols={columns} mt="xs">
+								{scopeClaimants.map((claimant) =>
+									renderScopeClaimantCard(
+										claimant,
+										resolveClaimantAccessMap(claimant.code, moduleMaps),
+										accesses,
+										readOnly,
+										onChange,
+									),
+								)}
+							</SimpleGrid>
+						</Accordion.Panel>
+					</Accordion.Item>
+				);
 			})}
-		/>
+		</Accordion>
 	);
 }

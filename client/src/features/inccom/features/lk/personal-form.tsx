@@ -1,95 +1,206 @@
-﻿import { Button, Flex, Form, Input } from 'antd';
+﻿import { useStoreUserProfile } from '@inccom/entities/user';
+
+import { Loading } from '@inccom/shared/ui';
+
+import { Button, Group, Stack, TextInput } from '@mantine/core';
+
+import { isEmail, isNotEmpty, useForm } from '@mantine/form';
+
+import { Template } from '@inccom/layouts';
+
 import { useEffect } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 
-import { useStoreUserProfile } from '@inccom/entities/user';
-import { Template } from '@inccom/layouts';
-import { Loading } from '@inccom/shared/ui';
+
 
 type PersonalFormValues = Pick<IUser, 'first_name' | 'second_name' | 'email' | 'phone'>;
 
+
+
 export function PersonalForm() {
+
 	const storeUserProfile = useStoreUserProfile();
+
 	const { isLoading, userData } = storeUserProfile;
+
 	const navigate = useNavigate();
-	const [form] = Form.useForm<PersonalFormValues>();
+
+
+
+	const form = useForm<PersonalFormValues>({
+
+		mode: 'uncontrolled',
+
+		initialValues: {
+
+			first_name: '',
+
+			second_name: '',
+
+			email: '',
+
+			phone: '',
+
+		},
+
+		validate: {
+
+			first_name: isNotEmpty('Заполните имя'),
+
+			second_name: isNotEmpty('Заполните фамилию'),
+
+			email: isEmail('Введите корректный email'),
+
+		},
+
+	});
+
+
 
 	async function handleSave(values: PersonalFormValues) {
+
 		if (!userData) {
+
 			return;
+
 		}
+
 		await storeUserProfile.update({ ...userData, ...values });
+
 	}
+
+
 
 	async function handleSaveNavigate(values: PersonalFormValues) {
+
 		await handleSave(values);
+
 		navigate('/');
+
 	}
 
-	useEffect(() => {
-		if (userData) {
-			form.setFieldsValue({
-				first_name: userData.first_name ?? '',
-				second_name: userData.second_name ?? '',
-				email: userData.email ?? '',
-				phone: userData.phone ?? '',
-			});
-		}
-	}, [userData, form]);
+
 
 	useEffect(() => {
+
+		if (userData) {
+
+			form.setValues({
+
+				first_name: userData.first_name ?? '',
+
+				second_name: userData.second_name ?? '',
+
+				email: userData.email ?? '',
+
+				phone: userData.phone ?? '',
+
+			});
+
+		}
+
+	}, [userData]);
+
+
+
+	useEffect(() => {
+
 		void storeUserProfile.load();
+
 	}, []);
 
+
+
 	return (
+
 		<Loading active={isLoading} keepMounted>
-			<Form form={form} layout="vertical">
-				<Form.Item
+
+			<Stack component="form">
+
+				<TextInput
+
 					label="Имя"
-					name="first_name"
-					rules={[{ required: true, message: 'Заполните имя' }]}
-				>
-					<Input placeholder="Имя" />
-				</Form.Item>
-				<Form.Item
+
+					placeholder="Имя"
+
+					{...form.getInputProps('first_name')}
+
+				/>
+
+				<TextInput
+
 					label="Фамилия"
-					name="second_name"
-					rules={[{ required: true, message: 'Заполните фамилию' }]}
-				>
-					<Input placeholder="Фамилия" />
-				</Form.Item>
-				<Form.Item
+
+					placeholder="Фамилия"
+
+					{...form.getInputProps('second_name')}
+
+				/>
+
+				<TextInput
+
 					label="Email"
-					name="email"
-					rules={[
-						{ required: true, message: 'Введите email' },
-						{ type: 'email', message: 'Введите корректный email' },
-					]}
-				>
-					<Input type="email" placeholder="Email" />
-				</Form.Item>
-				<Form.Item label="Телефон" name="phone">
-					<Input placeholder="Телефон" />
-				</Form.Item>
+
+					type="email"
+
+					placeholder="Email"
+
+					{...form.getInputProps('email')}
+
+				/>
+
+				<TextInput
+
+					label="Телефон"
+
+					placeholder="Телефон"
+
+					{...form.getInputProps('phone')}
+
+				/>
+
+
 
 				<Template.Footer>
-					<Flex gap={8}>
+
+					<Group>
+
 						<Button
-							type="primary"
+
+							color="green"
+
 							loading={isLoading}
-							onClick={() => void form.validateFields().then(handleSaveNavigate)}
+
+							onClick={() => form.onSubmit(handleSaveNavigate)()}
+
 						>
+
 							Сохранить
+
 						</Button>
+
 						<Button
+
 							loading={isLoading}
-							onClick={() => void form.validateFields().then(handleSave)}
+
+							onClick={() => form.onSubmit(handleSave)()}
+
 						>
+
 							Применить
+
 						</Button>
-					</Flex>
+
+					</Group>
+
 				</Template.Footer>
-			</Form>
+
+			</Stack>
+
 		</Loading>
+
 	);
+
 }
+

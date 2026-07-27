@@ -1,7 +1,8 @@
+import { Box } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { useMemo } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
-import { useMediaQuery } from '@/core/hooks/useMediaQuery';
 import { useSetState, useSetting } from '@/core/settings/hooks';
 
 import { LayoutProvider } from './LayoutContext';
@@ -15,7 +16,9 @@ interface LayoutProps {
 }
 
 export function Layout({ children, view: viewProp, mobileView: mobileViewProp }: LayoutProps) {
-	const isMobile = useMediaQuery('(max-width: 767px)', false);
+	const isMobile = useMediaQuery('(max-width: 767px)', false, {
+		getInitialValueInEffect: true,
+	});
 	const [storedView] = useSetting('USER', 'layout.view', HKEY_CONFIG_DEFAULTS.layout.view);
 	const [storedMobileView] = useSetting(
 		'USER',
@@ -62,7 +65,7 @@ export function Layout({ children, view: viewProp, mobileView: mobileViewProp }:
 
 	return (
 		<LayoutProvider value={contextValue}>
-			<div
+			<Box
 				style={{
 					display: 'grid',
 					width: '100vw',
@@ -71,11 +74,11 @@ export function Layout({ children, view: viewProp, mobileView: mobileViewProp }:
 					gridTemplateAreas: parsed.templateAreas,
 					gridTemplateColumns: parsed.templateColumns,
 					gridTemplateRows: parsed.templateRows,
-					backgroundColor: 'var(--xos-window-bg)',
+					backgroundColor: 'var(--mantine-color-body)',
 				}}
 			>
 				{children}
-			</div>
+			</Box>
 		</LayoutProvider>
 	);
 }

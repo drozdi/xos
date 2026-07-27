@@ -1,4 +1,4 @@
-import { notifications } from '@/ui/toast';
+import { notifications } from '@mantine/notifications';
 import { apiClient } from '@/core/api/client';
 import { loginResponseSchema, type UserSummaryDto } from '@/core/api/endpoints/auth';
 import { useAuthStore } from '@/core/auth/authStore';

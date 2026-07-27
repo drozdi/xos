@@ -1,4 +1,11 @@
-import { Alert, Button, Flex, Spin, Typography } from 'antd';
+import {
+	Alert,
+	Box,
+	Button,
+	Group,
+	Loader,
+	Text,
+} from '@mantine/core';
 import type { ReactNode } from 'react';
 
 interface MainListLayoutProps {
@@ -29,7 +36,7 @@ export function MainListLayout({
 	children,
 }: MainListLayoutProps) {
 	return (
-		<div
+		<Box
 			style={{
 				position: 'absolute',
 				inset: 0,
@@ -37,37 +44,40 @@ export function MainListLayout({
 				flexDirection: 'column',
 				minHeight: 0,
 				overflow: 'hidden',
-				padding: 16,
+				padding: 'var(--mantine-spacing-md)',
 			}}
 		>
-			<Flex justify="space-between" align="center" style={{ marginBottom: 16, flexShrink: 0 }} wrap="nowrap">
-				<Typography.Text strong>{title}</Typography.Text>
-				<Flex gap={8} wrap="nowrap">
+			<Group justify="space-between" mb="md" wrap="nowrap" style={{ flexShrink: 0 }}>
+				<Text fw={600}>{title}</Text>
+				<Group gap="xs" wrap="nowrap">
 					{onCreate ? (
-						<Button type="primary" size="small" onClick={onCreate}>
+						<Button variant="filled" size="xs" onClick={onCreate}>
 							{createLabel}
 						</Button>
 					) : null}
 					<Button
-						size="small"
+						variant="light"
+						size="xs"
 						onClick={onRefresh}
 						loading={Boolean(isFetching && !isLoading)}
 					>
 						Обновить
 					</Button>
-				</Flex>
-			</Flex>
+				</Group>
+			</Group>
 
-			{filters ? <div style={{ marginBottom: 16, flexShrink: 0 }}>{filters}</div> : null}
+			{filters ? <Box mb="md" style={{ flexShrink: 0 }}>{filters}</Box> : null}
 
 			{isLoading ? (
-				<Flex justify="center" style={{ padding: '48px 0' }}>
-					<Spin size="small" />
-				</Flex>
+				<Group justify="center" py="xl">
+					<Loader size="sm" />
+				</Group>
 			) : isError ? (
-				<Alert type="error" showIcon message="Ошибка" description={errorMessage ?? 'Не удалось загрузить данные'} />
+				<Alert color="red" title="Ошибка">
+					{errorMessage ?? 'Не удалось загрузить данные'}
+				</Alert>
 			) : (
-				<div
+				<Box
 					style={{
 						flex: 1,
 						minHeight: 0,
@@ -77,11 +87,11 @@ export function MainListLayout({
 					}}
 				>
 					{total !== undefined ? (
-						<Typography.Text type="secondary" style={{ marginBottom: 12, flexShrink: 0, fontSize: 13 }}>
+						<Text size="sm" c="dimmed" mb="sm" style={{ flexShrink: 0 }}>
 							Всего: {total}
-						</Typography.Text>
+						</Text>
 					) : null}
-					<div
+					<Box
 						style={{
 							flex: 1,
 							minHeight: 0,
@@ -91,9 +101,9 @@ export function MainListLayout({
 						}}
 					>
 						{children}
-					</div>
-				</div>
+					</Box>
+				</Box>
 			)}
-		</div>
+		</Box>
 	);
 }

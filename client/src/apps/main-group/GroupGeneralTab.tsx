@@ -1,4 +1,11 @@
-import { Alert, Flex, Form, Input, InputNumber, Switch } from 'antd';
+import {
+	Alert,
+	NumberInput,
+	Stack,
+	Switch,
+	TextInput,
+	Textarea,
+} from '@mantine/core';
 
 import type { GroupDetail } from '@/core/api/endpoints/mainApi';
 import { DateTimeField } from '@/core/dates';
@@ -22,7 +29,7 @@ export function GroupGeneralTab({
 	setField,
 }: GroupGeneralTabProps) {
 	return (
-		<Flex vertical gap={12}>
+		<Stack gap="sm">
 			<OuSelect
 				withAsterisk
 				value={data.ou_id ?? null}
@@ -47,63 +54,48 @@ export function GroupGeneralTab({
 				disabled={readOnly}
 				onChange={(userId) => setField('user_id', userId)}
 			/>
-			<Form.Item
+			<TextInput
 				label="Код"
-				required
-				validateStatus={errors.code ? 'error' : undefined}
-				help={errors.code}
-				style={{ marginBottom: 0 }}
-			>
-				<Input
-					value={data.code ?? ''}
-					readOnly={readOnly}
-					onChange={(e) => setField('code', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item
+				withAsterisk
+				value={data.code ?? ''}
+				error={errors.code}
+				readOnly={readOnly}
+				onChange={(e) => setField('code', e.currentTarget.value)}
+			/>
+			<TextInput
 				label="Название"
-				required
-				validateStatus={errors.name ? 'error' : undefined}
-				help={errors.name}
-				style={{ marginBottom: 0 }}
-			>
-				<Input
-					value={data.name ?? ''}
-					readOnly={readOnly}
-					onChange={(e) => setField('name', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item label="Сортировка" style={{ marginBottom: 0 }}>
-				<InputNumber
-					value={data.sort ?? 0}
-					disabled={readOnly}
-					style={{ width: '100%' }}
-					onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
-				/>
-			</Form.Item>
-			<Form.Item label="Описание" style={{ marginBottom: 0 }}>
-				<Input.TextArea
-					value={data.description ?? ''}
-					readOnly={readOnly}
-					rows={3}
-					autoSize={{ minRows: 3 }}
-					onChange={(e) => setField('description', e.target.value)}
-				/>
-			</Form.Item>
-			<Form.Item label="Активна" style={{ marginBottom: 0 }}>
-				<Switch
-					checked={Boolean(data.active)}
-					disabled={readOnly}
-					onChange={(checked) => setField('active', checked)}
-				/>
-			</Form.Item>
-			<Form.Item label="Анонимная" style={{ marginBottom: 0 }}>
-				<Switch
-					checked={Boolean(data.anonymous)}
-					disabled={readOnly}
-					onChange={(checked) => setField('anonymous', checked)}
-				/>
-			</Form.Item>
+				withAsterisk
+				value={data.name ?? ''}
+				error={errors.name}
+				readOnly={readOnly}
+				onChange={(e) => setField('name', e.currentTarget.value)}
+			/>
+			<NumberInput
+				label="Сортировка"
+				value={data.sort ?? 0}
+				readOnly={readOnly}
+				onChange={(value) => setField('sort', typeof value === 'number' ? value : 0)}
+			/>
+			<Textarea
+				label="Описание"
+				value={data.description ?? ''}
+				readOnly={readOnly}
+				minRows={3}
+				autosize
+				onChange={(e) => setField('description', e.currentTarget.value)}
+			/>
+			<Switch
+				label="Активна"
+				checked={Boolean(data.active)}
+				disabled={readOnly}
+				onChange={(e) => setField('active', e.currentTarget.checked)}
+			/>
+			<Switch
+				label="Анонимная"
+				checked={Boolean(data.anonymous)}
+				disabled={readOnly}
+				onChange={(e) => setField('anonymous', e.currentTarget.checked)}
+			/>
 			<DateTimeField
 				label="Активна с"
 				value={data.activeFrom as string | null | undefined}
@@ -116,6 +108,6 @@ export function GroupGeneralTab({
 				readOnly={readOnly}
 				onChange={(value) => setField('activeTo', value)}
 			/>
-		</Flex>
+		</Stack>
 	);
 }

@@ -1,13 +1,15 @@
 import {
+	ActionIcon,
 	Button,
-	Card,
-	Flex,
-	InputNumber,
+	Group,
+	NumberInput,
+	Paper,
 	Select,
+	Stack,
 	Table,
-	Typography,
-} from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+	Text,
+} from '@mantine/core';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -105,126 +107,110 @@ export function LicenseSoftwaresEditor({
 	};
 
 	return (
-		<Flex vertical gap={12}>
-			<Flex justify="space-between" align="center">
+		<Stack gap="sm">
+			<Group justify="space-between">
 				<strong>Программы</strong>
 				{!readOnly ? (
-					<Button size="small" icon={<PlusOutlined style={{ fontSize: 14 }} />} onClick={addItem}>
+					<Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={addItem}>
 						Добавить
 					</Button>
 				) : null}
-			</Flex>
+			</Group>
 
 			{entries.length === 0 ? (
-				<Typography.Text type="secondary">Нет записей</Typography.Text>
+				<Text size="sm" c="dimmed">
+					Нет записей
+				</Text>
 			) : (
-				<Table
-					size="small"
-					bordered
-					pagination={false}
-					rowKey={([key]) => key}
-					dataSource={entries}
-					columns={[
-						{
-							title: 'Тип',
-							key: 'type',
-							render: (_: unknown, [key, item]: [string, SoftwareRecord]) => {
-								const typeId =
-									item.type_id != null && item.type_id !== '' ? String(item.type_id) : undefined;
-								return (
-									<Select
-										options={typeOptions}
-										value={typeId}
-										disabled={readOnly}
-										showSearch
-										notFoundContent="Нет типов"
-										style={{ width: '100%' }}
-										onChange={(value) =>
-											updateItem(key, {
-												type_id: value ?? '',
-												software_id: '',
-											})
-										}
-									/>
-								);
-							},
-						},
-						{
-							title: 'Программа',
-							key: 'software',
-							render: (_: unknown, [key, item]: [string, SoftwareRecord]) => {
-								const typeId =
-									item.type_id != null && item.type_id !== '' ? String(item.type_id) : null;
-								const softwareOptions = typeId ? (softwareByType.get(typeId) ?? []) : [];
-								return (
-									<Select
-										options={softwareOptions}
-										value={
-											item.software_id != null && item.software_id !== ''
-												? String(item.software_id)
-												: undefined
-										}
-										disabled={readOnly || !typeId}
-										showSearch
-										notFoundContent="Нет программ"
-										style={{ width: '100%' }}
-										onChange={(value) =>
-											updateItem(key, {
-												software_id: value ?? '',
-											})
-										}
-									/>
-								);
-							},
-						},
-						{
-							title: 'Количество',
-							key: 'count',
-							width: 120,
-							render: (_: unknown, [key, item]: [string, SoftwareRecord]) => (
-								<InputNumber
-									value={typeof item.count === 'number' ? item.count : Number(item.count ?? 1)}
-									disabled={readOnly}
-									min={LICENSE_SOFTWARE_COUNT_MIN}
-									max={LICENSE_SOFTWARE_COUNT_MAX}
-									style={{ width: '100%' }}
-									onChange={(value) =>
-										updateItem(key, {
-											count: typeof value === 'number' ? value : LICENSE_SOFTWARE_COUNT_MIN,
-										})
-									}
-								/>
-							),
-						},
-						...(!readOnly
-							? [
-									{
-										title: '',
-										key: 'actions',
-										width: 48,
-										render: (_: unknown, [key]: [string, SoftwareRecord]) => (
-											<Button
-												type="text"
-												danger
+				<Table highlightOnHover withTableBorder withColumnBorders>
+					<Table.Thead>
+						<Table.Tr>
+							<Table.Th>Тип</Table.Th>
+							<Table.Th>Программа</Table.Th>
+							<Table.Th w={120}>Количество</Table.Th>
+							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
+						</Table.Tr>
+					</Table.Thead>
+					<Table.Tbody>
+						{entries.map(([key, item]) => {
+							const typeId = item.type_id != null && item.type_id !== '' ? String(item.type_id) : null;
+							const softwareOptions = typeId ? (softwareByType.get(typeId) ?? []) : [];
+
+							return (
+								<Table.Tr key={key}>
+									<Table.Td>
+										<Select
+											data={typeOptions}
+											value={typeId}
+											readOnly={readOnly}
+											searchable
+											nothingFoundMessage="Нет типов"
+											onChange={(value) =>
+												updateItem(key, {
+													type_id: value ?? '',
+													software_id: '',
+												})
+											}
+										/>
+									</Table.Td>
+									<Table.Td>
+										<Select
+											data={softwareOptions}
+											value={
+												item.software_id != null && item.software_id !== ''
+													? String(item.software_id)
+													: null
+											}
+											readOnly={readOnly}
+											disabled={!typeId}
+											searchable
+											nothingFoundMessage="Нет программ"
+											onChange={(value) =>
+												updateItem(key, {
+													software_id: value ?? '',
+												})
+											}
+										/>
+									</Table.Td>
+									<Table.Td>
+										<NumberInput
+											value={typeof item.count === 'number' ? item.count : Number(item.count ?? 1)}
+											readOnly={readOnly}
+											min={LICENSE_SOFTWARE_COUNT_MIN}
+											max={LICENSE_SOFTWARE_COUNT_MAX}
+											onChange={(value) =>
+												updateItem(key, {
+													count: typeof value === 'number' ? value : LICENSE_SOFTWARE_COUNT_MIN,
+												})
+											}
+										/>
+									</Table.Td>
+									{!readOnly ? (
+										<Table.Td>
+											<ActionIcon
+												color="red"
+												variant="light"
 												aria-label="Удалить"
-												icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 												onClick={() => removeItem(key)}
-											/>
-										),
-									},
-								]
-							: []),
-					]}
-				/>
+											>
+												<IconTrash size={16} />
+											</ActionIcon>
+										</Table.Td>
+									) : null}
+								</Table.Tr>
+							);
+						})}
+					</Table.Tbody>
+				</Table>
 			)}
 
 			{entries.length > 0 ? (
-				<Card size="small">
-					<Typography.Text type="secondary" style={{ fontSize: 12 }}>
+				<Paper withBorder p="xs">
+					<Text size="xs" c="dimmed">
 						Количество: от {LICENSE_SOFTWARE_COUNT_MIN} (без ограничения) до {LICENSE_SOFTWARE_COUNT_MAX}
-					</Typography.Text>
-				</Card>
+					</Text>
+				</Paper>
 			) : null}
-		</Flex>
+		</Stack>
 	);
 }

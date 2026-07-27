@@ -1,118 +1,124 @@
-﻿import { Button, Flex, Layout } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import { useMemo } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-
-import { useIncComStandalone } from '@inccom/app/inccom-standalone';
+﻿import { useIncComStandalone } from '@inccom/app/inccom-standalone';
 import { PersonalLink } from '@inccom/features/lk/personal-link';
 import { MainMenu } from '@inccom/features/menu/sidebar';
 import { useBreakpoint } from '@inccom/shared/hooks';
 import { $setting } from '@inccom/shared/setting';
 import { Title } from '@inccom/shared/ui';
+import {
+	ActionIcon,
+	AppShell,
+	Burger,
+	Button,
+	Container,
+	Divider,
+	Group,
+	ScrollArea,
+} from '@mantine/core';
+import { useMemo } from 'react';
+import { TbArrowBarLeft, TbArrowBarRight } from 'react-icons/tb';
+import { Outlet, useNavigate } from 'react-router-dom';
 
-import { ThemeBtn } from './components/theme-btn';
 import { Template } from './store';
-
-const { Header, Sider, Content, Footer } = Layout;
+import { ThemeBtn } from './components/theme-btn';
 
 export function MainLayout() {
 	const navigate = useNavigate();
 	const isStandalone = useIncComStandalone();
-	const isMobile = useBreakpoint('sm');
+	const breakpoint = useBreakpoint('sm');
 	const back = useMemo<boolean>(() => {
-		return (window?.history?.state?.idx ?? 0) > 0;
-	}, []);
+		return window?.history?.state?.idx > 0;
+	}, [window?.history?.state?.idx]);
 	const [mobileOpened, { toggle: toggleMobile }] = $setting.useDisclosure(
 		'layout.mobile',
 		false,
 	);
 	const [desktopOpened, { toggle: toggleDesktop }] = $setting.useDisclosure(
 		'layout.desktop',
-		true,
+		false,
 	);
 
-	const siderCollapsed = isMobile ? !mobileOpened : !desktopOpened;
-
 	return (
-		<Layout style={{ height: '100%', minHeight: 0 }}>
-			<Sider
-				collapsible
-				collapsed={siderCollapsed}
-				trigger={null}
-				width={280}
-				collapsedWidth={64}
-				style={{ overflow: 'auto' }}
-			>
-				{isMobile ? (
-					<div style={{ padding: 8 }}>
-						<Button type="text" onClick={toggleMobile} block>
-							Меню
-						</Button>
-					</div>
-				) : null}
-				<MainMenu mini={!isMobile && siderCollapsed} />
-			</Sider>
-			<Layout>
-				<Header
-					style={{
-						height: 52,
-						lineHeight: '52px',
-						paddingInline: 16,
-						background: 'var(--ant-color-bg-container, #fff)',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'space-between',
-						borderBottom: '1px solid rgba(0,0,0,0.06)',
-					}}
-				>
-					<Flex align="center" gap={12}>
-						{isMobile ? (
-							<Button type="text" onClick={toggleMobile}>
-								☰
-							</Button>
-						) : (
-							<Button
-								type="text"
-								onClick={toggleDesktop}
-								icon={desktopOpened ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
-							/>
-						)}
-						<Title order={1} level={4} fw={400}>
+		<AppShell
+			mode="static"
+			layout="alt"
+			header={{ height: 52 }}
+			footer={{ height: 48 }}
+			navbar={{
+				width: desktopOpened ? 280 : 64,
+				breakpoint: 'sm',
+				collapsed: {
+					mobile: !mobileOpened,
+				},
+			}}
+			style={{ height: '100%', minHeight: 0 }}
+		>
+			<AppShell.Header>
+				<Group h="100%" px="md" justify="space-between">
+					<Group>
+						<Burger
+							opened={mobileOpened}
+							onClick={toggleMobile}
+							hiddenFrom="sm"
+							size="sm"
+						/>
+						<ActionIcon
+							onClick={toggleDesktop}
+							visibleFrom="sm"
+							variant="default"
+						>
+							{desktopOpened ? <TbArrowBarLeft /> : <TbArrowBarRight />}
+						</ActionIcon>
+						<Divider orientation="vertical" />
+						<Title order={1} size="h3" fw="400">
 							<Template.Slot name="title" />
 						</Title>
-					</Flex>
+					</Group>
 					<Template.Slot name="header" />
 					{isStandalone ? (
-						<Flex align="center" gap={8}>
+						<Group>
 							<PersonalLink />
 							<ThemeBtn />
-						</Flex>
+						</Group>
 					) : (
 						<span />
 					)}
-				</Header>
-				<Content style={{ minHeight: 0, overflow: 'auto', padding: 16 }}>
-					<div style={{ maxWidth: 1200, margin: '0 auto', width: '100%' }}>
+				</Group>
+			</AppShell.Header>
+			<AppShell.Navbar>
+				<AppShell.Section p="xs">
+					<Burger
+						opened={mobileOpened}
+						onClick={toggleMobile}
+						hiddenFrom="sm"
+						size="sm"
+					/>
+				</AppShell.Section>
+				<AppShell.Section grow my="xs" component={ScrollArea} px="xs">
+					<MainMenu mini={!breakpoint && !desktopOpened} />
+				</AppShell.Section>
+			</AppShell.Navbar>
+			<AppShell.Main style={{ minHeight: 0 }}>
+				<ScrollArea h="100%">
+					<Container size="xl" p="md">
 						<Outlet />
-					</div>
-				</Content>
-				<Footer
-					style={{
-						height: 48,
-						padding: '0 12px',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'space-between',
-					}}
-				>
+					</Container>
+				</ScrollArea>
+			</AppShell.Main>
+			<AppShell.Footer px="xs">
+				<Group justify="space-between" gap="xs">
 					<Template.Slot name="footer">
 						<div />
 					</Template.Slot>
-					<Button disabled={!back} onClick={() => navigate(-1)}>
+					<Button
+						color="dark"
+						size="sm"
+						disabled={!back}
+						onClick={() => navigate(-1)}
+					>
 						Назад
 					</Button>
-				</Footer>
-			</Layout>
-		</Layout>
+				</Group>
+			</AppShell.Footer>
+		</AppShell>
 	);
 }

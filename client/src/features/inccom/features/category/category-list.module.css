@@ -1,12 +1,28 @@
-.root {
-	border-radius: 6px;
+.row {
+	border: 1px solid transparent;
+	border-radius: var(--mantine-radius-sm);
+	padding: 2px 4px;
+	transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-.active {
-	border-color: #1677ff;
-	background: color-mix(in srgb, #e6f4ff 80%, transparent);
+.rowDragging {
+	opacity: 0.45;
 }
 
-.dimmed {
-	color: #868e96;
+.rowDropTarget {
+	border-color: var(--mantine-color-blue-5);
+	background-color: light-dark(
+		var(--mantine-color-blue-0),
+		var(--mantine-color-dark-5)
+	);
+}
+
+.dragHandle {
+	cursor: grab;
+	color: var(--mantine-color-dimmed);
+	flex-shrink: 0;
+}
+
+.dragHandle:active {
+	cursor: grabbing;
 }

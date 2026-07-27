@@ -1,4 +1,5 @@
-import { Spin } from 'antd';
+import { Box, Loader } from '@mantine/core';
+import { useElementSize } from '@mantine/hooks';
 import { memo, Suspense, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -7,7 +8,6 @@ import { AppShell } from '@/core/appMenu';
 import { AppProvider } from '@/core/context/AppContext';
 import { CoreApiProvider } from '@/core/context/CoreApiContext';
 import { getOrCreateCoreApi } from '@/core/context/coreApiRegistry';
-import { useElementSize } from '@/core/hooks/useElementSize';
 
 import { DemoWindowContent } from './DemoWindowContent';
 import { Window } from './Window';
@@ -44,9 +44,9 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 			<AppProvider value={appContextValue}>
 				<Suspense
 					fallback={
-						<div style={{ padding: 16 }}>
-							<Spin size="small" />
-						</div>
+						<Box p="md">
+							<Loader size="sm" />
+						</Box>
 					}
 				>
 					<AppShell>
@@ -73,9 +73,7 @@ export function WindowManager() {
 
 	const resetWindowContent = useCallback((windowId: string) => {
 		const current = useWmStore.getState().windows[windowId];
-		if (!current) {
-			return;
-		}
+		if (!current) {return;}
 		useWmStore.getState().updateWindow(windowId, {
 			contentKey: current.contentKey + 1,
 		});
@@ -83,7 +81,7 @@ export function WindowManager() {
 
 	return (
 		<WindowManagerViewportContext.Provider value={viewport}>
-			<div
+			<Box
 				ref={containerRef}
 				style={{
 					position: 'absolute',
@@ -98,7 +96,7 @@ export function WindowManager() {
 						</WindowErrorBoundary>
 					</Window>
 				))}
-			</div>
+			</Box>
 		</WindowManagerViewportContext.Provider>
 	);
 }

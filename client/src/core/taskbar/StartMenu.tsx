@@ -1,4 +1,4 @@
-import { Button, Dropdown, Flex, Typography } from 'antd';
+import { Button, Menu, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
 
 import { StartMenuPanel } from './startMenu/StartMenuPanel';
@@ -29,7 +29,8 @@ export function StartMenu() {
 			if (target.closest(`[${START_MENU_CONTEXT_ATTR}]`)) {
 				return;
 			}
-			if (target.closest('.ant-dropdown')) {
+			// Nested menus from the start panel (e.g. shutdown) are portaled.
+			if (target.closest('.mantine-Menu-dropdown')) {
 				return;
 			}
 			setOpened(false);
@@ -42,32 +43,47 @@ export function StartMenu() {
 	}, [opened]);
 
 	return (
-		<Dropdown
-			open={opened}
-			onOpenChange={setOpened}
-			trigger={['click']}
-			placement="topLeft"
-			overlayStyle={{ zIndex: 2000, padding: 0 }}
-			dropdownRender={() => (
-				<div data-start-menu-root="" style={{ padding: 0 }}>
-					<StartMenuPanel onClose={() => setOpened(false)} />
-				</div>
-			)}
-			destroyOnHidden={false}
+		<Menu
+			opened={opened}
+			onChange={setOpened}
+			position="top-start"
+			offset={8}
+			zIndex={2000}
+			withinPortal
+			floatingStrategy="fixed"
+			hideDetached={false}
+			closeOnItemClick={false}
+			closeOnClickOutside={false}
+			trapFocus={false}
 		>
-			<Button
-				data-start-menu-target=""
-				type={opened ? 'primary' : 'text'}
-				ghost={opened}
-				size="middle"
-				icon={
-					<Typography.Text strong style={{ color: '#69b1ff', fontSize: 14 }}>
-						X
-					</Typography.Text>
-				}
+			<Menu.Target>
+				<Button
+					data-start-menu-target=""
+					variant={opened ? 'light' : 'subtle'}
+					color="gray"
+					size="sm"
+					leftSection={
+						<Text fw={700} size="sm" c="blue.4">
+							X
+						</Text>
+					}
+				>
+					Пуск
+				</Button>
+			</Menu.Target>
+			<Menu.Dropdown
+				p={0}
+				data-start-menu-root=""
+				styles={{
+					dropdown: {
+						padding: 0,
+						border: 'none',
+						background: 'transparent',
+					},
+				}}
 			>
-				Пуск
-			</Button>
-		</Dropdown>
+				<StartMenuPanel onClose={() => setOpened(false)} />
+			</Menu.Dropdown>
+		</Menu>
 	);
 }

@@ -1,15 +1,16 @@
 import {
+	ActionIcon,
 	Button,
-	Card,
-	DatePicker,
-	Flex,
-	Form,
-	Input,
+	Group,
+	Paper,
+	Stack,
 	Table,
-	Typography,
-} from 'antd';
-import dayjs from 'dayjs';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+	Text,
+	TextInput,
+	Textarea,
+} from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 
 import { useWindowSize } from '@/core/windowManager';
 import { nextTempId } from '@/features/device/deviceAppUtils';
@@ -38,15 +39,6 @@ function useTableLayout(windowWidth: number, tableMinWidth: number): boolean {
 	return windowWidth >= tableMinWidth;
 }
 
-function toDayjs(value: string) {
-	const parsed = parseDeviceDate(value);
-	if (!parsed) {
-		return null;
-	}
-	const d = dayjs(parsed);
-	return d.isValid() ? d : null;
-}
-
 interface RecordCollectionEntryProps {
 	entryKey: string;
 	item: RecordItem;
@@ -69,60 +61,42 @@ function renderField(
 	if (column.type === 'date') {
 		if (readOnly && String(value ?? '').trim()) {
 			return (
-				<Typography.Text style={withLabel ? undefined : { padding: '4px 0' }}>
+				<Text size="sm" py={withLabel ? undefined : 4}>
 					{String(value)}
-				</Typography.Text>
+				</Text>
 			);
 		}
-		const field = (
-			<DatePicker
-				value={toDayjs(String(value ?? ''))}
-				format="YYYY.MM.DD"
-				disabled={readOnly}
-				style={{ width: '100%' }}
-				onChange={(date) => onChange(formatDeviceDate(date ? date.toDate() : null))}
+		return (
+			<DatePickerInput
+				label={withLabel ? column.label : undefined}
+				value={parseDeviceDate(String(value ?? ''))}
+				readOnly={readOnly}
+				valueFormat="YYYY.MM.DD"
+				onChange={(date) => onChange(formatDeviceDate(date))}
 			/>
-		);
-		return withLabel ? (
-			<Form.Item label={column.label} style={{ marginBottom: 0 }}>
-				{field}
-			</Form.Item>
-		) : (
-			field
 		);
 	}
 
 	if (column.type === 'textarea') {
-		const field = (
-			<Input.TextArea
+		return (
+			<Textarea
+				label={withLabel ? column.label : undefined}
 				value={String(value ?? '')}
 				readOnly={readOnly}
-				autoSize={{ minRows: withLabel ? 2 : 1 }}
-				onChange={(e) => onChange(e.target.value)}
+				onChange={(e) => onChange(e.currentTarget.value)}
+				minRows={withLabel ? 2 : 1}
+				autosize
 			/>
-		);
-		return withLabel ? (
-			<Form.Item label={column.label} style={{ marginBottom: 0 }}>
-				{field}
-			</Form.Item>
-		) : (
-			field
 		);
 	}
 
-	const field = (
-		<Input
+	return (
+		<TextInput
+			label={withLabel ? column.label : undefined}
 			value={String(value ?? '')}
 			readOnly={readOnly}
-			onChange={(e) => onChange(e.target.value)}
+			onChange={(e) => onChange(e.currentTarget.value)}
 		/>
-	);
-	return withLabel ? (
-		<Form.Item label={column.label} style={{ marginBottom: 0 }}>
-			{field}
-		</Form.Item>
-	) : (
-		field
 	);
 }
 
@@ -140,46 +114,47 @@ function RecordCollectionEntry({
 	const rowReadOnly = readOnly || Boolean(isRowReadOnly?.(item));
 	const showRemove = !readOnly && (canRemove?.(item) ?? true);
 	const removeButton = showRemove ? (
-		<Button
-			type="text"
-			danger
+		<ActionIcon
+			color="red"
+			variant="light"
 			aria-label="Удалить"
-			icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 			onClick={() => onRemove(entryKey)}
-		/>
+		>
+			<IconTrash size={16} />
+		</ActionIcon>
 	) : null;
 
 	if (layout === 'table') {
 		return (
-			<>
+			<Table.Tr>
 				{columns.map((column) => (
-					<td key={column.key} style={{ width: column.width }}>
+					<Table.Td key={column.key} w={column.width}>
 						{renderField(column, item[column.key], rowReadOnly, (value) =>
 							onFieldChange(entryKey, column.key, value),
 						false)}
-					</td>
+					</Table.Td>
 				))}
-				{!readOnly ? <td style={{ width: 48 }}>{removeButton}</td> : null}
-			</>
+				{!readOnly ? <Table.Td w={48}>{removeButton}</Table.Td> : null}
+			</Table.Tr>
 		);
 	}
 
 	return (
-		<Card size="small">
-			<Flex justify="space-between" align="flex-start" style={{ marginBottom: 8 }}>
-				<Typography.Text strong style={{ fontSize: 14 }}>
+		<Paper withBorder p="sm">
+			<Group justify="space-between" align="flex-start" mb="xs">
+				<Text fw={500} size="sm">
 					{String(item.name ?? item.value ?? item.code ?? 'Запись')}
-				</Typography.Text>
+				</Text>
 				{removeButton}
-			</Flex>
-			<Flex vertical gap={8}>
+			</Group>
+			<Stack gap="xs">
 				{columns.map((column) =>
 					renderField(column, item[column.key], rowReadOnly, (value) =>
 						onFieldChange(entryKey, column.key, value),
 					true),
 				)}
-			</Flex>
-		</Card>
+			</Stack>
+		</Paper>
 	);
 }
 
@@ -223,62 +198,51 @@ export function RecordCollectionEditor({
 	const layout = isTableLayout ? 'table' : 'card';
 
 	return (
-		<Flex vertical gap={12}>
+		<Stack gap="sm">
 			{title ? (
-				<Flex justify="space-between" align="center">
+				<Group justify="space-between">
 					<strong>{title}</strong>
 					{!readOnly ? (
-						<Button size="small" icon={<PlusOutlined style={{ fontSize: 14 }} />} onClick={addItem}>
+						<Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={addItem}>
 							Добавить
 						</Button>
 					) : null}
-				</Flex>
+				</Group>
 			) : null}
 
 			{entries.length === 0 ? (
-				<Typography.Text type="secondary">Нет записей</Typography.Text>
+				<Text size="sm" c="dimmed">
+					Нет записей
+				</Text>
 			) : isTableLayout ? (
-				<Table
-					size="small"
-					bordered
-					pagination={false}
-					rowKey={([key]) => key}
-					dataSource={entries}
-					columns={[
-						...columns.map((column) => ({
-							title: column.label,
-							key: column.key,
-							width: column.width,
-							render: (_: unknown, [entryKey, item]: [string, RecordItem]) =>
-								renderField(
-									column,
-									item[column.key],
-									readOnly || Boolean(isRowReadOnly?.(item)),
-									(value) => updateItem(entryKey, column.key, value),
-									false,
-								),
-						})),
-						...(!readOnly
-							? [
-									{
-										title: '',
-										key: '_actions',
-										width: 48,
-										render: (_: unknown, [entryKey, item]: [string, RecordItem]) =>
-											(canRemove?.(item) ?? true) ? (
-												<Button
-													type="text"
-													danger
-													aria-label="Удалить"
-													icon={<DeleteOutlined style={{ fontSize: 16 }} />}
-													onClick={() => removeItem(entryKey)}
-												/>
-											) : null,
-									},
-								]
-							: []),
-					]}
-				/>
+				<Table highlightOnHover withTableBorder withColumnBorders>
+					<Table.Thead>
+						<Table.Tr>
+							{columns.map((column) => (
+								<Table.Th key={column.key} w={column.width}>
+									{column.label}
+								</Table.Th>
+							))}
+							{!readOnly ? <Table.Th w={48} aria-label="Действия" /> : null}
+						</Table.Tr>
+					</Table.Thead>
+					<Table.Tbody>
+						{entries.map(([key, item]) => (
+							<RecordCollectionEntry
+								key={key}
+								entryKey={key}
+								item={item}
+								readOnly={readOnly}
+								columns={columns}
+								layout={layout}
+								canRemove={canRemove}
+								isRowReadOnly={isRowReadOnly}
+								onFieldChange={updateItem}
+								onRemove={removeItem}
+							/>
+						))}
+					</Table.Tbody>
+				</Table>
 			) : (
 				entries.map(([key, item]) => (
 					<RecordCollectionEntry
@@ -295,6 +259,6 @@ export function RecordCollectionEditor({
 					/>
 				))
 			)}
-		</Flex>
+		</Stack>
 	);
 }

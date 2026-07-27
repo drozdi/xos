@@ -1,4 +1,4 @@
-import { Flex, Spin } from 'antd';
+import { Center, Loader } from '@mantine/core';
 import { Navigate } from 'react-router-dom';
 
 import { useAuthStore } from '@/core/auth/authStore';
@@ -21,9 +21,9 @@ export function SchooltaskProtectedRoute({ children }: { children: React.ReactNo
 
 	if (isLoading) {
 		return (
-			<Flex align="center" justify="center" style={{ height: '100%', minHeight: 240 }}>
-				<Spin size="large" />
-			</Flex>
+			<Center h="100%" mih={240}>
+				<Loader size="lg" />
+			</Center>
 		);
 	}
 

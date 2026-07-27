@@ -1,10 +1,4 @@
-﻿import { Button, DatePicker, Flex, Form, Input, InputNumber, Select } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect, useMemo } from 'react';
-
-import { useAccountsQuery } from '@inccom/entities/account';
-import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
-import type { ICategory } from '@inccom/entities/transaction-category/model/types';
+﻿import { useAccountsQuery } from '@inccom/entities/account';
 import {
 	useTransferCreate,
 	useTransferQuery,
@@ -12,22 +6,35 @@ import {
 	type ITransfer,
 	type ITransferPayload,
 } from '@inccom/entities/transfer';
+import type { ICategory } from '@inccom/entities/transaction-category/model/types';
+import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
+import { notification } from '@inccom/shared/notification';
 import {
 	confirmNegativeBalance,
 	getBalanceAfterDebit,
 	willBalanceGoNegative,
 } from '@inccom/shared/lib/negative-balance';
-import { notification } from '@inccom/shared/notification';
+import { balanceInputProps, formatBalance } from '@inccom/shared/utils/number-format';
 import { getErrorMessage } from '@inccom/shared/utils/error';
-import { formatBalance } from '@inccom/shared/utils/number-format';
+import {
+	Button,
+	Group,
+	NumberInput,
+	Select,
+	Stack,
+	TextInput,
+} from '@mantine/core';
+import { DateTimePicker } from '@mantine/dates';
+import { isNotEmpty, useForm } from '@mantine/form';
+import { useEffect, useMemo } from 'react';
 
 interface TransferFormValues {
 	fromAccountId: string | null;
 	toAccountId: string | null;
 	outgoingCategoryId: string | null;
 	incomingCategoryId: string | null;
-	amount: number;
-	date: Dayjs | null;
+	amount: number | string;
+	date: Date | null;
 	comment: string;
 }
 
@@ -43,16 +50,16 @@ interface TransferFormProps {
 	onSuccess?: (transfer: ITransfer) => void;
 }
 
-function toIsoDate(value: Dayjs | null): string {
-	return (value ?? dayjs()).toISOString();
+function toIsoDate(value: Date | null): string {
+	return (value ?? new Date()).toISOString();
 }
 
-function toFormDate(value?: string | null): Dayjs {
+function toFormDate(value?: string | null): Date | null {
 	if (!value) {
-		return dayjs();
+		return new Date();
 	}
-	const parsed = dayjs(value);
-	return parsed.isValid() ? parsed : dayjs();
+	const parsed = new Date(value);
+	return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
 }
 
 export function TransferForm({
@@ -60,9 +67,25 @@ export function TransferForm({
 	defaultFromAccountId,
 	onSuccess,
 }: TransferFormProps) {
-	const [form] = Form.useForm<TransferFormValues>();
-	const fromAccountId = Form.useWatch('fromAccountId', form);
-	const toAccountId = Form.useWatch('toAccountId', form);
+	const form = useForm<TransferFormValues>({
+		initialValues: {
+			fromAccountId: defaultFromAccountId
+				? String(defaultFromAccountId)
+				: null,
+			toAccountId: null,
+			outgoingCategoryId: null,
+			incomingCategoryId: null,
+			amount: 0,
+			date: new Date(),
+			comment: '',
+		},
+		validate: {
+			fromAccountId: isNotEmpty('Выберите счёт списания'),
+			toAccountId: isNotEmpty('Выберите счёт зачисления'),
+			amount: (value) => (Number(value) > 0 ? null : 'Укажите сумму'),
+			date: (value) => (value ? null : 'Укажите дату'),
+		},
+	});
 
 	const { data: accountsData, isLoading: isAccountsLoading } = useAccountsQuery();
 	const { data: transferData } = useTransferQuery(id);
@@ -70,6 +93,8 @@ export function TransferForm({
 	const updateMutation = useTransferUpdate();
 
 	const accounts = accountsData?.items ?? [];
+	const fromAccountId = form.values.fromAccountId;
+	const toAccountId = form.values.toAccountId;
 	const fromAccountIdNum = fromAccountId ? Number(fromAccountId) : 0;
 	const toAccountIdNum = toAccountId ? Number(toAccountId) : 0;
 	const { data: fromCategoriesData, isFetching: isFromCategoriesFetching } =
@@ -135,7 +160,7 @@ export function TransferForm({
 
 	useEffect(() => {
 		if (id && transferData?.id) {
-			form.setFieldsValue({
+			form.setValues({
 				fromAccountId: String(transferData.fromAccountId),
 				toAccountId: String(transferData.toAccountId),
 				outgoingCategoryId: transferData.outgoingCategoryId
@@ -154,7 +179,7 @@ export function TransferForm({
 		if (!id && defaultFromAccountId) {
 			form.setFieldValue('fromAccountId', String(defaultFromAccountId));
 		}
-	}, [transferData, id, defaultFromAccountId, form]);
+	}, [transferData, id, defaultFromAccountId]);
 
 	useEffect(() => {
 		if (!fromAccountId || !toAccountId) {
@@ -169,14 +194,14 @@ export function TransferForm({
 			form.setFieldValue('toAccountId', null);
 			form.setFieldValue('incomingCategoryId', null);
 		}
-	}, [fromAccountId, fromCurrency, toAccountId, accounts, form]);
+	}, [fromAccountId, fromCurrency, toAccountId, accounts]);
 
 	useEffect(() => {
 		if (fromAccountIdNum <= 0 || isFromCategoriesFetching) {
 			return;
 		}
 
-		const categoryId = form.getFieldValue('outgoingCategoryId');
+		const categoryId = form.values.outgoingCategoryId;
 		if (
 			categoryId &&
 			!outgoingCategoryOptions.some((option) => option.value === categoryId)
@@ -187,7 +212,7 @@ export function TransferForm({
 		fromAccountIdNum,
 		isFromCategoriesFetching,
 		outgoingCategoryOptions,
-		form,
+		form.values.outgoingCategoryId,
 	]);
 
 	useEffect(() => {
@@ -195,14 +220,19 @@ export function TransferForm({
 			return;
 		}
 
-		const categoryId = form.getFieldValue('incomingCategoryId');
+		const categoryId = form.values.incomingCategoryId;
 		if (
 			categoryId &&
 			!incomingCategoryOptions.some((option) => option.value === categoryId)
 		) {
 			form.setFieldValue('incomingCategoryId', null);
 		}
-	}, [toAccountIdNum, isToCategoriesFetching, incomingCategoryOptions, form]);
+	}, [
+		toAccountIdNum,
+		isToCategoriesFetching,
+		incomingCategoryOptions,
+		form.values.incomingCategoryId,
+	]);
 
 	async function handleSubmit(values: TransferFormValues) {
 		if (values.fromAccountId === values.toAccountId) {
@@ -280,58 +310,38 @@ export function TransferForm({
 	}
 
 	const loading = createMutation.isPending || updateMutation.isPending;
+	const fromAccountProps = form.getInputProps('fromAccountId');
+	const toAccountProps = form.getInputProps('toAccountId');
 
 	return (
-		<Form
-			form={form}
-			layout="vertical"
-			onFinish={(v) => void handleSubmit(v)}
-			initialValues={{
-				fromAccountId: defaultFromAccountId
-					? String(defaultFromAccountId)
-					: null,
-				toAccountId: null,
-				outgoingCategoryId: null,
-				incomingCategoryId: null,
-				amount: 0,
-				date: dayjs(),
-				comment: '',
-			}}
-		>
-			<Form.Item
-				label="Счёт списания"
-				name="fromAccountId"
-				rules={[{ required: true, message: 'Выберите счёт списания' }]}
-			>
+		<form onSubmit={form.onSubmit(handleSubmit)}>
+			<Stack>
 				<Select
-					showSearch
-					optionFilterProp="label"
-					options={fromAccountOptions}
+					label="Счёт списания"
+					data={fromAccountOptions}
+					{...fromAccountProps}
+					onChange={(value) => {
+						fromAccountProps.onChange(value);
+						form.setFieldValue('toAccountId', null);
+						form.setFieldValue('outgoingCategoryId', null);
+						form.setFieldValue('incomingCategoryId', null);
+					}}
+					searchable
+					required
 					placeholder={
 						isAccountsLoading && !fromAccountOptions.length
 							? 'Загрузка…'
 							: 'Выберите счёт'
 					}
-					notFoundContent="Счета не найдены"
-					onChange={(value) => {
-						form.setFieldsValue({
-							fromAccountId: value,
-							toAccountId: null,
-							outgoingCategoryId: null,
-							incomingCategoryId: null,
-						});
-					}}
+					nothingFoundMessage="Счета не найдены"
+					w="100%"
 				/>
-			</Form.Item>
-			<Form.Item
-				label="Счёт зачисления"
-				name="toAccountId"
-				rules={[{ required: true, message: 'Выберите счёт зачисления' }]}
-			>
 				<Select
-					showSearch
-					optionFilterProp="label"
-					options={toAccountOptions}
+					label="Счёт зачисления"
+					data={toAccountOptions}
+					{...toAccountProps}
+					searchable
+					required
 					disabled={!fromAccountId}
 					placeholder={
 						!fromAccountId
@@ -342,19 +352,19 @@ export function TransferForm({
 									? `Счета в ${fromCurrency}`
 									: 'Выберите счёт'
 					}
-					notFoundContent={
+					nothingFoundMessage={
 						fromCurrency
 							? `Нет других счетов в валюте ${fromCurrency}`
 							: 'Счета не найдены'
 					}
+					w="100%"
 				/>
-			</Form.Item>
-			<Form.Item label="Категория списания" name="outgoingCategoryId">
 				<Select
-					showSearch
-					allowClear
-					optionFilterProp="label"
-					options={outgoingCategoryOptions}
+					label="Категория списания"
+					data={outgoingCategoryOptions}
+					{...form.getInputProps('outgoingCategoryId')}
+					searchable
+					clearable
 					disabled={!fromAccountId}
 					placeholder={
 						!fromAccountId
@@ -363,15 +373,15 @@ export function TransferForm({
 								? 'Выберите категорию'
 								: 'Нет категорий перевода'
 					}
-					notFoundContent="Категории не найдены"
+					nothingFoundMessage="Категории не найдены"
+					w="100%"
 				/>
-			</Form.Item>
-			<Form.Item label="Категория зачисления" name="incomingCategoryId">
 				<Select
-					showSearch
-					allowClear
-					optionFilterProp="label"
-					options={incomingCategoryOptions}
+					label="Категория зачисления"
+					data={incomingCategoryOptions}
+					{...form.getInputProps('incomingCategoryId')}
+					searchable
+					clearable
 					disabled={!toAccountId}
 					placeholder={
 						!toAccountId
@@ -380,31 +390,34 @@ export function TransferForm({
 								? 'Выберите категорию'
 								: 'Нет категорий перевода'
 					}
-					notFoundContent="Категории не найдены"
+					nothingFoundMessage="Категории не найдены"
+					w="100%"
 				/>
-			</Form.Item>
-			<Form.Item
-				label="Сумма"
-				name="amount"
-				rules={[{ required: true, message: 'Укажите сумму' }]}
-			>
-				<InputNumber min={0} precision={2} style={{ width: '100%' }} />
-			</Form.Item>
-			<Form.Item
-				label="Дата"
-				name="date"
-				rules={[{ required: true, message: 'Укажите дату' }]}
-			>
-				<DatePicker showTime style={{ width: '100%' }} />
-			</Form.Item>
-			<Form.Item label="Комментарий" name="comment">
-				<Input />
-			</Form.Item>
-			<Flex>
-				<Button type="primary" htmlType="submit" loading={loading}>
-					{id ? 'Сохранить' : 'Создать'}
-				</Button>
-			</Flex>
-		</Form>
+				<NumberInput
+					label="Сумма"
+					min={0}
+					{...form.getInputProps('amount')}
+					{...balanceInputProps}
+					required
+					w="100%"
+				/>
+				<DateTimePicker
+					label="Дата"
+					{...form.getInputProps('date')}
+					required
+					w="100%"
+				/>
+				<TextInput
+					label="Комментарий"
+					{...form.getInputProps('comment')}
+					w="100%"
+				/>
+				<Group>
+					<Button type="submit" loading={loading} color="green">
+						{id ? 'Сохранить' : 'Создать'}
+					</Button>
+				</Group>
+			</Stack>
+		</form>
 	);
 }

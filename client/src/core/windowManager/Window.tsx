@@ -1,4 +1,5 @@
-import { Button, Flex, Typography } from 'antd';
+import { ActionIcon, Box, Group, Text } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import {
 	lazy,
 	memo,
@@ -17,7 +18,6 @@ import { getOrCreateCoreApi, destroyCoreApi } from '@/core/context/coreApiRegist
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { WindowContextMenu } from '@/core/contextMenu';
-import { useMediaQuery } from '@/core/hooks/useMediaQuery';
 
 import { getOrCreateWindowApi, destroyWindowApi } from './WindowApi';
 import { useWindowAutoSize } from './useWindowAutoSize';
@@ -71,7 +71,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const restoreWindow = useWmStore((state) => state.restoreWindow);
 	const activeWindowId = useWmStore((state) => state.activeWindowId);
 
-	const isMobile = useMediaQuery(MOBILE_BREAKPOINT, false);
+	const isMobile = useMediaQuery(MOBILE_BREAKPOINT, false, { getInitialValueInEffect: true });
 	const [isDragging, setIsDragging] = useState(false);
 	const rndRef = useRef<Rnd>(null);
 	const shellRef = useRef<HTMLDivElement>(null);
@@ -130,9 +130,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	}, [windowId]);
 
 	useEffect(() => {
-		if (contentSizeValue.width === 0 && contentSizeValue.height === 0) {
-			return;
-		}
+		if (contentSizeValue.width === 0 && contentSizeValue.height === 0) {return;}
 
 		const timer = window.setTimeout(() => {
 			emitWindowResize(windowId);
@@ -236,11 +234,12 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const handleDragStop = useCallback(
 		(_event: unknown, data: { x: number; y: number }) => {
 			setIsDragging(false);
-			if (isMobile || windowState?.maximized || windowState?.positionFixed) {
-				return;
-			}
+			if (isMobile || windowState?.maximized || windowState?.positionFixed) {return;}
 			const nextPosition = clampDragPosition(data.x, data.y);
-			if (nextPosition.x !== data.x || nextPosition.y !== data.y) {
+			if (
+				nextPosition.x !== data.x ||
+				nextPosition.y !== data.y
+			) {
 				rndRef.current?.updatePosition(nextPosition);
 			}
 			if (
@@ -264,13 +263,14 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			_delta: unknown,
 			position: { x: number; y: number },
 		) => {
-			if (isMobile || windowState?.maximized || !windowState?.resizable) {
-				return;
-			}
+			if (isMobile || windowState?.maximized || !windowState?.resizable) {return;}
 			const nextWidth = ref.offsetWidth;
 			const nextHeight = ref.offsetHeight;
 			const nextPosition = clampDragPosition(position.x, position.y);
-			if (nextPosition.x !== position.x || nextPosition.y !== position.y) {
+			if (
+				nextPosition.x !== position.x ||
+				nextPosition.y !== position.y
+			) {
 				rndRef.current?.updatePosition(nextPosition);
 			}
 			if (
@@ -332,41 +332,42 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const rndKey = windowState
 		? `${windowState.contentKey}-${isMaximizedLayout ? 'max' : 'free'}-${isMobile ? 'mob' : 'desk'}`
 		: 'missing';
-	const defaultBounds = useMemo(() => {
-		if (!windowState) {
-			return { x: 0, y: 0, width: 0, height: 0 };
-		}
-		if (isMaximizedLayout) {
+	const defaultBounds = useMemo(
+		() => {
+			if (!windowState) {
+				return { x: 0, y: 0, width: 0, height: 0 };
+			}
+			if (isMaximizedLayout) {
+				return {
+					x: 0,
+					y: 0,
+					width: isMobile ? mobileBounds.width : desktopMaxBounds.width,
+					height: isMobile ? mobileBounds.height : desktopMaxBounds.height,
+				};
+			}
 			return {
-				x: 0,
-				y: 0,
-				width: isMobile ? mobileBounds.width : desktopMaxBounds.width,
-				height: isMobile ? mobileBounds.height : desktopMaxBounds.height,
+				x: windowState.x,
+				y: windowState.y,
+				width: windowState.width,
+				height: windowState.height,
 			};
-		}
-		return {
-			x: windowState.x,
-			y: windowState.y,
-			width: windowState.width,
-			height: windowState.height,
-		};
-	}, [
-		desktopMaxBounds.height,
-		desktopMaxBounds.width,
-		isMaximizedLayout,
-		isMobile,
-		mobileBounds.height,
-		mobileBounds.width,
-		rndKey,
-		windowState?.height,
-		windowState?.width,
-		windowState?.x,
-		windowState?.y,
-	]);
+		},
+		[
+			desktopMaxBounds.height,
+			desktopMaxBounds.width,
+			isMaximizedLayout,
+			isMobile,
+			mobileBounds.height,
+			mobileBounds.width,
+			rndKey,
+			windowState?.height,
+			windowState?.width,
+			windowState?.x,
+			windowState?.y,
+		],
+	);
 
-	if (!windowState) {
-		return null;
-	}
+	if (!windowState) {return null;}
 
 	const controlSize = isMobile ? 36 : 28;
 	const canDrag = !isMaximizedLayout && !positionFixed;
@@ -396,7 +397,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			onDragStop={handleDragStop}
 			onResizeStop={handleResizeStop}
 		>
-			<div
+			<Box
 				ref={shellRef}
 				data-xos-window-id={windowId}
 				style={{
@@ -407,19 +408,18 @@ function WindowComponent({ windowId, children }: WindowProps) {
 					color: 'var(--xos-window-text)',
 					border: '1px solid var(--xos-window-border)',
 					borderRadius: isMobile ? 0 : 8,
-					boxShadow: '0 4px 16px rgba(0, 0, 0, 0.18)',
+					boxShadow: 'var(--mantine-shadow-md)',
 					overflow: 'hidden',
 				}}
 			>
-				<Flex
+				<Group
 					className={`${XOS_WINDOW_TITLEBAR_CLASS} ${XOS_WINDOW_DRAG_HANDLE_CLASS}`}
-					gap={8}
-					align="center"
+					gap="xs"
+					px="sm"
 					justify="space-between"
 					style={{
 						flexShrink: 0,
 						height: isMobile ? 44 : 36,
-						paddingInline: 12,
 						cursor: canDrag ? 'move' : 'default',
 						background: 'var(--xos-window-titlebar-bg)',
 						borderBottom: '1px solid var(--xos-window-titlebar-border)',
@@ -428,15 +428,15 @@ function WindowComponent({ windowId, children }: WindowProps) {
 					}}
 					onMouseDown={handleFocus}
 				>
-					<Typography.Text
-						strong
-						ellipsis
-						style={{ flex: 1, fontSize: 13, color: 'inherit' }}
-					>
+					<Text size="sm" fw={500} truncate style={{ flex: 1 }} c="inherit">
 						{windowState.title}
-					</Typography.Text>
-					<Flex gap={4} wrap="nowrap">
-						<WindowControl label="Minimize" size={controlSize} onClick={handleMinimize}>
+					</Text>
+					<Group gap={4} wrap="nowrap">
+						<WindowControl
+							label="Minimize"
+							size={controlSize}
+							onClick={handleMinimize}
+						>
 							−
 						</WindowControl>
 						{!positionFixed ? (
@@ -456,11 +456,11 @@ function WindowComponent({ windowId, children }: WindowProps) {
 						>
 							×
 						</WindowControl>
-					</Flex>
-				</Flex>
+					</Group>
+				</Group>
 
 				<WindowSizeContext.Provider value={contentSizeValue}>
-					<div
+					<Box
 						ref={contentRef}
 						data-window-width={contentSizeValue.width}
 						data-window-height={contentSizeValue.height}
@@ -474,14 +474,14 @@ function WindowComponent({ windowId, children }: WindowProps) {
 						}}
 					>
 						<WindowContextMenu windowId={windowId} windowState={windowState}>
-							<div data-xos-window-content style={{ minHeight: autoSize ? undefined : '100%' }}>
+							<Box data-xos-window-content style={{ minHeight: autoSize ? undefined : '100%' }}>
 								{children}
 								<ChildWindowPortalGate windowId={windowId} />
-							</div>
+							</Box>
 						</WindowContextMenu>
-					</div>
+					</Box>
 				</WindowSizeContext.Provider>
-			</div>
+			</Box>
 		</Rnd>
 	);
 }
@@ -502,24 +502,16 @@ const WindowControl = memo(({
 	variant = 'default',
 }: WindowControlProps) => {
 	return (
-		<Button
+		<ActionIcon
 			aria-label={label}
 			className={XOS_WINDOW_NO_DRAG_CLASS}
-			type={variant === 'close' ? 'text' : 'default'}
-			danger={variant === 'close'}
+			variant={variant === 'close' ? 'subtle' : 'default'}
+			color={variant === 'close' ? 'red' : 'gray'}
+			size={size}
 			onClick={onClick}
-			style={{
-				width: size,
-				height: size,
-				minWidth: size,
-				padding: 0,
-				display: 'inline-flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-			}}
 		>
 			{children}
-		</Button>
+		</ActionIcon>
 	);
 });
 

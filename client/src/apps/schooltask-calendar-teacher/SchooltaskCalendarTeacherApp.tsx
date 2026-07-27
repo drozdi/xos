@@ -1,21 +1,16 @@
-import { Alert } from 'antd';
+import { Alert, Box } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import { EventTeacherModal } from '@/features/schooltask/EventTeacherModal';
 import {
 	useCanReadSchooltaskEvent,
 	useCanUpdateSchooltaskEvent,
 } from '@/features/schooltask/schooltaskAccess';
 import { formatCalendarRange, WeekCalendar } from '@/features/schooltask/WeekCalendar';
-
-const EventTeacherModal = lazy(() =>
-	import('@/features/schooltask/EventTeacherModal').then((module) => ({
-		default: module.EventTeacherModal,
-	})),
-);
 
 export default function SchooltaskCalendarTeacherApp() {
 	useWindowTitle('Мои уроки');
@@ -36,17 +31,17 @@ export default function SchooltaskCalendarTeacherApp() {
 
 	if (!canRead && !canUpdate) {
 		return (
-			<div style={{ margin: 16 }}>
-				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр уроков" />
-			</div>
+			<Alert color="red" title="Доступ запрещён" m="md">
+				Нет прав на просмотр уроков
+			</Alert>
 		);
 	}
 
 	return (
-		<div
+		<Box
+			p="md"
 			style={{
 				position: 'relative',
-				padding: 16,
 				height: '100%',
 				minHeight: 0,
 				display: 'flex',
@@ -54,7 +49,7 @@ export default function SchooltaskCalendarTeacherApp() {
 				overflow: 'hidden',
 			}}
 		>
-			<div style={{ flex: 1, minHeight: 0 }}>
+			<Box style={{ flex: 1, minHeight: 0 }}>
 				<WeekCalendar
 					events={eventsQuery.data ?? []}
 					isLoading={eventsQuery.isFetching}
@@ -63,17 +58,13 @@ export default function SchooltaskCalendarTeacherApp() {
 						setSelectedEventId(event.id);
 					}}
 				/>
-			</div>
-			<Suspense fallback={null}>
-				{selectedEventId !== null ? (
-					<EventTeacherModal
-						eventId={selectedEventId}
-						opened
-						onClose={() => setSelectedEventId(null)}
-						onSaved={() => void eventsQuery.refetch()}
-					/>
-				) : null}
-			</Suspense>
-		</div>
+			</Box>
+			<EventTeacherModal
+				eventId={selectedEventId}
+				opened={selectedEventId !== null}
+				onClose={() => setSelectedEventId(null)}
+				onSaved={() => void eventsQuery.refetch()}
+			/>
+		</Box>
 	);
 }

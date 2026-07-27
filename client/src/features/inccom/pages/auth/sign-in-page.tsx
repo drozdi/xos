@@ -1,17 +1,17 @@
-﻿import { Flex, Typography } from 'antd';
-
-import { SignInForm } from '@inccom/features/auth/sign-in-form';
+﻿import { SignInForm } from "@inccom/features/auth/sign-in-form";
+import { Stack, Text, Title } from "@mantine/core";
 
 export function SignInPage() {
 	return (
-		<Flex vertical gap={16}>
-			<Typography.Title level={2} style={{ textAlign: 'center', margin: 0 }}>
+		<Stack>
+			<Title ta="center" order={1}>
 				Авторизуйтесь
-			</Typography.Title>
+			</Title>
 			<SignInForm />
-			<Typography.Text>
-				Вход по email. Регистрация новых пользователей закрыта — обратитесь к администратору.
-			</Typography.Text>
-		</Flex>
+			<Text>
+				Прямая регистрация новых пользователей закрыта. Обратитесь к
+				админастратору.
+			</Text>
+		</Stack>
 	);
 }

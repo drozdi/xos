@@ -1,3 +1,4 @@
+import { DatesProvider } from '@mantine/dates';
 import {
 	createContext,
 	useContext,
@@ -26,6 +27,10 @@ interface DatesSettingsContextValue {
 
 const DatesSettingsContext = createContext<DatesSettingsContextValue | null>(null);
 
+function resolveFirstDayOfWeek(locale: DateLocaleOption): 0 | 1 {
+	return locale === 'ru' ? 1 : 0;
+}
+
 export function DatesSettingsProvider({ children }: { children: ReactNode }) {
 	const [locale, setLocale, localeLoading] = useSetState<DateLocaleOption>(
 		'USER',
@@ -40,6 +45,15 @@ export function DatesSettingsProvider({ children }: { children: ReactNode }) {
 
 	const isLoading = localeLoading || formatLoading;
 
+	const datesProviderSettings = useMemo(
+		() => ({
+			locale,
+			firstDayOfWeek: resolveFirstDayOfWeek(locale),
+			weekendDays: [0, 6] as (0 | 6)[],
+		}),
+		[locale],
+	);
+
 	const contextValue = useMemo(
 		() => ({
 			locale,
@@ -52,7 +66,9 @@ export function DatesSettingsProvider({ children }: { children: ReactNode }) {
 	);
 
 	return (
-		<DatesSettingsContext.Provider value={contextValue}>{children}</DatesSettingsContext.Provider>
+		<DatesSettingsContext.Provider value={contextValue}>
+			<DatesProvider settings={datesProviderSettings}>{children}</DatesProvider>
+		</DatesSettingsContext.Provider>
 	);
 }
 

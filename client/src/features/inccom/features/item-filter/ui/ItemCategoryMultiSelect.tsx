@@ -1,7 +1,4 @@
-﻿import { Flex, Select, Spin, Tag, Typography } from 'antd';
-import { useMemo } from 'react';
-
-import {
+﻿import {
 	ITEM_CATEGORIES_ALL_PARAMS,
 	useItemCategoriesQuery,
 } from '@inccom/entities/item-category';
@@ -11,6 +8,8 @@ import {
 	buildCategoryLabel,
 	suggestCategoriesForItem,
 } from '@inccom/entities/item-category/lib/category-options';
+import { Group, Loader, MultiSelect, Pill, Stack, Text } from '@mantine/core';
+import { useMemo } from 'react';
 
 interface ItemCategoryMultiSelectProps {
 	value: string[];
@@ -49,43 +48,38 @@ export function ItemCategoryMultiSelect({
 	}
 
 	return (
-		<Flex vertical gap={8}>
-			<div>
-				<div style={{ marginBottom: 4 }}>Категории</div>
-				<Select
-					mode="multiple"
-					style={{ width: '100%' }}
-					placeholder="Введите название категории"
-					options={categoryOptions}
-					value={value}
-					onChange={onChange}
-					showSearch
-					allowClear
-					status={error ? 'error' : undefined}
-					notFoundContent={isLoading ? <Spin size="small" /> : 'Категории не найдены'}
-					suffixIcon={isLoading ? <Spin size="small" /> : undefined}
-					optionFilterProp="label"
-				/>
-				{error ? (
-					<div style={{ color: '#ff4d4f', fontSize: 12, marginTop: 4 }}>{error}</div>
-				) : null}
-			</div>
-			{suggestedCategories.length > 0 ? (
-				<Flex vertical gap={4}>
-					<Typography.Text type="secondary">Подходящие категории</Typography.Text>
-					<Flex gap={8} wrap="wrap">
+		<Stack gap="xs">
+			<MultiSelect
+				label="Категории"
+				placeholder="Введите название категории"
+				data={categoryOptions}
+				value={value}
+				onChange={onChange}
+				searchable
+				clearable
+				nothingFoundMessage="Категории не найдены"
+				rightSection={isLoading ? <Loader size="xs" /> : undefined}
+				error={error}
+			/>
+			{suggestedCategories.length > 0 && (
+				<Stack gap={4}>
+					<Text size="sm" c="dimmed">
+						Подходящие категории
+					</Text>
+					<Group gap="xs">
 						{suggestedCategories.map((category) => (
-							<Tag
+							<Pill
 								key={category.id}
+								withRemoveButton={false}
 								style={{ cursor: 'pointer' }}
 								onClick={() => addCategory(category.id)}
 							>
 								{category.label}
-							</Tag>
+							</Pill>
 						))}
-					</Flex>
-				</Flex>
-			) : null}
-		</Flex>
+					</Group>
+				</Stack>
+			)}
+		</Stack>
 	);
 }

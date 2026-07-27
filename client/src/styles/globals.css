@@ -1,33 +1,15 @@
 @import 'tailwindcss';
 @import './window-breakpoints.css';
-@import './tokens.css';
+@import './shell.css';
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark (&:where([data-mantine-color-scheme="dark"], [data-mantine-color-scheme="dark"] *));
 
 @theme {
-	--color-body: var(--body-bg);
-	--color-surface: var(--body-bg);
-	--color-surface-elevated: var(--xos-shell-bg-elevated);
-	--color-surface-hover: var(--xos-shell-hover);
-	--color-border: var(--border-color);
-	--color-text: var(--body-color);
-	--color-text-dimmed: var(--color-dimmed);
-}
-
-/* Ант-дизайн: фон таблиц и элементов форм */
-.ant-table-thead > tr > th {
-	background-color: var(--xos-surface-alpha) !important;
-}
-
-.ant-table-tbody > tr > td {
-	background-color: var(--xos-surface-alpha) !important;
-}
-
-.ant-input,
-.ant-input-affix-wrapper,
-.ant-picker,
-.ant-select-selector,
-.ant-textarea .ant-input,
-textarea.ant-input {
-	background-color: var(--xos-surface-alpha) !important;
+	--color-body: var(--mantine-color-body);
+	--color-surface: var(--mantine-color-default);
+	--color-surface-elevated: var(--mantine-color-body);
+	--color-surface-hover: var(--mantine-color-default-hover);
+	--color-border: var(--mantine-color-default-border);
+	--color-text: var(--mantine-color-text);
+	--color-dimmed: var(--mantine-color-dimmed);
 }

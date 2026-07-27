@@ -1,8 +1,4 @@
-﻿import { Button, Flex, Input } from 'antd';
-import { useCallback, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-
-import {
+﻿import {
 	useItemDelete,
 	useItemsQuery,
 } from '@inccom/entities/item';
@@ -17,7 +13,11 @@ import {
 } from '@inccom/entities/item-category/lib/category-options';
 import { ItemCategoryFilterSelect } from '@inccom/features/item-filter';
 import { Template } from '@inccom/layouts';
-import { DataTable, type DataTableColumn } from '@/ui/data-table';
+import { DataColumn, TableData, TableSearch } from '@inccom/shared/ui/table';
+import { Anchor, Button, Group, Stack } from '@mantine/core';
+import { useCallback, useMemo, useState } from 'react';
+import { TbPencil, TbTrash } from 'react-icons/tb';
+import { Link, useNavigate } from 'react-router-dom';
 
 function formatEmptyValue(value: string | null | undefined): string {
 	return value?.trim() ? value : '—';
@@ -67,80 +67,112 @@ export function ItemsListPage() {
 		[categoryLabelsById],
 	);
 
-	const hasFilters = categoryId !== null || search.trim().length > 0;
-	const emptyText = hasFilters ? 'Товары не найдены' : 'Товаров нет';
+	const handleDelete = useCallback(
+		async (id: number) => {
+			await deleteMutation.mutateAsync(id);
+		},
+		[deleteMutation],
+	);
 
-	const columns = useMemo<DataTableColumn<IItem>[]>(
+	const rowActions = useMemo(
 		() => [
 			{
-				field: 'name',
-				header: 'Название',
-				sortable: true,
-				resizable: true,
-				render: (item) => <Link to={`/items/${item.id}`}>{item.name}</Link>,
+				id: 'edit',
+				label: 'Редактировать',
+				icon: <TbPencil size={16} />,
+				onClick: (item: IItem) => navigate(`/items/${item.id}`),
 			},
 			{
-				field: 'categoryIds',
-				header: 'Категории',
-				sortable: false,
-				resizable: true,
-				render: (item) => formatItemCategories(item.categoryIds),
-			},
-			{
-				field: 'unit',
-				header: 'Ед. изм.',
-				sortable: true,
-				resizable: true,
-				render: (item) => formatEmptyValue(item.unit),
-			},
-			{
-				field: 'description',
-				header: 'Описание',
-				sortable: true,
-				resizable: true,
-				render: (item) => formatEmptyValue(item.description),
+				id: 'delete',
+				label: 'Удалить',
+				icon: <TbTrash size={16} />,
+				color: 'red',
+				onClick: (item: IItem) => {
+					void handleDelete(item.id);
+				},
 			},
 		],
-		[formatItemCategories],
+		[handleDelete, navigate],
 	);
+
+	const hasFilters = categoryId !== null || search.trim().length > 0;
+	const emptyText = hasFilters ? 'Товары не найдены' : 'Товаров нет';
 
 	return (
 		<>
 			<Template.Title>Товары</Template.Title>
-			<Flex vertical gap={16}>
-				<Flex justify="space-between" align="flex-end" wrap="wrap" gap={12}>
-					<Flex align="flex-end" wrap="wrap" gap={12}>
-						<div style={{ minWidth: 240 }}>
-							<div style={{ marginBottom: 4 }}>Название</div>
-							<Input
-								placeholder="Введите название товара"
-								allowClear
-								onChange={(e) => setSearch(e.target.value)}
-							/>
-						</div>
+			<Stack gap="md">
+				<Group justify="space-between" align="flex-end" wrap="wrap">
+					<Group align="flex-end" wrap="wrap">
+						<TableSearch
+							label="Название"
+							placeholder="Введите название товара"
+							onChange={setSearch}
+							maw={320}
+							w="100%"
+						/>
 						<ItemCategoryFilterSelect
 							value={categoryId}
 							onChange={setCategoryId}
 						/>
-					</Flex>
-					<Link to="/items/new">
-						<Button type="primary">Создать товар</Button>
-					</Link>
-				</Flex>
-				<DataTable<IItem>
-					columns={columns}
+					</Group>
+					<Button component={Link} to="/items/new">
+						Создать товар
+					</Button>
+				</Group>
+				<TableData<IItem>
 					data={items}
 					loading={isLoading}
-					storageKey="items.list"
+					rowActions={rowActions}
+					rowActionsOnHover={false}
 					withPagination={false}
+					withTableBorder
+					storage="items.list"
 					noDataText={emptyText}
-					onEdit={(item) => navigate(`/items/${item.id}`)}
-					onDelete={async (item) => {
-						await deleteMutation.mutateAsync(item.id);
-					}}
-					getRowLabel={(item) => item.name}
-				/>
-			</Flex>
+					w="100%"
+				>
+					<DataColumn<IItem>
+						field="name"
+						header="Название"
+						sortable
+						resizable
+						body={(item) => (
+							<Anchor component={Link} to={`/items/${item.id}`}>
+								{item.name}
+							</Anchor>
+						)}
+					/>
+					<DataColumn<IItem>
+						field="categoryIds"
+						header="Категории"
+						sortable={false}
+						resizable
+						body={(item) => formatItemCategories(item.categoryIds)}
+					/>
+					<DataColumn<IItem>
+						field="unit"
+						header="Ед. изм."
+						sortable
+						resizable
+						body={(item) => formatEmptyValue(item.unit)}
+					/>
+					<DataColumn<IItem>
+						field="description"
+						header="Описание"
+						sortable
+						resizable
+						ellipsis
+						body={(item) => formatEmptyValue(item.description)}
+					/>
+					<DataColumn<IItem & { _actions?: unknown }>
+						field="_actions"
+						actions
+						actionsAt="end"
+						header=""
+						width={88}
+					/>
+				</TableData>
+			</Stack>
 		</>
 	);
 }

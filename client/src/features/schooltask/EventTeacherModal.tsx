@@ -1,27 +1,30 @@
 import {
+	ActionIcon,
+	Anchor,
+	Box,
 	Button,
 	Checkbox,
-	Flex,
-	Input,
-	Typography,
-	Upload,
-} from 'antd';
-import { notifications } from '@/ui/toast';
-import { CloseOutlined, DeleteOutlined, PaperClipOutlined, UploadOutlined } from '@ant-design/icons';
+	FileButton,
+	Group,
+	ScrollArea,
+	SimpleGrid,
+	Stack,
+	Text,
+	Textarea,
+	TextInput,
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { Link, RichTextEditor } from '@mantine/tiptap';
+import { IconPaperclip, IconTrash, IconUpload, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
+import Underline from '@tiptap/extension-underline';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { useEffect, useMemo, useState } from 'react';
 
 import { notifyApiError } from '@/core/api/apiError';
 import { schooltaskCalendarApi, type TeacherEventSavePayload } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
-
-const ReactQuill = lazy(async () => {
-	const [{ default: QuillEditor }] = await Promise.all([
-		import('react-quill-new'),
-		import('react-quill-new/dist/quill.snow.css'),
-	]);
-	return { default: QuillEditor as ComponentType<Record<string, unknown>> };
-});
 
 interface EventTeacherModalProps {
 	eventId: number | null;
@@ -32,26 +35,6 @@ interface EventTeacherModalProps {
 
 type LibraryFile = { id: number; name: string; src?: string };
 
-const QUILL_MODULES = {
-	toolbar: [
-		[{ header: [2, 3, false] }],
-		['bold', 'italic', 'underline', 'strike'],
-		[{ list: 'ordered' }, { list: 'bullet' }],
-		['link'],
-		['clean'],
-	],
-};
-
-const QUILL_FORMATS = [
-	'header',
-	'bold',
-	'italic',
-	'underline',
-	'strike',
-	'list',
-	'link',
-];
-
 export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTeacherModalProps) {
 	const queryClient = useQueryClient();
 	const [theme, setTheme] = useState('');
@@ -61,6 +44,14 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	const [netResource, setNetResource] = useState('');
 	const [attachedIds, setAttachedIds] = useState<number[]>([]);
 	const [librarySearch, setLibrarySearch] = useState('');
+
+	const editor = useEditor({
+		extensions: [StarterKit, Underline, Link],
+		content: '',
+		onUpdate: ({ editor: current }) => {
+			setDescription(current.getHTML());
+		},
+	});
 
 	const detailQuery = useQuery({
 		queryKey: queryKeys.schooltask.teacherEvent(eventId ?? 0),
@@ -81,10 +72,14 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 		setTheme(detailQuery.data.theme ?? '');
 		setHt(detailQuery.data.ht ?? '');
 		setPt(detailQuery.data.pt ?? '');
-		setDescription(detailQuery.data.description ?? '');
+		const nextDescription = detailQuery.data.description ?? '';
+		setDescription(nextDescription);
 		setNetResource(detailQuery.data.netResource ?? '');
 		setAttachedIds((detailQuery.data.files ?? []).map((file) => file.id));
-	}, [detailQuery.data]);
+		if (editor && !editor.isDestroyed) {
+			editor.commands.setContent(nextDescription || '');
+		}
+	}, [detailQuery.data, editor]);
 
 	const uploadMutation = useMutation({
 		mutationFn: (files: File[]) => schooltaskCalendarApi.teacherFilesUpload(files),
@@ -112,7 +107,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 				theme,
 				ht,
 				pt,
-				description,
+				description: editor?.getHTML() ?? description,
 				netResource,
 				files: attachedIds,
 			};
@@ -168,242 +163,212 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	}
 
 	return (
-		<div
+		<Box
 			style={{
 				position: 'absolute',
 				inset: 0,
 				zIndex: 200,
 				display: 'flex',
 				flexDirection: 'column',
-				backgroundColor: 'var(--ant-color-bg-container, #fff)',
+				backgroundColor: 'var(--mantine-color-body)',
 			}}
 		>
-			<Flex
+			<Group
 				justify="space-between"
-				align="center"
+				px="md"
+				py="sm"
 				style={{
 					flexShrink: 0,
-					padding: '12px 16px',
-					borderBottom: '1px solid rgba(0,0,0,0.06)',
+					borderBottom: '1px solid var(--mantine-color-default-border)',
 				}}
 			>
-				<Typography.Text strong>Задание к уроку</Typography.Text>
-				<Button type="text" aria-label="Закрыть" icon={<CloseOutlined style={{ fontSize: 18 }} />} onClick={onClose} />
-			</Flex>
+				<Text fw={600}>Задание к уроку</Text>
+				<ActionIcon variant="subtle" aria-label="Закрыть" onClick={onClose}>
+					<IconX size={18} />
+				</ActionIcon>
+			</Group>
 
-			<Flex vertical gap={16} style={{ flex: 1, minHeight: 0, padding: 16 }}>
-				<div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-					<Flex vertical gap={16} style={{ paddingRight: 8 }}>
-						<div
-							style={{
-								display: 'grid',
-								gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-								gap: 16,
-							}}
-						>
-							<div>
-								<div style={{ marginBottom: 4 }}>Тема</div>
-								<Input.TextArea
-									value={theme}
-									onChange={(event) => setTheme(event.target.value)}
-									autoSize={{ minRows: 3 }}
-								/>
-							</div>
-							<div>
-								<div style={{ marginBottom: 4 }}>План урока</div>
-								<Input.TextArea
-									value={pt}
-									onChange={(event) => setPt(event.target.value)}
-									autoSize={{ minRows: 3 }}
-								/>
-							</div>
-							<div>
-								<div style={{ marginBottom: 4 }}>Интернет-ресурсы</div>
-								<Input.TextArea
-									value={netResource}
-									onChange={(event) => setNetResource(event.target.value)}
-									autoSize={{ minRows: 3 }}
-								/>
-							</div>
-							<div>
-								<div style={{ marginBottom: 4 }}>Домашнее задание</div>
-								<Input.TextArea
-									value={ht}
-									onChange={(event) => setHt(event.target.value)}
-									autoSize={{ minRows: 3 }}
-								/>
-							</div>
-						</div>
+			<Stack gap="md" p="md" style={{ flex: 1, minHeight: 0 }}>
+				<ScrollArea style={{ flex: 1 }} offsetScrollbars>
+					<Stack gap="md" pr="xs">
+						<SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+							<Textarea
+								label="Тема"
+								value={theme}
+								onChange={(event) => setTheme(event.currentTarget.value)}
+								minRows={3}
+								autosize
+							/>
+							<Textarea
+								label="План урока"
+								value={pt}
+								onChange={(event) => setPt(event.currentTarget.value)}
+								minRows={3}
+								autosize
+							/>
+							<Textarea
+								label="Интернет-ресурсы"
+								value={netResource}
+								onChange={(event) => setNetResource(event.currentTarget.value)}
+								minRows={3}
+								autosize
+							/>
+							<Textarea
+								label="Домашнее задание"
+								value={ht}
+								onChange={(event) => setHt(event.currentTarget.value)}
+								minRows={3}
+								autosize
+							/>
+						</SimpleGrid>
 
-						<div>
-							<div style={{ marginBottom: 6, fontWeight: 500, fontSize: 13 }}>Описание</div>
-							<style>{`
-								.schooltask-teacher-quill .ql-toolbar.ql-snow {
-									border-color: rgba(0,0,0,0.15);
-									border-radius: 6px 6px 0 0;
-									background: rgba(0,0,0,0.02);
-								}
-								.schooltask-teacher-quill .ql-container.ql-snow {
-									border-color: rgba(0,0,0,0.15);
-									border-radius: 0 0 6px 6px;
-									min-height: 180px;
-									font-size: 14px;
-								}
-								.schooltask-teacher-quill .ql-editor {
-									min-height: 160px;
-								}
-							`}</style>
-							<div className="schooltask-teacher-quill">
-								{opened ? (
-									<Suspense
-										fallback={
-											<Typography.Text type="secondary" style={{ display: 'block', padding: 12 }}>
-												Загрузка редактора…
-											</Typography.Text>
-										}
-									>
-										<ReactQuill
-											theme="snow"
-											value={description}
-											onChange={setDescription}
-											modules={QUILL_MODULES}
-											formats={QUILL_FORMATS}
-											placeholder="Описание урока…"
-										/>
-									</Suspense>
-								) : null}
-							</div>
-						</div>
+						<Box>
+							<Text size="sm" fw={500} mb={6}>
+								Описание
+							</Text>
+							<RichTextEditor editor={editor}>
+								<RichTextEditor.Toolbar sticky stickyOffset={0}>
+									<RichTextEditor.ControlsGroup>
+										<RichTextEditor.Bold />
+										<RichTextEditor.Italic />
+										<RichTextEditor.Underline />
+										<RichTextEditor.Strikethrough />
+										<RichTextEditor.ClearFormatting />
+									</RichTextEditor.ControlsGroup>
+									<RichTextEditor.ControlsGroup>
+										<RichTextEditor.H2 />
+										<RichTextEditor.H3 />
+										<RichTextEditor.BulletList />
+										<RichTextEditor.OrderedList />
+									</RichTextEditor.ControlsGroup>
+									<RichTextEditor.ControlsGroup>
+										<RichTextEditor.Link />
+										<RichTextEditor.Unlink />
+									</RichTextEditor.ControlsGroup>
+									<RichTextEditor.ControlsGroup>
+										<RichTextEditor.Undo />
+										<RichTextEditor.Redo />
+									</RichTextEditor.ControlsGroup>
+								</RichTextEditor.Toolbar>
+								<RichTextEditor.Content mih={180} />
+							</RichTextEditor>
+						</Box>
 
-						<Flex vertical gap={12}>
-							<Flex justify="space-between" align="flex-end">
-								<Typography.Text strong>Файлы</Typography.Text>
-								<Upload
+						<Stack gap="sm">
+							<Group justify="space-between" align="flex-end">
+								<Text fw={600}>Файлы</Text>
+								<FileButton
 									multiple
-									showUploadList={false}
-									beforeUpload={(file, fileList) => {
-										if (file === fileList[0]) {
-											uploadMutation.mutate(fileList as unknown as File[]);
+									onChange={(files) => {
+										if (files && files.length > 0) {
+											uploadMutation.mutate(files);
 										}
-										return false;
 									}}
 								>
-									<Button
-										size="small"
-										icon={<UploadOutlined style={{ fontSize: 14 }} />}
-										loading={uploadMutation.isPending}
-									>
-										Загрузить
-									</Button>
-								</Upload>
-							</Flex>
+									{(props) => (
+										<Button
+											{...props}
+											size="xs"
+											variant="light"
+											leftSection={<IconUpload size={14} />}
+											loading={uploadMutation.isPending}
+										>
+											Загрузить
+										</Button>
+									)}
+								</FileButton>
+							</Group>
 
-							<div>
-								<div style={{ marginBottom: 6, fontWeight: 500, fontSize: 13 }}>
+							<Box>
+								<Text size="sm" fw={500} mb={6}>
 									Прикреплено к уроку
-								</div>
+								</Text>
 								{attachedFiles.length === 0 ? (
-									<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+									<Text size="sm" c="dimmed">
 										Нет прикреплённых файлов
-									</Typography.Text>
+									</Text>
 								) : (
-									<Flex vertical gap={6}>
+									<Stack gap={6}>
 										{attachedFiles.map((file) => (
-											<Flex key={file.id} justify="space-between" align="center" wrap="nowrap">
-												<Flex gap={8} align="center" wrap="nowrap" style={{ minWidth: 0 }}>
-													<PaperClipOutlined style={{ fontSize: 16 }} />
+											<Group key={file.id} justify="space-between" wrap="nowrap">
+												<Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
+													<IconPaperclip size={16} />
 													{file.src ? (
-														<Typography.Link
-															href={file.src}
-															target="_blank"
-															style={{
-																fontSize: 13,
-																overflow: 'hidden',
-																textOverflow: 'ellipsis',
-																whiteSpace: 'nowrap',
-															}}
-														>
+														<Anchor href={file.src} target="_blank" size="sm" lineClamp={1}>
 															{file.name}
-														</Typography.Link>
+														</Anchor>
 													) : (
-														<Typography.Text
-															style={{
-																fontSize: 13,
-																overflow: 'hidden',
-																textOverflow: 'ellipsis',
-																whiteSpace: 'nowrap',
-															}}
-														>
+														<Text size="sm" lineClamp={1}>
 															{file.name}
-														</Typography.Text>
+														</Text>
 													)}
-												</Flex>
-												<Button
-													type="text"
-													danger
+												</Group>
+												<ActionIcon
+													color="red"
+													variant="light"
 													aria-label="Открепить"
-													icon={<DeleteOutlined style={{ fontSize: 16 }} />}
 													onClick={() => detachFile(file.id)}
-												/>
-											</Flex>
+												>
+													<IconTrash size={16} />
+												</ActionIcon>
+											</Group>
 										))}
-									</Flex>
+									</Stack>
 								)}
-								<Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+								<Text size="xs" c="dimmed" mt={4}>
 									Открепление не удаляет файл — его можно снова выбрать из библиотеки
-								</Typography.Text>
-							</div>
+								</Text>
+							</Box>
 
-							<div>
-								<Flex justify="space-between" align="center" style={{ marginBottom: 6 }}>
-									<div style={{ fontWeight: 500, fontSize: 13 }}>Моя библиотека</div>
-									<Input
+							<Box>
+								<Group justify="space-between" mb={6}>
+									<Text size="sm" fw={500}>
+										Моя библиотека
+									</Text>
+									<TextInput
 										placeholder="Поиск…"
-										size="small"
+										size="xs"
 										value={librarySearch}
-										onChange={(event) => setLibrarySearch(event.target.value)}
-										style={{ width: 220 }}
+										onChange={(event) => setLibrarySearch(event.currentTarget.value)}
+										w={220}
 									/>
-								</Flex>
+								</Group>
 								{filesQuery.isLoading ? (
-									<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+									<Text size="sm" c="dimmed">
 										Загрузка…
-									</Typography.Text>
+									</Text>
 								) : libraryFiles.length === 0 ? (
-									<Typography.Text type="secondary" style={{ fontSize: 13 }}>
+									<Text size="sm" c="dimmed">
 										Библиотека пуста — загрузите файлы
-									</Typography.Text>
+									</Text>
 								) : (
-									<Flex
-										vertical
-										gap={4}
-										style={{ maxHeight: 220, overflow: 'auto' }}
-									>
+									<Stack gap={4} mah={220} style={{ overflow: 'auto' }}>
 										{libraryFiles.map((file) => (
 											<Checkbox
 												key={file.id}
+												label={file.name}
 												checked={attachedSet.has(file.id)}
 												onChange={(event) =>
-													toggleAttach(file.id, event.target.checked)
+													toggleAttach(file.id, event.currentTarget.checked)
 												}
-											>
-												{file.name}
-											</Checkbox>
+											/>
 										))}
-									</Flex>
+									</Stack>
 								)}
-							</div>
-						</Flex>
-					</Flex>
-				</div>
+							</Box>
+						</Stack>
+					</Stack>
+				</ScrollArea>
 
-				<Flex justify="flex-end" gap={8}>
-					<Button onClick={onClose}>Отмена</Button>
-					<Button type="primary" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+				<Group justify="flex-end" gap="xs">
+					<Button variant="default" onClick={onClose}>
+						Отмена
+					</Button>
+					<Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
 						Сохранить
 					</Button>
-				</Flex>
-			</Flex>
-		</div>
+				</Group>
+			</Stack>
+		</Box>
 	);
 }

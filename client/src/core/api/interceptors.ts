@@ -2,7 +2,7 @@ import { apiBaseURL, apiClient } from '@/core/api/client';
 import { extractApiErrorMessage } from '@/core/api/apiError';
 import { refreshResponseSchema } from '@/core/api/endpoints/auth';
 import * as tokenStorage from '@/core/auth/tokenStorage';
-import { notifications } from '@/ui/toast';
+import { notifications } from '@mantine/notifications';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 interface AuthStoreRef {

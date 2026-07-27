@@ -1,4 +1,4 @@
-import { Button, Flex, Spin, Typography } from 'antd';
+import { Box, Button, Center, Group, Loader, ScrollArea, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -28,10 +28,11 @@ export default function ExplorerMarkdownViewerApp() {
 	});
 
 	const markdown = contentQuery.data ?? '';
+
 	const remarkPlugins = useMemo(() => [remarkGfm], []);
 
 	return (
-		<div
+		<Box
 			style={{
 				position: 'absolute',
 				inset: 0,
@@ -39,40 +40,38 @@ export default function ExplorerMarkdownViewerApp() {
 				flexDirection: 'column',
 				minHeight: 0,
 				overflow: 'hidden',
-				padding: 16,
-				gap: 12,
+				padding: 'var(--mantine-spacing-md)',
+				gap: 'var(--mantine-spacing-sm)',
 			}}
 		>
-			<Flex justify="space-between" wrap="nowrap" style={{ flexShrink: 0 }} gap="small">
-				<Typography.Text type="secondary" ellipsis title={currentPath ?? ''} style={{ fontSize: 13 }}>
+			<Group justify="space-between" wrap="nowrap" style={{ flexShrink: 0 }}>
+				<Text size="sm" c="dimmed" truncate title={currentPath ?? ''}>
 					{currentPath ? getExplorerFileName(currentPath) : 'Откройте Markdown-файл'}
-				</Typography.Text>
-				<Button size="small" onClick={() => void openFile()}>
+				</Text>
+				<Button variant="default" size="xs" onClick={() => void openFile()}>
 					Открыть…
 				</Button>
-			</Flex>
+			</Group>
 
-			<div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+			<ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto" offsetScrollbars>
 				{!currentPath ? (
-					<div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-						<Typography.Text type="secondary">
-							Выберите файл .md через «Открыть…» или из проводника
-						</Typography.Text>
-					</div>
+					<Center h={200}>
+						<Text c="dimmed">Выберите файл .md через «Открыть…» или из проводника</Text>
+					</Center>
 				) : contentQuery.isLoading ? (
-					<div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-						<Spin size="small" />
-					</div>
+					<Center h={200}>
+						<Loader size="sm" />
+					</Center>
 				) : contentQuery.isError ? (
-					<div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-						<Typography.Text type="danger">Не удалось загрузить файл</Typography.Text>
-					</div>
+					<Center h={200}>
+						<Text c="red">Не удалось загрузить файл</Text>
+					</Center>
 				) : (
-					<div className={classes.markdownViewer} style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 24 }}>
+					<Box className={classes.markdownViewer} maw={900} mx="auto" pb="xl">
 						<ReactMarkdown remarkPlugins={remarkPlugins}>{markdown}</ReactMarkdown>
-					</div>
+					</Box>
 				)}
-			</div>
-		</div>
+			</ScrollArea>
+		</Box>
 	);
 }

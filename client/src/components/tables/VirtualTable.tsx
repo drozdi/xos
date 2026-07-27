@@ -1,4 +1,4 @@
-import { Spin } from 'antd';
+import { Box, Table, type TableTrProps } from '@mantine/core';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import type { ListProps, RowComponentProps } from 'react-window';
@@ -33,11 +33,6 @@ interface VirtualRowProps<T> {
 	highlightOnHover?: boolean;
 }
 
-const BORDER = '1px solid #f0f0f0';
-const HEADER_BG = '#fafafa';
-const STRIPE_BG = '#fafafa';
-const HOVER_BG = '#f5f5f5';
-
 function VirtualTableRow<T>({
 	index,
 	style,
@@ -49,65 +44,51 @@ function VirtualTableRow<T>({
 	highlightOnHover,
 }: RowComponentProps<VirtualRowProps<T>>) {
 	const row = rows[index];
-	if (!row) {
-		return null;
-	}
+	if (!row) {return null;}
 
 	const isStriped = striped && index % 2 === 1;
 
 	return (
-		<div
-			role="row"
-			tabIndex={onRowClick ? 0 : undefined}
+		<Box
+			{...{ role: 'row' }}
 			style={{
 				...style,
 				display: 'grid',
 				gridTemplateColumns,
 				alignItems: 'center',
-				borderBottom: BORDER,
-				background: isStriped ? STRIPE_BG : undefined,
+				borderBottom: '1px solid var(--mantine-color-gray-3)',
+				background: isStriped ? 'var(--mantine-color-gray-0)' : undefined,
 				cursor: onRowClick ? 'pointer' : undefined,
 			}}
 			onClick={onRowClick ? () => onRowClick(row, index) : undefined}
-			onKeyDown={
-				onRowClick
-					? (event) => {
-							if (event.key === 'Enter' || event.key === ' ') {
-								event.preventDefault();
-								onRowClick(row, index);
-							}
-						}
-					: undefined
-			}
 			onMouseEnter={
 				highlightOnHover
 					? (event) => {
-							event.currentTarget.style.background = HOVER_BG;
+							event.currentTarget.style.background = 'var(--mantine-color-gray-1)';
 						}
 					: undefined
 			}
 			onMouseLeave={
 				highlightOnHover
 					? (event) => {
-							event.currentTarget.style.background = isStriped ? STRIPE_BG : '';
+							event.currentTarget.style.background = isStriped
+								? 'var(--mantine-color-gray-0)'
+								: '';
 						}
 					: undefined
 			}
 		>
 			{columns.map((column) => (
-				<div
+				<Box
 					key={column.key}
-					style={{
-						padding: '6px 12px',
-						textAlign: column.align,
-						overflow: 'hidden',
-						textOverflow: 'ellipsis',
-					}}
+					px="sm"
+					py={6}
+					style={{ textAlign: column.align, overflow: 'hidden', textOverflow: 'ellipsis' }}
 				>
 					{column.render(row, index)}
-				</div>
+				</Box>
 			))}
-		</div>
+		</Box>
 	);
 }
 
@@ -118,24 +99,26 @@ function StaticTableBody<T>({
 	getRowKey,
 }: Pick<VirtualTableProps<T>, 'columns' | 'rows' | 'onRowClick' | 'getRowKey'>) {
 	return (
-		<tbody>
-			{rows.map((row, index) => (
-				<tr
-					key={getRowKey?.(row, index) ?? index}
-					onClick={onRowClick ? () => onRowClick(row, index) : undefined}
-					style={onRowClick ? { cursor: 'pointer' } : undefined}
-				>
-					{columns.map((column) => (
-						<td
-							key={column.key}
-							style={{ width: column.width, textAlign: column.align, padding: '8px 12px' }}
-						>
-							{column.render(row, index)}
-						</td>
-					))}
-				</tr>
-			))}
-		</tbody>
+		<Table.Tbody>
+			{rows.map((row, index) => {
+				const rowProps: TableTrProps = onRowClick
+					? { onClick: () => onRowClick(row, index), style: { cursor: 'pointer' } }
+					: {};
+
+				return (
+					<Table.Tr key={getRowKey?.(row, index) ?? index} {...rowProps}>
+						{columns.map((column) => (
+							<Table.Td
+								key={column.key}
+								style={{ width: column.width, textAlign: column.align }}
+							>
+								{column.render(row, index)}
+							</Table.Td>
+						))}
+					</Table.Tr>
+				);
+			})}
+		</Table.Tbody>
 	);
 }
 
@@ -186,9 +169,9 @@ function VirtualListBody<T>({
 
 	if (!ListComponent) {
 		return (
-			<div style={{ padding: 12, textAlign: 'center' }}>
-				<Spin size="small" tip="Загрузка таблицы…" />
-			</div>
+			<Box p="sm" c="dimmed" fz="sm">
+				Загрузка таблицы…
+			</Box>
 		);
 	}
 
@@ -225,70 +208,68 @@ export function VirtualTable<T>({
 
 	if (!useVirtual) {
 		return (
-			<table
-				style={{
-					width: '100%',
-					borderCollapse: 'collapse',
-					tableLayout: 'fixed',
-					border: withTableBorder ? BORDER : undefined,
-				}}
+			<Table
+				striped={striped}
+				highlightOnHover={highlightOnHover}
+				withTableBorder={withTableBorder}
+				layout="fixed"
 			>
-				<thead>
-					<tr style={{ background: HEADER_BG }}>
+				<Table.Thead>
+					<Table.Tr>
 						{columns.map((column) => (
-							<th
+							<Table.Th
 								key={column.key}
-								style={{
-									width: column.width,
-									textAlign: column.align,
-									padding: '8px 12px',
-									borderBottom: BORDER,
-									fontWeight: 600,
-								}}
+								style={{ width: column.width, textAlign: column.align }}
 							>
 								{column.header}
-							</th>
+							</Table.Th>
 						))}
-					</tr>
-				</thead>
+					</Table.Tr>
+				</Table.Thead>
 				<StaticTableBody
 					columns={columns}
 					rows={rows}
 					onRowClick={onRowClick}
 					getRowKey={getRowKey}
 				/>
-			</table>
+			</Table>
 		);
 	}
 
+	const borderStyle = withTableBorder
+		? '1px solid var(--mantine-color-gray-4)'
+		: undefined;
+
 	return (
-		<div
+		<Box
 			style={{
-				border: withTableBorder ? BORDER : undefined,
-				borderRadius: 6,
+				border: borderStyle,
+				borderRadius: 'var(--mantine-radius-default)',
 				overflow: 'hidden',
 			}}
 		>
-			<div
+			<Box
 				style={{
 					display: 'grid',
 					gridTemplateColumns,
 					alignItems: 'center',
-					background: HEADER_BG,
-					borderBottom: BORDER,
+					background: 'var(--mantine-color-gray-1)',
+					borderBottom: '1px solid var(--mantine-color-gray-3)',
 					fontWeight: 600,
-					fontSize: 14,
+					fontSize: 'var(--mantine-font-size-sm)',
 				}}
 			>
 				{columns.map((column) => (
-					<div
+					<Box
 						key={column.key}
-						style={{ padding: '8px 12px', textAlign: column.align }}
+						px="sm"
+						py="xs"
+						style={{ textAlign: column.align }}
 					>
 						{column.header}
-					</div>
+					</Box>
 				))}
-			</div>
+			</Box>
 			<VirtualListBody
 				columns={columns}
 				rows={rows}
@@ -299,6 +280,6 @@ export function VirtualTable<T>({
 				striped={striped}
 				highlightOnHover={highlightOnHover}
 			/>
-		</div>
+		</Box>
 	);
 }

@@ -1,9 +1,10 @@
-import { CreditCardOutlined } from '@ant-design/icons';
+import { type ComboboxItem } from '@mantine/core';
+import { TbCards } from 'react-icons/tb';
 
-const data: Record<string, typeof CreditCardOutlined> = {
-	cards: CreditCardOutlined,
+const data: Record<string, typeof TbCards> = {
+	cards: TbCards,
 };
-const dataSelect = Object.entries(data).map(([value]) => ({
+const dataSelect: ComboboxItem[] = Object.entries(data).map(([value]) => ({
 	value,
 	label: value,
 }));

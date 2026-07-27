@@ -1,4 +1,4 @@
-import { Alert, Button, Flex } from 'antd';
+import { Alert, Button, Group } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
@@ -44,14 +44,11 @@ export default function SchooltaskCalendarsApp() {
 					name: string;
 					can_edit?: boolean;
 				}) => (
-					<Flex
-						gap={8}
-						wrap="nowrap"
-						onClick={(event) => event.stopPropagation()}
-					>
+					<Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
 						{(row.can_edit || canUpdate) && (
 							<Button
-								size="small"
+								size="compact-xs"
+								variant="light"
 								onClick={() =>
 									launchApp('schooltask-calendar-editor', row.id, `Редактор — ${row.name}`)
 								}
@@ -61,7 +58,8 @@ export default function SchooltaskCalendarsApp() {
 						)}
 						{(canRead || row.can_edit) && (
 							<Button
-								size="small"
+								size="compact-xs"
+								variant="default"
 								onClick={() =>
 									launchApp('schooltask-calendar', row.id, `Расписание — ${row.name}`)
 								}
@@ -69,7 +67,7 @@ export default function SchooltaskCalendarsApp() {
 								Посмотреть
 							</Button>
 						)}
-					</Flex>
+					</Group>
 				),
 			},
 		],
@@ -79,7 +77,9 @@ export default function SchooltaskCalendarsApp() {
 	if (!canRead && !canUpdate) {
 		return (
 			<MainListLayout title="Расписание" isLoading={false} isError={false} onRefresh={() => {}}>
-				<Alert type="error" showIcon message="Доступ запрещён" description="Нет прав на просмотр расписания" />
+				<Alert color="red" title="Доступ запрещён">
+					Нет прав на просмотр расписания
+				</Alert>
 			</MainListLayout>
 		);
 	}
