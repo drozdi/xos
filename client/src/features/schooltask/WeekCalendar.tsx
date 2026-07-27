@@ -19,9 +19,9 @@ const COLOR_MAP: Record<string, string> = {
 const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
 /** Как подписи дней в шапке (Пн / ДД.ММ). */
-const LABEL_COLOR = 'var(--xos-shell-dimmed, rgba(0,0,0,0.45))';
-const GRID_LINE_COLOR = 'var(--xos-shell-dimmed, rgba(0,0,0,0.45))';
-const NOW_LINE_COLOR = '#ff4d4f';
+const LABEL_COLOR = 'var(--color-dimmed)';
+const GRID_LINE_COLOR = 'var(--color-separator)';
+const NOW_LINE_COLOR = 'var(--color-negative)';
 
 export interface WeekCalendarSlot {
 	start: string;

@@ -33,7 +33,11 @@ export function AntdProvider({ children, colorScheme = DEFAULT_THEME }: AntdProv
 			theme={{
 				algorithm: resolveAntdAlgorithm(colorScheme),
 				token: {
-					colorPrimary: '#1677ff',
+					colorPrimary: '#1975d2',
+					colorInfo: '#2196f3',
+					colorSuccess: '#4caf50',
+					colorWarning: '#fb8c00',
+					colorError: '#dc3545',
 					borderRadius: 8,
 					fontFamily: 'Inter, system-ui, sans-serif',
 				},

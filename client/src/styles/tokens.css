@@ -1,0 +1,128 @@
+/* Базовая (светлая) палитра */
+:root,
+[data-theme='light'],
+html.light {
+	--body-bg: #ffffff;
+	--body-color: #000000;
+
+	/* Общий "стеклянный" фон для поверхностей (таблицы/поля) */
+	--xos-surface-alpha: rgba(0, 0, 0, 0.2);
+
+	--border-color: rgba(0, 0, 0, 0.2);
+	--scrollbar-color: rgba(0, 0, 0, 0.3) rgba(255, 255, 255, 0.2);
+
+	--selection-bg: rgba(0, 0, 0, 0.2);
+	--selection-color: #eee;
+	--color-separator: rgba(0, 0, 0, 0.15);
+	--color-divider: rgba(0, 0, 0, 0.15);
+	--color-dimmed: rgba(0, 0, 0, 0.2);
+
+	--link-color: #1565c0;
+	--link-hover-color: #0d47a1;
+
+	--color-primary: #1975d2;
+	--color-secondary: #5cbbf6;
+	--color-accent: #9c27b0;
+	--color-positive: #4caf50;
+	--color-negative: #dc3545;
+	--color-info: #2196f3;
+	--color-warning: #fb8c00;
+	--color-dark: #1d1d1d;
+}
+
+/* Тёмная тема */
+.dark,
+[data-theme='dark'],
+html.dark {
+	--body-bg: #002650;
+	--body-color: #ffffffb3;
+
+	/* Общий "стеклянный" фон для поверхностей (таблицы/поля) */
+	--xos-surface-alpha: rgba(255, 255, 255, 0.2);
+
+	--link-color: #ffffffb3;
+	--link-hover-color: #ffffff;
+
+	--border-color: #ffffff33;
+
+	--scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.2);
+
+	--selection-bg: rgba(255, 255, 255, 0.2);
+	--selection-color: #eee;
+	--color-separator: #ffffff26;
+	--color-divider: #ffffff26;
+	--color-dimmed: rgba(255, 255, 255, 0.35);
+
+	--color-primary: #1975d2;
+	--color-secondary: #5cbbf6;
+	--color-accent: #9c27b0;
+	--color-positive: #4caf50;
+	--color-negative: #dc3545;
+	--color-info: #2196f3;
+	--color-warning: #fb8c00;
+	--color-dark: #1d1d1d;
+}
+
+/* Shell / window — производные от токенов темы */
+:root,
+[data-theme='light'],
+[data-theme='dark'],
+html.light,
+html.dark {
+	--xos-shell-bg: var(--body-bg);
+	--xos-shell-bg-elevated: color-mix(in srgb, var(--body-bg) 88%, #ffffff 5%);
+	--xos-shell-border: var(--border-color);
+	--xos-shell-hover: color-mix(in srgb, var(--body-bg) 85%, #ffffff 15%);
+	--xos-shell-text: var(--body-color);
+	--xos-shell-dimmed: var(--color-dimmed);
+
+	--xos-window-bg: var(--body-bg);
+	--xos-window-titlebar-bg: color-mix(in srgb, var(--body-bg) 90%, #000000 10%);
+	--xos-window-border: var(--border-color);
+	--xos-window-titlebar-border: var(--color-divider);
+	--xos-window-chrome-hover: color-mix(in srgb, var(--body-bg) 85%, #ffffff 15%);
+	--xos-window-text: var(--body-color);
+}
+
+[data-theme='light'],
+html.light {
+	--xos-shell-bg-elevated: #ffffff;
+	--xos-shell-hover: color-mix(in srgb, #ffffff 92%, #000000 8%);
+	--xos-window-titlebar-bg: color-mix(in srgb, #ffffff 94%, #000000 6%);
+	--xos-window-chrome-hover: color-mix(in srgb, #ffffff 92%, #000000 8%);
+}
+
+[data-theme='dark'],
+html.dark {
+	--xos-shell-bg-elevated: color-mix(in srgb, #002650 82%, #ffffff 5%);
+	--xos-shell-hover: color-mix(in srgb, #002650 78%, #ffffff 22%);
+	--xos-window-titlebar-bg: color-mix(in srgb, #002650 88%, #000000 12%);
+	--xos-window-chrome-hover: color-mix(in srgb, #002650 78%, #ffffff 22%);
+}
+
+html {
+	background: var(--body-bg);
+	color: var(--body-color);
+}
+
+body {
+	background: var(--body-bg);
+	color: var(--body-color);
+}
+
+::selection {
+	background: var(--selection-bg);
+	color: var(--selection-color);
+}
+
+a {
+	color: var(--link-color);
+}
+
+a:hover {
+	color: var(--link-hover-color);
+}
+
+* {
+	scrollbar-color: var(--scrollbar-color);
+}
