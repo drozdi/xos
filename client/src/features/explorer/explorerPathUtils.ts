@@ -7,6 +7,18 @@ export function parseExplorerDisk(path: string): string {
 	return match?.[1]?.toLowerCase() ?? 'home';
 }
 
+/** Build `disk://relative/` (or `disk://` for root). */
+export function joinExplorerDiskPath(diskOrRoot: string, relativePath = ''): string {
+	const disk = parseExplorerDisk(
+		diskOrRoot.includes('://') ? diskOrRoot : `${diskOrRoot}://`,
+	);
+	const relative = relativePath.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+	if (!relative || relative === '.') {
+		return `${disk}://`;
+	}
+	return `${disk}://${relative}/`;
+}
+
 export function normalizeExplorerFolderPath(path: string): string {
 	if (path.endsWith('://')) {
 		return path;

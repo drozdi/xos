@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { queryKeys } from '@/core/api/queryKeys';
 
 import { fetchExplorerTree, type ExplorerDisk } from '../explorerApi';
+import { joinExplorerDiskPath, normalizeExplorerFolderPath } from '../explorerPathUtils';
 
 interface TreeNode {
 	path?: string;
@@ -26,15 +27,11 @@ function parseDisk(path: string) {
 }
 
 function nodePath(diskRoot: string, node: TreeNode): string {
-	if (node.path) {
-		return node.path.endsWith('://') || node.path.endsWith('/') ? node.path : `${node.path}/`;
+	if (node.path && /^[a-z0-9_-]+:\/\//i.test(node.path)) {
+		return normalizeExplorerFolderPath(node.path);
 	}
 	const relative = node.relativePath ?? node.name;
-	if (!relative || relative === '/') {
-		return diskRoot;
-	}
-	const disk = diskRoot.replace(/\/+$/, '');
-	return `${disk}/${relative}/`;
+	return joinExplorerDiskPath(diskRoot, relative === '/' ? '' : relative);
 }
 
 function DiskFolderTree({

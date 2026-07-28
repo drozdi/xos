@@ -40,7 +40,9 @@ import {
 	getExplorerFolderPath,
 	getExplorerParentPath,
 	isExplorerParentEntry,
+	joinExplorerDiskPath,
 	joinExplorerPath,
+	normalizeExplorerFolderPath,
 	parseExplorerDisk,
 } from './explorerPathUtils';
 import {
@@ -54,6 +56,17 @@ import type { ExplorerViewMode } from './explorerViewUtils';
 
 function parseDisk(path: string) {
 	return parseExplorerDisk(path);
+}
+
+function resolveEntryPath(currentPath: string, entry: { path?: string; relativePath: string }): string {
+	if (entry.path && /^[a-z0-9_-]+:\/\//i.test(entry.path)) {
+		return entry.path;
+	}
+	const joined = joinExplorerDiskPath(currentPath, entry.relativePath);
+	if (joined.endsWith('://')) {
+		return joined;
+	}
+	return joined.replace(/\/$/, '');
 }
 
 interface ExplorerWorkspaceProps {
@@ -122,7 +135,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 		() =>
 			displayItems.map((entry) => ({
 				...entry,
-				path: entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`,
+				path: resolveEntryPath(currentPath, entry),
 			})),
 		[currentPath, displayItems],
 	);
@@ -326,7 +339,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 
 	const navigateTo = (path: string) => {
 		setViewMode('normal');
-		setCurrentPath(path.endsWith('://') ? path : path.endsWith('/') ? path : `${path}/`);
+		setCurrentPath(normalizeExplorerFolderPath(path));
 		clearSelection();
 	};
 
@@ -335,7 +348,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 			return;
 		}
 
-		const path = entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`;
+		const path = resolveEntryPath(currentPath, entry);
 		if (entry.type === 'folder') {
 			navigateTo(path);
 			return;
@@ -361,7 +374,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 			return;
 		}
 
-		const path = entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`;
+		const path = resolveEntryPath(currentPath, entry);
 
 		if (picker) {
 			pickEntry(entry);

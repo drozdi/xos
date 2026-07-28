@@ -222,6 +222,13 @@ final class ExplorerManager
         $entry['path'] = $path->toUri();
         $entry['disk'] = $resolved['disk'];
 
+        if (isset($entry['children']) && is_array($entry['children'])) {
+            $entry['children'] = array_map(
+                fn (array $child): array => $this->withUri($resolved, $child),
+                $entry['children'],
+            );
+        }
+
         return $entry;
     }
 
