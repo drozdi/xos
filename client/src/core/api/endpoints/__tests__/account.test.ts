@@ -23,10 +23,12 @@ describe('account endpoints', () => {
 		it('accepts optional password fields', () => {
 			const payload = accountUpdateRequestSchema.parse({
 				alias: 'User',
+				old_password: 'old-secret',
 				password: 'secret',
 				confirm_password: 'secret',
 			});
 
+			expect(payload.old_password).toBe('old-secret');
 			expect(payload.password).toBe('secret');
 		});
 	});

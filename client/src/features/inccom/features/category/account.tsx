@@ -1,7 +1,7 @@
-﻿import { useStoreUserProfile } from '@inccom/entities/user';
-import { useStoreAccounts } from '@inccom/entities/account';
+﻿import { useAccountsQuery } from '@inccom/entities/account';
+import { useStoreUserProfile } from '@inccom/entities/user';
 import { formatBalance } from '@inccom/shared/utils/number-format';
-import { Avatar, NavLink, Stack, Text, alpha } from '@mantine/core';
+import { Avatar, Loader, NavLink, Stack, Text, alpha } from '@mantine/core';
 import { TbAccessPoint } from 'react-icons/tb';
 import { Link } from 'react-router-dom';
 
@@ -31,10 +31,16 @@ function Item({ account }: { account: IAccount }) {
 }
 
 export function CategoriesAccount() {
-	const storeAccounts = useStoreAccounts();
+	const { data, isLoading } = useAccountsQuery();
+	const accounts = data?.items ?? [];
+
+	if (isLoading) {
+		return <Loader />;
+	}
+
 	return (
 		<Stack>
-			{storeAccounts.list.map((item) => (
+			{accounts.map((item) => (
 				<Item key={item.id} account={item} />
 			))}
 		</Stack>

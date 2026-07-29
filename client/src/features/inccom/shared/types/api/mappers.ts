@@ -17,7 +17,12 @@ export function mapAccountFromApi(data: ApiAccount): IAccount {
 		icon: data.icon ?? '',
 		currency: data.currency ?? 'RUB',
 		isMaster: data.isMaster,
-		participants: data.participants,
+		participants: data.participants?.map((p) => ({
+			id: p.id,
+			name: p.name ?? p.login ?? '',
+			email: p.email ?? null,
+			login: p.login,
+		})),
 	};
 }
 

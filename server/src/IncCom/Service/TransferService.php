@@ -18,8 +18,6 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  */
 class TransferService
 {
-    private const TRANSFER_CATEGORY_TYPE = 'transfer';
-
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly BalanceService $balanceService,
@@ -56,10 +54,12 @@ class TransferService
             $outgoingCategory = $this->resolveTransferCategory(
                 $this->resolveCategoryId($data, 'outgoing'),
                 $fromAccount,
+                TransactionType::Expense,
             );
             $incomingCategory = $this->resolveTransferCategory(
                 $this->resolveCategoryId($data, 'incoming'),
                 $toAccount,
+                TransactionType::Income,
             );
 
             $outgoing = $this->buildTransaction(
@@ -148,6 +148,7 @@ class TransferService
                     $this->resolveTransferCategory(
                         $this->resolveCategoryId($data, 'outgoing'),
                         $fromAccount,
+                        TransactionType::Expense,
                     ),
                 );
             }
@@ -157,6 +158,7 @@ class TransferService
                     $this->resolveTransferCategory(
                         $this->resolveCategoryId($data, 'incoming'),
                         $toAccount,
+                        TransactionType::Income,
                     ),
                 );
             }
@@ -266,7 +268,11 @@ class TransferService
         return false;
     }
 
-    private function resolveTransferCategory(mixed $categoryId, Account $account): ?Category
+    private function resolveTransferCategory(
+        mixed $categoryId,
+        Account $account,
+        TransactionType $expectedType,
+    ): ?Category
     {
         if ($categoryId === null || $categoryId === '') {
             return null;
@@ -287,8 +293,10 @@ class TransferService
             throw new \InvalidArgumentException('Category does not belong to the account.');
         }
 
-        if ($category->getType() !== self::TRANSFER_CATEGORY_TYPE) {
-            throw new \InvalidArgumentException('Category must be of type transfer.');
+        if ($category->getType() !== $expectedType->value) {
+            throw new \InvalidArgumentException(
+                sprintf('Category must be of type %s.', $expectedType->value),
+            );
         }
 
         return $category;

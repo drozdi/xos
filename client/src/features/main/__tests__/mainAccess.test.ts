@@ -32,6 +32,7 @@ import {
 	canGroupMainUser,
 	canAccessMainUser,
 	canRoleMainUser,
+	canChangeMainUserPassword,
 } from '@/features/main/mainAccess';
 
 describe('mainAccess', () => {
@@ -50,6 +51,15 @@ describe('mainAccess', () => {
 	it('allows create for ROLE_ROOT', () => {
 		setUserRoles(['ROLE_ROOT']);
 		expect(canCreateMainOu()).toBe(true);
+	});
+
+	it('allows password change only for ROLE_ROOT, not ROLE_MAIN_ROOT', () => {
+		setUserRoles(['ROLE_MAIN_ROOT']);
+		expect(canChangeMainUserPassword()).toBe(false);
+		expect(canUpdateMainUser()).toBe(true);
+
+		setUserRoles(['ROLE_ROOT']);
+		expect(canChangeMainUserPassword()).toBe(true);
 	});
 
 	it('allows create for ROLE_MAIN_ROOT', () => {

@@ -24,6 +24,7 @@ interface ProfileFormValues {
 	first_name: string;
 	patronymic: string;
 	description: string;
+	old_password: string;
 	password: string;
 	confirm_password: string;
 }
@@ -43,6 +44,7 @@ function toFormValues(account: {
 		first_name: account.first_name ?? '',
 		patronymic: account.patronymic ?? '',
 		description: account.description ?? '',
+		old_password: '',
 		password: '',
 		confirm_password: '',
 	};
@@ -58,7 +60,8 @@ function toUpdatePayload(values: ProfileFormValues): AccountUpdateRequest {
 		description: values.description,
 	};
 
-	if (values.password) {
+	if (values.password || values.confirm_password || values.old_password) {
+		payload.old_password = values.old_password;
 		payload.password = values.password;
 		payload.confirm_password = values.confirm_password;
 	}
@@ -70,7 +73,7 @@ export default function SettingsApp() {
 	const coreApi = useCoreApi();
 	const queryClient = useQueryClient();
 	const { data: account, isLoading, isError, error } = useAccount();
-	const { locale, timeFormat, setLocale, setTimeFormat, isLoading: datesLoading } = useDateSettings();
+	const { locale, timeFormat, setLocale, setTimeFormat } = useDateSettings();
 
 	const form = useForm<ProfileFormValues>({
 		mode: 'uncontrolled',
@@ -81,6 +84,7 @@ export default function SettingsApp() {
 			first_name: '',
 			patronymic: '',
 			description: '',
+			old_password: '',
 			password: '',
 			confirm_password: '',
 		},
@@ -101,17 +105,17 @@ export default function SettingsApp() {
 	const saveMutation = useMutation({
 		mutationFn: (values: ProfileFormValues) => updateAccount(toUpdatePayload(values)),
 		onSuccess: async () => {
+			syncedAccountIdRef.current = null;
 			await queryClient.invalidateQueries({ queryKey: queryKeys.account.detail });
+			await queryClient.refetchQueries({ queryKey: queryKeys.account.detail });
 			coreApi.toast.success('Профиль сохранён');
-			form.setFieldValue('password', '');
-			form.setFieldValue('confirm_password', '');
 		},
 		onError: (err) => {
 			if (isAxiosError<ApiError>(err) && err.response?.status === 400) {
 				const data = err.response.data;
 				if (data && typeof data === 'object') {
 					for (const [field, message] of Object.entries(data)) {
-						if (typeof message === 'string' && field in form.values) {
+						if (typeof message === 'string' && field in form.getValues()) {
 							form.setFieldError(field as keyof ProfileFormValues, message);
 						}
 					}
@@ -127,7 +131,7 @@ export default function SettingsApp() {
 		saveMutation.mutate(values);
 	});
 
-	if (isLoading || datesLoading) {
+	if (isLoading && !account) {
 		return (
 			<Stack align="center" justify="center" h="100%" p="md">
 				<Loader size="sm" />
@@ -147,7 +151,7 @@ export default function SettingsApp() {
 	}
 
 	return (
-		<form onSubmit={handleSubmit}>
+		<form onSubmit={handleSubmit} autoComplete="off">
 			<Stack p="md" gap="md">
 				<Stack gap="sm">
 					<Text fw={600}>Дата и время</Text>
@@ -199,6 +203,13 @@ export default function SettingsApp() {
 					{...form.getInputProps('description')}
 				/>
 				<PasswordInput
+					label="Текущий пароль"
+					key={form.key('old_password')}
+					defaultValue=''
+					{...form.getInputProps('old_password')}
+					autoComplete="off"
+				/>
+				<PasswordInput
 					label="Новый пароль"
 					key={form.key('password')}
 					{...form.getInputProps('password')}
@@ -207,6 +218,7 @@ export default function SettingsApp() {
 					label="Подтверждение пароля"
 					key={form.key('confirm_password')}
 					{...form.getInputProps('confirm_password')}
+					
 				/>
 				<Button type="submit" loading={saveMutation.isPending}>
 					Сохранить профиль

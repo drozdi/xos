@@ -1,4 +1,5 @@
 import {
+	PasswordInput,
 	Stack,
 	Switch,
 	TextInput,
@@ -14,10 +15,17 @@ interface UserGeneralTabProps {
 	data: UserDetail;
 	errors: Partial<Record<keyof UserDetail & string, string>>;
 	readOnly: boolean;
+	canChangePassword?: boolean;
 	setField: <K extends keyof UserDetail>(key: K, value: UserDetail[K]) => void;
 }
 
-export function UserGeneralTab({ data, errors, readOnly, setField }: UserGeneralTabProps) {
+export function UserGeneralTab({
+	data,
+	errors,
+	readOnly,
+	canChangePassword = false,
+	setField,
+}: UserGeneralTabProps) {
 	return (
 		<Stack gap="sm">
 			<OuSelect
@@ -54,6 +62,30 @@ export function UserGeneralTab({ data, errors, readOnly, setField }: UserGeneral
 				readOnly={readOnly}
 				onChange={(e) => setField('email', e.currentTarget.value)}
 			/>
+			{canChangePassword ? (
+				<>
+					<PasswordInput
+						label="Пароль"
+						value={typeof data.password === 'string' ? data.password : ''}
+						error={errors.password}
+						onChange={(e) => setField('password', e.currentTarget.value)}
+						autoComplete="new-password"
+					/>
+					<PasswordInput
+						label="Подтверждение пароля"
+						value={
+							typeof data.confirm_password === 'string'
+								? data.confirm_password
+								: ''
+						}
+						error={errors.confirm_password ?? errors.password}
+						onChange={(e) =>
+							setField('confirm_password', e.currentTarget.value)
+						}
+						autoComplete="new-password"
+					/>
+				</>
+			) : null}
 			<TextInput
 				label="Фамилия"
 				value={data.second_name ?? ''}

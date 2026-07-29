@@ -13,14 +13,18 @@ function useDebouncedCallback<T extends (...args: never[]) => void>(callback: T,
 
 	useEffect(
 		() => () => {
-			if (timeoutRef.current) {clearTimeout(timeoutRef.current);}
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
+			}
 		},
 		[],
 	);
 
 	return useCallback(
 		((...args: Parameters<T>) => {
-			if (timeoutRef.current) {clearTimeout(timeoutRef.current);}
+			if (timeoutRef.current) {
+				clearTimeout(timeoutRef.current);
+			}
 			timeoutRef.current = setTimeout(() => {
 				callbackRef.current(...args);
 			}, delay);
@@ -40,20 +44,36 @@ export function useSetting<T>(
 	useEffect(() => {
 		let active = true;
 
-		void (async () => {
-			setIsLoading(true);
+		const load = async () => {
 			if (!settingManager.isInitialized()) {
+				if (active) {
+					setValueState(defaultValue);
+					setIsLoading(false);
+				}
 				return;
 			}
+
+			if (active) {
+				setIsLoading(true);
+			}
+
 			const stored = (await settingManager.get(category, key)) as T | undefined;
-			if (!active) {return;}
+			if (!active) {
+				return;
+			}
 			const resolved = stored ?? defaultValue;
 			setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 			setIsLoading(false);
-		})();
+		};
+
+		void load();
+		const unsubscribeInit = settingManager.subscribeInit(() => {
+			void load();
+		});
 
 		return () => {
 			active = false;
+			unsubscribeInit();
 		};
 	}, [category, key, defaultValue]);
 
@@ -107,20 +127,38 @@ export function useSetState<T>(
 	useEffect(() => {
 		let active = true;
 
-		void (async () => {
-			setIsLoading(true);
+		const load = async () => {
 			if (!settingManager.isInitialized()) {
+				if (active) {
+					setValueState(initial);
+					valueRef.current = initial;
+					setIsLoading(false);
+				}
 				return;
 			}
+
+			if (active) {
+				setIsLoading(true);
+			}
+
 			const stored = (await settingManager.get(category, key)) as T | undefined;
-			if (!active) {return;}
+			if (!active) {
+				return;
+			}
 			const resolved = stored ?? initial;
 			setValueState((current) => (Object.is(current, resolved) ? current : resolved));
+			valueRef.current = resolved;
 			setIsLoading(false);
-		})();
+		};
+
+		void load();
+		const unsubscribeInit = settingManager.subscribeInit(() => {
+			void load();
+		});
 
 		return () => {
 			active = false;
+			unsubscribeInit();
 		};
 	}, [category, key, initial]);
 

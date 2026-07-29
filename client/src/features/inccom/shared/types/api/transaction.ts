@@ -5,6 +5,8 @@ export type ApiTransferCounterpartyDirection = 'to' | 'from';
 export interface ApiTransferCounterparty {
 	accountId: number;
 	accountLabel: string;
+	accountType: string | null;
+	accountColor: string | null;
 	direction: ApiTransferCounterpartyDirection;
 	ownerId: number | null;
 	ownerName: string | null;

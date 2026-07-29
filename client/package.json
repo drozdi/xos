@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc --noEmit && vite build",
+		"build:ignore": "vite build",
 		"analyze": "vite build --mode analyze",
 		"lint": "eslint .",
 		"test": "vitest run",

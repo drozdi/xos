@@ -10,6 +10,7 @@ import {
 	useCanReadMainUser,
 	useCanRoleMainUser,
 	useCanUpdateMainUser,
+	useCanChangeMainUserPassword,
 } from '@/features/main/mainAccess';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 import { useEntityId } from '@/features/main/mainAppUtils';
@@ -44,6 +45,8 @@ const initialData: UserDetail = {
 	groups: {},
 	accesses: {},
 	roles: [],
+	password: '',
+	confirm_password: '',
 };
 
 export default function MainUserApp() {
@@ -54,6 +57,7 @@ export default function MainUserApp() {
 	const canGroup = useCanGroupMainUser();
 	const canAccess = useCanAccessMainUser();
 	const canRole = useCanRoleMainUser();
+	const canChangePassword = useCanChangeMainUserPassword();
 	const canCreate = canCreateMainUser();
 	const isNew = entityId === 0;
 	const [activeTab, setActiveTab] = useState<string | null>('general');
@@ -146,6 +150,7 @@ export default function MainUserApp() {
 								data={data}
 								errors={errors}
 								readOnly={readOnlyGeneral}
+								canChangePassword={canChangePassword}
 								setField={setField}
 							/>
 						</Tabs.Panel>

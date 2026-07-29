@@ -115,6 +115,7 @@ export function useAccountCreate() {
 		mutationFn: (data: Partial<IAccount>) => requestAccountCreate(data),
 		onSuccess: (account) => {
 			upsertAccountInListCache(queryClient, account);
+			void queryClient.invalidateQueries({ queryKey: [ACCOUNTS_KEY] });
 		},
 	});
 }
@@ -154,11 +155,11 @@ export function useAccountAddUser() {
 	return useMutation({
 		mutationFn: ({
 			id,
-			login,
+			email,
 		}: {
 			id: IAccount['id'];
-			login: string;
-		}) => requestAccountAddUser(id, { login }),
+			email: string;
+		}) => requestAccountAddUser(id, { email }),
 		onSuccess: (_data, variables) => {
 			queryClient.invalidateQueries({
 				queryKey: [ACCOUNTS_KEY, variables.id],

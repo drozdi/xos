@@ -5,6 +5,8 @@ export type TransferCounterpartyDirection = 'to' | 'from';
 export interface ITransferCounterparty {
 	accountId: number;
 	accountLabel: string;
+	accountType: string | null;
+	accountColor: string | null;
 	direction: TransferCounterpartyDirection;
 	ownerId: number | null;
 	ownerName: string | null;

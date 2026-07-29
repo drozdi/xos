@@ -1,6 +1,8 @@
 export interface ApiAccountParticipant {
 	id: number;
-	login: string;
+	name: string;
+	email: string | null;
+	login?: string | null;
 }
 
 export interface ApiAccount {

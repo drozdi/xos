@@ -180,7 +180,7 @@ class AccountsController extends AbstractController
         if ($participant === null) {
             return $this->json([
                 'error' => 'Validation failed',
-                'violations' => ['userId' => 'User not found'],
+                'violations' => ['email' => 'User not found'],
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
@@ -199,14 +199,11 @@ class AccountsController extends AbstractController
         $account->addUser($participant);
         $this->accountRepository->save($account, true);
 
-        return $this->json([
-            'userId' => $participant->getId(),
-            'login' => $participant->getLogin(),
-        ], Response::HTTP_CREATED);
+        return $this->json($this->mapParticipant($participant), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}/users/{userId}', name: 'remove_user', methods: ['DELETE'], requirements: ['id' => '\d+', 'userId' => '\d+'])]
-    public function removeUser(int $id, int $userId, #[CurrentUser] ?User $user): JsonResponse
+    public function removeUser(int $id, int $userId, #[CurrentUser] ?User $user): Response
     {
         if ($user === null) {
             return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
@@ -226,11 +223,18 @@ class AccountsController extends AbstractController
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if (!$account->getUsers()->contains($participant)) {
+        $existing = null;
+        foreach ($account->getUsers() as $u) {
+            if ($u->getId() === $userId) {
+                $existing = $u;
+                break;
+            }
+        }
+        if ($existing === null) {
             return $this->json(['error' => 'User is not a participant'], Response::HTTP_NOT_FOUND);
         }
 
-        $account->removeUser($participant);
+        $account->removeUser($existing);
         $this->accountRepository->save($account, true);
 
         return new Response('', Response::HTTP_NO_CONTENT);
@@ -306,7 +310,7 @@ class AccountsController extends AbstractController
 
         if ($isMaster) {
             $result['participants'] = array_map(
-                fn ($u) => ['id' => $u->getId(), 'login' => $u->getLogin()],
+                fn (User $u) => $this->mapParticipant($u),
                 $account->getUsers()->toArray(),
             );
         } else {
@@ -315,6 +319,19 @@ class AccountsController extends AbstractController
         }
 
         return $result;
+    }
+
+    /**
+     * @return array{id: int|null, name: string, email: string|null, login: string|null}
+     */
+    private function mapParticipant(User $user): array
+    {
+        return [
+            'id' => $user->getId(),
+            'name' => $this->formatUserDisplayName($user) ?? '',
+            'email' => $user->getEmail(),
+            'login' => $user->getLogin(),
+        ];
     }
 
     private function formatUserDisplayName(?User $user): ?string
@@ -328,6 +345,16 @@ class AccountsController extends AbstractController
             return trim($alias);
         }
 
+        $parts = array_filter([
+            $user->getSecondName(),
+            $user->getFirstName(),
+            $user->getPatronymic(),
+        ], static fn (?string $part) => $part !== null && trim($part) !== '');
+
+        if ($parts !== []) {
+            return implode(' ', array_map(static fn (string $part) => trim($part), $parts));
+        }
+
         return $user->getLogin();
     }
 
@@ -338,6 +365,10 @@ class AccountsController extends AbstractController
     {
         if (isset($body['userId'])) {
             return $this->userRepository->find((int) $body['userId']);
+        }
+
+        if (isset($body['email']) && is_string($body['email']) && $body['email'] !== '') {
+            return $this->userRepository->findOneBy(['email' => trim($body['email'])]);
         }
 
         if (isset($body['login']) && is_string($body['login']) && $body['login'] !== '') {

@@ -78,9 +78,9 @@ export async function requestAccountDelete(
 
 export async function requestAccountAddUser(
 	id: IAccount['id'],
-	data: { login: string },
-): Promise<{ userId: number; login: string }> {
-	const res = await api.post<{ userId: number; login: string }>(
+	data: { email: string },
+): Promise<IAccountParticipant> {
+	const res = await api.post<IAccountParticipant>(
 		`/accounts/${id}/users`,
 		data,
 	);

@@ -2,6 +2,7 @@
 	useAccountAddUser,
 	useAccountRemoveUser,
 } from '@inccom/entities/account';
+import type { IAccountParticipant } from '@inccom/entities/account';
 import {
 	ActionIcon,
 	Button,
@@ -18,6 +19,12 @@ interface AccountParticipantsPanelProps {
 	participants: IAccountParticipant[];
 }
 
+function formatParticipantLabel(participant: IAccountParticipant): string {
+	const name = participant.name?.trim() || participant.login || 'Пользователь';
+	const email = participant.email?.trim();
+	return email ? `${name} (${email})` : name;
+}
+
 export function AccountParticipantsPanel({
 	accountId,
 	participants,
@@ -26,14 +33,22 @@ export function AccountParticipantsPanel({
 	const removeMutation = useAccountRemoveUser();
 
 	const form = useForm({
-		initialValues: { login: '' },
+		initialValues: { email: '' },
 		validate: {
-			login: (value) => (value.trim() ? null : 'Введите логин'),
+			email: (value) => {
+				const trimmed = value.trim();
+				if (!trimmed) return 'Введите email';
+				if (!trimmed.includes('@')) return 'Некорректный email';
+				return null;
+			},
 		},
 	});
 
-	async function handleAdd(values: { login: string }) {
-		await addMutation.mutateAsync({ id: accountId, login: values.login.trim() });
+	async function handleAdd(values: { email: string }) {
+		await addMutation.mutateAsync({
+			id: accountId,
+			email: values.email.trim(),
+		});
 		form.reset();
 	}
 
@@ -47,7 +62,7 @@ export function AccountParticipantsPanel({
 			{participants.length ? (
 				participants.map((participant) => (
 					<Group key={participant.id} justify="space-between">
-						<Text>{participant.login}</Text>
+						<Text>{formatParticipantLabel(participant)}</Text>
 						<ActionIcon
 							color="red"
 							variant="subtle"
@@ -66,10 +81,10 @@ export function AccountParticipantsPanel({
 			<form onSubmit={form.onSubmit(handleAdd)}>
 				<Group align="flex-end">
 					<TextInput
-						label="Добавить по логину"
-						placeholder="login"
+						label="Добавить по email"
+						placeholder="user@example.com"
 						style={{ flex: 1 }}
-						{...form.getInputProps('login')}
+						{...form.getInputProps('email')}
 					/>
 					<Button type="submit" loading={addMutation.isPending}>
 						Добавить

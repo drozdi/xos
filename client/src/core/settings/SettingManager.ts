@@ -16,13 +16,16 @@ class SettingManagerImpl {
 	private adapter: ISettingAdapter | null = null;
 	private readonly config = new Config();
 	private readonly listeners = new Set<ChangeListener>();
+	private readonly initListeners = new Set<() => void>();
 
 	init(adapter: ISettingAdapter): void {
 		this.adapter = adapter;
+		this.emitInit();
 	}
 
 	reset(): void {
 		this.adapter = null;
+		this.emitInit();
 	}
 
 	isInitialized(): boolean {
@@ -36,9 +39,23 @@ class SettingManagerImpl {
 		};
 	}
 
+	/** Вызывается при init() и reset(). */
+	subscribeInit(listener: () => void): () => void {
+		this.initListeners.add(listener);
+		return () => {
+			this.initListeners.delete(listener);
+		};
+	}
+
 	private emit(category: SettingCategory, key: string): void {
 		for (const listener of this.listeners) {
 			listener(category, key);
+		}
+	}
+
+	private emitInit(): void {
+		for (const listener of this.initListeners) {
+			listener();
 		}
 	}
 

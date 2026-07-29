@@ -255,6 +255,12 @@ final class UserScopeResolver
         return $this->canMainUser($user, 'can_role.main.user');
     }
 
+    /** Только ROLE_ROOT (не ROLE_MAIN_ROOT) может задавать/менять чужой пароль в Main. */
+    public function canChangeMainUserPassword(User $user): bool
+    {
+        return $this->userHasAnyRole($user, ['ROLE_ROOT']);
+    }
+
     public function canCreateSchooltaskSubject(User $user): bool
     {
         return $this->canSchooltaskSubject($user, 'can_create.schooltask.subject');

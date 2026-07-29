@@ -1,22 +1,80 @@
-﻿import type { TransactionType } from '@inccom/entities/transaction';
+﻿import { useAccountsQuery, useEnumsTypeAccount } from '@inccom/entities/account';
+import type { TransactionType } from '@inccom/entities/transaction';
 import { TransactionForm } from '@inccom/features/transaction-form';
 import { TransferForm } from '@inccom/features/transfer-form';
 import { Template } from '@inccom/layouts';
-import { TransactionTableWidget } from '@inccom/widgets';
-import { Button, Group, Select, Stack } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
-import { useMemo, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+	AccountColorDot,
+	buildAccountSelectOptions,
+	getAccountOptionColor,
+	renderAccountSelectOption,
+} from '@inccom/shared/lib/format-account-select-label';
 import {
 	parseAccountIdParam,
 	parseTransactionType,
 	transactionNewUrl,
 	transferNewUrl,
 } from '@inccom/shared/lib/transaction-url';
+import { TransactionTableWidget } from '@inccom/widgets';
+import { Group, Select, Stack, Text } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 export function TransactionsListPage() {
 	const { id } = useParams();
-	const accountId = Number(id);
+	const [searchParams, setSearchParams] = useSearchParams();
+	const routeAccountId = parseAccountIdParam(id ?? null);
+	const showAccountSelect = routeAccountId === undefined;
+
+	const { data: accountsData, isLoading: isAccountsLoading } = useAccountsQuery();
+	const accountTypes = useEnumsTypeAccount();
+	const accounts = accountsData?.items ?? [];
+
+	const accountOptions = useMemo(
+		() => buildAccountSelectOptions(accounts, accountTypes.findLabelByCode),
+		[accounts, accountTypes.findLabelByCode],
+	);
+
+	const queryAccountId = parseAccountIdParam(searchParams.get('accountId'));
+	const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
+		queryAccountId ? String(queryAccountId) : null,
+	);
+
+	useEffect(() => {
+		if (!showAccountSelect || accounts.length === 0) {
+			return;
+		}
+		if (selectedAccountId && accounts.some((a) => String(a.id) === selectedAccountId)) {
+			return;
+		}
+		const fallbackId = accounts[0]?.id;
+		const fallback =
+			queryAccountId != null
+				? String(queryAccountId)
+				: fallbackId != null
+					? String(fallbackId)
+					: null;
+		if (fallback) {
+			setSelectedAccountId(fallback);
+		}
+	}, [showAccountSelect, accounts, selectedAccountId, queryAccountId]);
+
+	useEffect(() => {
+		if (!showAccountSelect || !selectedAccountId) {
+			return;
+		}
+		const current = searchParams.get('accountId');
+		if (current === selectedAccountId) {
+			return;
+		}
+		const next = new URLSearchParams(searchParams);
+		next.set('accountId', selectedAccountId);
+		setSearchParams(next, { replace: true });
+	}, [showAccountSelect, selectedAccountId, searchParams, setSearchParams]);
+
+	const accountId = routeAccountId ?? (selectedAccountId ? Number(selectedAccountId) : 0);
+
 	const [typeFilter, setTypeFilter] = useState<string | null>(null);
 	const [dateFrom, setDateFrom] = useState<Date | null>(null);
 	const [dateTo, setDateTo] = useState<Date | null>(null);
@@ -39,11 +97,32 @@ export function TransactionsListPage() {
 		return result;
 	}, [typeFilter, dateFrom, dateTo]);
 
+	const accountSelect = showAccountSelect ? (
+		<Select
+			label="Счёт"
+			data={accountOptions}
+			value={selectedAccountId}
+			onChange={setSelectedAccountId}
+			searchable
+			disabled={isAccountsLoading || accountOptions.length === 0}
+			renderOption={renderAccountSelectOption}
+			leftSection={
+				<AccountColorDot
+					color={getAccountOptionColor(accountOptions, selectedAccountId)}
+				/>
+			}
+			leftSectionPointerEvents="none"
+			placeholder={isAccountsLoading ? 'Загрузка…' : 'Выберите счёт'}
+			w={{ base: '100%', sm: 320 }}
+		/>
+	) : null;
+
 	return (
 		<>
-			<Template.Title>Транзакции</Template.Title>
+			<Template.Title>История транзакций</Template.Title>
 			<Stack gap="md">
 				<Stack gap="md" hiddenFrom="sm">
+					{accountSelect}
 					<Select
 						label="Тип"
 						placeholder="Все"
@@ -67,84 +146,41 @@ export function TransactionsListPage() {
 						value={dateTo}
 						onChange={(value) => setDateTo(value as Date | null)}
 					/>
-					<Group grow>
-						<Button
-							component={Link}
-							to={transactionNewUrl('income', accountId)}
-							color="green"
-						>
-							Доход
-						</Button>
-						<Button
-							component={Link}
-							to={transactionNewUrl('expense', accountId)}
-							color="red"
-						>
-							Расход
-						</Button>
-						<Button
-							component={Link}
-							to={transferNewUrl(accountId)}
-							variant="light"
-						>
-							Перевод
-						</Button>
-					</Group>
 				</Stack>
-				<Group justify="space-between" wrap="wrap" visibleFrom="sm">
-					<Group wrap="wrap">
-						<Select
-							label="Тип"
-							placeholder="Все"
-							clearable
-							data={[
-								{ value: 'income', label: 'Доход' },
-								{ value: 'expense', label: 'Расход' },
-							]}
-							value={typeFilter}
-							onChange={setTypeFilter}
-							w={160}
-						/>
-						<DatePickerInput
-							label="С"
-							clearable
-							value={dateFrom}
-							onChange={(value) => setDateFrom(value as Date | null)}
-							w={160}
-						/>
-						<DatePickerInput
-							label="По"
-							clearable
-							value={dateTo}
-							onChange={(value) => setDateTo(value as Date | null)}
-							w={160}
-						/>
-					</Group>
-					<Group mt={24}>
-						<Button
-							component={Link}
-							to={transactionNewUrl('income', accountId)}
-							color="green"
-						>
-							Доход
-						</Button>
-						<Button
-							component={Link}
-							to={transactionNewUrl('expense', accountId)}
-							color="red"
-						>
-							Расход
-						</Button>
-						<Button
-							component={Link}
-							to={transferNewUrl(accountId)}
-							variant="light"
-						>
-							Перевод
-						</Button>
-					</Group>
+				<Group wrap="wrap" align="flex-end" visibleFrom="sm">
+					{accountSelect}
+					<Select
+						label="Тип"
+						placeholder="Все"
+						clearable
+						data={[
+							{ value: 'income', label: 'Доход' },
+							{ value: 'expense', label: 'Расход' },
+						]}
+						value={typeFilter}
+						onChange={setTypeFilter}
+						w={160}
+					/>
+					<DatePickerInput
+						label="С"
+						clearable
+						value={dateFrom}
+						onChange={(value) => setDateFrom(value as Date | null)}
+						w={160}
+					/>
+					<DatePickerInput
+						label="По"
+						clearable
+						value={dateTo}
+						onChange={(value) => setDateTo(value as Date | null)}
+						w={160}
+					/>
 				</Group>
-				<TransactionTableWidget accountId={accountId} filters={filters} />
+				{accountId > 0 ? (
+					<TransactionTableWidget accountId={accountId} filters={filters} />
+				) : (
+					<Text c="dimmed">Выберите счёт для просмотра истории</Text>
+				)}
 			</Stack>
 		</>
 	);
@@ -177,12 +213,7 @@ export function LegacyTransactionCreateRedirect() {
 	const type = parseTransactionType(searchParams.get('type'));
 	const accountId = parseAccountIdParam(id ?? null);
 
-	return (
-		<Navigate
-			to={transactionNewUrl(type, accountId)}
-			replace
-		/>
-	);
+	return <Navigate to={transactionNewUrl(type, accountId)} replace />;
 }
 
 export function TransactionEditPage() {

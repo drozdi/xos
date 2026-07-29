@@ -348,6 +348,8 @@ class UserController extends AbstractController {
             ] as $field) {
                 unset($req[$field]);
             }
+        } elseif (!$userScopeResolver->canChangeMainUserPassword($user)) {
+            unset($req['password'], $req['confirm_password']);
         }
 
         if (!$userScopeResolver->canGroupMainUser($user)) {
@@ -372,6 +374,10 @@ class UserController extends AbstractController {
      */
     private function filterUserCreatePayload(array $req, UserScopeResolver $userScopeResolver, User $user): array
     {
+        if (!$userScopeResolver->canChangeMainUserPassword($user)) {
+            unset($req['password'], $req['confirm_password']);
+        }
+
         if (!$userScopeResolver->canGroupMainUser($user)) {
             unset($req['groups']);
         }

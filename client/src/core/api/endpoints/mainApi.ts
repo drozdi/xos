@@ -111,6 +111,8 @@ export const userDetailSchema = z
 		activeFrom: z.string().nullable().optional(),
 		activeTo: z.string().nullable().optional(),
 		last_login: z.string().nullable().optional(),
+		password: z.string().optional(),
+		confirm_password: z.string().optional(),
 		roles: z.array(z.string()).optional(),
 		groups: userGroupsRecordSchema,
 		accesses: userAccessesRecordSchema,

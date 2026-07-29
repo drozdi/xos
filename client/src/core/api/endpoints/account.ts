@@ -42,6 +42,7 @@ export const accountUpdateRequestSchema = z.object({
 	first_name: z.string().optional(),
 	patronymic: z.string().optional(),
 	description: z.string().optional(),
+	old_password: z.string().optional(),
 	password: z.string().optional(),
 	confirm_password: z.string().optional(),
 });

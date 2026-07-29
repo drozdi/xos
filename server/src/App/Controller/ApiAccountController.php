@@ -69,6 +69,12 @@ class ApiAccountController extends AbstractController {
     }
     #[Route('', name: 'update', methods: ['PUT', 'PATCH'])]
     public function update (Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, UserPasswordHasherInterface $passwordHasher, #[CurrentUser] ?User $user): JsonResponse {
+        if (null === $user) {
+            return $this->json([
+                'message' => 'missing credentials',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
         $ar = $request->toArray();
         $entityManager->getConnection()->beginTransaction();
         $user->setEmail($ar['email'] ?: '');
@@ -78,8 +84,20 @@ class ApiAccountController extends AbstractController {
         $user->setPatronymic($ar['patronymic'] ?: '');
         $user->setDescription($ar['description'] ?: '');
         $errors = [];
-        if ((isset($ar['password']) || isset($ar['confirm_password'])) && $ar['confirm_password'] != $ar['password']) {
-            $errors['password'] = "Пароли не совподают";
+        $wantsPasswordChange = !empty($ar['password']) || !empty($ar['confirm_password']) || !empty($ar['old_password']);
+        if ($wantsPasswordChange) {
+            if (empty($ar['old_password'])) {
+                $errors['old_password'] = 'Укажите текущий пароль';
+            } elseif (!$passwordHasher->isPasswordValid($user, (string) $ar['old_password'])) {
+                $errors['old_password'] = 'Неверный текущий пароль';
+            }
+            if (empty($ar['password'])) {
+                $errors['password'] = 'Укажите новый пароль';
+            } elseif (($ar['confirm_password'] ?? null) != $ar['password']) {
+                $errors['password'] = 'Пароли не совпадают';
+            } elseif (mb_strlen((string) $ar['password']) < 6) {
+                $errors['password'] = 'Пароль должен быть не короче 6 символов';
+            }
         }
         $vErrors = $validator->validate($user);
         if (count($errors) > 0 || count($vErrors) > 0) {
@@ -89,25 +107,12 @@ class ApiAccountController extends AbstractController {
             $entityManager->getConnection()->rollBack();
             return $this->json($errors, Response::HTTP_BAD_REQUEST);
         }
-        if (!empty($ar['password']) && $ar['confirm_password'] == $ar['password']) {
+        if (!empty($ar['password']) && ($ar['confirm_password'] ?? null) == $ar['password']) {
             $hashedPassword = $passwordHasher->hashPassword($user, $ar['password']);
             $entityManager->getRepository(User::class)->upgradePassword($user, $hashedPassword);
         }
         $entityManager->flush();
         $entityManager->getConnection()->commit();
         return $this->json($user->getId(), Response::HTTP_CREATED);
-        /*return $this->json([
-            'id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'alias' => $user->getAlias(),
-            'second_name' => $user->getSecondName(),
-            'first_name' => $user->getFirstName(),
-            'patronymic' => $user->getPatronymic(),
-            'description' => $user->getDescription(),
-            'date_register' => $user->getDateRegister("Y-m-d H:m:s"),
-            //'tutor' => $user->getEmail(),
-            'last_login' => $user->getLastLogin("Y-m-d H:m:s"),
-            'x_timestamp' => $user->getXTimestamp("Y-m-d H:m:s")
-        ]);*/
     }
 }

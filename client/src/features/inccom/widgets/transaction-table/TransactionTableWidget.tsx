@@ -1,14 +1,19 @@
-﻿import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
+﻿import { useEnumsTypeAccount } from '@inccom/entities/account';
 import {
 	useTransactionsQuery,
 	type ITransaction,
 	type ITransactionFilters,
 } from '@inccom/entities/transaction';
+import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
 import { useStoreUserProfile } from '@inccom/entities/user';
-import { formatTransferCounterparty } from '@inccom/shared/lib/format-transfer-counterparty';
+import { AccountColorDot } from '@inccom/shared/lib/format-account-select-label';
+import {
+	formatTransferActionLabel,
+	formatTransferCounterpartyLine,
+} from '@inccom/shared/lib/format-transfer-counterparty';
 import { DataColumn, TableData } from '@inccom/shared/ui/table';
 import { formatBalance } from '@inccom/shared/utils/number-format';
-import { Anchor, ScrollArea, Text } from '@mantine/core';
+import { Anchor, Group, ScrollArea, Text } from '@mantine/core';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -41,15 +46,6 @@ function isTransferDebit(transaction: ITransaction): boolean {
 	return transaction.transferId !== null && transaction.type === 'expense';
 }
 
-function formatTransactionType(transaction: ITransaction): string {
-	if (transaction.transferId) {
-		return transaction.type === 'expense'
-			? 'Перевод (списание)'
-			: 'Перевод (зачисление)';
-	}
-	return TYPE_LABELS[transaction.type] ?? transaction.type;
-}
-
 function formatTransactionAmount(transaction: ITransaction): string {
 	const formatted = formatBalance(transaction.amount);
 	if (isTransferDebit(transaction)) {
@@ -74,6 +70,7 @@ export function TransactionTableWidget({
 
 	const { data, isLoading } = useTransactionsQuery(queryParams);
 	const { userData } = useStoreUserProfile();
+	const accountTypes = useEnumsTypeAccount();
 	const { data: categoriesData } = useTransactionCategoriesQuery({
 		accountId,
 		limit: 100,
@@ -115,24 +112,38 @@ export function TransactionTableWidget({
 					sortable
 					resizable
 					body={(transaction) => {
-						const transferLabel = formatTransferCounterparty(
+						if (!transaction.transferId) {
+							return TYPE_LABELS[transaction.type] ?? transaction.type;
+						}
+
+						const actionLabel = formatTransferActionLabel(transaction.type);
+						const counterpartyLine = formatTransferCounterpartyLine(
 							transaction.transferCounterparty,
 							userData?.id,
+							accountTypes.findLabelByCode,
 						);
 
 						return (
 							<>
 								{isTransferDebit(transaction) ? (
 									<Text c="red" size="sm">
-										{formatTransactionType(transaction)}
+										{actionLabel}
 									</Text>
 								) : (
-									formatTransactionType(transaction)
+									<Text size="sm">{actionLabel}</Text>
 								)}
-								{transferLabel && (
-									<Text size="xs" c="dimmed">
-										{transferLabel}
-									</Text>
+								{counterpartyLine && (
+									<Group gap={6} wrap="nowrap">
+										<AccountColorDot
+											color={
+												transaction.transferCounterparty?.accountColor
+											}
+											size={8}
+										/>
+										<Text size="xs" c="dimmed">
+											{counterpartyLine}
+										</Text>
+									</Group>
 								)}
 							</>
 						);

@@ -35,12 +35,26 @@ export function normalizeUserRoles(roles: UserDetail['roles']): string[] {
 }
 
 export function prepareUserSavePayload(data: UserDetail): UserDetail {
-	return {
+	const payload: UserDetail = {
 		...data,
 		groups: prepareUserGroupsPayload(data.groups),
 		accesses: prepareUserAccessesPayload(data.accesses),
 		roles: normalizeUserRoles(data.roles),
 	};
+
+	const password = typeof data.password === 'string' ? data.password.trim() : '';
+	const confirm =
+		typeof data.confirm_password === 'string' ? data.confirm_password.trim() : '';
+
+	if (password) {
+		payload.password = password;
+		payload.confirm_password = confirm;
+	} else {
+		delete payload.password;
+		delete payload.confirm_password;
+	}
+
+	return payload;
 }
 
 function prepareUserGroupsPayload(

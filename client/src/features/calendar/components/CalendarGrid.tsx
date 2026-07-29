@@ -129,10 +129,14 @@ export function CalendarGrid({
 			display: 'flex',
 			flexDirection: 'column' as const,
 		},
-		styles: {
-			weekViewRoot: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' as const },
-		},
 		scrollAreaProps: { style: { flex: 1, minHeight: 0 } },
+	};
+
+	const flexFill = {
+		flex: 1,
+		minHeight: 0,
+		display: 'flex',
+		flexDirection: 'column' as const,
 	};
 
 	return (
@@ -150,6 +154,7 @@ export function CalendarGrid({
 			{view === 'day' ? (
 				<DayView
 					{...common}
+					styles={{ dayView: flexFill }}
 					intervalMinutes={30}
 					onTimeSlotClick={({ slotStart, slotEnd }) => {
 						onSlotClick({
@@ -169,6 +174,7 @@ export function CalendarGrid({
 			{view === 'week' ? (
 				<WeekView
 					{...common}
+					styles={{ weekViewRoot: flexFill }}
 					intervalMinutes={30}
 					onTimeSlotClick={({ slotStart, slotEnd }) => {
 						onSlotClick({

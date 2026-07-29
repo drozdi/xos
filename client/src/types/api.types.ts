@@ -83,6 +83,7 @@ export interface AccountUpdateRequest {
 	first_name?: string;
 	patronymic?: string;
 	description?: string;
+	old_password?: string;
 	password?: string;
 	confirm_password?: string;
 }

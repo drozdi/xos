@@ -238,6 +238,11 @@ export function canRoleMainUser(): boolean {
 	return canMainUser(ROLE_MAIN_USER_SCOPE);
 }
 
+/** Смена чужого пароля в MainUser — только ROLE_ROOT (не ROLE_MAIN_ROOT). */
+export function canChangeMainUserPassword(): boolean {
+	return isRoot();
+}
+
 function useMainUserAccess(check: () => boolean): boolean {
 	const scopes = useAuthStore((state) => state.scopes);
 	const roles = useAuthStore((state) => state.user?.roles);
@@ -271,4 +276,8 @@ export function useCanAccessMainUser(): boolean {
 
 export function useCanRoleMainUser(): boolean {
 	return useMainUserAccess(canRoleMainUser);
+}
+
+export function useCanChangeMainUserPassword(): boolean {
+	return useMainUserAccess(canChangeMainUserPassword);
 }

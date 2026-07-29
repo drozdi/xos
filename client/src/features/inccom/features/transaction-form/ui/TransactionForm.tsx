@@ -1,4 +1,4 @@
-﻿import { useAccountsQuery } from '@inccom/entities/account';
+﻿import { useAccountsQuery, useEnumsTypeAccount } from '@inccom/entities/account';
 import {
 	useTransactionCreate,
 	useTransactionQuery,
@@ -9,6 +9,12 @@ import {
 } from '@inccom/entities/transaction';
 import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
 import { QrScannerModal } from '@inccom/features/qr-scanner';
+import {
+	AccountColorDot,
+	buildAccountSelectOptions,
+	getAccountOptionColor,
+	renderAccountSelectOption,
+} from '@inccom/shared/lib/format-account-select-label';
 import type { ParsedFiscalQr } from '@inccom/shared/lib/parse-fiscal-qr';
 import {
 	calculateExpenseAmount,
@@ -108,6 +114,7 @@ export function TransactionForm({
 	const accountId = form.values.accountId ? Number(form.values.accountId) : 0;
 
 	const { data: accountsData, isLoading: isAccountsLoading } = useAccountsQuery();
+	const accountTypes = useEnumsTypeAccount();
 	const { data: categoriesData, isFetching: isCategoriesFetching } =
 		useTransactionCategoriesQuery(
 		{ accountId, limit: 100, offset: 0 },
@@ -119,11 +126,11 @@ export function TransactionForm({
 
 	const accountOptions = useMemo(
 		() =>
-			(accountsData?.items ?? []).map((account) => ({
-				value: String(account.id),
-				label: account.label,
-			})),
-		[accountsData?.items],
+			buildAccountSelectOptions(
+				accountsData?.items ?? [],
+				accountTypes.findLabelByCode,
+			),
+		[accountsData?.items, accountTypes.findLabelByCode],
 	);
 
 	const categoryOptions = useMemo(
@@ -315,6 +322,16 @@ export function TransactionForm({
 					{...accountIdProps}
 					searchable
 					required
+					renderOption={renderAccountSelectOption}
+					leftSection={
+						<AccountColorDot
+							color={getAccountOptionColor(
+								accountOptions,
+								form.values.accountId,
+							)}
+						/>
+					}
+					leftSectionPointerEvents="none"
 					placeholder={
 						isAccountsLoading && !accountOptions.length
 							? 'Загрузка…'

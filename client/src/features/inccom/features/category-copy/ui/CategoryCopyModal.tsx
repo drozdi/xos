@@ -1,9 +1,15 @@
-﻿import { useAccountsQuery } from '@inccom/entities/account';
+﻿import { useAccountsQuery, useEnumsTypeAccount } from '@inccom/entities/account';
 import {
 	useTransactionCategoriesQuery,
 	useEnumsTypeCategory,
 } from '@inccom/entities/transaction-category';
 import { notification } from '@inccom/shared/notification';
+import {
+	AccountColorDot,
+	buildAccountSelectOptions,
+	getAccountOptionColor,
+	renderAccountSelectOption,
+} from '@inccom/shared/lib/format-account-select-label';
 import { getErrorMessage } from '@inccom/shared/utils/error';
 import {
 	Button,
@@ -37,6 +43,7 @@ export function CategoryCopyModal({
 	const [loading, setLoading] = useState(false);
 
 	const { data: accountsData } = useAccountsQuery();
+	const accountTypes = useEnumsTypeAccount();
 	const { dataSelect: typeOptions } = useEnumsTypeCategory();
 	const sourceId = sourceAccountId ? Number(sourceAccountId) : 0;
 
@@ -47,11 +54,11 @@ export function CategoryCopyModal({
 
 	const accountOptions = useMemo(
 		() =>
-			(accountsData?.items ?? []).map((account) => ({
-				value: String(account.id),
-				label: account.label,
-			})),
-		[accountsData?.items],
+			buildAccountSelectOptions(
+				accountsData?.items ?? [],
+				accountTypes.findLabelByCode,
+			),
+		[accountsData?.items, accountTypes.findLabelByCode],
 	);
 
 	const filteredCategories = useMemo(
@@ -127,6 +134,13 @@ export function CategoryCopyModal({
 					}}
 					placeholder="Выберите счёт"
 					searchable
+					renderOption={renderAccountSelectOption}
+					leftSection={
+						<AccountColorDot
+							color={getAccountOptionColor(accountOptions, sourceAccountId)}
+						/>
+					}
+					leftSectionPointerEvents="none"
 				/>
 				<Select
 					label="Целевой счёт"
@@ -135,6 +149,13 @@ export function CategoryCopyModal({
 					onChange={setTargetAccountId}
 					placeholder="Выберите счёт"
 					searchable
+					renderOption={renderAccountSelectOption}
+					leftSection={
+						<AccountColorDot
+							color={getAccountOptionColor(accountOptions, targetAccountId)}
+						/>
+					}
+					leftSectionPointerEvents="none"
 				/>
 				<Select
 					label="Тип категорий"

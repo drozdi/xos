@@ -1,4 +1,4 @@
-﻿import { useAccountsQuery } from '@inccom/entities/account';
+﻿import { useAccountsQuery, useEnumsTypeAccount } from '@inccom/entities/account';
 import {
 	useTransferCreate,
 	useTransferQuery,
@@ -10,11 +10,18 @@ import type { ICategory } from '@inccom/entities/transaction-category/model/type
 import { useTransactionCategoriesQuery } from '@inccom/entities/transaction-category';
 import { notification } from '@inccom/shared/notification';
 import {
+	AccountColorDot,
+	buildAccountSelectOptions,
+	getAccountOptionColor,
+	renderAccountSelectOption,
+	type AccountSelectOption,
+} from '@inccom/shared/lib/format-account-select-label';
+import {
 	confirmNegativeBalance,
 	getBalanceAfterDebit,
 	willBalanceGoNegative,
 } from '@inccom/shared/lib/negative-balance';
-import { balanceInputProps, formatBalance } from '@inccom/shared/utils/number-format';
+import { balanceInputProps } from '@inccom/shared/utils/number-format';
 import { getErrorMessage } from '@inccom/shared/utils/error';
 import {
 	Button,
@@ -38,9 +45,7 @@ interface TransferFormValues {
 	comment: string;
 }
 
-interface AccountSelectOption {
-	value: string;
-	label: string;
+interface TransferAccountOption extends AccountSelectOption {
 	currency: string;
 }
 
@@ -88,6 +93,7 @@ export function TransferForm({
 	});
 
 	const { data: accountsData, isLoading: isAccountsLoading } = useAccountsQuery();
+	const accountTypes = useEnumsTypeAccount();
 	const { data: transferData } = useTransferQuery(id);
 	const createMutation = useTransferCreate();
 	const updateMutation = useTransferUpdate();
@@ -108,14 +114,15 @@ export function TransferForm({
 			{ enabled: toAccountIdNum > 0 },
 		);
 
-	const accountOptions = useMemo<AccountSelectOption[]>(
+	const accountOptions = useMemo<TransferAccountOption[]>(
 		() =>
-			accounts.map((account) => ({
-				value: String(account.id),
-				label: `${account.label} (${formatBalance(account.balance)} ${account.currency})`,
-				currency: account.currency,
-			})),
-		[accounts],
+			buildAccountSelectOptions(accounts, accountTypes.findLabelByCode).map(
+				(option, index) => ({
+					...option,
+					currency: accounts[index]?.currency ?? '',
+				}),
+			),
+		[accounts, accountTypes.findLabelByCode],
 	);
 
 	const fromCurrency = accounts.find(
@@ -139,9 +146,12 @@ export function TransferForm({
 		});
 	}, [accountOptions, fromAccountId, fromCurrency]);
 
-	const transferCategoryOptions = (items: ICategory[] | undefined) =>
+	const categoryOptionsByType = (
+		items: ICategory[] | undefined,
+		type: 'expense' | 'income',
+	) =>
 		(items ?? [])
-			.filter((category) => category.type === 'transfer')
+			.filter((category) => category.type === type)
 			.sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label))
 			.map((category) => ({
 				value: String(category.id),
@@ -149,12 +159,12 @@ export function TransferForm({
 			}));
 
 	const outgoingCategoryOptions = useMemo(
-		() => transferCategoryOptions(fromCategoriesData?.items),
+		() => categoryOptionsByType(fromCategoriesData?.items, 'expense'),
 		[fromCategoriesData?.items],
 	);
 
 	const incomingCategoryOptions = useMemo(
-		() => transferCategoryOptions(toCategoriesData?.items),
+		() => categoryOptionsByType(toCategoriesData?.items, 'income'),
 		[toCategoriesData?.items],
 	);
 
@@ -328,6 +338,16 @@ export function TransferForm({
 					}}
 					searchable
 					required
+					renderOption={renderAccountSelectOption}
+					leftSection={
+						<AccountColorDot
+							color={getAccountOptionColor(
+								fromAccountOptions,
+								form.values.fromAccountId,
+							)}
+						/>
+					}
+					leftSectionPointerEvents="none"
 					placeholder={
 						isAccountsLoading && !fromAccountOptions.length
 							? 'Загрузка…'
@@ -343,6 +363,16 @@ export function TransferForm({
 					searchable
 					required
 					disabled={!fromAccountId}
+					renderOption={renderAccountSelectOption}
+					leftSection={
+						<AccountColorDot
+							color={getAccountOptionColor(
+								toAccountOptions,
+								form.values.toAccountId,
+							)}
+						/>
+					}
+					leftSectionPointerEvents="none"
 					placeholder={
 						!fromAccountId
 							? 'Сначала выберите счёт списания'
@@ -371,7 +401,7 @@ export function TransferForm({
 							? 'Сначала выберите счёт списания'
 							: outgoingCategoryOptions.length
 								? 'Выберите категорию'
-								: 'Нет категорий перевода'
+								: 'Нет категорий расхода'
 					}
 					nothingFoundMessage="Категории не найдены"
 					w="100%"
@@ -388,7 +418,7 @@ export function TransferForm({
 							? 'Сначала выберите счёт зачисления'
 							: incomingCategoryOptions.length
 								? 'Выберите категорию'
-								: 'Нет категорий перевода'
+								: 'Нет категорий дохода'
 					}
 					nothingFoundMessage="Категории не найдены"
 					w="100%"

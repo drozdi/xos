@@ -691,6 +691,10 @@ class TransactionsController extends AbstractController
 
             'accountLabel' => $counterpartyAccount->getLabel(),
 
+            'accountType' => $counterpartyAccount->getType(),
+
+            'accountColor' => $counterpartyAccount->getColor(),
+
             'direction' => $isOutgoing ? 'to' : 'from',
 
             'ownerId' => $master?->getId(),
