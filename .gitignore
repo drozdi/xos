@@ -7,6 +7,7 @@
 node_modules
 xgn.explorer
 xos.explorer
+.env.*
 ###> symfony/framework-bundle ###
 /server/config/secrets/prod/prod.decrypt.private.php
 /server/public/bundles/
