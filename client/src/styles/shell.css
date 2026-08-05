@@ -1,14 +1,45 @@
-[data-mantine-color-scheme] {
-	--xos-shell-bg: var(--mantine-color-default);
-	--xos-shell-bg-elevated: var(--mantine-color-body);
-	--xos-shell-border: var(--mantine-color-default-border);
-	--xos-shell-hover: var(--mantine-color-default-hover);
-	--xos-shell-text: var(--mantine-color-text);
+[data-mantine-color-scheme='light'] {
+	--xos-shell-bg: #f0f2f5;
+	--xos-shell-bg-elevated: #ffffff;
+	--xos-shell-border: #d9d9d9;
+	--xos-shell-hover: #f0f0f0;
+	--xos-shell-text: rgba(0, 0, 0, 0.88);
+	--xos-shell-dimmed: rgba(0, 0, 0, 0.45);
+	--xos-shell-accent: #148eff;
+	--xos-shell-accent-hover: #4da3ff;
 
-	--xos-window-bg: var(--mantine-color-body);
-	--xos-window-titlebar-bg: var(--mantine-color-default);
-	--xos-window-border: var(--mantine-color-default-border);
-	--xos-window-titlebar-border: var(--mantine-color-default-border);
-	--xos-window-chrome-hover: var(--mantine-color-default-hover);
-	--xos-window-text: var(--mantine-color-text);
+	--xos-window-bg: #ffffff;
+	--xos-window-titlebar-bg: #f5f5f5;
+	--xos-window-border: #d9d9d9;
+	--xos-window-titlebar-border: #d9d9d9;
+	--xos-window-chrome-hover: #f0f0f0;
+	--xos-window-text: rgba(0, 0, 0, 0.88);
+	--xos-window-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Battle.net Shop — #15171e / #191b21 / #148eff */
+[data-mantine-color-scheme='dark'] {
+	color-scheme: dark;
+
+	--xos-shell-bg: #15171e;
+	--xos-shell-bg-elevated: #191b21;
+	--xos-shell-border: #2d3139;
+	--xos-shell-hover: #252830;
+	--xos-shell-text: rgba(255, 255, 255, 0.92);
+	--xos-shell-dimmed: rgba(255, 255, 255, 0.55);
+	--xos-shell-accent: #148eff;
+	--xos-shell-accent-hover: #4da3ff;
+
+	--xos-window-bg: #191b21;
+	--xos-window-titlebar-bg: #15171e;
+	--xos-window-border: #2d3139;
+	--xos-window-titlebar-border: #2d3139;
+	--xos-window-chrome-hover: #252830;
+	--xos-window-text: rgba(255, 255, 255, 0.92);
+	--xos-window-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+[data-mantine-color-scheme='dark'] ::selection {
+	background: rgba(20, 142, 255, 0.35);
+	color: #fff;
 }

@@ -1,7 +1,3 @@
-import { createTheme } from '@mantine/core';
+import { createBattleNetTheme } from '@/core/theme/battleNetTheme';
 
-export const theme = createTheme({
-	primaryColor: 'blue',
-	fontFamily: 'Inter, system-ui, sans-serif',
-	defaultRadius: 'md',
-});
+export const theme = createBattleNetTheme();

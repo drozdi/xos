@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { queryKeys } from '@/core/api/queryKeys';
+import { promptAction } from '@/core/confirm';
 
 import { ExplorerPickerBar } from './components/ExplorerPickerBar';
 import { ExplorerPathBar } from './components/ExplorerPathBar';
@@ -278,11 +279,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 	});
 
 	const packMutation = useMutation({
-		mutationFn: async () => {
-			const archiveName = window.prompt('Имя архива', 'archive.zip');
-			if (!archiveName) {
-				return null;
-			}
+		mutationFn: async (archiveName: string) => {
 			const normalizedName = archiveName.endsWith('.zip') ? archiveName : `${archiveName}.zip`;
 			const destBase = currentPath.endsWith('://') ? currentPath : `${currentPath.replace(/\/+$/, '')}/`;
 			return packExplorerArchive(selected, `${destBase}${normalizedName}`);
@@ -424,11 +421,27 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 		if (!path) {
 			return;
 		}
-		const newName = window.prompt('Новое имя');
+		const slash = path.lastIndexOf('/');
+		const currentName = slash >= 0 ? path.slice(slash + 1) : path;
+		const newName = await promptAction({
+			title: 'Новое имя',
+			defaultValue: currentName,
+		});
 		if (!newName) {
 			return;
 		}
 		await renameMutation.mutateAsync({ path, newName });
+	};
+
+	const handlePack = async () => {
+		const archiveName = await promptAction({
+			title: 'Имя архива',
+			defaultValue: 'archive.zip',
+		});
+		if (!archiveName) {
+			return;
+		}
+		packMutation.mutate(archiveName);
 	};
 
 	const handleRestore = async () => {
@@ -468,7 +481,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 		paste: () => pasteMutation.mutate(),
 		delete: () => void handleDelete(),
 		rename: () => void handleRename(),
-		pack: () => packMutation.mutate(),
+		pack: () => void handlePack(),
 		unpack: () => unpackMutation.mutate(),
 		restore: () => void handleRestore(),
 		emptyTrash: () => emptyTrashMutation.mutate(),

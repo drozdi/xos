@@ -1,6 +1,8 @@
 import { Badge, Group, TextInput } from '@mantine/core';
 import { useCallback, useMemo, useState } from 'react';
 import { IconPencil, IconTrash } from '@tabler/icons-react';
+
+import { promptAction } from '@/core/confirm';
 import type { ColumnEntity, TableBulkAction, TableRowAction, TableRowActionsPanelProps } from '../type';
 import { TableRowActionsPanel } from '../ui/row-actions/panel';
 import {
@@ -121,13 +123,14 @@ export function useActionDemoState() {
     const rowActions = useMemo(
         () =>
             createRowActions((item) => {
-                const next = window.prompt('Имя', item.name);
-                if (next == null) {
-                    return;
-                }
-                setActionData((rows) =>
-                    rows.map((row) => (row.id === item.id ? { ...row, name: next } : row)),
-                );
+                void promptAction({ title: 'Имя', defaultValue: item.name }).then((next) => {
+                    if (next == null) {
+                        return;
+                    }
+                    setActionData((rows) =>
+                        rows.map((row) => (row.id === item.id ? { ...row, name: next } : row)),
+                    );
+                });
             }),
         [createRowActions],
     );

@@ -408,7 +408,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 					color: 'var(--xos-window-text)',
 					border: '1px solid var(--xos-window-border)',
 					borderRadius: 0,
-					boxShadow: 'var(--mantine-shadow-md)',
+					boxShadow: 'var(--xos-window-shadow)',
 					overflow: 'hidden',
 				}}
 			>

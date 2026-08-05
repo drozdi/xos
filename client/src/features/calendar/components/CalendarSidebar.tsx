@@ -14,6 +14,7 @@ import { IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import type { CalendarDto } from '@/core/api/endpoints/calendarApi';
+import { BATTLE_NET } from '@/core/theme/battleNetTheme';
 
 import {
 	OVERLAY_SCHOOLTASK_ID,
@@ -101,7 +102,7 @@ export function CalendarSidebar({
 	deletingId,
 }: CalendarSidebarProps) {
 	const [title, setTitle] = useState('');
-	const [color, setColor] = useState('#1975d2');
+	const [color, setColor] = useState(BATTLE_NET.accent);
 	const [showForm, setShowForm] = useState(false);
 
 	const owned = calendars.filter((c) => c.is_owner);
@@ -233,7 +234,7 @@ export function CalendarSidebar({
 				<Stack gap={6}>
 					<CalendarRow id={OVERLAY_TODO_ID} title="Заметки" color="#78909c" />
 					{showSchooltaskOverlay ? (
-						<CalendarRow id={OVERLAY_SCHOOLTASK_ID} title="Моё расписание" color="#1975d2" />
+						<CalendarRow id={OVERLAY_SCHOOLTASK_ID} title="Моё расписание" color={BATTLE_NET.accent} />
 					) : null}
 				</Stack>
 			</div>

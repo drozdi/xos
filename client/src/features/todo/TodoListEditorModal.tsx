@@ -22,6 +22,7 @@ import remarkGfm from 'remark-gfm';
 
 import { todoApi, type TodoListDetail } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { confirmAction } from '@/core/confirm';
 import { DateTimeField } from '@/core/dates/DateTimeField';
 
 import { TODO_COLORS, itemsToMarkdown, parseMarkdown, type TodoDraftItem } from './todoMarkdown';
@@ -169,7 +170,10 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 										height: 22,
 										borderRadius: '50%',
 										background: c,
-										border: color === c ? '2px solid #333' : '1px solid #bbb',
+										border:
+											color === c
+												? '2px solid var(--mantine-color-text)'
+												: '1px solid var(--mantine-color-default-border)',
 										cursor: canWrite ? 'pointer' : 'default',
 									}}
 								/>
@@ -304,9 +308,15 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 												aria-label="Удалить"
 												loading={deleteMutation.isPending}
 												onClick={() => {
-													if (window.confirm('Удалить список?')) {
-														deleteMutation.mutate();
-													}
+													confirmAction({
+														title: 'Удалить список?',
+														message:
+															'Список и все дела будут удалены без возможности восстановления.',
+														confirmLabel: 'Удалить',
+														cancelLabel: 'Отмена',
+														confirmColor: 'red',
+														onConfirm: () => deleteMutation.mutate(),
+													});
 												}}
 											>
 												<IconTrash size={16} />

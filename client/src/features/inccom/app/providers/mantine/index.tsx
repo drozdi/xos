@@ -1,3 +1,4 @@
+import { battleNetCssVariablesResolver } from '@/core/theme/battleNetTheme';
 import { MantineProvider } from '@mantine/core'
 import { DatesProvider } from '@mantine/dates'
 import { ModalsProvider } from '@mantine/modals'
@@ -7,7 +8,7 @@ import { themeMantine } from './theme'
 
 export function ProviderMantine({ children }: { children: React.ReactNode }) {
 	return (
-		<MantineProvider theme={themeMantine}>
+		<MantineProvider theme={themeMantine} cssVariablesResolver={battleNetCssVariablesResolver}>
 			<DatesProvider settings={{ locale: 'ru' }}>
 				<Notifications />
 				<ModalsProvider>{children}</ModalsProvider>

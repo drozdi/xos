@@ -1,6 +1,7 @@
 import { Badge, Button, Group, Stack, Text } from '@mantine/core';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
+import { withMantineModals } from '@/core/confirm/storyDecorators';
 import { DataColumn, TableData } from './index';
 import {
     actionDemoData,
@@ -30,6 +31,7 @@ import type { EditElementRow } from './stories/data';
 const meta = {
     title: 'Shared/Table',
     tags: ['autodocs', 'test'],
+    decorators: [withMantineModals],
     parameters: {
         layout: 'padded',
         docs: {

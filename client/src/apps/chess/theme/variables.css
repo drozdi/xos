@@ -2,45 +2,45 @@
 :root {
 	--accent-color-hue: 236;
 	--accent-color-saturation: 100%;
-	--primary: #1976d2;
-	--secondary: #5cbbf6;
+	--primary: #148eff;
+	--secondary: #4da3ff;
 	--accent: #9c27b0;
 	--positive: #4caf50;
 	--negative: #dc3545;
-	--info: #2196f3;
+	--info: #148eff;
 	--warning: #fb8c00;
 	--success: #4caf50;
 	--error: #d40000;
 	--error-color: #d40000;
 }
 
-/* Тёмная тема — текущий фон проекта */
+/* Battle.net Shop — тёмная тема */
 [data-mantine-color-scheme='dark'] {
 	color-scheme: dark;
 
-	--app-bg: #002650;
+	--app-bg: #15171e;
 	--app-text: rgba(255, 255, 255, 0.7);
 	--app-text-strong: #fff;
-	--app-text-muted: rgba(255, 255, 255, 0.3);
-	--app-selection-color: #eee;
-	--app-selection-bg: #006a9b;
-	--app-sidebar-bg: rgba(0, 0, 0, 0.25);
-	--app-surface: #1d1d1d;
-	--app-surface-muted: #333;
-	--app-border: rgba(255, 255, 255, 0.15);
-	--dimmed-bg: rgba(0, 0, 0, 0.4);
-	--separator-color: rgba(255, 255, 255, 0.15);
-	--disabled-color: #cfcfcf;
-	--link-color: #00aeff;
-	--link-hover: #fff;
-	--cell-dark: #333;
+	--app-text-muted: rgba(255, 255, 255, 0.45);
+	--app-selection-color: #fff;
+	--app-selection-bg: rgba(20, 142, 255, 0.45);
+	--app-sidebar-bg: #191b21;
+	--app-surface: #191b21;
+	--app-surface-muted: #1e2128;
+	--app-border: rgba(255, 255, 255, 0.08);
+	--dimmed-bg: rgba(0, 0, 0, 0.35);
+	--separator-color: rgba(255, 255, 255, 0.08);
+	--disabled-color: #9aa0ab;
+	--link-color: #148eff;
+	--link-hover: #4da3ff;
+	--cell-dark: #252830;
 	--cell-light: #eee;
 	--board-legend: rgba(255, 255, 255, 0.7);
-	--dark: #1d1d1d;
+	--dark: #191b21;
 	--white: #fff;
 	--black: #000;
-	--hint-last-move-bg: rgba(255, 235, 59, 0.35);
-	--hint-sample-bg: #555;
+	--hint-last-move-bg: rgba(20, 142, 255, 0.25);
+	--hint-sample-bg: #252830;
 }
 
 /* Светлая тема */
@@ -52,7 +52,7 @@
 	--app-text-strong: #1d1d1d;
 	--app-text-muted: rgba(29, 29, 29, 0.45);
 	--app-selection-color: #fff;
-	--app-selection-bg: #1976d2;
+	--app-selection-bg: #148eff;
 	--app-sidebar-bg: rgba(255, 255, 255, 0.92);
 	--app-surface: #ffffff;
 	--app-surface-muted: #f0f4f8;
@@ -60,8 +60,8 @@
 	--dimmed-bg: rgba(0, 0, 0, 0.25);
 	--separator-color: rgba(0, 0, 0, 0.1);
 	--disabled-color: #9e9e9e;
-	--link-color: #1565c0;
-	--link-hover: #0d47a1;
+	--link-color: #1178d4;
+	--link-hover: #0e62aa;
 	--cell-dark: #769656;
 	--cell-light: #eeeed2;
 	--board-legend: rgba(29, 29, 29, 0.65);

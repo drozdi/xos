@@ -11,6 +11,7 @@ import { resolveStandaloneApp } from '@/core/auth/tokenStorage';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
 import { preloadSettings } from '@/core/settings/preloadSettings';
 import { settingManager } from '@/core/settings/SettingManager';
+import { battleNetCssVariablesResolver } from '@/core/theme/battleNetTheme';
 import { DEFAULT_THEME, ThemeProvider, xosColorSchemeManager } from '@/core/theme';
 import { DatesSettingsProvider } from '@/core/dates';
 import { theme } from '@/styles/theme';
@@ -125,6 +126,7 @@ export default function App() {
 				theme={theme}
 				defaultColorScheme={DEFAULT_THEME}
 				colorSchemeManager={colorSchemeManager}
+				cssVariablesResolver={battleNetCssVariablesResolver}
 			>
 				<ModalsProvider>
 					<Notifications position="top-right" />

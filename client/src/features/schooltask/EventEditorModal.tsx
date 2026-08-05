@@ -12,7 +12,7 @@ import {
 	type EditorEventPayload,
 } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
-import { confirmAction } from '@/core/confirm/confirmAction';
+import { confirmAction } from '@/core/confirm';
 import { DateTimeField } from '@/core/dates/DateTimeField';
 import { applyLessonTemplate } from '@/features/schooltask/lessonTemplates';
 

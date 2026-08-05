@@ -18,7 +18,7 @@ import {
 	extractApiFieldErrors,
 	notifyApiError,
 } from '@/core/api/apiError';
-import { confirmAction } from '@/core/confirm/confirmAction';
+import { confirmAction } from '@/core/confirm';
 import { useAppContext } from '@/core/context/AppContext';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 

@@ -15,7 +15,7 @@ export default function IncComStandaloneApp() {
 				flexDirection: 'column',
 				minHeight: 0,
 				overflow: 'hidden',
-				background: 'var(--mantine-color-body)',
+				background: 'var(--xos-shell-bg, var(--mantine-color-body, #15171e))',
 			}}
 		>
 			<IncComStandaloneProvider standalone>

@@ -8,7 +8,7 @@ import { calendarApi, type CalendarDto, type CalendarEventDto } from '@/core/api
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { todoApi } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
-import { confirmAction } from '@/core/confirm/confirmAction';
+import { confirmAction } from '@/core/confirm';
 import {
 	useCanReadSchooltaskEvent,
 	useCanUpdateSchooltaskEvent,

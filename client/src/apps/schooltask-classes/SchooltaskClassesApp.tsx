@@ -8,7 +8,7 @@ import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { schooltaskClassApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
-import { confirmAction } from '@/core/confirm/confirmAction';
+import { confirmAction } from '@/core/confirm';
 import {
 	useCanCreateSchooltaskClass,
 	useCanDeleteSchooltaskClass,

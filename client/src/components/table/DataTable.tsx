@@ -3,7 +3,7 @@ import { IconPencil, IconTrash } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
-import { confirmAction } from '@/core/confirm/confirmAction';
+import { confirmAction } from '@/core/confirm';
 
 import { DataColumn } from './DataColumn';
 import { TableData } from './TableData';

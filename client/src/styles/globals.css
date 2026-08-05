@@ -13,3 +13,30 @@
 	--color-text: var(--mantine-color-text);
 	--color-dimmed: var(--mantine-color-dimmed);
 }
+
+body {
+	background-color: var(--mantine-color-body);
+	color: var(--mantine-color-text);
+}
+
+[data-mantine-color-scheme='dark'] {
+	scrollbar-color: #2d3139 #15171e;
+}
+
+[data-mantine-color-scheme='dark'] ::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+[data-mantine-color-scheme='dark'] ::-webkit-scrollbar-track {
+	background: #15171e;
+}
+
+[data-mantine-color-scheme='dark'] ::-webkit-scrollbar-thumb {
+	background: #2d3139;
+	border-radius: 5px;
+}
+
+[data-mantine-color-scheme='dark'] ::-webkit-scrollbar-thumb:hover {
+	background: #3d4450;
+}

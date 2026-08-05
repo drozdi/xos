@@ -75,7 +75,7 @@ export default function CalendarStandaloneApp() {
 				height: '100%',
 				minHeight: 0,
 				overflow: 'hidden',
-				background: 'var(--mantine-color-body)',
+				background: 'var(--xos-shell-bg, var(--mantine-color-body, #15171e))',
 			}}
 		>
 			<BrowserRouter basename="/calendar">
