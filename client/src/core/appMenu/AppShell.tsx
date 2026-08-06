@@ -26,8 +26,9 @@ export function AppShell({ children }: AppShellProps) {
 	return (
 		<AppMenuRuntimeProvider>
 			<Box
-				h="100%"
 				style={{
+					position: 'absolute',
+					inset: 0,
 					display: 'flex',
 					flexDirection: 'column',
 					minHeight: 0,
@@ -38,7 +39,10 @@ export function AppShell({ children }: AppShellProps) {
 					style={{
 						flex: 1,
 						minHeight: 0,
-						overflow: 'auto',
+						overflow: 'hidden',
+						display: 'flex',
+						flexDirection: 'column',
+						position: 'relative',
 					}}
 				>
 					{children}
