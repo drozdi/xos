@@ -1,6 +1,6 @@
 # XOS — REST API Specification
 
-> Версия: 2026-08-06 (`/api/user-data` реализован; claimant `access_options`)  
+> Версия: 2026-08-06 (`/api/user-data` и `/api/desktop-state` реализованы; claimant `access_options`)  
 > Base URL: `{SERVER_URL}` (dev: `http://localhost:8000`)  
 > Prefix: все эндпоинты ниже — **фактические пути** из кода + планируемые помечены `[NEW]` / `[CONTRACT]`
 
@@ -240,6 +240,8 @@ POST `/list` с телом:
 Контроллер: `App\Controller\ApiSettingsController`  
 Сущность: `UserSetting` (см. DATABASE_SCHEMA.md)
 
+**Конфликты / `updatedAt`:** upsert — last-write-wins. Поле `updatedAt` в ответах **информативное** (не optimistic lock, не If-Match). Клиентский shell sync **target:** aggregate `/api/desktop-state` (`ADR-desktop-state-batch.md`); CRUD ниже **без изменений** и остаётся публичным.
+
 ### GET `/api/settings`
 
 **Auth:** JWT  
@@ -318,6 +320,49 @@ POST `/list` с телом:
 
 ---
 
+## Desktop state (aggregate)
+
+> ADR: **`docs/ADR-desktop-state-batch.md`** (Accepted, выбор **A**).  
+> Реализовано as-is. CRUD `/api/settings` и `/api/user-data` **не** удаляются.
+
+Контроллер: `App\Controller\ApiDesktopStateController`  
+Сервис: `App\Service\DesktopStateService` (транзакция: managed `user_settings` + `explorer.last_path`)  
+Клиент: `desktopStateApi.load()` / `save(snapshot)` → `client/src/core/api/endpoints/desktopState.ts`
+
+**Managed keys:** USER allowlist `theme`, `startMenu.pinnedApps`; APP `launchHistory`; все WIN.*; KV `explorer.last_path`.
+
+### GET `/api/desktop-state`
+
+**Auth:** JWT  
+**Response 200:**
+```json
+{
+  "settings": [
+    { "category": "USER", "key": "theme", "value": "dark", "updatedAt": "2026-08-06T09:00:00+00:00" },
+    { "category": "APP", "key": "launchHistory", "value": [], "updatedAt": "2026-08-06T09:00:00+00:00" },
+    { "category": "WIN", "key": "explorer/explorer__default", "value": {}, "updatedAt": "2026-08-06T09:00:00+00:00" }
+  ],
+  "explorerLastPath": {
+    "path": "home://Docs",
+    "updatedAt": "2026-08-06T09:00:00+00:00"
+  }
+}
+```
+
+`explorerLastPath` может быть `null`. `updatedAt` — информативный.
+
+### PUT `/api/desktop-state`
+
+**Auth:** JWT  
+**Request:** тот же snapshot (`updatedAt` в request игнорируется).  
+**Семантика:** upsert всех `settings[]` + explorer; **orphan-delete** WIN-ключей, отсутствующих в body; omitted USER allowlist / `launchHistory` → DELETE; `explorerLastPath: null` → DELETE KV. LWW. Одна транзакция.  
+**Response 200:** сохранённый snapshot.  
+**400 / 401:** validation / missing credentials.
+
+Полные правила — ADR. Регрессия по orphan / omit / null explorer покрыта `DesktopStateApiTest`.
+
+---
+
 ## User App Data
 
 > ADR: `docs/ADR-user-app-data.md`.  
@@ -341,6 +386,8 @@ POST `/list` с телом:
 ```
 
 `id` в JSON-ответе **не** отдаётся (только `code`, `value`, `createdAt`, `updatedAt`). Даты — ISO-8601 (`DateTimeInterface::ATOM`).
+
+**Конфликты / `updatedAt`:** PUT upsert — last-write-wins (full replace `value`). `updatedAt` **информативный**; optimistic lock / merge — out of scope (`ADR-user-app-data`). Пример shell-ключа: `explorer.last_path` → `{ "path": string }` (`ADR-desktop-ux-sync`).
 
 ### GET `/api/user-data`
 

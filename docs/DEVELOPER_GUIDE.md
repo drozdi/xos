@@ -175,14 +175,17 @@ const [theme, setTheme] = useSetting('USER', 'theme', 'light');
 
 ## Хранилища данных пользователя
 
-> Полный контракт границ: [`docs/ADR-user-app-data.md`](ADR-user-app-data.md).
+> Полный контракт границ: [`docs/ADR-user-app-data.md`](ADR-user-app-data.md).  
+> Политика sync (Accepted): [`docs/ADR-desktop-ux-sync.md`](ADR-desktop-ux-sync.md) — **DONE**.  
+> **Target wire:** один load/save — [`docs/ADR-desktop-state-batch.md`](ADR-desktop-state-batch.md) · план [`PLAN.md`](PLAN.md).  
+> Поведение as-is — раздел **«Desktop UX sync»** ниже; target — **«Desktop state batch»**.
 
 Четыре разных места — **не** смешивать:
 
 | Хранилище | API / helper | Когда использовать |
 |-----------|--------------|-------------------|
 | **`user_settings`** | `/api/settings` · `api.settings` / `core/settings` | Desktop shell: layout (`USER`), window geometry (`WIN`), launch history / shell chrome (`APP`), defaults (`HKEY_CONFIG` / `CONFIG`) |
-| **`user_app_data`** | `/api/user-data` · `userData.ts` | Opaque prefs модуля, drafts, app-local UI state (фильтры, черновики форм) |
+| **`user_app_data`** | `/api/user-data` · `userData.ts` | Opaque prefs модуля, drafts, app-local UI state; **Explorer last path** `explorer.last_path` → `{ "path": string }` (см. ADR-desktop-ux-sync) |
 | **Доменные entity** | `/api/{module}/…` | Данные с бизнес-смыслом, связями, claimant scopes, списками/поиском |
 | **`User.options`** | `/api/account/options` | **Только legacy** профильный blob аккаунта |
 
@@ -205,6 +208,7 @@ const [theme, setTheme] = useSetting('USER', 'theme', 'light');
 |------|------------|
 | `todo.ui.filters` | UI-фильтры модуля todo |
 | `inccom.draft.compose` | Черновик формы IncCom |
+| `explorer.last_path` | Global last folder Explorer: `{ "path": string }` (ADR-desktop-ux-sync) |
 
 Не дублировать категории settings (`USER`/`WIN`/…) внутри `code`. Не класть secrets в `value`.
 
@@ -222,6 +226,101 @@ await upsert({ code: 'todo.ui.filters', value: { status: 'open' } });
 ```
 
 PUT всегда **full replace** `value` (merge на клиенте, если нужен частичный апдейт).
+
+---
+
+## Desktop UX sync (cross-browser)
+
+> Политика: [`ADR-desktop-ux-sync.md`](ADR-desktop-ux-sync.md). Ниже — baseline SoT/LWW и исторический контекст.  
+> Включить API settings: `VITE_USE_API_SETTINGS=true`. Guest / flag off → только localStorage.
+
+### Source of truth
+
+| Режим | SoT | Cache |
+|-------|-----|-------|
+| Auth + API settings + успешный preload | **Server** | `localStorage` (`xos.settings.*`) после clear-then-seed |
+| Preload fail / API error | Local (degraded) | Без clear; жёлтый toast «локальная копия» |
+| Guest / `VITE_USE_API_SETTINGS≠true` | Local only | Как раньше |
+
+После успешного hydrate чтения Composite: **server-first** (`api` перекрывает `local` в `get`/`getAll`).
+
+### Hydrate baseline
+
+Инварианты, которые сохраняются и после batch-wire:
+
+1. Auth готов.
+2. preload состояния desktop с сервера.
+3. **Успех:** `await` clear ключей `xos.settings.*` + seed; Composite с `serverFirst: true`.
+4. **Fail:** toast + Composite без clear, `serverFirst: false` (local-first / degraded).
+5. `settingManager.init` с готовым adapter (barrier: seed уже await).
+6. Desktop: только **`restoreFromHistory`** → `launchApp` → WIN geometry.
+
+`restoreWindows()` экспортирован, **нигде не вызывается** — мёртвый / deprecated путь. Канон: `restoreFromHistory`.
+
+### Debounce / flush baseline
+
+| Параметр | Поведение |
+|----------|-----------|
+| Local `set` | Сразу (`LocalStorageAdapter`) |
+| WIN UI | Отдельный debounce **300 ms** до `settingManager.set` |
+| Server save | Debounce **2500 ms** |
+| Flush listeners | `visibilitychange` → hidden; `pagehide`; `beforeunload` (best-effort) |
+
+Отдельного `window`/`navigator` **`online` listener нет**.
+
+### Конфликты (LWW)
+
+MVP: **last-write-wins** — побеждает последний успешный upsert на сервере.
+
+- Два браузера одновременно: ожидаемо; **нет** optimistic lock и **нет** merge UI.
+- Поле **`updatedAt`** в DTO `/api/settings` и `/api/user-data` — **информативное** (отладка / отображение); клиент **не** сравнивает его для resolve и **не** шлёт If-Match / version.
+- Согласовано с ADR-user-app-data (optimistic lock — out of scope).
+
+### Offline buffer — settings
+
+1. Каждый `set` пишет в LS сразу.
+2. Pending API-очередь в памяти Composite; flush debounce / visibility / unload.
+3. Fail preload: LS **не** clear — единственный buffer.
+4. Guest→login при **успешном** preload: clear-then-seed (orphan guest-ключей не остаётся).
+
+### Explorer last path
+
+| Поле | As-is |
+|------|-------|
+| Хранилище | **`user_app_data`**, не WIN / не settings |
+| `code` | `explorer.last_path` |
+| Value | `{ "path": "home://Docs" }` (Zod: non-empty string URI) |
+| Scope | **Global** (не per-window) |
+| Debounce | **2500 ms** в составе общего desktop snapshot |
+| Local buffer | ключ LS `xos.explorer.lastPath` (тот же JSON shape) |
+| Flush | visibility hidden / pagehide / beforeunload (как settings) |
+| Hydrate | seed из `desktopStateApi.load()`; при открытии Explorer — `resolveExplorerLastPath()` читает уже seeded LS и probe VFS |
+| Guest / offline write | Сразу в LS; server sync только при активном desktop-state sync |
+| Не sync | clipboard, selection, sort |
+
+**Online после offline (Explorer):** отдельного `online` listener **нет**. После неудачного upsert pending таймера уже сброшен; путь остаётся в LS-buffer. Повторная отправка на server — при **следующей** смене папки (`schedule`) или при flush, если в момент flush ещё был pending. Автоматического «дожать buffer → API» при reconnect **нет**.
+
+### Что не класть в sync
+
+Секреты, tokens, clipboard Explorer (`explorerClipboardStore`) — **не** в `/api/settings`, **не** в `/api/user-data` и **не** в `/api/desktop-state`.
+
+---
+
+## Desktop state batch (as-is)
+
+> ADR: [`ADR-desktop-state-batch.md`](ADR-desktop-state-batch.md) (**Accepted**, выбор **A**).  
+> Текущий shell wire уже переведён на aggregate endpoint.
+
+| | As-is |
+|--|-------|
+| Load | `desktopStateApi.load()` → `GET /api/desktop-state` |
+| Save | `desktopStateApi.save(snapshot)` → `PUT /api/desktop-state` |
+| Snapshot | USER allowlist + `APP.launchHistory` + все `WIN.*` + `explorerLastPath` |
+| Debounce | **2500 ms** один save на весь snapshot + flush hide/unload |
+| Orphans | Сервер удаляет отсутствующие managed `WIN`, omitted USER allowlist / `launchHistory`, `explorerLastPath: null` |
+| Managed writes | `CompositeAdapter` для managed keys не шлёт `/api/settings`; роутит в `DesktopStatePersister` |
+| Guest / flag off | Без HTTP `desktop-state`, только localStorage |
+| CRUD | `/api/settings`, `/api/user-data` остаются для adhoc / non-desktop |
 
 ## Регистрация через `import.meta.glob`
 
@@ -405,7 +504,11 @@ main:claimant:sync
 
 ## См. также
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle, ADR access_options / user_app_data
+- [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle, ADR access_options / user_app_data / desktop UX sync
 - [ADR-user-app-data.md](ADR-user-app-data.md) — границы `user_settings` / `user_app_data` / домен / `User.options`
-- [API_SPEC.md](API_SPEC.md) — REST endpoints (`/api/settings`, `/api/user-data`, …)
+- [ADR-desktop-ux-sync.md](ADR-desktop-ux-sync.md) — hydrate / SoT / LWW / Explorer path (**DONE**)
+- [ADR-desktop-state-batch.md](ADR-desktop-state-batch.md) — aggregate `GET`/`PUT /api/desktop-state` (Accepted)
+- § **Desktop UX sync** / **Desktop state batch** (этот файл) — as-is vs target
+- [API_SPEC.md](API_SPEC.md) — REST (`/api/settings`, `/api/user-data`, `/api/desktop-state`, …)
+- [PLAN.md](PLAN.md) — текущий план desktop-state batch
 - [README.md](../README.md) — запуск проекта

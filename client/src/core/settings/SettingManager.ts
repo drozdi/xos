@@ -19,13 +19,22 @@ class SettingManagerImpl {
 	private readonly initListeners = new Set<() => void>();
 
 	init(adapter: ISettingAdapter): void {
+		this.disposeAdapter(this.adapter);
 		this.adapter = adapter;
 		this.emitInit();
 	}
 
 	reset(): void {
+		this.disposeAdapter(this.adapter);
 		this.adapter = null;
 		this.emitInit();
+	}
+
+	private disposeAdapter(adapter: ISettingAdapter | null): void {
+		if (!adapter || typeof (adapter as { dispose?: unknown }).dispose !== 'function') {
+			return;
+		}
+		(adapter as { dispose: () => void }).dispose();
 	}
 
 	isInitialized(): boolean {
@@ -84,6 +93,14 @@ class SettingManagerImpl {
 	async set(category: SettingCategory, key: string, value: unknown): Promise<void> {
 		await this.assertAdapter().set(category, key, value);
 		this.emit(category, key);
+	}
+
+	/** Flush debounced API writes (CompositeAdapter). No-op for local-only adapters. */
+	async flush(): Promise<void> {
+		const adapter = this.adapter as { flushPendingWrites?: () => Promise<void> } | null;
+		if (adapter && typeof adapter.flushPendingWrites === 'function') {
+			await adapter.flushPendingWrites();
+		}
 	}
 
 	async has(category: SettingCategory, key: string): Promise<boolean> {

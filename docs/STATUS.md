@@ -1,41 +1,48 @@
-# STATUS — Per-user app data KV
+# STATUS — Desktop state batch
 
-> Финал оркестрации 2026-08-06
+> Финал оркестрации 2026-08-06 · Источник: `docs/PLAN.md`
 
-## Итог
+## Closed: предыдущие планы
 
-Все итерации **0–5** завершены. Blockers нет.
+- Desktop UX sync (hydrate/debounce/Explorer) — DONE · `ADR-desktop-ux-sync.md`
+- `user_app_data` KV — DONE · `ADR-user-app-data.md`
+
+## Desktop state batch — итог
+
+Все итерации **0–4** завершены по scope. Product blockers нет.
 
 | Итерация | Статус | Исполнитель |
 |----------|--------|-------------|
-| 0 ADR/контракт | DONE | architect |
-| 1 Entity/migration | DONE | developer |
-| 2 API CRUD | DONE | developer |
-| 3 Frontend helper | DONE | developer |
-| 4 Docs | DONE | tech-writer |
-| 5 Regression | PASS | tester |
+| 0 ADR (A) | DONE | architect |
+| 1 Backend GET/PUT | DONE | developer |
+| 2 Client load/hydrate | DONE | developer |
+| 3 Client debounce save | DONE | developer |
+| 4 Regression / docs | DONE | tester |
 
-## Тесты (итог iter 5)
+## Как работает wire
 
-- PHPUnit: 27/27 (UserData + Validator + Repository + Settings)
-- Vitest: 22/22 (userData + account + auth)
+| Операция | HTTP |
+|----------|------|
+| Hydrate shell (`VITE_USE_API_SETTINGS=true`) | **1×** `GET /api/desktop-state` |
+| Save snapshot | **1×** `PUT /api/desktop-state` (debounce 2500 ms + flush unload) |
+| Guest / flag off | без desktop-state HTTP |
 
-## Ручные шаги
+Клиент: `desktopStateApi.load()` / `desktopStateApi.save(snapshot)` + `DesktopStatePersister`.
 
-1. На MySQL/dev: `php bin/console doctrine:migrations:migrate --no-interaction` (`Version20260806100000`)
-2. Опциональный UI smoke / пилот приложения (3.4) — отложен, не блокер
+## Тесты
 
-## Отклонения (приняты)
+- PHPUnit target (DesktopState + Settings + UserData + Repo): **28/28**
+- Vitest target (desktopState / settings / explorer / appManager / lifecycle): **53/53**
+- Full PHPUnit / full Vitest: красные на **внешних** suites (не batch)
 
-- Client: `delete` → `deleteUserData` / `userDataApi.delete` (reserved word)
-- Batch upsert — не в MVP (по ADR)
+## Remaining (не блокеры)
+
+1. Manual smoke PLAN 1–7 в двух браузерах / DevTools network
+2. QA backlog: `ExplorerApiTest` (table already exists); auth/access vitest fails
 
 ## Артефакты
 
-- ADR: `docs/ADR-user-app-data.md`
-- Schema: `docs/DATABASE_SCHEMA.md`
-- API: `docs/API_SPEC.md`
-- Guide: `docs/DEVELOPER_GUIDE.md`
-- Architecture: `docs/ARCHITECTURE.md`
-- Tests: `TEST_REPORT.md`
+- ADR: `docs/ADR-desktop-state-batch.md`
 - Tracking: `docs/TODO.md`
+- Tests: `docs/TEST_REPORT.md`
+- API: `docs/API_SPEC.md` · Guide: `docs/DEVELOPER_GUIDE.md` · Arch: `docs/ARCHITECTURE.md`

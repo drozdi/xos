@@ -1,64 +1,59 @@
-# TODO — Per-user app data KV (`user_id | code | value`)
+# TODO — Desktop state batch (один get / один save)
 
-> Источник: `docs/PLAN.md` (2026-08-06)  
-> Defaults / OQ закрыты в `docs/ADR-user-app-data.md`.  
-> **Оркестрация завершена** — все итерации 0–5 `[x]`.
+> Источник: `docs/PLAN.md` · ADR: `docs/ADR-desktop-state-batch.md` (**A** `/api/desktop-state`)  
+> **Оркестрация завершена** по scope задачи. Внешние full-suite fails и UI smoke — не блокеры продукта batch.  
+> Порядок: **0 → 1 → 2 → 3 → 4**.
 
-## Defaults (open questions) — закрыты в ADR
+## Легенда статусов
 
-1. `user_app_data` / `UserAppData` / `/api/user-data`
-2. Один `code` `{appNs}.{key...}`
-3. ROOT: нет чужих KV в MVP
-4. Batch: single upsert MVP
-5. Пилот 3.4 — отложено
-6. `GET ?prefix=` сразу
-7. Full replace only
-8. code ≤191; value ≤64KB; soft 500 keys/user
+- `[ ]` не начата · `[~]` в работе · `[x]` выполнена · `[!]` заблокирована
 
 ---
 
-## Итерация 0 — Контракт Архитектора · DONE
+## Итерация 0 — Контракт Архитектора
 
-- [x] **0.1–0.5** ADR + schema/API drafts + ARCHITECTURE
-
----
-
-## Итерация 1 — Backend entity/migration · DONE
-
-- [x] **1.1** Migration `Version20260806100000`
-- [x] **1.2** Entity + Repository
-- [x] **1.3** `UserAppDataValidator`
-- [x] **1.4** PHPUnit OK
+- [x] **0.1** ADR A vs B → **(A)** `/api/desktop-state`
+- [x] **0.2** DTO, managed keys, orphan semantics, hydrate, debounce
+- [x] **0.3** PLAN + pointers ARCHITECTURE / API_SPEC / DEVELOPER_GUIDE
 
 ---
 
-## Итерация 2 — API CRUD · DONE
+## Итерация 1 — Backend aggregate API
 
-- [x] **2.1–2.4** `ApiUserDataController` + WebTest (isolation, 401)
-
----
-
-## Итерация 3 — Frontend helper · DONE
-
-- [x] **3.1** `userData.ts`
-- [x] **3.2** Barrel
-- [x] **3.3** vitest OK
-- [x] **3.4** (optional) отложено
-
-**Примечание:** `delete` → `deleteUserData` / `userDataApi.delete`
+- [x] **1.1** `DesktopStateService`
+- [x] **1.2** `GET /api/desktop-state`
+- [x] **1.3** `PUT /api/desktop-state` + orphan-delete
+- [x] **1.4** Валидация managed set
+- [x] **1.5** PHPUnit DesktopState
+- [x] **1.6** Регрессия settings + user-data
 
 ---
 
-## Итерация 4 — Документация · DONE
+## Итерация 2 — Client API + hydrate
 
-- [x] **4.1–4.4** DATABASE_SCHEMA / API_SPEC / DEVELOPER_GUIDE / ARCHITECTURE  
-- [x] Quality fix: пример импорта в DEVELOPER_GUIDE ↔ `userData.ts`
+- [x] **2.1** `desktopStateApi.load()` / `save(snapshot)`
+- [x] **2.2** Hydrate через один `load()`
+- [x] **2.3** Clear-then-seed settings + explorer LS
+- [x] **2.4** Fail load → toast + local
+- [x] **2.5** Vitest DTO + hydrate
 
 ---
 
-## Итерация 5 — Polish / regression · DONE (PASS)
+## Итерация 3 — Client единый debounce save
 
-- [x] **5.1** Regression Settings + user-data (PHPUnit 27/27)
-- [x] **5.2** Лимиты покрыты тестами
-- [x] **5.3** `TEST_REPORT.md` smoke checklist
-- [x] Vitest 22/22
+- [x] **3.1** DesktopStatePersister
+- [x] **3.2** Debounce 2500 ms → один `save`
+- [x] **3.3** Flush visibility / pagehide / beforeunload
+- [x] **3.4** Отключить N× API writes managed / Explorer PUT / history immediate
+- [x] **3.5** WIN UI debounce 300 ms (local)
+- [x] **3.6** Vitest fake timers
+
+---
+
+## Итерация 4 — Tester / docs / regression
+
+- [x] **4.1** PHPUnit target **28/28** (full suite: внешний `ExplorerApiTest` — out of scope)
+- [x] **4.2** Vitest target **53/53** (full suite: внешние auth/access — out of scope)
+- [x] **4.3** Docs as-is
+- [x] **4.4** TEST_REPORT / STATUS / smoke (manual pending)
+- [x] **4.5** Pointer UX-sync → batch ADR

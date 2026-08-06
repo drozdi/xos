@@ -3,6 +3,10 @@ import { lazy } from 'react';
 
 import { resetUserRoles, setUserRoles } from '@/core/auth/coreRoles';
 import { resetScopes } from '@/core/auth/coreScopes';
+import {
+	attachPageLifecycleListeners,
+	resetPageLifecycleForTests,
+} from '@/core/lifecycle/pageLifecycle';
 import type { ISettingAdapter, SettingCategory } from '@/core/settings/adapters/ISettingAdapter';
 import { settingManager } from '@/core/settings/SettingManager';
 import { clearPersistTimers } from '@/core/windowManager/persistWindow';
@@ -78,6 +82,8 @@ describe('useAppManager', () => {
 		clearPersistTimers();
 		resetUserRoles();
 		resetScopes();
+		resetPageLifecycleForTests();
+		setUserRoles(['ROLE_USER']);
 		AppRegistry.clear();
 		notificationsShow.mockClear();
 
@@ -124,7 +130,7 @@ describe('useAppManager', () => {
 	it('allows launch with app admin role', async () => {
 		const manifest = createManifest({ requiredRole: 'main' });
 		useAppManager.getState().registerApps([manifest]);
-		setUserRoles(['ROLE_MAIN_ADMIN']);
+		setUserRoles(['ROLE_USER', 'ROLE_MAIN_ADMIN']);
 
 		const windowId = await useAppManager.getState().launchApp('test-app');
 
@@ -156,14 +162,81 @@ describe('useAppManager', () => {
 		expect(history.filter((entry) => entry.appId === 'history-app')).toHaveLength(1);
 	});
 
-	it('removes running entry when window is closed', async () => {
+	it('removes running entry and launch history when window is closed', async () => {
 		const manifest = createManifest();
 		useAppManager.getState().registerApps([manifest]);
 
 		const windowId = await useAppManager.getState().launchApp('test-app');
 		expect(useAppManager.getState().running).toHaveLength(1);
+		await expect(getLaunchHistory()).resolves.toEqual([
+			expect.objectContaining({ appId: 'test-app', instanceKey: 'default' }),
+		]);
 
 		useWmStore.getState().closeWindow(windowId!);
 		expect(useAppManager.getState().running).toHaveLength(0);
+
+		await vi.waitFor(async () => {
+			await expect(getLaunchHistory()).resolves.toEqual([]);
+		});
+	});
+
+	it('keeps launchHistory when windows close during page unload', async () => {
+		const handlers = new Map<string, Set<() => void>>();
+		vi.stubGlobal('window', {
+			addEventListener(type: string, fn: () => void) {
+				if (!handlers.has(type)) {
+					handlers.set(type, new Set());
+				}
+				handlers.get(type)!.add(fn);
+			},
+			removeEventListener(type: string, fn: () => void) {
+				handlers.get(type)?.delete(fn);
+			},
+		});
+		attachPageLifecycleListeners();
+
+		const manifest = createManifest({ id: 'keep-app', name: 'Keep App' });
+		useAppManager.getState().registerApps([manifest]);
+		const windowId = await useAppManager.getState().launchApp('keep-app');
+		await expect(getLaunchHistory()).resolves.toEqual([
+			expect.objectContaining({ appId: 'keep-app', instanceKey: 'default' }),
+		]);
+
+		handlers.get('pagehide')?.forEach((fn) => fn());
+		useWmStore.getState().closeWindow(windowId!);
+
+		await expect(getLaunchHistory()).resolves.toHaveLength(1);
+		vi.unstubAllGlobals();
+		resetPageLifecycleForTests();
+	});
+
+	it('restoreFromHistory reopens apps from APP.launchHistory with WIN geometry path', async () => {
+		const manifest = createManifest({ id: 'restore-app', name: 'Restore App' });
+		useAppManager.getState().registerApps([manifest]);
+
+		await addToLaunchHistory('restore-app', 'default');
+		const winKey = 'restore-app/restore-app__default';
+		await adapter.set('WIN', winKey, {
+			position: { x: 40, y: 50, width: 320, height: 240 },
+			state: { minimized: false, maximized: false },
+			wmGroup: 'default',
+			wmSort: 0,
+			title: 'Restore App',
+		});
+
+		await useAppManager.getState().restoreFromHistory();
+
+		const windowId = 'restore-app__default';
+		const win = useWmStore.getState().windows[windowId];
+		expect(win).toBeDefined();
+		expect(win?.x).toBe(40);
+		expect(win?.y).toBe(50);
+		expect(win?.width).toBe(320);
+		expect(win?.height).toBe(240);
+		expect(useAppManager.getState().running).toEqual([
+			{ windowId, appId: 'restore-app', instanceKey: 'default' },
+		]);
+		// skipHistory: history length unchanged (no duplicate)
+		await expect(getLaunchHistory()).resolves.toHaveLength(1);
 	});
 });

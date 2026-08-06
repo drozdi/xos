@@ -1,3 +1,4 @@
+import { isPageUnloading } from '@/core/lifecycle/pageLifecycle';
 import { settingManager } from '@/core/settings/SettingManager';
 
 import { useWmStore } from './useWmStore';
@@ -102,6 +103,14 @@ export async function persistWindowNow(windowId: string): Promise<void> {
 	await settingManager.set('WIN', key, toPersistedState(window));
 }
 
+/** Flush latest geometry for open windows (and API pending). Used after drag and on unload. */
+export async function persistAllOpenWindowsNow(): Promise<void> {
+	if (!settingManager.isInitialized()) {return;}
+	const ids = Object.keys(useWmStore.getState().windows);
+	await Promise.all(ids.map((id) => persistWindowNow(id)));
+	await settingManager.flush();
+}
+
 export function schedulePersistWindow(windowId: string): void {
 	const existing = timers.get(windowId);
 	if (existing) {clearTimeout(existing);}
@@ -122,6 +131,11 @@ export async function removePersistedWindow(windowId: string, appId?: string): P
 		timers.delete(windowId);
 	}
 
+	// Tab close/refresh: keep WIN geometry on server for restore
+	if (isPageUnloading()) {
+		return;
+	}
+
 	if (!settingManager.isInitialized()) {return;}
 
 	const resolvedAppId = appId ?? useWmStore.getState().windows[windowId]?.appId;
@@ -129,6 +143,18 @@ export async function removePersistedWindow(windowId: string, appId?: string): P
 
 	const key = makeWinSettingKey(resolvedAppId, windowId);
 	await settingManager.remove('WIN', key);
+}
+
+/** Flush debounced WIN writes into SettingManager, then flush API pending. */
+export async function flushPendingWindowPersists(): Promise<void> {
+	const pendingIds = [...timers.keys()];
+	for (const timer of timers.values()) {
+		clearTimeout(timer);
+	}
+	timers.clear();
+
+	await Promise.all(pendingIds.map((id) => persistWindowNow(id)));
+	await settingManager.flush();
 }
 
 export function clearPersistTimers(): void {

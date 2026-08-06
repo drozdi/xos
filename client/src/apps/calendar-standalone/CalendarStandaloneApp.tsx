@@ -1,9 +1,9 @@
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 
+import { desktopStateApi } from '@/core/api/endpoints/desktopState';
 import { registerAllApps } from '@/core/appManager';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
-import { preloadSettings } from '@/core/settings/preloadSettings';
 import { settingManager } from '@/core/settings/SettingManager';
 import { useAuthStore } from '@/core/auth/authStore';
 import * as tokenStorage from '@/core/auth/tokenStorage';
@@ -33,18 +33,24 @@ export default function CalendarStandaloneApp() {
 			if (cancelled) {
 				return;
 			}
-			let preloaded;
+			let preloadedSnapshot: Awaited<ReturnType<typeof desktopStateApi.load>> | undefined;
+			let preloadFailed = false;
 			if (useAuthStore.getState().isAuthenticated && useApiSettings()) {
 				try {
-					preloaded = await preloadSettings();
+					preloadedSnapshot = await desktopStateApi.load();
 				} catch {
-					preloaded = undefined;
+					preloadedSnapshot = undefined;
+					preloadFailed = true;
 				}
 			}
 			if (cancelled) {
 				return;
 			}
-			settingManager.init(createSettingAdapter({ preloaded }));
+			const adapter = await createSettingAdapter({ preloadedSnapshot, preloadFailed });
+			if (cancelled) {
+				return;
+			}
+			settingManager.init(adapter);
 		}
 		void boot();
 

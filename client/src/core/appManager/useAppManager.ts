@@ -1,6 +1,10 @@
 import { notifications } from '@mantine/notifications';
 import { create } from 'zustand';
 
+import {
+	attachPageLifecycleListeners,
+	isPageUnloading,
+} from '@/core/lifecycle/pageLifecycle';
 import { settingManager } from '@/core/settings/SettingManager';
 import {
 	fromPersistedState,
@@ -64,6 +68,8 @@ function initCloseCleanup(): void {
 	if (closeCleanupInitialized) {return;}
 	closeCleanupInitialized = true;
 
+	attachPageLifecycleListeners();
+
 	let previousWindows = useWmStore.getState().windows;
 
 	useWmStore.subscribe((state) => {
@@ -73,7 +79,10 @@ function initCloseCleanup(): void {
 				const closed = previousWindows[windowId];
 				if (closed) {
 					useAppManager.getState().removeRunning(windowId);
-					void removeFromLaunchHistory(closed.appId, closed.instanceKey);
+					// Tab close/refresh unmounts windows — do not wipe server launchHistory
+					if (!isPageUnloading()) {
+						void removeFromLaunchHistory(closed.appId, closed.instanceKey);
+					}
 				}
 			}
 		}

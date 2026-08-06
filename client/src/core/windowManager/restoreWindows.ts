@@ -5,6 +5,14 @@ import { useWmStore } from './useWmStore';
 
 let restoreStarted = false;
 
+/**
+ * Мёртвый / альтернативный путь restore (ADR-desktop-ux-sync §9).
+ *
+ * Канон shell: `restoreFromHistory` → `launchApp` → чтение WIN geometry.
+ * Не вызывать из Desktop / основного bootstrap; экспорт оставлен (optional cleanup later).
+ *
+ * @deprecated Prefer AppManager `restoreFromHistory`.
+ */
 export async function restoreWindows(): Promise<void> {
 	if (restoreStarted || !settingManager.isInitialized()) {return;}
 	restoreStarted = true;

@@ -1,9 +1,11 @@
-# XOS — План: per-user хранилище данных приложений (`user_id | code | value`)
+# XOS — План: desktop state batch (один запрос load/save)
 
 > Версия: 2026-08-06  
-> Цель: спроектировать и внедрить отдельную KV-таблицу для пользовательских данных модулей (prefs / drafts / UI state), с API CRUD, security «только свой user» и клиентским helper.  
+> Цель: **одним HTTP** получать и сохранять состояние рабочего стола (USER allowlist + `APP.launchHistory` + все `WIN.*` + Explorer `explorer.last_path`), без ломки auth, доменных API и CRUD `/api/settings` + `/api/user-data`.  
 > Формат: `- [ ]` для трекинга оркестратором.  
-> **Предыдущий план** (claimants / `setting.json` → `main_claimant.access_options`) — **реализация завершена** (см. `docs/STATUS.md`); ручные UI-smoke 3.5/4.4 — отложены, не блокер. Этот файл **заменён** под текущую задачу.
+>
+> **Предыдущий план** (Desktop UX sync: hydrate / debounce / Explorer) — **DONE**  
+> (см. `docs/ADR-desktop-ux-sync.md`, `docs/STATUS.md`, `docs/TEST_REPORT.md`). Этот файл **заменён** под текущую задачу.
 
 ## Легенда
 
@@ -17,289 +19,133 @@
 
 | | |
 |---|---|
-| **Продукт** | Per-user app data store (opaque KV для приложений) |
-| **Модель (черновик ТЗ)** | `user_id` + `code` + `value` (+ timestamps) |
-| **Не путать с** | `user_settings` (категории USER/APP/WIN), `User.options`, доменными сущностями модулей |
-| **Клиент** | новый API endpoint + helper (по аналогии с `settings.ts`, **не** расширение SettingManager) |
-| **Сервер** | новая entity/таблица в `App\` (или согласованном namespace), REST CRUD под `/api/...` |
+| **Продукт** | Aggregate desktop snapshot: 1× GET + 1× PUT |
+| **ADR** | **(A)** `/api/desktop-state` — `docs/ADR-desktop-state-batch.md` (**Accepted**) |
+| **Уже есть** | Settings CRUD, user-data CRUD, hydrate/debounce/Explorer path (UX sync DONE) |
+| **Главный gap** | Несколько HTTP (settings list/batch + explorer PUT + immediate history flush) |
+| **Не ломать** | Auth, доменные API, публичный CRUD `/api/settings` и `/api/user-data` |
 
 ### Scope (in)
 
-1. Новая таблица БД + Doctrine entity + миграция/индексы.
-2. REST CRUD: list / get / upsert / delete по `code` для текущего пользователя.
-3. Валидация `code` / размера `value`; запрет секретов на уровне политики (документация + лимиты).
-4. Клиентский helper + типы/Zod.
-5. Документация границ: когда settings / options / домен / новое хранилище.
-6. Автотесты (PHPUnit API + vitest helper при наличии).
+1. Backend: `GET` + `PUT /api/desktop-state` (транзакция settings + explorer KV).
+2. Save semantics: upsert snapshot + orphan-delete managed keys (WIN / omitted allowlist / null path).
+3. Client: `desktopStateApi.load()` / `save(snapshot)`; hydrate через один load; один debounce save ~2500 ms + flush unload.
+4. Отключить параллельные API writes managed keys (`setMany` / Explorer PUT / immediate history API).
+5. Тесты + краткие docs.
 
-### Scope out (позже)
+### Scope out
 
-- Миграция данных из `User.options` или `user_settings` APP → новая таблица.
-- Админ-UI просмотра чужих KV в Main.
-- Шифрование at-rest / secret vault.
-- Shared/group-scoped KV (только per-user в MVP).
-- Версионирование / optimistic lock конфликтов между устройствами (достаточно `updated_at` в ответе).
+- Перенос Explorer path в `user_settings` (вариант B отклонён).
+- Удаление старых CRUD endpoints.
+- Optimistic lock / merge UI; `online` auto-flush.
+- Per-window Explorer path; clipboard/secrets.
 
 ---
 
-## Контекст: три существующих хранилища
-
-| Хранилище | Где | Назначение | API |
-|-----------|-----|------------|-----|
-| **`user_settings`** | `App\Entity\UserSetting`, unique `(user_id, category, setting_key)` | Shell/desktop: layout (USER), окна (WIN), launch history / app shell state (APP), defaults (HKEY_CONFIG) | `/api/settings` + клиентский `SettingManager` |
-| **`User.options`** | JSON-колонка `main_user.options` | Legacy профильные опции аккаунта (целый blob) | `GET/PUT /api/account/options` |
-| **Доменные таблицы** | Todo, Calendar, Device, IncCom, … | Бизнес-сущности модулей | `/api/{module}/...` |
-
-**Граница нового хранилища (рабочая формулировка для Архитектора):**
-
-| Использовать | Когда |
-|--------------|--------|
-| **`user_settings`** | Состояние рабочего стола / окон / глобальный UX shell; ключи категорий USER\|APP\|WIN; читается SettingManager при старте |
-| **`User.options`** | Только legacy account options; **не расширять** новыми app-ключами |
-| **Доменные entity** | Данные с бизнес-смыслом, связями, правами claimant, списками/поиском |
-| **Новая таблица** | Opaque per-user данные **конкретного приложения**: prefs модуля, черновики форм, UI-state приложения, не являющиеся window geometry и не являющиеся доменной сущностью |
-
-**Не хранить в новой таблице:** пароли, refresh/API tokens, приватные ключи, PII сверх необходимого для prefs (политика: non-secret payload).
-
----
-
-## ТЗ для Архитектора (не финальная схема)
-
-### Предлагаемые поля
-
-| Поле | Тип (черновик) | Назначение |
-|------|----------------|------------|
-| `id` | PK int | Суррогатный ключ |
-| `user_id` | FK → `main_user`, ON DELETE CASCADE | Владелец |
-| `code` | string (лимит длины — ADR; напр. 128–255) | Namespace ключ приложения |
-| `value` | JSON | Произвольный JSON-совместимый payload |
-| `created_at` | datetime immutable | Создание |
-| `updated_at` | datetime immutable | Последний upsert |
-
-**Уникальность:** `UNIQUE (user_id, code)`.
-
-**Индексы:** unique выше; опционально `INDEX (user_id)` если list без prefix-filter достаточен через unique prefix; при list-by-prefix (`code LIKE 'todo.%'`) — уточнить в ADR (MySQL prefix / отдельная колонка `app` vs dotted `code`).
-
-### Соглашение по `code`
-
-Рекомендация плана (утвердить на этапе 0):
-
-- Формат: `{appNs}.{key}` или `{appNs}.{path...}` (например `todo.ui.filters`, `inccom.draft.compose`).
-- `appNs` — стабильный идентификатор модуля/приложения (согласовать с `appId` / именем модуля в `setting.json`).
-- Запрет: пустой code, пробелы, control chars; опционально whitelist charset `[a-z0-9._-]`.
-- **Не** дублировать категории settings (`USER`/`WIN`) внутри code.
-
-Альтернатива на выбор Архитектора: две колонки `(app, key)` вместо одного `code` — тогда unique `(user_id, app, key)`. План допускает оба варианта; выбрать один в ADR.
-
-### Scope данных
-
-| In scope | Out of scope |
-|----------|--------------|
-| Per-user app prefs | Secrets / credentials |
-| Drafts / unsaved form blobs | Shared team/group state |
-| App-local UI state (не WIN geometry) | Крупные бинарные вложения (лимит размера JSON) |
-| Кросс-девайс sync prefs | Полноценный document DB / query by value |
-
-**Лимиты (зафиксировать в ADR):** max length `code`; max bytes `value` (напр. 16–64 KB); rate — опционально позже.
-
-### API (черновик контракта)
-
-Префикс на выбор Архитектора: `/api/user-data` **или** `/api/app-data` (имя таблицы/entity согласовать).
-
-| Метод | Путь | Поведение |
-|-------|------|-----------|
-| GET | `/api/...` | Список записей текущего user; query `prefix?` или `app?` |
-| GET | `/api/.../{code}` | Одна запись; 404 если нет |
-| PUT/POST | `/api/...` | Upsert `{ code, value }` (и/или batch `items[]`) |
-| DELETE | `/api/.../{code}` | Удалить; 404 или 204 |
-
-Ответ DTO (черновик): `{ code, value, createdAt, updatedAt }` (+ `id` по необходимости).
-
-Паттерн реализации: как `ApiSettingsController` — `#[CurrentUser]`, 401 без user, upsert в repository.
-
-### Security
-
-| Правило | MVP |
-|---------|-----|
-| Чтение/запись | Только записи `user_id === currentUser.id` |
-| Чужой user_id в теле | Игнорировать / запретить |
-| ROOT / ROLE_{module}_ROOT | **По умолчанию нет** доступа к чужим KV; админ-override — open question |
-| Auth | JWT / существующий firewall `^/api` → `IS_AUTHENTICATED_FULLY` |
-| Claimant scopes | Для opaque prefs обычно **не** нужны; если запись «чувствительна» — это сигнал держать данные в доменном API модуля |
-
-### Клиентский helper
-
-- Файл по аналогии: `client/src/core/api/endpoints/userData.ts` (имя уточнить).
-- Zod-схемы + функции `list` / `get` / `upsert` / `delete`.
-- **Не** встраивать в `SettingManager` / категории USER|APP|WIN — отдельный контракт.
-- Опционально тонкая обёртка `useUserData(code)` позже (не блокер MVP).
-- Первый потребитель — одно реальное приложение (smoke); список кандидатов — open question.
-
-### Миграция
-
-- Doctrine migration: CREATE TABLE + unique + FK CASCADE.
-- Имя таблицы — ADR (`user_app_data` / `app_user_data` / …); не пересекать с `user_settings`.
-- Seed не требуется.
-- Откат: drop table (данные только новые).
-
----
-
-## Ограничения и допущения
-
-### Нельзя ломать
-
-- `/api/settings` и семантику категорий USER/APP/WIN/HKEY_CONFIG.
-- `User.options` / `/api/account/options` (legacy).
-- Существующие доменные API модулей.
-- Auth/JWT firewall.
-
-### Допущения (до ответа на open questions)
-
-1. Новое хранилище **не** заменяет `user_settings` APP — сосуществуют с явной границей в docs.
-2. Value — JSON; скаляры допустимы как JSON values.
-3. MVP security = только свой user; ROOT read-any — нет, пока не утвердят.
-4. Один code = один JSON document (нет partial patch внутри value в MVP; клиент шлёт полный value).
-5. Batch upsert — желателен по образцу settings, но можно вторым шагом после single upsert.
-
----
-
-## Текущие риски / выводы
-
-| Риск | Митигация |
-|------|-----------|
-| Дублирование с `user_settings` APP | ADR + DEVELOPER_GUIDE: таблица границ; code review первых ключей |
-| Раздувание `User.options` вместо новой таблицы | Явный запрет в плане/доках; новые ключи только в KV |
-| Секреты в value | Документ политики + лимит размера; не логировать value |
-| Коллизии code между приложениями | Обязательный namespace `{app}.…` |
-| Большие drafts | Лимит bytes; 413/400 при превышении |
-| Путаница имён API (`settings` vs `user-data`) | Разные path prefix и client modules |
-
----
-
-## План (небольшие шаги)
+## План (инкременты)
 
 ### Итерация 0 — Контракт Архитектора
 
-**Зависимости:** нет · **Субагент:** architect · **Статус: DONE** (`docs/ADR-user-app-data.md`)
+**Зависимости:** —  
+**Субагент:** `architect`
 
-- [x] **0.1** ADR: границы `user_settings` / `User.options` / домен / новое KV; имя таблицы, entity, URL prefix.
-- [x] **0.2** Утвердить схему полей: `code` vs `(app, key)`; типы; unique; timestamps; лимиты code/value.
-- [x] **0.3** Утвердить API DTO + list filter (`prefix` / `app`) + upsert single/batch.
-- [x] **0.4** Security policy: только свой user; решение по ROOT; политика non-secret.
-- [x] **0.5** Обновить черновики в `docs/DATABASE_SCHEMA.md` / `docs/API_SPEC.md` (контракт, ещё без реализации).
+- [x] **0.1** ADR A vs B → **(A)** aggregate `/api/desktop-state`. → `docs/ADR-desktop-state-batch.md`
+- [x] **0.2** DTO snapshot, managed keys, save/orphan semantics, hydrate, debounce, совместимость CRUD.
+- [x] **0.3** Заменить `docs/PLAN.md`; pointers в `ARCHITECTURE.md` / `API_SPEC.md` / `DEVELOPER_GUIDE.md`.
 
-**Проверка:**
-
-- [x] ADR читаем без противоречий с существующим `user_settings`.
-- [x] Open questions ниже закрыты или явно задефолчены в ADR.
+**Проверка:** ADR Accepted; оркестратор может стартовать backend.
 
 ---
 
-### Итерация 1 — Backend: миграция + entity + repository
+### Итерация 1 — Backend aggregate API
 
-**Зависимости:** 0 · **Субагент:** developer (+ tester)
+**Зависимости:** 0  
+**Субагент:** `developer` (PHP) · `tester` после
 
-- [ ] **1.1** Doctrine migration: таблица + UNIQUE `(user_id, code)` + FK CASCADE + индексы.
-- [ ] **1.2** Entity + Repository (`findOneByUserCode`, `findByUser`, `upsert`, `delete`).
-- [ ] **1.3** Validator: code charset/length, value size, JSON-serializable.
-- [ ] **1.4** PHPUnit unit/repository или integration на upsert/unique.
+- [x] **1.1** `DesktopStateService`: gather managed settings + `explorer.last_path`; serialize snapshot.
+- [x] **1.2** `GET /api/desktop-state` → 200 snapshot (`explorerLastPath: null` если нет записи).
+- [x] **1.3** `PUT /api/desktop-state`: upsert `settings[]` + explorer; orphan-delete WIN отсутствующих; DELETE omitted USER allowlist / `launchHistory`; `explorerLastPath: null` → delete KV; одна транзакция.
+- [x] **1.4** Валидация: category/key ∈ managed; value через существующие validators; 400 на мусор.
+- [x] **1.5** PHPUnit: load empty/full; save upsert; orphan WIN; null explorer; 401; не трогает non-managed keys.
+- [x] **1.6** Не менять wire `/api/settings` и `/api/user-data` (регрессия существующих тестов).
 
-**Проверка:**
-
-- [ ] `php bin/console doctrine:migrations:migrate` (test/dev) — OK.
-- [ ] PHPUnit на repository/validator — green.
-- [ ] Повторный upsert того же code обновляет `value`/`updated_at`, не создаёт дубликат.
-
----
-
-### Итерация 2 — Backend: API CRUD + security
-
-**Зависимости:** 1 · **Субагент:** developer (+ tester)
-
-- [ ] **2.1** Controller под утверждённым `/api/...` (list/get/upsert/delete).
-- [ ] **2.2** Все операции только для `CurrentUser`; чужой user_id недоступен.
-- [ ] **2.3** Коды ошибок: 401 / 400 (validation) / 404 / 413-or-400 (limit).
-- [ ] **2.4** PHPUnit WebTest: CRUD happy path + isolation между двумя users + validation.
-
-**Проверка:**
-
-- [ ] PHPUnit API suite — green.
-- [ ] User A не читает/не меняет code User B.
-- [ ] Неавторизованный запрос — 401.
+**Проверка:** PHPUnit green; ручной curl GET/PUT с JWT.
 
 ---
 
-### Итерация 3 — Frontend helper
+### Итерация 2 — Client API + hydrate через load
 
-**Зависимости:** 0.3 (контракт), 2 (для e2e/smoke) · **Субагент:** developer `[‖]` частично после 0 · **tester** vitest
+**Зависимости:** 1  
+**Субагент:** `developer` (TS) · `tester`
 
-- [ ] **3.1** Types + Zod + `endpoints/*` helper (get/list/upsert/delete).
-- [ ] **3.2** Регистрация в barrel `core/api/endpoints` при принятом стиле репо.
-- [ ] **3.3** Unit-тест schema/helper (mock client) при наличии паттерна как у settings.
-- [ ] **3.4** (Опционально) один smoke-вызов из выбранного приложения-пилота.
+- [x] **2.1** `desktopState.ts`: Zod DTO; `load()` = GET; `save(snapshot)` = PUT; facade `desktopStateApi`.
+- [x] **2.2** Hydrate path: при `VITE_USE_API_SETTINGS=true` заменить `preloadSettings` (+ отдельный explorer GET) на **`desktopStateApi.load()`**.
+- [x] **2.3** Успех: clear-then-seed settings из `snapshot.settings`; seed/clear explorer LS из `explorerLastPath`; server-first.
+- [x] **2.4** Fail load: toast + local degraded, без clear (как UX sync).
+- [x] **2.5** Vitest: parse DTO; hydrate seed из snapshot mock.
 
-**Проверка:**
-
-- [ ] vitest — green.
-- [ ] Ручной smoke: upsert → reload → get возвращает value.
-
----
-
-### Итерация 4 — Документация и границы
-
-**Зависимости:** 0–2 · **Субагент:** tech-writer / developer `[‖]` с 3
-
-- [x] **4.1** `DATABASE_SCHEMA.md` — финальная таблица + ER.
-- [x] **4.2** `API_SPEC.md` — эндпоинты и DTO.
-- [x] **4.3** `DEVELOPER_GUIDE.md` — когда settings vs KV vs домен; пример code namespace.
-- [x] **4.4** Краткая пометка в `ARCHITECTURE.md` (ADR ссылка).
-
-**Проверка:**
-
-- [x] Docs согласованы с кодом; нет совета «клади prefs приложения в User.options».
+**Проверка:** один network GET на старте shell (auth+flag); restoreFromHistory без второго settings list.
 
 ---
 
-### Итерация 5 — Polish / regression
+### Итерация 3 — Client единый debounce save
 
-**Зависимости:** 1–4 · **Субагент:** tester
+**Зависимости:** 2  
+**Субагент:** `developer` · `tester`
 
-- [ ] **5.1** Regression: `SettingsApiTest` и account options — без регрессий.
-- [ ] **5.2** Проверка лимитов (слишком длинный code / большой value).
-- [ ] **5.3** Чеклист smoke в `TEST_REPORT.md` (или краткий раздел).
+- [x] **3.1** `DesktopStatePersister` (или эквивалент): сборка snapshot из local (USER allowlist + launchHistory + все WIN + explorer path).
+- [x] **3.2** Debounce **2500 ms** → один `desktopStateApi.save`; local writes сразу.
+- [x] **3.3** Flush на visibility hidden / pagehide / beforeunload.
+- [x] **3.4** Отключить для managed keys: Composite `setMany`/`ApiAdapter` API writes; отдельный Explorer `PUT /api/user-data`; immediate API flush `launchHistory`.
+- [x] **3.5** WIN UI debounce 300 ms сохранить (только до local set).
+- [x] **3.6** Vitest fake timers: N local set → 1× `save`; flush immediate.
 
-**Проверка:**
-
-- [ ] PHPUnit settings + новый API — green.
-- [ ] Чеклист заполнен.
+**Проверка:** DevTools — при drag окон не N× PUT; после debounce ровно один `/api/desktop-state`.
 
 ---
 
-## Следующие шаги
+### Итерация 4 — Tester / docs / regression
 
-### Для Архитектора
+**Зависимости:** 1–3  
+**Субагент:** `tester` · `tech-writer` · `developer` hotfix
 
-1. Закрыть итерацию **0**: ADR + финальные имена (таблица, URL, `code` vs `app+key`).
-2. Зафиксировать defaults по open questions ниже (или запросить пользователя).
-3. Передать Оркестратору контракт для итераций 1–2.
+- [x] **4.1** PHPUnit: settings + user-data + desktop-state без регрессии. → target **28/28**; full suite blocked внешним `ExplorerApiTest` (out of scope)
+- [x] **4.2** Vitest: desktopStateApi, hydrate, persister debounce/flush; guest / flag off = local-only. → target **53/53**; full suite blocked внешними auth/access (out of scope)
+- [x] **4.3** Обновить `API_SPEC.md` / `DEVELOPER_GUIDE.md` / `ARCHITECTURE.md` до as-is (tech-writer может развернуть).
+- [x] **4.4** `TEST_REPORT.md` / `STATUS.md` / smoke checklist (ниже).
+- [x] **4.5** Пометить ADR-desktop-ux-sync как SoT/LWW baseline; pointer на ADR-desktop-state-batch для wire.
 
-### Для Оркестратора
+**Проверка:** automated green; docs согласованы с ADR.
 
-1. После ADR — задачи developer: migration → API → client helper → docs.
-2. Не смешивать с доработками claimants UI-smoke.
-3. Обновить `docs/TODO.md` под этот PLAN (замена трекинга claimants).
+---
+
+## Smoke checklist (ручной)
+
+1. `VITE_USE_API_SETTINGS=true`, два профиля, один user.
+2. Network: после login **один** `GET /api/desktop-state` (нет обязательного `GET /api/settings` + `GET /api/user-data/explorer…` в hydrate path).
+3. A: pin + открыть apps + подвигать окна + сменить папку Explorer → после ≥2500 ms **один** `PUT /api/desktop-state`.
+4. B: login → pinned, history/apps, WIN geometry, Explorer path совпадают.
+5. A: закрыть окно → следующий save без WIN-ключа; на B окно не восстанавливается.
+6. Guest / flag off — без вызовов `/api/desktop-state`.
+7. CRUD `/api/settings` и `/api/user-data` по-прежнему отвечают (smoke один GET).
 
 ---
 
 ## Open questions
 
-> **Закрыты** (2026-08-06, defaults оркестратора) — см. `docs/ADR-user-app-data.md`.
+> Неблокирующие — закрыты рекомендациями в ADR:
 
-1. **Имя:** `user_app_data` + `UserAppData` + `/api/user-data` ✅
-2. **Модель ключа:** один `code` (`{appNs}.{key…}`) ✅
-3. **ROOT:** нет доступа к чужим KV в MVP ✅
-4. **Batch:** только single upsert в MVP; batch — v2 ✅
-5. **Пилот:** 3.4 optional, не блокер ✅
-6. **Prefix list:** `GET ?prefix=` сразу ✅
-7. **Патч value:** только full replace ✅
-8. **Квота:** code ≤191; value ≤64 KB; soft max 500 keys/user ✅
+| # | Вопрос | Решение |
+|---|--------|---------|
+| 1 | A vs B | **A** |
+| 2 | Orphan / omit semantics | Server delete orphans в managed set |
+| 3 | launchHistory immediate flush | Убрать; общий debounce + unload |
+| 4 | USER allowlist расширение | Только явный amend ADR |
+
+---
+
+## Следующие шаги (оркестратор)
+
+1. Iter **1** → `developer` (backend) + `tester`.
+2. Затем **2 → 3** client; **4** docs/regression.
+3. Не удалять CRUD endpoints в этой задаче.

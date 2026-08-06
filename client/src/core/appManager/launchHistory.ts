@@ -41,6 +41,13 @@ export async function removeFromLaunchHistory(appId: string, instanceKey: string
 	await saveLaunchHistory(filtered);
 }
 
+/**
+ * Канонический restore открытых приложений (ADR-desktop-ux-sync).
+ * Читает `APP.launchHistory` после hydrate SettingManager; `launchApp` подтягивает WIN.
+ * Семантика: закрытие окна пользователем → {@link removeFromLaunchHistory}.
+ * Закрытие вкладки/refresh → history **не** чистится (иначе сервер теряет snapshot для другого браузера).
+ * После save — общий snapshot debounce / unload flush.
+ */
 export async function restoreFromHistory(
 	launchApp: (appId: string, params?: LaunchParams) => Promise<string | null>,
 ): Promise<void> {

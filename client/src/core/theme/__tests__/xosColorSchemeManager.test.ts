@@ -42,4 +42,14 @@ describe('xosColorSchemeManager', () => {
 
 		expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe(JSON.stringify('auto'));
 	});
+
+	it('set is no-op when value already matches storage', () => {
+		localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify('light'));
+		const setItem = vi.spyOn(localStorage, 'setItem');
+
+		const manager = xosColorSchemeManager();
+		manager.set('light');
+
+		expect(setItem).not.toHaveBeenCalled();
+	});
 });

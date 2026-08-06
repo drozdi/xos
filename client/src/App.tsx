@@ -4,12 +4,12 @@ import { Notifications } from '@mantine/notifications';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
+import { desktopStateApi } from '@/core/api/endpoints/desktopState';
 import { queryClient } from '@/core/api/queryClient';
 import { setupInterceptors } from '@/core/api/interceptors';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
 import { resolveStandaloneApp } from '@/core/auth/tokenStorage';
 import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
-import { preloadSettings } from '@/core/settings/preloadSettings';
 import { settingManager } from '@/core/settings/SettingManager';
 import { battleNetCssVariablesResolver } from '@/core/theme/battleNetTheme';
 import { DEFAULT_THEME, ThemeProvider, xosColorSchemeManager } from '@/core/theme';
@@ -58,12 +58,14 @@ function DesktopShell() {
 		async function bootstrapSettings() {
 			settingManager.reset();
 
-			let preloaded;
+			let preloadedSnapshot: Awaited<ReturnType<typeof desktopStateApi.load>> | undefined;
+			let preloadFailed = false;
 			if (isAuthenticated && useApiSettings()) {
 				try {
-					preloaded = await preloadSettings();
+					preloadedSnapshot = await desktopStateApi.load();
 				} catch {
-					preloaded = undefined;
+					preloadedSnapshot = undefined;
+					preloadFailed = true;
 				}
 			}
 
@@ -71,7 +73,12 @@ function DesktopShell() {
 				return;
 			}
 
-			settingManager.init(createSettingAdapter({ preloaded }));
+			// Barrier: await clear-then-seed до init / UI shell restore
+			const adapter = await createSettingAdapter({ preloadedSnapshot, preloadFailed });
+			if (cancelled) {
+				return;
+			}
+			settingManager.init(adapter);
 			setSettingsKey(targetKey);
 		}
 

@@ -20,6 +20,11 @@ function readStoredTheme(defaultValue: ThemePreference = DEFAULT_THEME): ThemePr
 	}
 }
 
+/**
+ * Mantine bootstrap mirror для `USER.theme` (тот же ключ, что LocalStorageAdapter).
+ * Не пишет в SettingManager — ThemeProvider синхронизирует SoT после hydrate.
+ * set() no-op при том же значении, чтобы hydrate `setColorScheme` не дёргал LS впустую.
+ */
 export function xosColorSchemeManager(): MantineColorSchemeManager {
 	let handleStorageEvent: ((event: StorageEvent) => void) | null = null;
 
@@ -27,7 +32,12 @@ export function xosColorSchemeManager(): MantineColorSchemeManager {
 		get: (defaultValue) => readStoredTheme(defaultValue ?? DEFAULT_THEME),
 		set: (value) => {
 			try {
-				window.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(value));
+				const current = window.localStorage.getItem(THEME_STORAGE_KEY);
+				const next = JSON.stringify(value);
+				if (current === next) {
+					return;
+				}
+				window.localStorage.setItem(THEME_STORAGE_KEY, next);
 			} catch (error) {
 				console.warn('[xos] Unable to save color scheme.', error);
 			}

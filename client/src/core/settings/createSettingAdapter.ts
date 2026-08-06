@@ -1,6 +1,8 @@
 import { notifications } from '@mantine/notifications';
 
+import type { DesktopStateSnapshot } from '@/core/api/endpoints/desktopState';
 import type { UserSettingDto } from '@/types/api.types';
+import { clearExplorerLastPathLocalBuffer, writeExplorerLastPathLocalBuffer } from '@/features/explorer/explorerLastPath';
 
 import { ApiAdapter } from './adapters/ApiAdapter';
 import { CompositeAdapter } from './adapters/CompositeAdapter';
@@ -14,45 +16,79 @@ function useApiSettings(): boolean {
 }
 
 export interface CreateSettingAdapterOptions {
-	preloaded?: UserSettingDto[];
+	/** Успешный preload desktop snapshot. `undefined` — preload не выполнялся. */
+	preloadedSnapshot?: DesktopStateSnapshot;
+	/** Preload бросил ошибку: toast + local degraded, без clear LS. */
+	preloadFailed?: boolean;
 }
 
-async function seedLocalAdapter(
+function showApiFallbackToast(): void {
+	if (apiErrorToastShown) {
+		return;
+	}
+	apiErrorToastShown = true;
+	notifications.show({
+		color: 'yellow',
+		title: 'Настройки',
+		message:
+			'Не удалось синхронизировать настройки с сервером. Используется локальная копия.',
+	});
+}
+
+async function clearThenSeedLocalAdapter(
 	local: LocalStorageAdapter,
 	items: UserSettingDto[],
 ): Promise<void> {
+	local.clearAll();
 	for (const item of items) {
 		await local.set(item.category, item.key, item.value);
 	}
 }
 
-export function createSettingAdapter(options: CreateSettingAdapterOptions = {}): ISettingAdapter {
+async function clearThenSeedDesktopState(
+	local: LocalStorageAdapter,
+	snapshot: DesktopStateSnapshot,
+): Promise<void> {
+	await clearThenSeedLocalAdapter(local, snapshot.settings);
+	if (snapshot.explorerLastPath) {
+		writeExplorerLastPathLocalBuffer(snapshot.explorerLastPath.path);
+	} else {
+		clearExplorerLastPathLocalBuffer();
+	}
+}
+
+/**
+ * Создаёт adapter. При успешном preload: clear-then-seed local (await) и server-first Composite.
+ * Barrier: вызывающий код должен `await` до `settingManager.init`.
+ */
+export async function createSettingAdapter(
+	options: CreateSettingAdapterOptions = {},
+): Promise<ISettingAdapter> {
 	const local = new LocalStorageAdapter();
 
 	if (!useApiSettings()) {
 		return local;
 	}
 
+	if (options.preloadFailed) {
+		showApiFallbackToast();
+	}
+
 	const api = new ApiAdapter();
-	if (options.preloaded?.length) {
-		api.preload(options.preloaded);
-		void seedLocalAdapter(local, options.preloaded);
+	const hydrated = options.preloadedSnapshot !== undefined;
+
+	if (hydrated) {
+		api.preload(options.preloadedSnapshot.settings);
+		await clearThenSeedDesktopState(local, options.preloadedSnapshot);
 	}
 
 	return new CompositeAdapter(local, api, {
 		useApi: true,
+		serverFirst: hydrated,
 		onApiError: (error, operation) => {
 			// eslint-disable-next-line no-console -- intentional degraded-mode warning
 			console.warn(`[settings] API fallback for ${operation}:`, error);
-			if (!apiErrorToastShown) {
-				apiErrorToastShown = true;
-				notifications.show({
-					color: 'yellow',
-					title: 'Настройки',
-					message:
-						'Не удалось синхронизировать настройки с сервером. Используется локальная копия.',
-				});
-			}
+			showApiFallbackToast();
 		},
 	});
 }

@@ -184,3 +184,71 @@ Sync при записи в БД **всегда** нормализует к obje
 | `User.options` (`/api/account/options`) | **Legacy only** — новые app-ключи **запрещены** |
 
 Только CurrentUser; ROOT без чужих KV; non-secret `value`; single PUT upsert (full replace) + `GET ?prefix=`; soft quota 500 keys; value ≤ 64 KB → 400. Клиент: `userData.ts`. См. также `DATABASE_SCHEMA.md`, `API_SPEC.md`, `DEVELOPER_GUIDE.md`.
+
+---
+
+## ADR: Desktop UX sync (cross-browser)
+
+Полный текст: **`docs/ADR-desktop-ux-sync.md`** (Accepted, 2026-08-06) — **DONE** (hydrate / SoT / LWW / Explorer path).  
+Гайд: **`docs/DEVELOPER_GUIDE.md`** § Desktop UX sync / Desktop state batch.
+
+### Цель
+
+После login в другом браузере восстановить shell UX «почти как есть»: pinned Start Menu, `APP.launchHistory` / открытые apps, WIN geometry, global last folder Explorer.
+
+### Границы хранилищ
+
+| Данные | Куда |
+|--------|------|
+| Theme, pinned Start Menu, desktop layout | `user_settings` **USER** |
+| Launch history | `user_settings` **APP** |
+| Window geometry / min/max | `user_settings` **WIN** |
+| Explorer last folder | **`user_app_data`** `explorer.last_path` → `{ "path": string }` |
+| Clipboard, secrets, tokens | **Не sync** |
+
+CRUD `/api/settings` и `/api/user-data` **сохраняются**. Целевой wire shell sync — aggregate (см. следующий ADR), не N× settings/user-data.
+
+### Hydrate / SoT baseline
+
+1. Auth → preload desktop state с сервера.
+2. Успех: **clear `xos.settings.*` + seed** (await) → server-first.
+3. Fail: toast + local degraded, **без** clear.
+4. Shell restore: только **`restoreFromHistory`** → `launchApp` → WIN.  
+   `restoreWindows` — мёртвый / deprecated экспорт.
+
+### Writes / offline baseline
+
+| | Settings | Explorer path |
+|--|----------|---------------|
+| Local | Сразу LS | Сразу LS `xos.explorer.lastPath` |
+| Server | Один `PUT /api/desktop-state` (весь snapshot) | Тот же PUT (поле `explorerLastPath`) |
+| Flush | visibility / pagehide / beforeunload | То же |
+| Online listener | **Нет** | **Нет** |
+
+### Конфликты (LWW)
+
+- MVP: **last-write-wins** (последний успешный upsert побеждает).
+- `updatedAt` — **информативный**; не lock, не merge UI.
+- Согласовано с `ADR-user-app-data`.
+
+---
+
+## ADR: Desktop state batch (один запрос)
+
+Полный текст: **`docs/ADR-desktop-state-batch.md`** (Accepted, 2026-08-06).  
+План: **`docs/PLAN.md`**. Спека: **`docs/API_SPEC.md`** § Desktop state.
+
+**Выбор (A):** `GET` + `PUT /api/desktop-state` — aggregate над `user_settings` (managed) + `user_app_data` `explorer.last_path`. Вариант (B) (всё в settings) отклонён: ломает границы KV / миграция path.
+
+Статус реализации: backend и client wire внедрены; regression по целевому набору тестов green. Полные full-suite прогоны пока имеют внешние blockers вне `desktop-state`.
+
+| | |
+|--|--|
+| Client | `desktopStateApi.load()` / `save(snapshot)` |
+| Hydrate | один `GET /api/desktop-state`, затем clear-then-seed local cache |
+| Save | Upsert body + server orphan-delete managed WIN / omitted allowlist / `explorerLastPath: null` |
+| Debounce | 2500 ms один save; без N× PUT per key |
+| Managed writes | `CompositeAdapter` роутит managed keys в `DesktopStatePersister`, не в `/api/settings` batch |
+| Guest / flag off | local-only, без `/api/desktop-state` |
+| Схема БД | Без новых таблиц |
+| CRUD | `/api/settings`, `/api/user-data` остаются рядом |

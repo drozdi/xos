@@ -19,6 +19,14 @@ export {
 	updateAccount,
 } from './account';
 export {
+	desktopStateApi,
+	desktopStateExplorerLastPathSchema,
+	desktopStateSnapshotSchema,
+	load as loadDesktopState,
+	save as saveDesktopState,
+} from './desktopState';
+export type { DesktopStateSnapshot } from './desktopState';
+export {
 	settingsEndpoints,
 	getAllSettings,
 	getSetting,

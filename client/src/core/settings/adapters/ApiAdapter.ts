@@ -3,6 +3,7 @@ import {
 	getAllSettings,
 	getSetting,
 	upsertSetting,
+	upsertSettingsBatch,
 } from '@/core/api/endpoints/settings';
 import type { SettingCategory, UserSettingDto } from '@/types/api.types';
 
@@ -30,6 +31,11 @@ export class ApiAdapter implements ISettingAdapter {
 			return this.cache.get(ck);
 		}
 
+		// After full preload (desktop-state), missing key = absent. Never hit per-key HTTP.
+		if (this.loadedCategories.has('ALL')) {
+			return undefined;
+		}
+
 		const item = await getSetting(category, key);
 		if (!item) {return undefined;}
 
@@ -38,8 +44,22 @@ export class ApiAdapter implements ISettingAdapter {
 	}
 
 	async set(category: SettingCategory, key: string, value: unknown): Promise<void> {
+		// Prefer batch path; single-key HTTP only when desktop-state sync is off
 		await upsertSetting(category, key, value);
 		this.cache.set(cacheKey(category, key), value);
+	}
+
+	/** Batch upsert via POST /api/settings `items[]` (debounce coalesce). */
+	async setMany(
+		items: Array<{ category: SettingCategory; key: string; value: unknown }>,
+	): Promise<void> {
+		if (items.length === 0) {
+			return;
+		}
+		await upsertSettingsBatch({ items });
+		for (const item of items) {
+			this.cache.set(cacheKey(item.category, item.key), item.value);
+		}
 	}
 
 	async has(category: SettingCategory, key: string): Promise<boolean> {

@@ -21,6 +21,12 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+/**
+ * Theme SoT = SettingManager `USER.theme` после hydrate.
+ * Mantine colorSchemeManager зеркалит тот же LS-ключ для bootstrap до init;
+ * после load применяем тему из settings через setColorScheme **без** обратной
+ * записи в SettingManager (иначе guest→auth / hydrate зациклит API writes).
+ */
 export function ThemeProvider({ children }: { children: ReactNode }) {
 	const [theme, setThemeState, isLoading] = useSetState<ThemePreference>(
 		'USER',
@@ -28,15 +34,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 		DEFAULT_THEME,
 	);
 	const { setColorScheme } = useMantineColorScheme();
-	const hydratedRef = useRef(false);
 	const userChangedRef = useRef(false);
 
+	// guest→auth / reset: сбросить «user changed», чтобы применить server SoT
 	useEffect(() => {
-		if (isLoading || hydratedRef.current || userChangedRef.current) {
+		if (isLoading) {
+			userChangedRef.current = false;
+		}
+	}, [isLoading]);
+
+	useEffect(() => {
+		if (isLoading || userChangedRef.current) {
 			return;
 		}
-
-		hydratedRef.current = true;
+		// Только Mantine UI + LS mirror; SettingManager уже содержит SoT после hydrate
 		setColorScheme(theme);
 	}, [isLoading, theme, setColorScheme]);
 

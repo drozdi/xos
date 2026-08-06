@@ -50,7 +50,9 @@ import {
 	matchesExplorerPickerFilter,
 	useExplorerPickerStore,
 } from './explorerPickerStore';
+import { EXPLORER_DEFAULT_PATH } from './explorerLastPath';
 import { useExplorerHistory } from './hooks/useExplorerHistory';
+import { useExplorerLastPath } from './hooks/useExplorerLastPath';
 import { useExplorerSelection } from './hooks/useExplorerSelection';
 import { getOpenWithAppsForEntry, openVfsPathWithApp } from './openWithRegistry';
 import type { ExplorerViewMode } from './explorerViewUtils';
@@ -74,7 +76,9 @@ interface ExplorerWorkspaceProps {
 	initialPath?: string;
 }
 
-export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspaceProps) {
+export function ExplorerWorkspace({ initialPath }: ExplorerWorkspaceProps) {
+	const startPath = initialPath ?? EXPLORER_DEFAULT_PATH;
+	const shouldHydrateLastPath = initialPath === undefined;
 	const {
 		currentPath,
 		setCurrentPath,
@@ -82,7 +86,7 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 		canGoForward,
 		goBack,
 		goForward,
-	} = useExplorerHistory(initialPath);
+	} = useExplorerHistory(startPath);
 	const [viewMode, setViewMode] = useState<'normal' | 'trash'>('normal');
 	const [listViewMode, setListViewMode] = useState<ExplorerViewMode>('table');
 	const [sortBy, setSortBy] = useState<ExplorerSortBy>('name');
@@ -100,6 +104,13 @@ export function ExplorerWorkspace({ initialPath = 'home://' }: ExplorerWorkspace
 	const completePicker = useExplorerPickerStore((state) => state.completePicker);
 	const cancelPicker = useExplorerPickerStore((state) => state.cancelPicker);
 	const [pickerFileName, setPickerFileName] = useState('');
+
+	useExplorerLastPath({
+		currentPath,
+		navigate: setCurrentPath,
+		persistEnabled: !picker,
+		hydrate: shouldHydrateLastPath,
+	});
 
 	const diskRoot = `${parseDisk(currentPath)}://`;
 	const isTrashView = viewMode === 'trash' && !picker;
