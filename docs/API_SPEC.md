@@ -1,8 +1,8 @@
 # XOS — REST API Specification
 
-> Версия: 2026-08-06 (claimant `access_options` / app-access-modules)  
+> Версия: 2026-08-06 (`/api/user-data` реализован; claimant `access_options`)  
 > Base URL: `{SERVER_URL}` (dev: `http://localhost:8000`)  
-> Prefix: все эндпоинты ниже — **фактические пути** из кода + **планируемые** помечены `[NEW]`
+> Prefix: все эндпоинты ниже — **фактические пути** из кода + планируемые помечены `[NEW]` / `[CONTRACT]`
 
 ## Общие соглашения
 
@@ -318,6 +318,107 @@ POST `/list` с телом:
 
 ---
 
+## User App Data
+
+> ADR: `docs/ADR-user-app-data.md`.  
+> Не путать с `/api/settings` (shell) и `/api/account/options` (legacy).
+
+Контроллер: `App\Controller\ApiUserDataController`  
+Сущность: `UserAppData` → таблица `user_app_data`  
+Клиент: `client/src/core/api/endpoints/userData.ts`
+
+**Auth:** JWT (`^/api`, `IS_AUTHENTICATED_FULLY`). Все операции только для `CurrentUser`. ROOT **не** читает чужие записи. Поля `userId` в body нет.
+
+### DTO
+
+```json
+{
+  "code": "todo.ui.filters",
+  "value": { "status": "open" },
+  "createdAt": "2026-08-06T09:00:00+00:00",
+  "updatedAt": "2026-08-06T09:00:00+00:00"
+}
+```
+
+`id` в JSON-ответе **не** отдаётся (только `code`, `value`, `createdAt`, `updatedAt`). Даты — ISO-8601 (`DateTimeInterface::ATOM`).
+
+### GET `/api/user-data`
+
+**Query:** `prefix?` (string) — если непустой, фильтр `code LIKE '{prefix}%'` (напр. `todo.`). Пустой / отсутствующий — все ключи текущего user.
+
+**Response 200:**
+```json
+{
+  "items": [
+    {
+      "code": "todo.ui.filters",
+      "value": { "status": "open" },
+      "createdAt": "2026-08-06T09:00:00+00:00",
+      "updatedAt": "2026-08-06T09:05:00+00:00"
+    }
+  ]
+}
+```
+
+**Response 400:** не-string `prefix` → `{ "message": "Query parameter \"prefix\" must be a string" }`.  
+**Response 401:** нет JWT → `{ "message": "missing credentials" }`.
+
+---
+
+### GET `/api/user-data/{code}`
+
+**Params:** `code` — URL-encoded (точки допустимы; charset `[a-z0-9._-]`; route requirement `.+`). Сервер делает `rawurldecode`.
+
+**Response 200:** один DTO (см. выше).  
+**Response 401:** `{ "message": "missing credentials" }`.  
+**Response 404:** `{ "message": "User data not found" }`.
+
+---
+
+### PUT `/api/user-data`
+
+Single upsert, **full replace** `value` (partial / merge / JSON Patch — нет).
+
+**Request:**
+```json
+{
+  "code": "todo.ui.filters",
+  "value": { "status": "done", "assignee": null }
+}
+```
+
+**Response 200:** сохранённый DTO (create или update).  
+**Response 400:** `{ "message": "<validation>" }` — пустой/невалидный `code`, `code` > 191, отсутствует `value`, non-JSON-serializable `value`, `value` > 64 KB (JSON-encoded), soft quota на **insert** при ≥ 500 keys.  
+**Response 401:** `{ "message": "missing credentials" }`.
+
+Примеры `message` (валидатор):  
+`Field "code" must match ^[a-z0-9._-]+$` · `Field "value" must not exceed 65536 bytes when JSON-encoded` · `Maximum of 500 keys per user exceeded`.
+
+Batch `items[]` — **не** в MVP (v2).
+
+---
+
+### DELETE `/api/user-data/{code}`
+
+**Response 204** — удалено (пустое тело).  
+**Response 401:** `{ "message": "missing credentials" }`.  
+**Response 404:** `{ "message": "User data not found" }`.
+
+---
+
+### Ошибки / лимиты
+
+| Код | Когда |
+|-----|--------|
+| 401 | Не авторизован |
+| 400 | Невалидный `code` / oversized `value` / soft quota на insert / неверный `prefix` |
+| 404 | Get/Delete несуществующего code |
+| 204 | Успешный DELETE |
+| 403 | Не используется для «чужой user» — чужие записи недоступны (нет endpoint с userId) |
+
+**Non-secret:** в `value` нельзя класть пароли, tokens, private keys (политика ADR; сервер не сканирует содержимое в MVP). Oversized value → **400** (не 413).
+
+---
 ## Main — Users, Groups, OU, Claimants, Files
 
 Prefix: `/api/main/`
@@ -616,13 +717,15 @@ CRUD + `/list`, `/select`.
 |------|---------------|
 | 200 | Успешное чтение/обновление |
 | 201 | Создание (account update возвращает 201 с id) |
-| 204 | DELETE settings |
+| 204 | DELETE settings / user-data |
 | 400 | Валидация |
 | 401 | Не авторизован / истёк JWT |
 | 403 | Нет scope/role (Access attribute) |
-| 404 | Сущность/настройка не найдена |
+| 404 | Сущность/настройка/user-data не найдена |
 | 409 | Конфликт версии (@Version) |
 | 500 | Server error |
+
+> User-data oversized value: MVP → **400** (не 413), единообразно с validation settings.
 
 ---
 
@@ -682,6 +785,19 @@ export interface SettingsBatchRequest {
   items: Array<{ category: SettingCategory; key: string; value: unknown }>;
 }
 
+/** Per-user opaque KV — /api/user-data (см. ADR-user-app-data) */
+export interface UserAppDataDto {
+  code: string;
+  value: unknown;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserAppDataUpsertRequest {
+  code: string;
+  value: unknown;
+}
+
 export interface ListRequest {
   t?: 'list' | 'select';
   limit?: number;
@@ -717,6 +833,10 @@ export const queryKeys = {
   settings: {
     all: (category?: SettingCategory) => ['settings', category ?? 'all'] as const,
     one: (category: SettingCategory, key: string) => ['settings', category, key] as const,
+  },
+  userData: {
+    list: (prefix?: string) => ['userData', 'list', prefix ?? ''] as const,
+    one: (code: string) => ['userData', 'one', code] as const,
   },
   main: {
     users: (filters: ListRequest) => ['main', 'users', filters] as const,

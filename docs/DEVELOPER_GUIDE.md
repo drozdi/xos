@@ -173,6 +173,56 @@ const [theme, setTheme] = useSetting('USER', 'theme', 'light');
 
 Категории: `CONFIG`, `USER`, `WIN`, `APP` (см. `ISettingAdapter`).
 
+## Хранилища данных пользователя
+
+> Полный контракт границ: [`docs/ADR-user-app-data.md`](ADR-user-app-data.md).
+
+Четыре разных места — **не** смешивать:
+
+| Хранилище | API / helper | Когда использовать |
+|-----------|--------------|-------------------|
+| **`user_settings`** | `/api/settings` · `api.settings` / `core/settings` | Desktop shell: layout (`USER`), window geometry (`WIN`), launch history / shell chrome (`APP`), defaults (`HKEY_CONFIG` / `CONFIG`) |
+| **`user_app_data`** | `/api/user-data` · `userData.ts` | Opaque prefs модуля, drafts, app-local UI state (фильтры, черновики форм) |
+| **Доменные entity** | `/api/{module}/…` | Данные с бизнес-смыслом, связями, claimant scopes, списками/поиском |
+| **`User.options`** | `/api/account/options` | **Только legacy** профильный blob аккаунта |
+
+### Правило выбора
+
+1. Позиция/размер окна → `user_settings` **WIN** (Window Manager делает сам).
+2. Layout / панели desktop → `user_settings` **USER**.
+3. Launch history / shell chrome → `user_settings` **APP**.
+4. Бизнес-сущность с правами → доменный API модуля.
+5. Остальное opaque per-user app payload → **`user_app_data`**.
+6. **Новые prefs / ключи приложений в `User.options` — запрещены.** Не расширять legacy blob.
+
+### Namespace `code` в `user_app_data`
+
+Формат: `{appNs}.{key…}` (минимум один сегмент после `appNs`). Charset: `^[a-z0-9._-]+$`, max 191.
+
+Примеры:
+
+| code | Назначение |
+|------|------------|
+| `todo.ui.filters` | UI-фильтры модуля todo |
+| `inccom.draft.compose` | Черновик формы IncCom |
+
+Не дублировать категории settings (`USER`/`WIN`/…) внутри `code`. Не класть secrets в `value`.
+
+### Клиентский helper
+
+Используйте **`client/src/core/api/endpoints/userData.ts`** (list / get / upsert / delete, Zod).  
+**Не** встраивать app prefs в `SettingManager` и категории `USER`|`APP`|`WIN`. Query keys: `['userData', …]`.
+
+```typescript
+import { list, upsert, userDataApi } from '@/core/api/endpoints/userData';
+
+const items = await list('todo.');
+await upsert({ code: 'todo.ui.filters', value: { status: 'open' } });
+// или: await userDataApi.delete('todo.ui.filters');
+```
+
+PUT всегда **full replace** `value` (merge на клиенте, если нужен частичный апдейт).
+
 ## Регистрация через `import.meta.glob`
 
 Файл `core/appManager/registerApps.ts` сканирует все манифесты:
@@ -355,6 +405,7 @@ main:claimant:sync
 
 ## См. также
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle, ADR access_options
-- [API_SPEC.md](API_SPEC.md) — REST endpoints для `services/`
+- [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle, ADR access_options / user_app_data
+- [ADR-user-app-data.md](ADR-user-app-data.md) — границы `user_settings` / `user_app_data` / домен / `User.options`
+- [API_SPEC.md](API_SPEC.md) — REST endpoints (`/api/settings`, `/api/user-data`, …)
 - [README.md](../README.md) — запуск проекта

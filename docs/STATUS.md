@@ -1,52 +1,41 @@
-# STATUS — claimants access_options orchestration
+# STATUS — Per-user app data KV
 
-> Старт / финал оркестрации: 2026-08-06  
-> План: `docs/PLAN.md` · Трекинг: `docs/TODO.md`
+> Финал оркестрации 2026-08-06
 
 ## Итог
 
-Оркестрация **завершена по коду и документации**. Остались только ручные UI-smoke пункты **3.5 / 4.4** (браузер пользователя) — не блокеры реализации.
+Все итерации **0–5** завершены. Blockers нет.
 
-| Итерация | Статус |
-|----------|--------|
-| 0 Контракт | `[x]` |
-| 1 Backend migrate/sync | `[x]` |
-| 2 Backend API | `[x]` |
-| 3 Frontend tabs | `[x]` код; `[!]` 3.5 UI smoke |
-| 4 setting.json + regression | `[x]` код/тесты; `[!]` 4.4 UI smoke |
-| 5 Docs / polish | `[x]` |
+| Итерация | Статус | Исполнитель |
+|----------|--------|-------------|
+| 0 ADR/контракт | DONE | architect |
+| 1 Entity/migration | DONE | developer |
+| 2 API CRUD | DONE | developer |
+| 3 Frontend helper | DONE | developer |
+| 4 Docs | DONE | tech-writer |
+| 5 Regression | PASS | tester |
 
-## Defaults (без ответа пользователя)
+## Тесты (итог iter 5)
 
-1. Todo/IBlock — sync да, UI/Protected — нет  
-2. map-access: number | `{bit,title}`; default titles  
-3. Orphan soft — не delete, options `{}`  
-4. Корневые can_* — на root claimant модуля  
-5. Sync — только CLI + deploy (`server/update`)
+- PHPUnit: 27/27 (UserData + Validator + Repository + Settings)
+- Vitest: 22/22 (userData + account + auth)
 
-## Автопроверки
+## Ручные шаги
 
-- PHPUnit ClaimantManagerSync + UserScopeResolver + ExtraRoles + Device: **22/22** (по отчёту tester)
-- vitest `accessRulesUtils`: **9/9**
-- Sync prod: **30 upserted**, orphan soft: `class`, `root`, `subject`
+1. На MySQL/dev: `php bin/console doctrine:migrations:migrate --no-interaction` (`Version20260806100000`)
+2. Опциональный UI smoke / пилот приложения (3.4) — отложен, не блокер
+
+## Отклонения (приняты)
+
+- Client: `delete` → `deleteUserData` / `userDataApi.delete` (reserved word)
+- Batch upsert — не в MVP (по ADR)
 
 ## Артефакты
 
-- `docs/ARCHITECTURE.md` — ADR  
-- `docs/DATABASE_SCHEMA.md` — `access_options`  
-- `docs/API_SPEC.md` — DTO + deprecation map для Admin UI  
-- `docs/DEVELOPER_GUIDE.md` — claimant/can_* + sync  
-- `docs/TEST_REPORT.md` — чеклист smoke  
-
-## Блокеры для пользователя
-
-1. **3.5 / 4.4** — открыть Main Admin User/Group Access: titles из API, save level, Network без `/api/account/map` при открытии вкладки. Чеклист: `docs/TEST_REPORT.md` / DEVELOPER_GUIDE.
-
-## Журнал
-
-- Этап 0 — architect: ADR, soft-orphan, CLI name, runtime=file / UI=DB  
-- 1.1–1.5 — migration, entity, sync, CLI, PHPUnit  
-- 2.1–2.4 — API access_options  
-- 3.1–3.4 — Zod, utils, tabs без getAccountMap, vitest  
-- 4.1–4.3 — object setting.json, normalizeCanBit, security green  
-- 5.1–5.3 — DEVELOPER_GUIDE, deprecation, orphan docs  
+- ADR: `docs/ADR-user-app-data.md`
+- Schema: `docs/DATABASE_SCHEMA.md`
+- API: `docs/API_SPEC.md`
+- Guide: `docs/DEVELOPER_GUIDE.md`
+- Architecture: `docs/ARCHITECTURE.md`
+- Tests: `TEST_REPORT.md`
+- Tracking: `docs/TODO.md`

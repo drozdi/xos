@@ -165,3 +165,22 @@ Sync при записи в БД **всегда** нормализует к obje
 - `main_user_access.level` / `main_group_access.level` int bitmask.
 - Коды claimants и scope-строки `can_*.…`.
 - Контракты POST/PUT user/group accesses.
+
+---
+
+## ADR: per-user app data KV (`user_app_data`)
+
+Полный текст: **`docs/ADR-user-app-data.md`** (Accepted, 2026-08-06).
+
+Реализовано: таблица `user_app_data` / entity `UserAppData` / API `/api/user-data` (`ApiUserDataController`) — opaque prefs/drafts/UI-state приложений.
+
+Границы (кратко):
+
+| Хранилище | Назначение |
+|-----------|------------|
+| `user_settings` (`/api/settings`) | Shell: USER / WIN / APP / HKEY_CONFIG |
+| `user_app_data` (`/api/user-data`) | Opaque per-user app prefs / drafts / UI-state |
+| Доменные API | Бизнес-сущности + scopes |
+| `User.options` (`/api/account/options`) | **Legacy only** — новые app-ключи **запрещены** |
+
+Только CurrentUser; ROOT без чужих KV; non-secret `value`; single PUT upsert (full replace) + `GET ?prefix=`; soft quota 500 keys; value ≤ 64 KB → 400. Клиент: `userData.ts`. См. также `DATABASE_SCHEMA.md`, `API_SPEC.md`, `DEVELOPER_GUIDE.md`.

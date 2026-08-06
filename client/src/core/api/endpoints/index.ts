@@ -29,6 +29,17 @@ export {
 	settingsListResponseSchema,
 } from './settings';
 export {
+	userDataEndpoints,
+	userDataApi,
+	list,
+	get,
+	upsert,
+	deleteUserData,
+	userAppDataDtoSchema,
+	userAppDataListResponseSchema,
+} from './userData';
+export type { UserAppDataDto, UserAppDataUpsertRequest } from './userData';
+export {
 	listUsers,
 	mainEndpoints,
 	parseContentRange,

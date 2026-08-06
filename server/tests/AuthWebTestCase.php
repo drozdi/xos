@@ -3,6 +3,7 @@
 namespace App\Tests;
 
 use App\Entity\RefreshToken;
+use App\Entity\UserAppData;
 use App\Entity\UserSetting;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -36,6 +37,7 @@ abstract class AuthWebTestCase extends WebTestCase
             $entityManager->getClassMetadata(UserAccess::class),
             $entityManager->getClassMetadata(Claimant::class),
             $entityManager->getClassMetadata(UserSetting::class),
+            $entityManager->getClassMetadata(UserAppData::class),
         ];
 
         $schemaTool = new SchemaTool($entityManager);

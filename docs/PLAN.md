@@ -180,18 +180,18 @@
 
 ### Итерация 0 — Контракт Архитектора
 
-**Зависимости:** нет · **Субагент:** architect
+**Зависимости:** нет · **Субагент:** architect · **Статус: DONE** (`docs/ADR-user-app-data.md`)
 
-- [ ] **0.1** ADR: границы `user_settings` / `User.options` / домен / новое KV; имя таблицы, entity, URL prefix.
-- [ ] **0.2** Утвердить схему полей: `code` vs `(app, key)`; типы; unique; timestamps; лимиты code/value.
-- [ ] **0.3** Утвердить API DTO + list filter (`prefix` / `app`) + upsert single/batch.
-- [ ] **0.4** Security policy: только свой user; решение по ROOT; политика non-secret.
-- [ ] **0.5** Обновить черновики в `docs/DATABASE_SCHEMA.md` / `docs/API_SPEC.md` (контракт, ещё без реализации).
+- [x] **0.1** ADR: границы `user_settings` / `User.options` / домен / новое KV; имя таблицы, entity, URL prefix.
+- [x] **0.2** Утвердить схему полей: `code` vs `(app, key)`; типы; unique; timestamps; лимиты code/value.
+- [x] **0.3** Утвердить API DTO + list filter (`prefix` / `app`) + upsert single/batch.
+- [x] **0.4** Security policy: только свой user; решение по ROOT; политика non-secret.
+- [x] **0.5** Обновить черновики в `docs/DATABASE_SCHEMA.md` / `docs/API_SPEC.md` (контракт, ещё без реализации).
 
 **Проверка:**
 
-- [ ] ADR читаем без противоречий с существующим `user_settings`.
-- [ ] Open questions ниже закрыты или явно задефолчены в ADR.
+- [x] ADR читаем без противоречий с существующим `user_settings`.
+- [x] Open questions ниже закрыты или явно задефолчены в ADR.
 
 ---
 
@@ -249,14 +249,14 @@
 
 **Зависимости:** 0–2 · **Субагент:** tech-writer / developer `[‖]` с 3
 
-- [ ] **4.1** `DATABASE_SCHEMA.md` — финальная таблица + ER.
-- [ ] **4.2** `API_SPEC.md` — эндпоинты и DTO.
-- [ ] **4.3** `DEVELOPER_GUIDE.md` — когда settings vs KV vs домен; пример code namespace.
-- [ ] **4.4** Краткая пометка в `ARCHITECTURE.md` (ADR ссылка).
+- [x] **4.1** `DATABASE_SCHEMA.md` — финальная таблица + ER.
+- [x] **4.2** `API_SPEC.md` — эндпоинты и DTO.
+- [x] **4.3** `DEVELOPER_GUIDE.md` — когда settings vs KV vs домен; пример code namespace.
+- [x] **4.4** Краткая пометка в `ARCHITECTURE.md` (ADR ссылка).
 
 **Проверка:**
 
-- [ ] Docs согласованы с кодом; нет совета «клади prefs приложения в User.options».
+- [x] Docs согласованы с кодом; нет совета «клади prefs приложения в User.options».
 
 ---
 
@@ -293,11 +293,13 @@
 
 ## Open questions
 
-1. **Имя:** таблица / entity / URL — `user_app_data` + `/api/user-data` vs `app_user_data` + `/api/app-data`?
-2. **Модель ключа:** один `code` (`todo.prefs`) или пару `(app, key)`?
-3. **ROOT:** нужен ли admin read/write чужих записей в MVP (Main support)? Default плана: **нет**.
-4. **Batch:** обязателен ли batch upsert в MVP (как settings) или только single?
-5. **Пилот:** какое приложение первым начнёт писать в KV (Todo / IncCom / другое)?
-6. **Prefix list:** нужен ли `GET ?prefix=todo.` сразу, или достаточно list all + filter на клиенте?
-7. **Патч value:** JSON Merge Patch / JSON Patch в v2 или всегда full replace?
-8. **Квота:** жёсткий max bytes value и max keys per user — какие числа?
+> **Закрыты** (2026-08-06, defaults оркестратора) — см. `docs/ADR-user-app-data.md`.
+
+1. **Имя:** `user_app_data` + `UserAppData` + `/api/user-data` ✅
+2. **Модель ключа:** один `code` (`{appNs}.{key…}`) ✅
+3. **ROOT:** нет доступа к чужим KV в MVP ✅
+4. **Batch:** только single upsert в MVP; batch — v2 ✅
+5. **Пилот:** 3.4 optional, не блокер ✅
+6. **Prefix list:** `GET ?prefix=` сразу ✅
+7. **Патч value:** только full replace ✅
+8. **Квота:** code ≤191; value ≤64 KB; soft max 500 keys/user ✅

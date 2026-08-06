@@ -1,22 +1,21 @@
 # XOS — Схема базы данных (Doctrine ORM)
 
-> Версия: 2026-08-06 (добавлено `main_claimant.access_options`)  
+> Версия: 2026-08-06 (`user_app_data` реализован; `main_claimant.access_options`)  
 > СУБД: MySQL 8.x  
 > ORM: Doctrine 3.4, миграции через `doctrine:migrations`
 
 ## Обзор
 
-Схема отражает **существующие** Doctrine-сущности в `server/src/` и **новую** сущность `UserSetting` для ApiAdapter настроек клиента (требование ТЗ §4.1.2, §5.3).
+Схема отражает **существующие** Doctrine-сущности в `server/src/`, включая `UserSetting` (ApiAdapter настроек клиента, ТЗ §4.1.2, §5.3) и `UserAppData` (per-user opaque KV, см. `docs/ADR-user-app-data.md`).
 
 ### Модули
 
 | Модуль | Namespace | Таблицы |
 |--------|-----------|---------|
-| App | `App\Entity` | `refresh_tokens` |
+| App | `App\Entity` | `refresh_tokens`, `user_settings`, **`user_app_data`** |
 | Main | `Main\Entity` | `main_user`, `main_user_access`, `main_user_group`, `main_group`, `main_group_access`, `main_role`, `main_claimant`, `main_ou`, `main_file`, `main_stored_auth` |
 | Device | `Device\Entity` | `d_device`, `d_type`, `d_type_property`, `d_property`, `d_property_enum`, `d_license`, `d_license_key`, `d_license_software`, `d_software`, `d_software_type`, `d_accounting`, `d_device_*` (вложенные) |
 | IBlock | `IBlock\Entity` | `iblock_block`, `iblock_type`, `iblock_element`, `iblock_section`, `iblock_property`, `iblock_property_enum` |
-| **Новое** | `App\Entity` | `user_settings` |
 
 ---
 
@@ -322,6 +321,86 @@ CREATE TABLE user_settings (
 
 ---
 
+## App — UserAppData (`user_app_data`)
+
+> ADR: `docs/ADR-user-app-data.md`. Entity: `App\Entity\UserAppData`. Migration: `Version20260806100000`.
+
+Opaque per-user KV для prefs / drafts / app UI-state. **Не** путать с `user_settings` (shell) и `User.options` (legacy).
+
+| Поле | Тип | Nullable | Описание |
+|------|-----|----------|----------|
+| id | INT PK AI | | Суррогатный ключ |
+| user_id | INT FK → `main_user` ON DELETE CASCADE | | Владелец (CurrentUser) |
+| code | VARCHAR(191) | | Namespace `{appNs}.{key…}`; charset `[a-z0-9._-]` |
+| value | JSON | | Opaque JSON-совместимый payload |
+| created_at | DATETIME immutable | | При insert |
+| updated_at | DATETIME immutable | | При каждом upsert |
+
+```php
+// server/src/App/Entity/UserAppData.php
+namespace App\Entity;
+
+#[ORM\Entity(repositoryClass: App\Repository\UserAppDataRepository::class)]
+#[ORM\Table(name: 'user_app_data')]
+#[ORM\UniqueConstraint(name: 'uniq_user_app_data_user_code', columns: ['user_id', 'code'])]
+class UserAppData
+{
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
+    private ?int $id = null;
+
+    #[ORM\ManyToOne(targetEntity: Main\Entity\User::class)]
+    #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
+    private User $user;
+
+    /** Namespace key: {appNs}.{key…}; charset [a-z0-9._-]; max 191 */
+    #[ORM\Column(length: 191)]
+    private string $code;
+
+    #[ORM\Column(type: Types::JSON)]
+    private mixed $value = null;
+
+    #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
+    private \DateTimeImmutable $createdAt;
+
+    #[ORM\Column(name: 'updated_at', type: Types::DATETIME_IMMUTABLE)]
+    private \DateTimeImmutable $updatedAt;
+}
+```
+
+### Правила
+
+| Правило | Значение |
+|---------|----------|
+| Unique | `uniq_user_app_data_user_code` на `(user_id, code)` |
+| FK | `FK_user_app_data_user`: `user_id` → `main_user(id)` **ON DELETE CASCADE** |
+| `code` | `^[a-z0-9._-]+$`, не пустой, ≤ 191 |
+| `value` | JSON; max **64 KB** (UTF-8 длина JSON-encoded строки) |
+| Soft quota | max **500** keys per user (блок только на insert нового code; update разрешён) |
+| Secrets | **запрещены** в `value` (политика ADR) |
+
+### Миграция (`Version20260806100000`)
+
+```sql
+CREATE TABLE user_app_data (
+    id INT AUTO_INCREMENT NOT NULL,
+    user_id INT NOT NULL,
+    code VARCHAR(191) NOT NULL,
+    value JSON NOT NULL,
+    created_at DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)',
+    updated_at DATETIME NOT NULL COMMENT '(DC2Type:datetime_immutable)',
+    UNIQUE INDEX uniq_user_app_data_user_code (user_id, code),
+    PRIMARY KEY(id)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB;
+
+ALTER TABLE user_app_data
+    ADD CONSTRAINT FK_user_app_data_user
+    FOREIGN KEY (user_id) REFERENCES main_user (id) ON DELETE CASCADE;
+```
+
+List-by-prefix (`WHERE user_id = ? AND code LIKE 'todo.%'`) опирается на unique `(user_id, code)` — отдельный индекс не нужен.
+
+---
+
 ## ER-диаграмма (упрощённая)
 
 ```mermaid
@@ -329,6 +408,7 @@ erDiagram
     User ||--o{ UserAccess : has
     User ||--o{ UserGroup : belongs
     User ||--o{ UserSetting : owns
+    User ||--o{ UserAppData : owns
     User }o--|| OU : assigned
     User ||--o{ User : tutors
     Claimant ||--o{ UserAccess : defines
@@ -343,12 +423,15 @@ erDiagram
 
 ---
 
-## Индексы и каскады (рекомендации)
+## Индексы и каскады
 
-1. **user_settings:** unique `(user_id, category, setting_key)` — upsert по ключу.
-2. **main_user.login** — уже unique, используется Security provider.
-3. **Device:** при удалении type с RESTRICT — блокировать удаление типа с устройствами.
-4. **Optimistic locking:** `x_timestamp` @Version на User, Group, OU, Device, Block — учитывать при PUT.
+1. **user_settings:** unique `(user_id, category, setting_key)` — upsert по ключу; FK CASCADE на user.
+2. **user_app_data:** unique `(user_id, code)` — upsert по code; FK CASCADE на user; prefix-list через `LIKE`.
+3. **main_user.login** — уже unique, используется Security provider.
+4. **Device:** при удалении type с RESTRICT — блокировать удаление типа с устройствами.
+5. **Optimistic locking:** `x_timestamp` @Version на User, Group, OU, Device, Block — учитывать при PUT.
+
+Границы `User.options` / `user_settings` / `user_app_data` / домен — **закрыты** в `docs/ADR-user-app-data.md` (автомиграции между ними нет).
 
 ---
 
@@ -356,6 +439,5 @@ erDiagram
 
 | Вопрос | Рекомендация |
 |--------|--------------|
-| Дублирование `User.options` vs `user_settings` | `options` — профильные опции аккаунта; `user_settings` — UI/desktop state. Не мигрировать автоматически. |
 | IBlock namespace | Унифицировать на `IBlock\Entity`, добавить `#[ORM\Entity]` где отсутствует. |
 | Device routes без `/api` | Перенести под `/api/device/*` и единый JWT-firewall (см. ARCHITECTURE.md). |
