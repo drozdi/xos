@@ -7,21 +7,25 @@ import {
 	type MantineColorsTuple,
 } from '@mantine/core';
 
-/** Battle.net Shop — eu.shop.battle.net */
+/**
+ * Dark palette aligned with blizzard.com design tokens
+ * (page/surface #151c28, accent ~#0592ff).
+ * @see https://www.blizzard.com/ru-ru/
+ */
 export const BATTLE_NET = {
-	bg: '#15171e',
-	surface: '#191b21',
-	surfaceMuted: '#1e2128',
-	surfaceHover: '#252830',
-	border: '#2d3139',
-	accent: '#148eff',
-	accentHover: '#4da3ff',
-	text: 'rgba(255, 255, 255, 0.92)',
-	textMuted: 'rgba(255, 255, 255, 0.55)',
-	selectionBg: 'rgba(20, 142, 255, 0.35)',
-	accentLight: 'rgba(20, 142, 255, 0.12)',
-	accentLightHover: 'rgba(20, 142, 255, 0.18)',
-	windowShadow: '0 12px 32px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04)',
+	bg: '#151c28',
+	surface: '#151c28',
+	surfaceMuted: '#1b2433',
+	surfaceHover: '#232a39',
+	border: '#323a48',
+	accent: '#0592ff',
+	accentHover: '#3aa6ff',
+	text: 'rgba(255, 255, 255, 0.9)',
+	textMuted: 'rgba(255, 255, 255, 0.5)',
+	selectionBg: 'rgba(5, 146, 255, 0.35)',
+	accentLight: 'rgba(5, 146, 255, 0.12)',
+	accentLightHover: 'rgba(5, 146, 255, 0.18)',
+	windowShadow: '0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04)',
 	windowShadowLight: '0 8px 24px rgba(0, 0, 0, 0.12)',
 } as const;
 
@@ -34,8 +38,8 @@ const battleNetGray: MantineColorsTuple = [
 	BATTLE_NET.border,
 	BATTLE_NET.surfaceHover,
 	BATTLE_NET.surfaceMuted,
-	BATTLE_NET.surface,
 	BATTLE_NET.bg,
+	'#0a0d15',
 ];
 
 const battleNetBlue: MantineColorsTuple = [
@@ -46,9 +50,9 @@ const battleNetBlue: MantineColorsTuple = [
 	'#33a0ff',
 	'#1a82ff',
 	BATTLE_NET.accent,
-	'#1178d4',
-	'#0e62aa',
-	'#0a4c80',
+	'#0480e0',
+	'#0366b3',
+	'#024d86',
 ];
 
 const battleNetDark: MantineColorsTuple = [
@@ -59,9 +63,9 @@ const battleNetDark: MantineColorsTuple = [
 	BATTLE_NET.border,
 	BATTLE_NET.surfaceHover,
 	BATTLE_NET.surfaceMuted,
-	BATTLE_NET.surface,
 	BATTLE_NET.bg,
-	'#0d0f14',
+	'#0a0d15',
+	'#05070c',
 ];
 
 export function createBattleNetTheme() {

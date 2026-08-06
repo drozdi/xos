@@ -2,45 +2,45 @@
 :root {
 	--accent-color-hue: 236;
 	--accent-color-saturation: 100%;
-	--primary: #148eff;
-	--secondary: #4da3ff;
+	--primary: #0592ff;
+	--secondary: #3aa6ff;
 	--accent: #9c27b0;
 	--positive: #4caf50;
 	--negative: #dc3545;
-	--info: #148eff;
+	--info: #0592ff;
 	--warning: #fb8c00;
 	--success: #4caf50;
 	--error: #d40000;
 	--error-color: #d40000;
 }
 
-/* Battle.net Shop — тёмная тема */
+/* Blizzard.com — page/surface #151c28, sidebar #0a0d15 */
 [data-mantine-color-scheme='dark'] {
 	color-scheme: dark;
 
-	--app-bg: #15171e;
+	--app-bg: #151c28;
 	--app-text: rgba(255, 255, 255, 0.7);
 	--app-text-strong: #fff;
 	--app-text-muted: rgba(255, 255, 255, 0.45);
 	--app-selection-color: #fff;
-	--app-selection-bg: rgba(20, 142, 255, 0.45);
-	--app-sidebar-bg: #191b21;
-	--app-surface: #191b21;
-	--app-surface-muted: #1e2128;
+	--app-selection-bg: rgba(5, 146, 255, 0.45);
+	--app-sidebar-bg: #0a0d15;
+	--app-surface: #151c28;
+	--app-surface-muted: #1b2433;
 	--app-border: rgba(255, 255, 255, 0.08);
 	--dimmed-bg: rgba(0, 0, 0, 0.35);
 	--separator-color: rgba(255, 255, 255, 0.08);
 	--disabled-color: #9aa0ab;
-	--link-color: #148eff;
-	--link-hover: #4da3ff;
-	--cell-dark: #252830;
+	--link-color: #0592ff;
+	--link-hover: #3aa6ff;
+	--cell-dark: #232a39;
 	--cell-light: #eee;
 	--board-legend: rgba(255, 255, 255, 0.7);
-	--dark: #191b21;
+	--dark: #151c28;
 	--white: #fff;
 	--black: #000;
-	--hint-last-move-bg: rgba(20, 142, 255, 0.25);
-	--hint-sample-bg: #252830;
+	--hint-last-move-bg: rgba(5, 146, 255, 0.25);
+	--hint-sample-bg: #232a39;
 }
 
 /* Светлая тема */
@@ -52,7 +52,7 @@
 	--app-text-strong: #1d1d1d;
 	--app-text-muted: rgba(29, 29, 29, 0.45);
 	--app-selection-color: #fff;
-	--app-selection-bg: #148eff;
+	--app-selection-bg: #0592ff;
 	--app-sidebar-bg: rgba(255, 255, 255, 0.92);
 	--app-surface: #ffffff;
 	--app-surface-muted: #f0f4f8;

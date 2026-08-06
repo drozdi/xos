@@ -74,7 +74,7 @@ export function StartMenuSidebar({ onClose }: StartMenuSidebarProps) {
 				position: 'relative',
 				width: START_MENU_SIDEBAR_WIDTH,
 				flexShrink: 0,
-				background: 'var(--xos-shell-bg-elevated)',
+				background: 'var(--xos-shell-sidebar, var(--xos-shell-bg-elevated))',
 				borderRight: '1px solid var(--xos-shell-border)',
 			}}
 			onMouseEnter={() => setExpanded(true)}
@@ -91,7 +91,7 @@ export function StartMenuSidebar({ onClose }: StartMenuSidebarProps) {
 						bottom: 0,
 						width: START_MENU_SIDEBAR_EXPANDED_WIDTH,
 						zIndex: 20,
-						background: 'var(--xos-shell-bg-elevated)',
+						background: 'var(--xos-shell-sidebar, var(--xos-shell-bg-elevated))',
 						borderRight: '1px solid var(--xos-shell-border)',
 						boxShadow: 'var(--mantine-shadow-xl)',
 					}}

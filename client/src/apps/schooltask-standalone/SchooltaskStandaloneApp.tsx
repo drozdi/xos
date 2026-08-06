@@ -80,7 +80,7 @@ export default function SchooltaskStandaloneApp() {
 				flexDirection: 'column',
 				minHeight: 0,
 				overflow: 'hidden',
-				background: 'var(--xos-shell-bg, var(--mantine-color-body, #15171e))',
+				background: 'var(--xos-shell-bg, var(--mantine-color-body, #151c28))',
 			}}
 		>
 			<BrowserRouter basename="/schooltask">

@@ -20,7 +20,7 @@ body {
 }
 
 [data-mantine-color-scheme='dark'] {
-	scrollbar-color: #2d3139 #15171e;
+	scrollbar-color: #323a48 #151c28;
 }
 
 [data-mantine-color-scheme='dark'] ::-webkit-scrollbar {
@@ -29,14 +29,14 @@ body {
 }
 
 [data-mantine-color-scheme='dark'] ::-webkit-scrollbar-track {
-	background: #15171e;
+	background: #151c28;
 }
 
 [data-mantine-color-scheme='dark'] ::-webkit-scrollbar-thumb {
-	background: #2d3139;
+	background: #323a48;
 	border-radius: 5px;
 }
 
 [data-mantine-color-scheme='dark'] ::-webkit-scrollbar-thumb:hover {
-	background: #3d4450;
+	background: #3a465f;
 }
