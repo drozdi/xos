@@ -1,6 +1,6 @@
 # XOS — REST API Specification
 
-> Версия: 2026-07-14  
+> Версия: 2026-08-06 (claimant `access_options` / app-access-modules)  
 > Base URL: `{SERVER_URL}` (dev: `http://localhost:8000`)  
 > Prefix: все эндпоинты ниже — **фактические пути** из кода + **планируемые** помечены `[NEW]`
 
@@ -177,6 +177,10 @@ POST `/list` с телом:
 ### GET `/api/account/map`
 
 **Auth:** JWT  
+**Назначение:** сырой `map-access` из файлов `setting.json` для **auth/runtime** (scopes при логине и т.п.).
+
+> **Deprecation (UI-каталог):** не использовать как каталог прав для Main Admin UI (вкладки User/Group Access). Для каталога чекбоксов — `GET /api/main/claimant/app-access-modules` и поле `access_options` (см. Claimants ниже). Endpoint map **сохраняется** для runtime.
+
 **Response 200:** объект claimant_code → массив map-access
 
 ```json
@@ -227,7 +231,7 @@ POST `/list` с телом:
 
 ### GET `/api/scope/map` · GET `/api/scope/accesses`
 
-Дубликаты `/api/account/map` и `/api/account/accesses`. Клиенту достаточно account-вариантов.
+Дубликаты `/api/account/map` и `/api/account/accesses`. Клиенту достаточно account-вариантов. Для каталога прав Admin UI — не map, а `app-access-modules` + `access_options`.
 
 ---
 
@@ -362,11 +366,112 @@ Prefix: `/api/main/`
 
 | Method | Path | Описание |
 |--------|------|----------|
-| GET | `/list` | Список |
+| GET | `/app-access-modules` | Модули для вкладки «Доступ к приложениям» + `access_options` |
+| GET | `/access-rules` | Legacy: claimant + map-access только Main из `setting.json` |
+| POST | `/list` | Список (тело legacy list) |
 | POST | `/` | Создание |
 | GET | `/{id}` | Деталь |
 | PUT | `/{id}` | Обновление |
 | DELETE | `/{id}` | Удаление |
+
+#### Тип `AccessOptions` (БД / API)
+
+```json
+{
+  "can_read": { "bit": 2, "title": "Чтение" },
+  "can_create": { "bit": 1, "title": "Создание", "description": "опционально" }
+}
+```
+
+Пустой объект `{}`, если sync не заполнял или claimant orphan. Поле **всегда** присутствует в ответах ниже (не `null`).
+
+#### GET `/api/main/claimant/app-access-modules`
+
+**Auth:** JWT  
+**Реализация:** `ClaimantManager::getAppAccessModules()` — только модули из `ProtectedAppModules` (Todo/IBlock не входят).  
+**Источник options:** колонка `main_claimant.access_options` (после sync). При отсутствии sync → `{}` + warning в лог сервера (не 503).
+
+**Response 200:**
+
+```json
+[
+  {
+    "module": "device",
+    "moduleLabel": "Устройства",
+    "root": {
+      "id": 10,
+      "code": "device",
+      "name": "Устройства",
+      "access_options": {
+        "can_write_off": { "bit": 16, "title": "Списание" }
+      }
+    },
+    "children": [
+      {
+        "id": 11,
+        "code": "device.device",
+        "name": "Устройства: Устройства",
+        "access_options": {
+          "can_create": { "bit": 1, "title": "Создание" },
+          "can_read": { "bit": 2, "title": "Чтение" },
+          "can_update": { "bit": 4, "title": "Изменение" },
+          "can_delete": { "bit": 8, "title": "Удаление" },
+          "can_mod": { "bit": 16, "title": "Модификация" },
+          "can_location": { "bit": 32, "title": "Размещение" },
+          "can_repair": { "bit": 64, "title": "Ремонт" }
+        }
+      }
+    ]
+  }
+]
+```
+
+- `root` опционален (есть, если в setting есть claimant с code = имя модуля).
+- Корневые `can_*` модуля — в `root.access_options`.
+- Zod (клиент): расширить `claimantListItemSchema` полем `access_options`.
+
+#### POST `/api/main/claimant/list` (`t: "list"`)
+
+**Auth:** JWT + scope read `main.claimant`  
+Элемент списка:
+
+```json
+{
+  "id": 1,
+  "code": "main.user",
+  "name": "Main: Пользователи",
+  "access_options": {
+    "can_create": { "bit": 1, "title": "Создание" }
+  }
+}
+```
+
+`t: "select"` — без изменений: `{ value, label }` (options не нужны).
+
+#### GET `/api/main/claimant/{id}`
+
+**Response 200:**
+
+```json
+{
+  "id": 1,
+  "code": "main.user",
+  "name": "Main: Пользователи",
+  "access_options": { }
+}
+```
+
+#### Сохранение user/group accesses
+
+Без изменений: `claimant_id` + `level` (int bitmask). Каталог `access_options` только описывает биты для UI.
+
+#### Sync (не HTTP в MVP)
+
+`php bin/console main:claimant:sync [--dry-run] [--force]` — см. ADR в `docs/ARCHITECTURE.md` и раздел «Claimants и can_*» в `docs/DEVELOPER_GUIDE.md`.
+
+**Orphan (soft):** CLI печатает в stdout строки вида `orphan (N): code1, code2`. Записи в БД **не удаляются**; у orphan выставляется `access_options = {}`. Ручной DELETE через API sync не заменяет.
+
+**Deploy:** после `doctrine:migrations:migrate` — `main:claimant:sync` (уже в `server/update`).
 
 ---
 

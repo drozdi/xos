@@ -1,5 +1,9 @@
-import type { GroupAccessItem } from '@/core/api/endpoints/mainApi';
+import type {
+	AccessOptions,
+	GroupAccessItem,
+} from '@/core/api/endpoints/mainApi';
 
+/** Fallback titles when `access_options` empty / missing title (legacy). */
 export const CAN_SCOPE_LABELS: Record<string, string> = {
 	can_create: 'Создание',
 	can_read: 'Чтение',
@@ -13,6 +17,7 @@ export const CAN_SCOPE_LABELS: Record<string, string> = {
 	can_mod: 'Модификация',
 	can_location: 'Размещение',
 	can_write_off: 'Списание',
+	can_repair: 'Ремонт',
 };
 
 export type ModuleAccessMode = 'none' | 'available' | 'full';
@@ -21,6 +26,7 @@ export interface ClaimantRef {
 	id: number;
 	code: string;
 	name: string;
+	access_options?: AccessOptions;
 }
 
 export interface ModuleAccessGroup {
@@ -30,11 +36,94 @@ export interface ModuleAccessGroup {
 	children: ClaimantRef[];
 }
 
+export function normalizeCanBit(value: unknown): number | null {
+	if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+		return value;
+	}
+	if (typeof value === 'object' && value !== null && 'bit' in value) {
+		const bit = (value as { bit: unknown }).bit;
+		if (typeof bit === 'number' && Number.isFinite(bit) && bit > 0) {
+			return bit;
+		}
+	}
+	return null;
+}
+
+export function scopeMapFromAccessOptions(
+	options: AccessOptions | undefined | null,
+): Record<string, number> {
+	if (!options) {
+		return {};
+	}
+	const result: Record<string, number> = {};
+	for (const [key, option] of Object.entries(options)) {
+		if (!key.startsWith('can_')) {
+			continue;
+		}
+		const bit = normalizeCanBit(option);
+		if (bit !== null) {
+			result[key] = bit;
+		}
+	}
+	return result;
+}
+
+export function labelsFromAccessOptions(
+	options: AccessOptions | undefined | null,
+): Record<string, string> {
+	if (!options) {
+		return {};
+	}
+	const result: Record<string, string> = {};
+	for (const [key, option] of Object.entries(options)) {
+		if (!key.startsWith('can_')) {
+			continue;
+		}
+		const title =
+			typeof option?.title === 'string' && option.title.trim()
+				? option.title
+				: (CAN_SCOPE_LABELS[key] ?? key);
+		result[key] = title;
+	}
+	return result;
+}
+
+/** Prefer claimant.access_options; legacy moduleMaps only if options empty. */
+export function resolveClaimantScopeMap(
+	claimant: ClaimantRef,
+	legacyModuleMaps?: Record<string, Record<string, unknown>>,
+): Record<string, number> {
+	const fromOptions = scopeMapFromAccessOptions(claimant.access_options);
+	if (Object.keys(fromOptions).length > 0) {
+		return fromOptions;
+	}
+	if (legacyModuleMaps) {
+		return resolveClaimantAccessMap(claimant.code, legacyModuleMaps);
+	}
+	return {};
+}
+
+export function resolveClaimantScopeLabels(
+	claimant: ClaimantRef,
+	scopeMap: Record<string, number>,
+): Record<string, string> {
+	const fromOptions = labelsFromAccessOptions(claimant.access_options);
+	const result: Record<string, string> = {};
+	for (const key of Object.keys(scopeMap)) {
+		result[key] = fromOptions[key] ?? CAN_SCOPE_LABELS[key] ?? key;
+	}
+	return result;
+}
+
 export function extractCanScopeMap(source: Record<string, unknown>): Record<string, number> {
 	const result: Record<string, number> = {};
 	for (const [key, value] of Object.entries(source)) {
-		if (key.startsWith('can_') && typeof value === 'number') {
-			result[key] = value;
+		if (!key.startsWith('can_')) {
+			continue;
+		}
+		const bit = normalizeCanBit(value);
+		if (bit !== null) {
+			result[key] = bit;
 		}
 	}
 	return result;
@@ -72,10 +161,10 @@ export function resolveClaimantAccessMap(
 
 export function getModuleScopeClaimants(
 	moduleGroup: ModuleAccessGroup,
-	moduleMaps: Record<string, Record<string, unknown>>,
+	legacyModuleMaps?: Record<string, Record<string, unknown>>,
 ): ClaimantRef[] {
 	const withScopes = (claimant: ClaimantRef) =>
-		Object.keys(resolveClaimantAccessMap(claimant.code, moduleMaps)).length > 0;
+		Object.keys(resolveClaimantScopeMap(claimant, legacyModuleMaps)).length > 0;
 
 	if (moduleGroup.children.length > 0) {
 		return moduleGroup.children.filter(withScopes);

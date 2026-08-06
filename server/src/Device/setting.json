@@ -12,58 +12,58 @@
     "device.license": "Устройства: Лицензии"
   },
   "map-access": {
-    "can_write_off": 16,
+    "can_write_off": { "bit": 16, "title": "Списание" },
     "type": {
-      "can_create": 1,
-      "can_read": 2,
-      "can_update": 4,
-      "can_delete": 8
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
     },
     "property": {
-      "can_create": 1,
-      "can_read": 2,
-      "can_update": 4,
-      "can_delete": 8
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
     },
     "component": {
-      "can_create": 1,
-      "can_read": 2,
-      "can_update": 4,
-      "can_delete": 8
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
     },
     "device": {
-      "can_create": 1,
-      "can_read": 2,
-      "can_update": 4,
-      "can_delete": 8,
-      "can_mod": 16,
-      "can_location": 32,
-      "can_repair": 64
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" },
+      "can_mod": { "bit": 16, "title": "Модификация" },
+      "can_location": { "bit": 32, "title": "Размещение" },
+      "can_repair": { "bit": 64, "title": "Ремонт" }
     },
     "subDevice": {
-      "can_create": 1,
-      "can_read": 2,
-      "can_update": 4,
-      "can_delete": 8,
-      "can_mod": 16
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" },
+      "can_mod": { "bit": 16, "title": "Модификация" }
     },
     "software": {
-      "can_create": 1,
-      "can_read": 2,
-      "can_update": 4,
-      "can_delete": 8,
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" },
       "type": {
-        "can_create": 1,
-        "can_read": 2,
-        "can_update": 4,
-        "can_delete": 8
+        "can_create": { "bit": 1, "title": "Создание" },
+        "can_read": { "bit": 2, "title": "Чтение" },
+        "can_update": { "bit": 4, "title": "Изменение" },
+        "can_delete": { "bit": 8, "title": "Удаление" }
       }
     },
     "license": {
-      "can_create": 1,
-      "can_read": 2,
-      "can_update": 4,
-      "can_delete": 8
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
     }
   }
 }

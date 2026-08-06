@@ -1,6 +1,6 @@
 # XOS — Схема базы данных (Doctrine ORM)
 
-> Версия: 2026-07-14  
+> Версия: 2026-08-06 (добавлено `main_claimant.access_options`)  
 > СУБД: MySQL 8.x  
 > ORM: Doctrine 3.4, миграции через `doctrine:migrations`
 
@@ -91,11 +91,18 @@
 
 ### Claimant (`main_claimant`)
 
-| Поле | Тип | Описание |
-|------|-----|----------|
-| id | INT PK | |
-| code | VARCHAR(191) UNIQUE | Код scope (ключ в `/api/account/accesses`) |
-| name | VARCHAR(255) | Человекочитаемое имя |
+| Поле | Тип | Nullable | Описание |
+|------|-----|----------|----------|
+| id | INT PK | | |
+| code | VARCHAR(191) UNIQUE | | Код scope (ключ в `/api/account/accesses`, напр. `main.user`, `device`) |
+| name | VARCHAR(255) | | Человекочитаемое имя |
+| access_options | JSON | нет (после backfill) | Каталог `can_*` → `{ bit, title[, description] }` для UI; default `{}` |
+
+**Источник:** sync из `server/src/*/setting.json` (`claimant` + нормализованный `map-access`).  
+**Orphan:** запись не удаляется sync; при отсутствии code в файлах `access_options` сбрасывается в `{}`.  
+**Не хранит** выданные пользователю маски — только описание допустимых битов (см. `User\Access.level` / `Group\Access.level`).
+
+Подробности нормализации и default titles: `docs/ARCHITECTURE.md` (ADR access_options).
 
 ### Role (`main_role`)
 

@@ -56,7 +56,7 @@ abstract class AuthWebTestCase extends WebTestCase
 
         $user = new User();
         $user->setLogin($login);
-        $user->setEmail(self::TEST_EMAIL);
+        $user->setEmail($login === self::TEST_LOGIN ? self::TEST_EMAIL : $login.'@example.com');
         $user->setAlias(self::TEST_ALIAS);
         $user->setRoles($roles);
         $user->setPassword($passwordHasher->hashPassword($user, $password));

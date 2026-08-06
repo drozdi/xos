@@ -10,7 +10,7 @@ const MainClaimantsApp = lazy(() => import('./MainClaimantsApp'));
 
 const manifest: AppManifest = {
 	id: 'main-claimants',
-	name: 'Заявители',
+	name: 'Доступные права',
 	version: '1.0.0',
 	icon: ClaimantIcon,
 	component: MainClaimantsApp,

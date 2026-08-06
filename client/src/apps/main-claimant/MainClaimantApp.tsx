@@ -1,80 +1,95 @@
-import { Alert, Stack, TextInput } from '@mantine/core';
+import { Alert, Badge, Group, Stack, Text, TextInput } from '@mantine/core';
+import { useMemo } from 'react';
 
 import { mainClaimantApi, type ClaimantDetail } from '@/core/api/endpoints/mainApi';
-import {
-	canCreateMainClaimant,
-	useCanDeleteMainClaimant,
-	useCanReadMainClaimant,
-	useCanUpdateMainClaimant,
-} from '@/features/main/mainAccess';
+import { useCanReadMainClaimant } from '@/features/main/mainAccess';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 import { useEntityId } from '@/features/main/mainAppUtils';
-
-import { validateClaimantForm } from './mainClaimantValidation';
 
 const initialData: ClaimantDetail = {
 	id: 0,
 	code: '',
 	name: '',
+	access_options: {},
 };
 
 export default function MainClaimantApp() {
 	const entityId = useEntityId();
 	const canRead = useCanReadMainClaimant();
-	const canUpdate = useCanUpdateMainClaimant();
-	const canDelete = useCanDeleteMainClaimant();
-	const canSave = entityId === 0 ? canCreateMainClaimant() : canUpdate;
 
-	if (entityId === 0 && !canCreateMainClaimant()) {
+	if (entityId === 0) {
 		return (
-			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на создание заявителя
+			<Alert color="red" title="Только просмотр" m="md">
+				Создание доступных прав отключено. Каталог заполняется из setting.json через sync.
 			</Alert>
 		);
 	}
 
-	if (entityId !== 0 && !canRead) {
+	if (!canRead) {
 		return (
 			<Alert color="red" title="Доступ запрещён" m="md">
-				Нет прав на просмотр заявителя
+				Нет прав на просмотр доступного права
 			</Alert>
 		);
 	}
 
 	return (
 		<MainEntityForm
-			title="Заявитель"
+			title="Доступное право"
 			queryKey={['main', 'claimant']}
 			listQueryKey={['main', 'claimants']}
 			load={mainClaimantApi.get}
-			save={mainClaimantApi.update}
-			create={mainClaimantApi.create}
-			remove={mainClaimantApi.remove}
+			save={async () => entityId}
+			create={async () => 0}
 			initialData={initialData}
-			validate={validateClaimantForm}
-			canSave={canSave}
-			canDelete={canDelete}
+			canSave={false}
+			canDelete={false}
 		>
-			{({ data, setField, errors, readOnly }) => (
-				<Stack gap="sm">
-					<TextInput
-						label="Код"
-						withAsterisk
-						value={data.code ?? ''}
-						error={errors.code}
-						readOnly={readOnly}
-						onChange={(e) => setField('code', e.currentTarget.value)}
-					/>
-					<TextInput
-						label="Название"
-						withAsterisk
-						value={data.name ?? ''}
-						error={errors.name}
-						readOnly={readOnly}
-						onChange={(e) => setField('name', e.currentTarget.value)}
-					/>
-				</Stack>
-			)}
+			{({ data }) => <ClaimantView data={data} />}
 		</MainEntityForm>
+	);
+}
+
+function ClaimantView({ data }: { data: ClaimantDetail }) {
+	const options = useMemo(() => {
+		const raw = data.access_options;
+		if (!raw || Array.isArray(raw)) {
+			return [];
+		}
+		return Object.entries(raw)
+			.map(([key, opt]) => ({
+				key,
+				title: opt.title || key,
+				bit: opt.bit,
+			}))
+			.sort((a, b) => a.bit - b.bit || a.key.localeCompare(b.key));
+	}, [data.access_options]);
+
+	return (
+		<Stack gap="sm">
+			<TextInput label="Код" value={data.code ?? ''} readOnly />
+			<TextInput label="Название" value={data.name ?? ''} readOnly />
+			<div>
+				<Text size="sm" fw={500} mb={6}>
+					Правила доступа
+				</Text>
+				{options.length === 0 ? (
+					<Text size="sm" c="dimmed">
+						Нет правил
+					</Text>
+				) : (
+					<Stack gap={6}>
+						{options.map((opt) => (
+							<Group key={opt.key} gap="xs">
+								<Badge variant="light">{opt.title}</Badge>
+								<Text size="xs" c="dimmed" ff="monospace">
+									{opt.key} = {opt.bit}
+								</Text>
+							</Group>
+						))}
+					</Stack>
+				)}
+			</div>
+		</Stack>
 	);
 }

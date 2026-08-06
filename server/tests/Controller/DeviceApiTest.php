@@ -58,7 +58,7 @@ class DeviceApiTest extends AuthWebTestCase
     {
         $client = static::createClient();
         $this->prepareDeviceDatabase($client);
-        $user = $this->createTestUser($client, 'device_reader', 'read_password', ['ROLE_USER']);
+        $user = $this->createTestUser($client, 'device_reader', 'read_password', ['ROLE_USER', 'ROLE_DEVICE']);
         $this->grantDeviceScope($client, $user, 'device.device', self::SCOPE_READ);
         $loginPayload = $this->login($client, 'device_reader', 'read_password');
 

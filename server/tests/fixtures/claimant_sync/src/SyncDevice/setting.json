@@ -1,0 +1,31 @@
+{
+  "name": "SyncDevice",
+  "claimant": {
+    "syncdevice": "Sync Devices",
+    "syncdevice.device": "Sync Devices: Devices",
+    "syncdevice.software": "Sync Devices: Software",
+    "syncdevice.software.type": "Sync Devices: Software types"
+  },
+  "map-access": {
+    "can_write_off": 16,
+    "device": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8,
+      "can_mod": 16
+    },
+    "software": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8,
+      "type": {
+        "can_create": 1,
+        "can_read": 2,
+        "can_update": 4,
+        "can_delete": 8
+      }
+    }
+  }
+}

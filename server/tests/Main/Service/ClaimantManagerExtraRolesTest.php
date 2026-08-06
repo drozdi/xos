@@ -5,6 +5,7 @@ namespace App\Tests\Main\Service;
 use Main\Service\ClaimantManager;
 use Main\Service\MainManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -25,7 +26,8 @@ class ClaimantManagerExtraRolesTest extends TestCase
     {
         $validator = $this->createMock(ValidatorInterface::class);
         $mainManager = $this->createMock(MainManager::class);
-        $manager = new ClaimantManager($validator, $mainManager);
+        $logger = $this->createMock(LoggerInterface::class);
+        $manager = new ClaimantManager($validator, $mainManager, $logger);
 
         $container = $this->createMock(ContainerInterface::class);
         $container->method('getParameter')

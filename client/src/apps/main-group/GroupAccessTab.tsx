@@ -2,16 +2,15 @@ import { Accordion, Checkbox, Paper, SimpleGrid, Stack, Text } from '@mantine/co
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { getAccountMap } from '@/core/api/endpoints/account';
 import { mainClaimantApi, type AppAccessModule, type GroupAccessItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import {
-	CAN_SCOPE_LABELS,
 	checkedToLevel,
 	getAccessLevel,
 	getModuleScopeClaimants,
 	levelToChecked,
-	resolveClaimantAccessMap,
+	resolveClaimantScopeLabels,
+	resolveClaimantScopeMap,
 	updateAccessLevel,
 	type ClaimantRef,
 } from '@/features/main/accessRulesUtils';
@@ -35,11 +34,12 @@ function getAccessTabColumns(windowWidth: number): number {
 
 function renderScopeClaimantCard(
 	claimant: ClaimantRef,
-	scopeMap: Record<string, number>,
 	accesses: Record<string, GroupAccessItem>,
 	readOnly: boolean,
 	onChange: (accesses: Record<string, GroupAccessItem>) => void,
 ) {
+	const scopeMap = resolveClaimantScopeMap(claimant);
+	const scopeLabels = resolveClaimantScopeLabels(claimant, scopeMap);
 	const scopeKeys = Object.keys(scopeMap);
 	const level = getAccessLevel(accesses, claimant.id);
 	const checked = levelToChecked(level, scopeMap);
@@ -56,7 +56,7 @@ function renderScopeClaimantCard(
 				{scopeKeys.map((scopeKey) => (
 					<Checkbox
 						key={scopeKey}
-						label={CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
+						label={scopeLabels[scopeKey] ?? scopeKey}
 						checked={checked[scopeKey] ?? false}
 						disabled={readOnly}
 						onChange={(event) => {
@@ -76,8 +76,8 @@ function renderScopeClaimantCard(
 	);
 }
 
-function hasModuleAccessRules(moduleGroup: AppAccessModule, moduleMaps: Record<string, Record<string, unknown>>) {
-	return getModuleScopeClaimants(moduleGroup, moduleMaps).length > 0;
+function hasModuleAccessRules(moduleGroup: AppAccessModule) {
+	return getModuleScopeClaimants(moduleGroup).length > 0;
 }
 
 export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabProps) {
@@ -89,20 +89,14 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 		queryFn: () => mainClaimantApi.appAccessModules(),
 	});
 
-	const mapQuery = useQuery({
-		queryKey: queryKeys.account.map,
-		queryFn: () => getAccountMap(),
-	});
-
-	const moduleMaps = mapQuery.data ?? {};
 	const modules = modulesQuery.data ?? [];
 
 	const visibleModules = useMemo(
-		() => modules.filter((moduleGroup) => hasModuleAccessRules(moduleGroup, moduleMaps)),
-		[moduleMaps, modules],
+		() => modules.filter((moduleGroup) => hasModuleAccessRules(moduleGroup)),
+		[modules],
 	);
 
-	if (modulesQuery.isLoading || mapQuery.isLoading) {
+	if (modulesQuery.isLoading) {
 		return (
 			<Text size="sm" c="dimmed">
 				Загрузка прав…
@@ -121,7 +115,7 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 	return (
 		<Accordion variant="separated" multiple>
 			{visibleModules.map((moduleGroup) => {
-				const scopeClaimants = getModuleScopeClaimants(moduleGroup, moduleMaps);
+				const scopeClaimants = getModuleScopeClaimants(moduleGroup);
 
 				return (
 					<Accordion.Item key={moduleGroup.module} value={moduleGroup.module}>
@@ -129,13 +123,7 @@ export function GroupAccessTab({ accesses, readOnly, onChange }: GroupAccessTabP
 						<Accordion.Panel>
 							<SimpleGrid cols={columns} mt="xs">
 								{scopeClaimants.map((claimant) =>
-									renderScopeClaimantCard(
-										claimant,
-										resolveClaimantAccessMap(claimant.code, moduleMaps),
-										accesses,
-										readOnly,
-										onChange,
-									),
+									renderScopeClaimantCard(claimant, accesses, readOnly, onChange),
 								)}
 							</SimpleGrid>
 						</Accordion.Panel>

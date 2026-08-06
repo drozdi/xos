@@ -1,0 +1,11 @@
+{
+  "name": "BrokenZero",
+  "claimant": {
+    "brokenzero.item": "Broken zero"
+  },
+  "map-access": {
+    "item": {
+      "can_create": 0
+    }
+  }
+}

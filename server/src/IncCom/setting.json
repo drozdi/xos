@@ -4,7 +4,7 @@
     "inccom": "Учёт доходов и расходов"
   },
   "map-access": {
-    "can_read": 1,
-    "can_write": 2
+    "can_read": { "bit": 1, "title": "Чтение" },
+    "can_write": { "bit": 2, "title": "Запись" }
   }
 }

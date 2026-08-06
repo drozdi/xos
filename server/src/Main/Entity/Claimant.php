@@ -3,8 +3,7 @@
 namespace Main\Entity;
 
 use Main\Repository\ClaimantRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ClaimantRepository::class)]
@@ -21,6 +20,12 @@ class Claimant
 
     #[ORM\Column(length: 191, unique: true)]
     private ?string $code = null;
+
+    /**
+     * @var array<string, mixed>
+     */
+    #[ORM\Column(name: 'access_options', type: Types::JSON, options: ['default' => '{}'])]
+    private array $accessOptions = [];
 
     public function getId(): ?int
     {
@@ -47,6 +52,24 @@ class Claimant
     public function setCode(string $code): self
     {
         $this->code = $code;
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getAccessOptions(): array
+    {
+        return $this->accessOptions;
+    }
+
+    /**
+     * @param array<string, mixed> $accessOptions
+     */
+    public function setAccessOptions(array $accessOptions): self
+    {
+        $this->accessOptions = $accessOptions;
 
         return $this;
     }

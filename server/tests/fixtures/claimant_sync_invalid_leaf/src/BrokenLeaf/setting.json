@@ -1,0 +1,13 @@
+{
+  "name": "BrokenLeaf",
+  "claimant": {
+    "brokenleaf.item": "Broken leaf"
+  },
+  "map-access": {
+    "item": {
+      "can_update": {
+        "title": "No bit field"
+      }
+    }
+  }
+}

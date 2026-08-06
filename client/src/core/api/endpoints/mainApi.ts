@@ -300,18 +300,33 @@ export const mainOuApi = {
 
 // --- Claimants ---
 
+export const accessOptionSchema = z.object({
+	bit: z.number().positive(),
+	title: z.string(),
+	description: z.string().optional(),
+});
+
+export const accessOptionsSchema = z.preprocess(
+	(value) => (Array.isArray(value) || value == null ? {} : value),
+	z.record(z.string(), accessOptionSchema),
+);
+
 export const claimantListItemSchema = z.object({
 	id: z.number(),
 	name: z.string(),
 	code: z.string(),
+	access_options: accessOptionsSchema.default({}),
 });
 
 export const claimantDetailSchema = z.object({
 	id: z.number(),
 	name: z.string().nullable().optional(),
 	code: z.string().nullable().optional(),
+	access_options: accessOptionsSchema.default({}),
 });
 
+export type AccessOption = z.infer<typeof accessOptionSchema>;
+export type AccessOptions = z.infer<typeof accessOptionsSchema>;
 export type ClaimantListItem = z.infer<typeof claimantListItemSchema>;
 export type ClaimantDetail = z.infer<typeof claimantDetailSchema>;
 

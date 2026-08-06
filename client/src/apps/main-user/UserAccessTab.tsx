@@ -10,18 +10,17 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { getAccountMap } from '@/core/api/endpoints/account';
 import { mainClaimantApi, type GroupAccessItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import {
 	applyModuleAccessMode,
-	CAN_SCOPE_LABELS,
 	checkedToLevel,
 	getAccessLevel,
 	getModuleAccessMode,
 	getModuleScopeClaimants,
 	levelToChecked,
-	resolveClaimantAccessMap,
+	resolveClaimantScopeLabels,
+	resolveClaimantScopeMap,
 	updateAccessLevel,
 } from '@/features/main/accessRulesUtils';
 
@@ -51,17 +50,11 @@ export function UserAccessTab({
 		queryFn: () => mainClaimantApi.appAccessModules(),
 	});
 
-	const mapQuery = useQuery({
-		queryKey: queryKeys.account.map,
-		queryFn: () => getAccountMap(),
-	});
-
-	const moduleMaps = mapQuery.data ?? {};
 	const modules = modulesQuery.data ?? [];
 
 	const moduleCards = useMemo(() => {
 		return modules.map((moduleGroup) => {
-			const scopeClaimants = getModuleScopeClaimants(moduleGroup, moduleMaps);
+			const scopeClaimants = getModuleScopeClaimants(moduleGroup);
 			const mode = getModuleAccessMode(
 				moduleGroup.module,
 				roles,
@@ -94,7 +87,8 @@ export function UserAccessTab({
 						{mode === 'available' && scopeClaimants.length > 0 ? (
 							<SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm">
 								{scopeClaimants.map((claimant) => {
-									const scopeMap = resolveClaimantAccessMap(claimant.code, moduleMaps);
+									const scopeMap = resolveClaimantScopeMap(claimant);
+									const scopeLabels = resolveClaimantScopeLabels(claimant, scopeMap);
 									const scopeKeys = Object.keys(scopeMap);
 									const level = getAccessLevel(accesses, claimant.id);
 									const checked = levelToChecked(level, scopeMap);
@@ -113,7 +107,7 @@ export function UserAccessTab({
 												{scopeKeys.map((scopeKey) => (
 													<Checkbox
 														key={scopeKey}
-														label={CAN_SCOPE_LABELS[scopeKey] ?? scopeKey}
+														label={scopeLabels[scopeKey] ?? scopeKey}
 														checked={checked[scopeKey] ?? false}
 														disabled={readOnly}
 														onChange={(event) => {
@@ -142,7 +136,7 @@ export function UserAccessTab({
 
 						{mode === 'available' && scopeClaimants.length === 0 ? (
 							<Text size="sm" c="dimmed">
-								Для модуля нет детализированных правил в setting.json
+								Для модуля нет детализированных правил доступа
 							</Text>
 						) : null}
 					</Stack>
@@ -151,7 +145,6 @@ export function UserAccessTab({
 		});
 	}, [
 		accesses,
-		moduleMaps,
 		modules,
 		onAccessesChange,
 		onRolesChange,
@@ -159,9 +152,7 @@ export function UserAccessTab({
 		roles,
 	]);
 
-	const isLoading = modulesQuery.isLoading || mapQuery.isLoading;
-
-	if (isLoading) {
+	if (modulesQuery.isLoading) {
 		return (
 			<Text size="sm" c="dimmed">
 				Загрузка доступа к приложениям…

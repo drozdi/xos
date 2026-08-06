@@ -1,0 +1,21 @@
+{
+  "name": "SyncMain",
+  "claimant": {
+    "syncmain": "Sync Main",
+    "syncmain.user": "Sync Main: Users"
+  },
+  "map-access": {
+    "can_access": 1,
+    "user": {
+      "can_create": 1,
+      "can_read": 2,
+      "can_update": 4,
+      "can_delete": 8,
+      "can_access": {
+        "bit": 16,
+        "title": "Права пользователя",
+        "description": "Управление доступами"
+      }
+    }
+  }
+}

@@ -13,6 +13,7 @@ use Main\Entity\User\Group as UserGroup;
 use Main\Service\ClaimantManager;
 use Main\Service\MainManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -25,7 +26,8 @@ class UserScopeResolverTest extends TestCase
     {
         $validator = $this->createMock(ValidatorInterface::class);
         $mainManager = $this->createMock(MainManager::class);
-        $this->claimantManager = new ClaimantManager($validator, $mainManager);
+        $logger = $this->createMock(LoggerInterface::class);
+        $this->claimantManager = new ClaimantManager($validator, $mainManager, $logger);
 
         $container = $this->createMock(ContainerInterface::class);
         $container->method('getParameter')

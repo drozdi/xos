@@ -4,8 +4,8 @@
     "explorer": "Файловый менеджер"
   },
   "map-access": {
-    "can_read": 1,
-    "can_write": 2,
-    "can_delete": 4
+    "can_read": { "bit": 1, "title": "Чтение" },
+    "can_write": { "bit": 2, "title": "Запись" },
+    "can_delete": { "bit": 4, "title": "Удаление" }
   }
 }

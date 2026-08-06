@@ -54,6 +54,7 @@ class ClaimantController extends AbstractController {
     public function list (
         Request $request,
         ClaimantRepository $ClaimantRepository,
+        ClaimantManager $claimantManager,
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
@@ -84,6 +85,7 @@ class ClaimantController extends AbstractController {
                         'id' => $claimant->getId(),
                         'name' => $claimant->getName(),
                         'code' => $claimant->getCode(),
+                        'access_options' => $claimantManager->accessOptionsForApi($claimant),
                     ];
                 }
                 break;
@@ -164,6 +166,7 @@ class ClaimantController extends AbstractController {
     public function detail (
         int $id,
         ClaimantRepository $ClaimantRepository,
+        ClaimantManager $claimantManager,
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
@@ -180,6 +183,7 @@ class ClaimantController extends AbstractController {
             'id' => $claimant->getId(),
             'name' => $claimant->getName(),
             'code' => $claimant->getCode(),
+            'access_options' => $claimantManager->accessOptionsForApi($claimant),
         ]);
     }
     #[Route('/{id}', name: 'main_claimant_remove', methods: ['DELETE'])]

@@ -34,5 +34,5 @@ export const DEFAULT_QUICK_ACTIONS: StartMenuQuickAction[] = [
 	{ id: 'quick-users', type: 'app', appId: 'main-users', label: 'Пользователи' },
 	{ id: 'quick-groups', type: 'app', appId: 'main-groups', label: 'Группы' },
 	{ id: 'quick-ous', type: 'app', appId: 'main-ous', label: 'Подразделения' },
-	{ id: 'quick-claimants', type: 'app', appId: 'main-claimants', label: 'Заявители' },
+	{ id: 'quick-claimants', type: 'app', appId: 'main-claimants', label: 'Доступные права' },
 ];

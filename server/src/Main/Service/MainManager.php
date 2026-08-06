@@ -90,6 +90,11 @@ class MainManager extends AbstractManager  {
         if (array_key_exists('name', $arClaimant)) {
             $claimant->setName((string)$arClaimant['name']);
         }
+        if (array_key_exists('access_options', $arClaimant)) {
+            $claimant->setAccessOptions((array)$arClaimant['access_options']);
+        } elseif (array_key_exists('accessOptions', $arClaimant)) {
+            $claimant->setAccessOptions((array)$arClaimant['accessOptions']);
+        }
         $errors = $this->getValidator()->validate($claimant);
         if (count($errors) > 0) {
             throw new ValidationFailedException($arClaimant, $errors);

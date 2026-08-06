@@ -1,0 +1,11 @@
+{
+  "name": "Broken",
+  "claimant": {
+    "broken.item": "Broken item"
+  },
+  "map-access": {
+    "item": {
+      "can_read": "not-a-bit"
+    }
+  }
+}

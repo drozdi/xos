@@ -249,8 +249,112 @@ const windowId = await useAppManager.getState().launchApp('my-app', {
 5. Использовать `useCoreApi()` вместо прямых импортов axios/store
 6. Проверить в Start Menu и панели задач
 
+## Claimants и `can_*` (права модулей)
+
+Контракт и ADR: [ARCHITECTURE.md](ARCHITECTURE.md) — «ADR: каталог прав `setting.json` → `main_claimant.access_options`».  
+Схема БД: [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md). API: [API_SPEC.md](API_SPEC.md).
+
+### Источник истины и риск рассинхрона
+
+| Потребитель | Источник |
+|-------------|----------|
+| Runtime auth (`UserScopeResolver`, `getCanScopeValue`) | файлы `server/src/*/setting.json` |
+| Main Admin UI (вкладки User/Group Access) | БД `main_claimant.access_options` **после** sync |
+
+После правки `setting.json` без `main:claimant:sync` auth уже видит новые биты, а UI — старые/пустые options (или наоборот). Sync обязателен перед проверкой Admin UI и в deploy.
+
+### Как добавить claimant / `can_*`
+
+1. Открыть модульный `server/src/<Module>/setting.json`.
+2. В `claimant` добавить код → отображаемое имя.
+3. В `map-access` описать права для узла (см. привязку ниже).
+4. Запустить sync (см. ниже).
+5. Проверить вкладки доступов в Main Admin: чекбоксы берутся из `GET /api/main/claimant/app-access-modules` (`access_options`).
+
+Пример (фрагмент):
+
+```json
+{
+  "claimant": {
+    "device.device": "Устройства: Устройства"
+  },
+  "map-access": {
+    "can_write_off": { "bit": 16, "title": "Списание" },
+    "device": {
+      "can_create": 1,
+      "can_read": { "bit": 2, "title": "Чтение" }
+    }
+  }
+}
+```
+
+**Привязка кода claimant → узел `map-access`** (как as-is):
+
+| Claimant `code` | Узел |
+|-----------------|------|
+| `device` (один сегмент = module) | корневые `can_*` модуля |
+| `device.device` | `map-access.device` |
+| `device.software.type` | `map-access.software.type` (nested) |
+
+### Формат leaf `can_*`
+
+Допустимы оба варианта; sync в БД всегда нормализует к object `{ bit, title[, description] }`:
+
+1. Legacy number: `"can_read": 2`
+2. Object: `"can_read": { "bit": 2, "title": "Чтение", "description": "опционально" }`
+
+Если `title` нет — sync подставляет default (таблица в ADR). `bit` должен быть int > 0.
+
+**Смена bit** у уже известного `can_*` в БД: sync **abort** с ненулевым exit, пока не передать `--force`. `--force` перезаписывает `access_options`; уровни в `*_access.level` **не** мигрирует.
+
+### Sync CLI
+
+```bash
+cd server
+php bin/console main:claimant:sync              # запись в БД
+php bin/console main:claimant:sync --dry-run    # validate + отчёт, без записи
+php bin/console main:claimant:sync --force      # разрешить overwrite при смене bit
+```
+
+Stdout (пример): `upserted (N): …`, `orphan (M): code1, code2`. HTTP endpoint sync в MVP нет.
+
+### Orphan (soft)
+
+Код есть в БД, но отсутствует в текущем glob `setting.json`:
+
+- строка `main_claimant` **не удаляется** (FK на accesses);
+- `access_options` → `{}`;
+- code печатается в stdout (`orphan (N): …`);
+- в UI вкладок orphan не появляется (дерево из `ProtectedAppModules` + setting).
+
+Ручной DELETE через API по-прежнему возможен; sync его не заменяет.
+
+### Deploy
+
+Порядок: **migrate → claimant:sync**. В `server/update` уже есть оба шага:
+
+```
+doctrine:migrations:migrate
+main:claimant:sync
+```
+
+### Scope sync vs Admin UI
+
+- Sync читает **все** `server/src/*/setting.json` (включая Todo, IBlock) → upsert в `main_claimant`.
+- Вкладка «Доступ к приложениям» / User & Group Access: только модули из `ProtectedAppModules` (`main`, `device`, `explorer`, `schooltask`, `inccom`, `calendar`). Todo/IBlock в UI **не** показываются, пока явно не добавят в `ProtectedAppModules`.
+
+### Каталог прав для Main Admin UI
+
+**Не** использовать `GET /api/account/map` (и `/api/scope/map`) как каталог чекбоксов для вкладок User/Group Access.  
+Каталог: `GET /api/main/claimant/app-access-modules` + поле `access_options` (также в list/detail claimant).  
+`/api/account/map` остаётся для auth/runtime (сырой file `map-access`).
+
+### Воспроизводимый путь
+
+`edit setting.json` → `php bin/console main:claimant:sync` → перезагрузить Main Admin → вкладки Access показывают новые `can_*` из БД.
+
 ## См. также
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle
+- [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle, ADR access_options
 - [API_SPEC.md](API_SPEC.md) — REST endpoints для `services/`
 - [README.md](../README.md) — запуск проекта
