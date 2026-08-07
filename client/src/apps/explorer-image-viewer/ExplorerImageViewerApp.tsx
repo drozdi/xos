@@ -1,4 +1,4 @@
-import { Box, Button, Group, Stack } from '@mantine/core';
+import { Box, Stack } from '@mantine/core';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
@@ -7,7 +7,7 @@ import { useExplorerMediaUrl } from '@/features/explorer/useExplorerMediaUrl';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 export default function ExplorerImageViewerApp() {
-	const { currentPath, openFile } = useExplorerSatelliteFile({
+	const { currentPath } = useExplorerSatelliteFile({
 		appId: 'explorer-image-viewer',
 		fileTypes: ['image'],
 	});
@@ -17,11 +17,6 @@ export default function ExplorerImageViewerApp() {
 
 	return (
 		<Stack h="100%" p="md" gap="sm" style={{ minHeight: 0 }}>
-			<Group justify="flex-end">
-				<Button variant="default" size="xs" onClick={() => void openFile()}>
-					Открыть…
-				</Button>
-			</Group>
 			<Box style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 				{url ? (
 					<img

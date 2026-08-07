@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiAdapter } from '../adapters/ApiAdapter';
 import {
 	API_WRITE_DEBOUNCE_MS,
 	CompositeAdapter,
@@ -219,6 +220,32 @@ describe('CompositeAdapter', () => {
 
 		await expect(composite.get('USER', 'theme')).resolves.toBe('local-buffer');
 		expect(onApiError).toHaveBeenCalledOnce();
+		composite.dispose();
+	});
+
+	it('serverFirst set empty launchHistory keeps api cache in sync (no stale overwrite)', async () => {
+		const api = new ApiAdapter();
+		api.preload([
+			{
+				category: 'APP',
+				key: 'launchHistory',
+				value: [{ appId: 'stale-app' }],
+			},
+		]);
+		await local.set('APP', 'launchHistory', [{ appId: 'stale-app' }]);
+
+		const composite = new CompositeAdapter(local, api, {
+			useApi: true,
+			serverFirst: true,
+			onApiError,
+		});
+
+		await composite.set('APP', 'launchHistory', []);
+
+		await expect(composite.get('APP', 'launchHistory')).resolves.toEqual([]);
+		await expect(local.get('APP', 'launchHistory')).resolves.toEqual([]);
+		await expect(api.get('APP', 'launchHistory')).resolves.toEqual([]);
+
 		composite.dispose();
 	});
 

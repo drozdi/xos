@@ -16,11 +16,15 @@ interface PendingWrite {
 	value: unknown;
 }
 
-/** Optional batch upsert on API adapter (ApiAdapter.setMany). */
+/** Optional batch upsert / cache write-through on API adapter (ApiAdapter). */
 export interface BatchSettingAdapter extends ISettingAdapter {
 	setMany?: (
 		items: Array<{ category: SettingCategory; key: string; value: unknown }>,
 	) => Promise<void>;
+	/** Sync in-memory API cache without HTTP (e.g. after local set). */
+	prime?: (category: SettingCategory, key: string, value: unknown) => void;
+	/** Drop key from in-memory API cache without HTTP (e.g. after local remove). */
+	forget?: (category: SettingCategory, key: string) => void;
 }
 
 export interface CompositeAdapterOptions {
@@ -103,6 +107,9 @@ export class CompositeAdapter implements ISettingAdapter {
 			return;
 		}
 
+		// Keep api in-memory cache in sync so serverFirst get() does not overwrite local with stale.
+		this.api.prime?.(category, key, value);
+
 		if (isDesktopStateSyncEnabled() && isManagedDesktopStateKey(category, key)) {
 			getDesktopStatePersister().schedule();
 			return;
@@ -136,6 +143,8 @@ export class CompositeAdapter implements ISettingAdapter {
 		if (!this.options.useApi) {
 			return;
 		}
+
+		this.api.forget?.(category, key);
 
 		if (isDesktopStateSyncEnabled() && isManagedDesktopStateKey(category, key)) {
 			getDesktopStatePersister().schedule();

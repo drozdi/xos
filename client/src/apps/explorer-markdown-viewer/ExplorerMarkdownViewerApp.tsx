@@ -164,26 +164,6 @@ export default function ExplorerMarkdownViewerApp() {
 					<Text size="sm">В файле есть несохранённые изменения.</Text>
 					<Group justify="flex-end" gap="xs">
 						<Button
-							variant="default"
-							onClick={() => {
-								modals.close(modalId);
-							}}
-						>
-							Отмена
-						</Button>
-						<Button
-							variant="default"
-							onClick={() => {
-								modals.close(modalId);
-								useMarkdownEditorStore.getState().patchSession(windowId, {
-									closeAfterSaveAs: true,
-								});
-								void openSaveAsPicker();
-							}}
-						>
-							Сохранить как…
-						</Button>
-						<Button
 							onClick={() => {
 								modals.close(modalId);
 								void (async () => {
@@ -213,6 +193,27 @@ export default function ExplorerMarkdownViewerApp() {
 							}}
 						>
 							Сохранить
+						</Button>
+						<Button
+							variant="default"
+							onClick={() => {
+								modals.close(modalId);
+								useMarkdownEditorStore.getState().patchSession(windowId, {
+									closeAfterSaveAs: true,
+								});
+								void openSaveAsPicker();
+							}}
+						>
+							Сохранить как…
+						</Button>
+						<Button
+							variant="default"
+							onClick={() => {
+								modals.close(modalId);
+								forceCloseWindow();
+							}}
+						>
+							Не сохранять
 						</Button>
 					</Group>
 				</Stack>

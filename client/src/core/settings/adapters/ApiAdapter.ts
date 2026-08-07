@@ -100,6 +100,16 @@ export class ApiAdapter implements ISettingAdapter {
 		this.loadedCategories.delete(category);
 	}
 
+	/** Update in-memory cache without HTTP. Empty arrays (`[]`) are stored as-is. */
+	prime(category: SettingCategory, key: string, value: unknown): void {
+		this.cache.set(cacheKey(category, key), value);
+	}
+
+	/** Drop a key from in-memory cache without HTTP. */
+	forget(category: SettingCategory, key: string): void {
+		this.cache.delete(cacheKey(category, key));
+	}
+
 	private async ensureCategoryLoaded(category: SettingCategory | 'ALL'): Promise<void> {
 		if (this.loadedCategories.has(category) || this.loadedCategories.has('ALL')) {
 			return;
