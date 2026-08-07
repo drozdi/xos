@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { queryKeys } from '@/core/api/queryKeys';
 import { promptAction } from '@/core/confirm';
+import { useAppContext } from '@/core/context/AppContext';
+import { useCoreApi } from '@/core/hooks/useCoreApi';
 
 import { ExplorerPickerBar } from './components/ExplorerPickerBar';
 import { ExplorerPathBar } from './components/ExplorerPathBar';
@@ -48,11 +50,17 @@ import {
 } from './explorerPathUtils';
 import {
 	matchesExplorerPickerFilter,
+	ownsActivePicker,
+	type ExplorerPickerMode,
 	useExplorerPickerStore,
 } from './explorerPickerStore';
 import { EXPLORER_DEFAULT_PATH } from './explorerLastPath';
 import { useExplorerHistory } from './hooks/useExplorerHistory';
-import { useExplorerLastPath } from './hooks/useExplorerLastPath';
+import {
+	readExplorerWindowDocumentPath,
+	shouldHydrateExplorerGlobalLastPath,
+	useExplorerLastPath,
+} from './hooks/useExplorerLastPath';
 import { useExplorerSelection } from './hooks/useExplorerSelection';
 import { getOpenWithAppsForEntry, openVfsPathWithApp } from './openWithRegistry';
 import type { ExplorerViewMode } from './explorerViewUtils';
@@ -74,11 +82,20 @@ function resolveEntryPath(currentPath: string, entry: { path?: string; relativeP
 
 interface ExplorerWorkspaceProps {
 	initialPath?: string;
+	/** Dedicated picker-app shell (`explorer-open-picker` / `explorer-save-picker`). */
+	pickerMode?: ExplorerPickerMode;
 }
 
-export function ExplorerWorkspace({ initialPath }: ExplorerWorkspaceProps) {
-	const startPath = initialPath ?? EXPLORER_DEFAULT_PATH;
-	const shouldHydrateLastPath = initialPath === undefined;
+export function ExplorerWorkspace({ initialPath, pickerMode }: ExplorerWorkspaceProps) {
+	const { windowId, props: appProps } = useAppContext();
+	const coreApi = useCoreApi();
+	const windowDocumentPath = readExplorerWindowDocumentPath(appProps);
+	const startPath = initialPath ?? windowDocumentPath ?? EXPLORER_DEFAULT_PATH;
+	const hydrateGlobal = shouldHydrateExplorerGlobalLastPath({
+		initialPath,
+		windowDocumentPath,
+		pickerMode,
+	});
 	const {
 		currentPath,
 		setCurrentPath,
@@ -100,16 +117,54 @@ export function ExplorerWorkspace({ initialPath }: ExplorerWorkspaceProps) {
 	const queryClient = useQueryClient();
 	const clipboard = useExplorerClipboardStore((state) => state.clipboard);
 	const setClipboard = useExplorerClipboardStore((state) => state.setClipboard);
-	const picker = useExplorerPickerStore((state) => state.active);
+	const storeActive = useExplorerPickerStore((state) => state.active);
 	const completePicker = useExplorerPickerStore((state) => state.completePicker);
 	const cancelPicker = useExplorerPickerStore((state) => state.cancelPicker);
 	const [pickerFileName, setPickerFileName] = useState('');
+	const requestId = typeof appProps?.requestId === 'string' ? appProps.requestId : undefined;
+
+	// Picker UI only in picker-app shells (prep for iter 2: regular explorer ignores store.active).
+	const picker = useMemo(() => {
+		if (!pickerMode || !storeActive) {
+			return null;
+		}
+		if (requestId && storeActive.id !== requestId) {
+			return null;
+		}
+		return storeActive;
+	}, [pickerMode, requestId, storeActive]);
+
+	useEffect(() => {
+		if (!pickerMode) {
+			return undefined;
+		}
+		const unsubscribe = coreApi.window.on('close', () => {
+			const active = useExplorerPickerStore.getState().active;
+			if (!ownsActivePicker(active, { windowId, requestId })) {
+				return;
+			}
+			useExplorerPickerStore.getState().cancelPicker({ skipClose: true });
+		});
+		return () => {
+			unsubscribe();
+			const active = useExplorerPickerStore.getState().active;
+			// Require matching pickerWindowId (same as before) plus requestId so
+			// open→open singleInstance replace does not cancel the newer active.
+			if (
+				active?.pickerWindowId === windowId &&
+				ownsActivePicker(active, { windowId, requestId })
+			) {
+				useExplorerPickerStore.getState().cancelPicker({ skipClose: true });
+			}
+		};
+	}, [coreApi, pickerMode, requestId, windowId]);
 
 	useExplorerLastPath({
+		windowId,
 		currentPath,
 		navigate: setCurrentPath,
-		persistEnabled: !picker,
-		hydrate: shouldHydrateLastPath,
+		persistEnabled: !pickerMode,
+		hydrateGlobal,
 	});
 
 	const diskRoot = `${parseDisk(currentPath)}://`;

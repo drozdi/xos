@@ -18,8 +18,8 @@ const menu: AppMenuConfig = {
 						await openExplorerPicker({
 							mode: 'open',
 							consumerAppId: explorerOpenPickerConsumerId(ctx.appId, ctx.windowId),
-							fileTypes: ['image'],
-							title: 'Открыть изображение',
+							fileTypes: ['archive'],
+							title: 'Открыть архив',
 						});
 					},
 				},

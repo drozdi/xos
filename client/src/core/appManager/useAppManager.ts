@@ -39,6 +39,10 @@ function resolveInstanceKey(manifest: AppManifest, params?: LaunchParams): strin
 			? manifest.instanceKey(params)
 			: manifest.instanceKey;
 	}
+	// Explicit multi-instance: Start / «Новое окно» without key → unique window
+	if (manifest.singleInstance === false) {
+		return crypto.randomUUID();
+	}
 	return 'default';
 }
 
@@ -122,15 +126,16 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 		const instanceKey = resolveInstanceKey(manifest, params);
 		const windowId = buildWindowId(appId, instanceKey);
 
-		if (manifest.singleInstance) {
-			const existing = get().running.find(
-				(entry) => entry.appId === appId && entry.instanceKey === instanceKey,
-			);
-			if (existing) {
-				useWmStore.getState().focusWindow(existing.windowId);
-				useWmStore.getState().restoreWindow(existing.windowId);
-				return existing.windowId;
+		const existing = get().running.find(
+			(entry) => entry.appId === appId && entry.instanceKey === instanceKey,
+		);
+		if (existing) {
+			useWmStore.getState().focusWindow(existing.windowId);
+			useWmStore.getState().restoreWindow(existing.windowId);
+			if (params?.title) {
+				useWmStore.getState().updateWindow(existing.windowId, { title: params.title });
 			}
+			return existing.windowId;
 		}
 
 		const persisted = settingManager.isInitialized()
@@ -152,11 +157,19 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			positionFixed = true;
 		}
 
+		const propsDocumentPath =
+			typeof params?.props?.documentPath === 'string' ? params.props.documentPath : undefined;
+		const documentPath = persisted?.documentPath ?? propsDocumentPath;
+		const launchProps = {
+			...params?.props,
+			...(documentPath ? { documentPath } : {}),
+		};
 		const openedId = openWindow({
 			id: windowId,
 			appId,
 			instanceKey,
-			props: params?.props,
+			props: Object.keys(launchProps).length > 0 ? launchProps : undefined,
+			documentPath,
 			title: params?.title ?? persisted?.title ?? manifest.name,
 			x: launchX,
 			y: launchY,

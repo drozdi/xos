@@ -8,7 +8,7 @@ import { useExplorerMediaUrl } from '@/features/explorer/useExplorerMediaUrl';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 export default function ExplorerAudioPlayerApp() {
-	const { currentPath, openFile } = useExplorerSatelliteFile({
+	const { currentPath } = useExplorerSatelliteFile({
 		appId: 'explorer-audio-player',
 		fileTypes: ['audio'],
 	});
@@ -28,11 +28,6 @@ export default function ExplorerAudioPlayerApp() {
 
 	return (
 		<Stack h="100%" p="md" gap="sm">
-			<Group justify="flex-end">
-				<Button variant="default" size="xs" onClick={() => void openFile()}>
-					Открыть…
-				</Button>
-			</Group>
 			{url ? <audio src={url} controls style={{ width: '100%' }} /> : <Text>Откройте аудиофайл</Text>}
 			<Stack gap={4}>
 				<Text size="sm" fw={600}>

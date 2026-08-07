@@ -8,7 +8,7 @@ import { useExplorerMediaUrl } from '@/features/explorer/useExplorerMediaUrl';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 export default function ExplorerVideoPlayerApp() {
-	const { currentPath, openFile } = useExplorerSatelliteFile({
+	const { currentPath } = useExplorerSatelliteFile({
 		appId: 'explorer-video-player',
 		fileTypes: ['video'],
 	});
@@ -28,11 +28,6 @@ export default function ExplorerVideoPlayerApp() {
 
 	return (
 		<Stack h="100%" p="md" gap="sm">
-			<Group justify="flex-end">
-				<Button variant="default" size="xs" onClick={() => void openFile()}>
-					Открыть…
-				</Button>
-			</Group>
 			{url ? (
 				<video src={url} controls style={{ width: '100%', maxHeight: 420 }} />
 			) : (

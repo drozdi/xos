@@ -8,6 +8,8 @@ export interface WindowState {
 	appId: string;
 	instanceKey: string;
 	props?: Record<string, unknown>;
+	/** Last opened document path; mirrored into WIN persist (satellites). */
+	documentPath?: string;
 	title: string;
 	x: number;
 	y: number;
@@ -38,6 +40,7 @@ export interface OpenWindowPayload {
 	appId: string;
 	instanceKey: string;
 	props?: Record<string, unknown>;
+	documentPath?: string;
 	title: string;
 	x?: number;
 	y?: number;
@@ -69,6 +72,8 @@ export interface PersistedWindowState {
 	wmGroup: string;
 	wmSort: number;
 	title: string;
+	/** Last opened file for satellite apps (optional). */
+	documentPath?: string;
 }
 
 export type WindowEvent = 'close' | 'focus' | 'resize';

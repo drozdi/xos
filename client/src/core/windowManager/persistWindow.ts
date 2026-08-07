@@ -35,6 +35,7 @@ export function toPersistedState(window: WindowState): PersistedWindowState {
 		wmGroup: window.wmGroup,
 		wmSort: window.wmSort,
 		title: window.title,
+		...(window.documentPath ? { documentPath: window.documentPath } : {}),
 	};
 }
 
@@ -55,8 +56,11 @@ export function fromPersistedState(
 	maximized: boolean;
 	wmGroup: string;
 	wmSort: number;
+	documentPath?: string;
+	props?: { documentPath: string };
 } {
 	const instanceKey = windowId.includes('__') ? windowId.split('__').slice(1).join('__') : windowId;
+	const documentPath = persisted.documentPath;
 	return {
 		id: windowId,
 		appId,
@@ -70,6 +74,9 @@ export function fromPersistedState(
 		maximized: persisted.state.maximized,
 		wmGroup: persisted.wmGroup,
 		wmSort: persisted.wmSort,
+		...(documentPath
+			? { documentPath, props: { documentPath } }
+			: {}),
 	};
 }
 
@@ -83,14 +90,32 @@ export function isPersistedWindowState(value: unknown): value is PersistedWindow
 	}
 	const pos = position as Record<string, unknown>;
 	const st = state as Record<string, unknown>;
-	return (
-		typeof pos.x === 'number' &&
-		typeof pos.y === 'number' &&
-		typeof pos.width === 'number' &&
-		typeof pos.height === 'number' &&
-		typeof st.minimized === 'boolean' &&
-		typeof st.maximized === 'boolean'
-	);
+	if (
+		typeof pos.x !== 'number' ||
+		typeof pos.y !== 'number' ||
+		typeof pos.width !== 'number' ||
+		typeof pos.height !== 'number' ||
+		typeof st.minimized !== 'boolean' ||
+		typeof st.maximized !== 'boolean'
+	) {
+		return false;
+	}
+	if (
+		record.documentPath !== undefined &&
+		typeof record.documentPath !== 'string'
+	) {
+		return false;
+	}
+	return true;
+}
+
+/** Update in-memory WIN documentPath and debounce persist (satellite setCurrentPath). */
+export function setWindowDocumentPath(windowId: string, documentPath: string | null): void {
+	const current = useWmStore.getState().windows[windowId];
+	if (!current) {return;}
+	const next = documentPath || undefined;
+	if (current.documentPath === next) {return;}
+	useWmStore.getState().updateWindow(windowId, { documentPath: next });
 }
 
 export async function persistWindowNow(windowId: string): Promise<void> {

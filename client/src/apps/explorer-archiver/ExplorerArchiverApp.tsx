@@ -7,7 +7,6 @@ import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
 import { fetchArchiveContents, unpackExplorerArchive } from '@/features/explorer/explorerApi';
 import { getExplorerFileName } from '@/features/explorer/explorerPathUtils';
-import { useExplorerOpenFile } from '@/features/explorer/useExplorerOpenFile';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 function defaultUnpackFolder(archivePath: string) {
@@ -20,20 +19,12 @@ function defaultUnpackFolder(archivePath: string) {
 }
 
 export default function ExplorerArchiverApp() {
-	const openedPath = useExplorerOpenFile('explorer-archiver');
-	const { currentPath, openFile } = useExplorerSatelliteFile({
+	const { currentPath } = useExplorerSatelliteFile({
 		appId: 'explorer-archiver',
 		fileTypes: ['archive'],
 	});
 	const [archivePath, setArchivePath] = useState('');
 	const [destination, setDestination] = useState('');
-
-	useEffect(() => {
-		if (openedPath) {
-			setArchivePath(openedPath);
-			setDestination(defaultUnpackFolder(openedPath));
-		}
-	}, [openedPath]);
 
 	useEffect(() => {
 		if (!currentPath) {
@@ -71,12 +62,7 @@ export default function ExplorerArchiverApp() {
 
 	return (
 		<Stack h="100%" p="md" gap="sm" style={{ minHeight: 0 }}>
-			<Group justify="space-between">
-				<Text fw={600}>Архиватор</Text>
-				<Button variant="default" size="xs" onClick={() => void openFile()}>
-					Открыть…
-				</Button>
-			</Group>
+			<Text fw={600}>Архиватор</Text>
 			<TextInput label="Архив" value={archivePath} onChange={(e) => setArchivePath(e.currentTarget.value)} />
 			<TextInput
 				label="Папка назначения"

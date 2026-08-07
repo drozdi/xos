@@ -1,5 +1,6 @@
 import type { AppMenuConfig } from '@/core/appMenu/types';
 import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
+import { explorerOpenPickerConsumerId } from '@/features/explorer/useExplorerSatelliteFile';
 
 
 import {
@@ -42,7 +43,7 @@ const menu: AppMenuConfig = {
 						const session = useMarkdownEditorStore.getState().getSession(ctx.windowId);
 						await openExplorerPicker({
 							mode: 'open',
-							consumerAppId: ctx.appId,
+							consumerAppId: explorerOpenPickerConsumerId(ctx.appId, ctx.windowId),
 							fileTypes: MARKDOWN_FILE_TYPES,
 							extensions: MARKDOWN_EXTENSIONS,
 							initialPath: session.path ?? undefined,

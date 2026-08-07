@@ -5,14 +5,27 @@ import { useExplorerLaunchStore } from '@/features/explorer/explorerLaunchStore'
 
 export function useExplorerOpenFile(appId: string) {
 	const [vfsPath, setVfsPath] = useState<string | null>(null);
-	const consumeOpenRequest = useExplorerLaunchStore((state) => state.consumeOpenRequest);
 
 	useEffect(() => {
-		const request = consumeOpenRequest(appId);
-		if (request) {
-			setVfsPath(request.vfsPath);
-		}
-	}, [appId, consumeOpenRequest]);
+		const applyPending = () => {
+			const request = useExplorerLaunchStore.getState().consumeOpenRequest(appId);
+			if (request) {
+				setVfsPath(request.vfsPath);
+			}
+		};
+
+		applyPending();
+
+		return useExplorerLaunchStore.subscribe((state, prev) => {
+			if (
+				state.pending &&
+				state.pending !== prev.pending &&
+				state.pending.appId === appId
+			) {
+				applyPending();
+			}
+		});
+	}, [appId]);
 
 	return vfsPath;
 }

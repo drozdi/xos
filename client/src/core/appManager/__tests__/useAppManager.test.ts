@@ -162,6 +162,79 @@ describe('useAppManager', () => {
 		expect(history.filter((entry) => entry.appId === 'history-app')).toHaveLength(1);
 	});
 
+	it('picker launch with skipHistory leaves APP.launchHistory empty', async () => {
+		useAppManager.getState().registerApps([
+			createManifest({
+				id: 'explorer-open-picker',
+				name: 'Open',
+				singleInstance: true,
+			}),
+			createManifest({
+				id: 'explorer-save-picker',
+				name: 'Save',
+				singleInstance: true,
+			}),
+		]);
+
+		await useAppManager.getState().launchApp('explorer-open-picker', {
+			skipHistory: true,
+			title: 'Открыть файл',
+			props: { requestId: 'r1' },
+		});
+		await useAppManager.getState().launchApp('explorer-save-picker', {
+			skipHistory: true,
+			title: 'Сохранить файл',
+			props: { requestId: 'r2' },
+		});
+
+		await expect(getLaunchHistory()).resolves.toEqual([]);
+		expect(useAppManager.getState().running.map((r) => r.appId).sort()).toEqual([
+			'explorer-open-picker',
+			'explorer-save-picker',
+		]);
+	});
+
+	it('multi-instance (singleInstance false) Start launches get distinct uuid keys', async () => {
+		useAppManager.getState().registerApps([
+			createManifest({ id: 'explorer', singleInstance: false }),
+			createManifest({ id: 'explorer-notepad', singleInstance: false }),
+		]);
+
+		const e1 = await useAppManager.getState().launchApp('explorer');
+		const e2 = await useAppManager.getState().launchApp('explorer');
+		const n1 = await useAppManager.getState().launchApp('explorer-notepad');
+		const n2 = await useAppManager.getState().launchApp('explorer-notepad');
+
+		expect(new Set([e1, e2, n1, n2]).size).toBe(4);
+		const keys = useAppManager
+			.getState()
+			.running.map((r) => r.instanceKey);
+		expect(keys.every((k) => k !== 'default')).toBe(true);
+		expect(new Set(keys).size).toBe(4);
+	});
+
+	it('singleInstance audio focuses existing window and updates title on relaunch', async () => {
+		useAppManager.getState().registerApps([
+			createManifest({ id: 'explorer-audio-player', singleInstance: true }),
+		]);
+
+		const firstId = await useAppManager.getState().launchApp('explorer-audio-player', {
+			instanceKey: 'default',
+			title: 'track-a.mp3',
+		});
+		useWmStore.getState().minimizeWindow(firstId!);
+
+		const secondId = await useAppManager.getState().launchApp('explorer-audio-player', {
+			instanceKey: 'default',
+			title: 'track-b.mp3',
+		});
+
+		expect(secondId).toBe(firstId);
+		expect(useAppManager.getState().running).toHaveLength(1);
+		expect(useWmStore.getState().windows[firstId!]?.minimized).toBe(false);
+		expect(useWmStore.getState().windows[firstId!]?.title).toBe('track-b.mp3');
+	});
+
 	it('removes running entry and launch history when window is closed', async () => {
 		const manifest = createManifest();
 		useAppManager.getState().registerApps([manifest]);
@@ -238,5 +311,76 @@ describe('useAppManager', () => {
 		]);
 		// skipHistory: history length unchanged (no duplicate)
 		await expect(getLaunchHistory()).resolves.toHaveLength(1);
+	});
+
+	it('restoreFromHistory passes WIN.documentPath into openWindow props', async () => {
+		const manifest = createManifest({
+			id: 'doc-app',
+			name: 'Doc App',
+			singleInstance: false,
+		});
+		useAppManager.getState().registerApps([manifest]);
+
+		const instanceKey = 'doc-app-local://user/notes.txt';
+		const windowId = `doc-app__${instanceKey}`;
+		await addToLaunchHistory('doc-app', instanceKey);
+		await adapter.set('WIN', `doc-app/${windowId}`, {
+			position: { x: 10, y: 20, width: 400, height: 300 },
+			state: { minimized: false, maximized: false },
+			wmGroup: 'default',
+			wmSort: 0,
+			title: 'notes.txt',
+			documentPath: 'local://user/notes.txt',
+		});
+
+		await useAppManager.getState().restoreFromHistory();
+
+		const win = useWmStore.getState().windows[windowId];
+		expect(win?.documentPath).toBe('local://user/notes.txt');
+		expect(win?.props?.documentPath).toBe('local://user/notes.txt');
+	});
+
+	it('restoreFromHistory restores two multi-instance windows with distinct documentPaths', async () => {
+		const manifest = createManifest({
+			id: 'multi-doc',
+			name: 'Multi Doc',
+			singleInstance: false,
+		});
+		useAppManager.getState().registerApps([manifest]);
+
+		const keyA = 'multi-doc-local://user/a.txt';
+		const keyB = 'multi-doc-local://user/b.txt';
+		const idA = `multi-doc__${keyA}`;
+		const idB = `multi-doc__${keyB}`;
+
+		await addToLaunchHistory('multi-doc', keyA);
+		await addToLaunchHistory('multi-doc', keyB);
+		await adapter.set('WIN', `multi-doc/${idA}`, {
+			position: { x: 1, y: 2, width: 100, height: 100 },
+			state: { minimized: false, maximized: false },
+			wmGroup: 'default',
+			wmSort: 0,
+			title: 'a.txt',
+			documentPath: 'local://user/a.txt',
+		});
+		await adapter.set('WIN', `multi-doc/${idB}`, {
+			position: { x: 3, y: 4, width: 120, height: 120 },
+			state: { minimized: false, maximized: false },
+			wmGroup: 'default',
+			wmSort: 0,
+			title: 'b.txt',
+			documentPath: 'local://user/b.txt',
+		});
+
+		await useAppManager.getState().restoreFromHistory();
+
+		expect(useWmStore.getState().windows[idA]?.documentPath).toBe('local://user/a.txt');
+		expect(useWmStore.getState().windows[idB]?.documentPath).toBe('local://user/b.txt');
+		expect(useAppManager.getState().running).toEqual(
+			expect.arrayContaining([
+				{ windowId: idA, appId: 'multi-doc', instanceKey: keyA },
+				{ windowId: idB, appId: 'multi-doc', instanceKey: keyB },
+			]),
+		);
 	});
 });

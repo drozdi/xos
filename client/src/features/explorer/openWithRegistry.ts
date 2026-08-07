@@ -1,3 +1,4 @@
+import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { useAppManager } from '@/core/appManager/useAppManager';
 
 import { useExplorerLaunchStore } from './explorerLaunchStore';
@@ -49,9 +50,24 @@ export function getAssociationLabel(appId: string) {
 }
 
 export async function openVfsPathWithApp(appId: string, vfsPath: string, title?: string) {
-	useExplorerLaunchStore.getState().setOpenRequest({ appId, vfsPath });
-	await useAppManager.getState().launchApp(appId, {
-		instanceKey: `${appId}-${vfsPath}`,
-		title: title ?? vfsPath.split('/').pop() ?? appId,
+	const windowTitle = title ?? vfsPath.split('/').pop() ?? appId;
+	const manager = useAppManager.getState();
+	const manifest = manager.registry.get(appId) ?? AppRegistry.get(appId);
+
+	if (manifest?.singleInstance) {
+		useExplorerLaunchStore.getState().setOpenRequest({ appId, vfsPath });
+		await manager.launchApp(appId, {
+			instanceKey: 'default',
+			title: windowTitle,
+		});
+		return;
+	}
+
+	/** Multi satellites: always new window; path via props (no launch-store steal). */
+	const instanceKey = crypto.randomUUID();
+	await manager.launchApp(appId, {
+		instanceKey,
+		title: windowTitle,
+		props: { documentPath: vfsPath },
 	});
 }

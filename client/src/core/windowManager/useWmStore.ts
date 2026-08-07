@@ -66,11 +66,18 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			payload.taskbarGroup ??
 			(manifest ? resolveTaskbarGroup(manifest) : payload.appId);
 
+		const documentPath =
+			payload.documentPath ??
+			(typeof payload.props?.documentPath === 'string'
+				? payload.props.documentPath
+				: undefined);
+
 		const windowState: WindowState = {
 			id,
 			appId: payload.appId,
 			instanceKey: payload.instanceKey,
 			props: payload.props,
+			...(documentPath ? { documentPath } : {}),
 			title: payload.title,
 			x: payload.x ?? defaults.x,
 			y: payload.y ?? defaults.y,

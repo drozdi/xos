@@ -27,6 +27,7 @@ const manifest: AppManifest = {
 	startMenuGroup: 'tools',
 	taskbarGroup: 'explorer-tools',
 	requiredRole: 'explorer',
+	singleInstance: false,
 	startMenu: true,
 	menu: () => import('./menu').then((module) => module.default),
 };

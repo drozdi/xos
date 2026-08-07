@@ -1,5 +1,6 @@
 import type { AppMenuConfig } from '@/core/appMenu/types';
 import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
+import { explorerOpenPickerConsumerId } from '@/features/explorer/useExplorerSatelliteFile';
 
 import { useNotepadEditorStore } from './notepadEditorStore';
 
@@ -23,7 +24,7 @@ const menu: AppMenuConfig = {
 						const session = useNotepadEditorStore.getState().getSession(ctx.windowId);
 						await openExplorerPicker({
 							mode: 'open',
-							consumerAppId: ctx.appId,
+							consumerAppId: explorerOpenPickerConsumerId(ctx.appId, ctx.windowId),
 							fileTypes: NOTEPAD_FILE_TYPES,
 							initialPath: session.path ?? undefined,
 							title: 'Открыть файл',
