@@ -75,6 +75,9 @@ export default function MainUsersApp() {
 			if (group.type === 'divider' || group.type === 'subheader') {
 				continue;
 			}
+			if (!('value' in group) || !('title' in group)) {
+				continue;
+			}
 			options.push({
 				value: String(group.value),
 				label: group.title,

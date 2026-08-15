@@ -252,6 +252,21 @@ class EventManager extends AbstractManager
         return $items;
     }
 
+    /** @return array{id: int, name: string, src: string} */
+    public function importTeacherFileFromLocalPath(User $teacher, string $sourcePath, string $originalName): array
+    {
+        $subDir = sprintf('teacher/%d', (int) $teacher->getId());
+        $file = $this->fileManager->importFromLocalPath($sourcePath, 'task', $subDir, $originalName);
+        $file->setCreatedBy($teacher)->setModifiedBy($teacher);
+        $this->getEntityManager()->flush();
+
+        return [
+            'id' => (int) $file->getId(),
+            'name' => $file->getOriginalName(),
+            'src' => $file->getFileSRC(),
+        ];
+    }
+
     /** @return EpEvent[] */
     public function loadEventsForClass(int $classId, \DateTimeInterface $start, \DateTimeInterface $end): array
     {

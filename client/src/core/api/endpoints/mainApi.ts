@@ -79,12 +79,17 @@ export const userListItemSchema = z.object({
 	tutor: z.string().nullable().transform((value) => value ?? ''),
 });
 
-export const userFilterGroupSchema = z.object({
-	type: z.string().optional(),
-	key: z.union([z.number(), z.string()]).optional(),
-	value: z.union([z.number(), z.string()]),
-	title: z.string(),
-});
+export const userFilterGroupSchema = z.union([
+	z.object({
+		type: z.literal('divider'),
+	}),
+	z.object({
+		type: z.string().optional(),
+		key: z.union([z.number(), z.string()]).optional(),
+		value: z.union([z.number(), z.string()]),
+		title: z.string(),
+	}),
+]);
 
 export const userFilterOuSchema = z.object({
 	value: z.number(),

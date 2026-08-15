@@ -45,6 +45,15 @@ export const deviceListItemSchema = z.object({
 	xTimestamp: z.string().nullable().optional().transform((v) => v ?? ''),
 });
 
+export const deviceFileSchema = z
+	.object({
+		id: z.number(),
+		name: z.string(),
+		src: z.string(),
+	})
+	.nullable()
+	.optional();
+
 export const deviceDetailSchema = z
 	.object({
 		id: z.number(),
@@ -65,6 +74,7 @@ export const deviceDetailSchema = z
 		properties: idRecordSchema.optional(),
 		licenses: idRecordSchema.optional(),
 		images: idRecordSchema.optional(),
+		file: deviceFileSchema,
 	})
 	.passthrough();
 
@@ -284,6 +294,36 @@ export const deviceApi = {
 	create: (body: DeviceDetail) => createEntity(`${BASE}/device/`, body),
 	update: (id: number, body: DeviceDetail) => updateEntity(`${BASE}/device`, id, body),
 	remove: (id: number) => removeEntity(`${BASE}/device`, id),
+	uploadImages: async (id: number, files: File[]) => {
+		const formData = new FormData();
+		formData.append('id', String(id));
+		for (const file of files) {
+			formData.append('device[images][]', file);
+		}
+		const { data } = await apiClient.post<unknown>(`${BASE}/device/upload`, formData);
+		return z
+			.array(
+				z.object({
+					id: z.number(),
+					src: z.string(),
+					name: z.string(),
+				}),
+			)
+			.parse(data);
+	},
+	uploadFile: async (id: number, file: File) => {
+		const formData = new FormData();
+		formData.append('id', String(id));
+		formData.append('device[file]', file);
+		const { data } = await apiClient.post<unknown>(`${BASE}/device/upload-file`, formData);
+		return z
+			.object({
+				id: z.number(),
+				src: z.string(),
+				name: z.string(),
+			})
+			.parse(data);
+	},
 	typeProperties: async (typeId: number) => {
 		const { data } = await apiClient.get<unknown>(`${BASE}/device/properties/${typeId}`);
 		return z

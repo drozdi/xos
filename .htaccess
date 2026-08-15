@@ -1,0 +1,12 @@
+RewriteEngine On
+
+RewriteRule ^api(?:/.*)?$ server/public/index.php [L,QSA]
+RewriteRule ^assets/(.*)$ client/dist/assets/$1 [L,QSA]
+
+RewriteRule ^$ client/dist/index.html [L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^ client/dist/index.html [L]

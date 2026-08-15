@@ -203,6 +203,15 @@ export function CalendarShell() {
 		setRange({ start, end });
 	}, []);
 
+	const handleRefresh = useCallback(async () => {
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: queryKeys.calendar.calendars }),
+			queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] }),
+			queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] }),
+			queryClient.invalidateQueries({ queryKey: ['schooltask', 'teacherEvents'] }),
+		]);
+	}, [queryClient]);
+
 	const openCreate = (slot?: CalendarSlotSelection | null) => {
 		setEditingEvent(null);
 		setSlotDefaults(slot ?? null);
@@ -252,6 +261,11 @@ export function CalendarShell() {
 
 	const isLoading =
 		eventsQuery.isFetching || dueQuery.isFetching || schooltaskQuery.isFetching;
+	const isRefreshing =
+		calendarsQuery.isFetching ||
+		eventsQuery.isFetching ||
+		dueQuery.isFetching ||
+		schooltaskQuery.isFetching;
 
 	return (
 		<Stack gap={0} h="100%" style={{ minHeight: 0 }}>
@@ -285,6 +299,8 @@ export function CalendarShell() {
 						onViewChange={setView}
 						onDateChange={setDate}
 						onCreateEvent={() => openCreate(null)}
+						onRefresh={() => void handleRefresh()}
+						refreshing={isRefreshing}
 						canCreate={Boolean(defaultCalendarId)}
 					/>
 					<CalendarGrid

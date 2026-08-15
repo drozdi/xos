@@ -1,30 +1,29 @@
 import {
 	ActionIcon,
-	Anchor,
 	Box,
 	Button,
-	Checkbox,
-	FileButton,
 	Group,
 	ScrollArea,
 	SimpleGrid,
 	Stack,
 	Text,
 	Textarea,
-	TextInput,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Link, RichTextEditor } from '@mantine/tiptap';
-import { IconPaperclip, IconTrash, IconUpload, IconX } from '@tabler/icons-react';
+import { IconFiles, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Underline from '@tiptap/extension-underline';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { notifyApiError } from '@/core/api/apiError';
 import { schooltaskCalendarApi, type TeacherEventSavePayload } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { useCoreApi } from '@/core/hooks/useCoreApi';
+
+import { EventLessonFilesPanel } from './EventLessonFilesPanel';
 
 interface EventTeacherModalProps {
 	eventId: number | null;
@@ -36,14 +35,16 @@ interface EventTeacherModalProps {
 type LibraryFile = { id: number; name: string; src?: string };
 
 export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTeacherModalProps) {
+	const coreApi = useCoreApi();
 	const queryClient = useQueryClient();
+	const filesWindowRef = useRef<{ close: () => void } | null>(null);
 	const [theme, setTheme] = useState('');
 	const [ht, setHt] = useState('');
 	const [pt, setPt] = useState('');
 	const [description, setDescription] = useState('');
 	const [netResource, setNetResource] = useState('');
 	const [attachedIds, setAttachedIds] = useState<number[]>([]);
-	const [librarySearch, setLibrarySearch] = useState('');
+	const [attachedMeta, setAttachedMeta] = useState<LibraryFile[]>([]);
 
 	const editor = useEditor({
 		extensions: [StarterKit, Underline, Link],
@@ -59,12 +60,6 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 		enabled: opened && eventId !== null,
 	});
 
-	const filesQuery = useQuery({
-		queryKey: queryKeys.schooltask.teacherFiles,
-		queryFn: () => schooltaskCalendarApi.teacherFiles(),
-		enabled: opened,
-	});
-
 	useEffect(() => {
 		if (!detailQuery.data) {
 			return;
@@ -75,27 +70,20 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 		const nextDescription = detailQuery.data.description ?? '';
 		setDescription(nextDescription);
 		setNetResource(detailQuery.data.netResource ?? '');
-		setAttachedIds((detailQuery.data.files ?? []).map((file) => file.id));
+		const files = detailQuery.data.files ?? [];
+		setAttachedIds(files.map((file) => file.id));
+		setAttachedMeta(files);
 		if (editor && !editor.isDestroyed) {
 			editor.commands.setContent(nextDescription || '');
 		}
 	}, [detailQuery.data, editor]);
 
-	const uploadMutation = useMutation({
-		mutationFn: (files: File[]) => schooltaskCalendarApi.teacherFilesUpload(files),
-		onSuccess: (uploaded) => {
-			notifications.show({ message: 'Файлы загружены', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.teacherFiles });
-			setAttachedIds((current) => {
-				const next = new Set(current);
-				for (const file of uploaded) {
-					next.add(file.id);
-				}
-				return [...next];
-			});
-		},
-		onError: (error) => notifyApiError(error, 'Ошибка загрузки файлов'),
-	});
+	useEffect(() => {
+		return () => {
+			filesWindowRef.current?.close();
+			filesWindowRef.current = null;
+		};
+	}, []);
 
 	const saveMutation = useMutation({
 		mutationFn: async () => {
@@ -122,41 +110,24 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 		onError: (error) => notifyApiError(error, 'Ошибка сохранения'),
 	});
 
-	const libraryFiles = useMemo(() => {
-		const items = (filesQuery.data ?? []) as LibraryFile[];
-		const query = librarySearch.trim().toLowerCase();
-		if (!query) {
-			return items;
+	const openFilesWindow = () => {
+		if (filesWindowRef.current) {
+			return;
 		}
-		return items.filter((file) => file.name.toLowerCase().includes(query));
-	}, [filesQuery.data, librarySearch]);
-
-	const attachedSet = useMemo(() => new Set(attachedIds), [attachedIds]);
-
-	const toggleAttach = (fileId: number, checked: boolean) => {
-		setAttachedIds((current) => {
-			if (checked) {
-				return current.includes(fileId) ? current : [...current, fileId];
-			}
-			return current.filter((id) => id !== fileId);
+		const handle = coreApi.window.createChildWindow({
+			title: 'Файлы урока',
+			width: 640,
+			height: 520,
+			content: (
+				<EventLessonFilesPanel
+					attachedIds={attachedIds}
+					attachedMeta={attachedMeta}
+					onAttachedChange={setAttachedIds}
+				/>
+			),
 		});
+		filesWindowRef.current = handle;
 	};
-
-	const detachFile = (fileId: number) => {
-		setAttachedIds((current) => current.filter((id) => id !== fileId));
-	};
-
-	const attachedFiles = useMemo(() => {
-		const byId = new Map((filesQuery.data ?? []).map((file) => [file.id, file]));
-		for (const file of detailQuery.data?.files ?? []) {
-			if (!byId.has(file.id)) {
-				byId.set(file.id, file);
-			}
-		}
-		return attachedIds
-			.map((id) => byId.get(id))
-			.filter((file): file is LibraryFile => Boolean(file));
-	}, [attachedIds, detailQuery.data?.files, filesQuery.data]);
 
 	if (!opened) {
 		return null;
@@ -254,109 +225,18 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 							</RichTextEditor>
 						</Box>
 
-						<Stack gap="sm">
-							<Group justify="space-between" align="flex-end">
-								<Text fw={600}>Файлы</Text>
-								<FileButton
-									multiple
-									onChange={(files) => {
-										if (files && files.length > 0) {
-											uploadMutation.mutate(files);
-										}
-									}}
-								>
-									{(props) => (
-										<Button
-											{...props}
-											size="xs"
-											variant="light"
-											leftSection={<IconUpload size={14} />}
-											loading={uploadMutation.isPending}
-										>
-											Загрузить
-										</Button>
-									)}
-								</FileButton>
-							</Group>
-
-							<Box>
-								<Text size="sm" fw={500} mb={6}>
-									Прикреплено к уроку
-								</Text>
-								{attachedFiles.length === 0 ? (
-									<Text size="sm" c="dimmed">
-										Нет прикреплённых файлов
-									</Text>
-								) : (
-									<Stack gap={6}>
-										{attachedFiles.map((file) => (
-											<Group key={file.id} justify="space-between" wrap="nowrap">
-												<Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-													<IconPaperclip size={16} />
-													{file.src ? (
-														<Anchor href={file.src} target="_blank" size="sm" lineClamp={1}>
-															{file.name}
-														</Anchor>
-													) : (
-														<Text size="sm" lineClamp={1}>
-															{file.name}
-														</Text>
-													)}
-												</Group>
-												<ActionIcon
-													color="red"
-													variant="light"
-													aria-label="Открепить"
-													onClick={() => detachFile(file.id)}
-												>
-													<IconTrash size={16} />
-												</ActionIcon>
-											</Group>
-										))}
-									</Stack>
-								)}
-								<Text size="xs" c="dimmed" mt={4}>
-									Открепление не удаляет файл — его можно снова выбрать из библиотеки
-								</Text>
-							</Box>
-
-							<Box>
-								<Group justify="space-between" mb={6}>
-									<Text size="sm" fw={500}>
-										Моя библиотека
-									</Text>
-									<TextInput
-										placeholder="Поиск…"
-										size="xs"
-										value={librarySearch}
-										onChange={(event) => setLibrarySearch(event.currentTarget.value)}
-										w={220}
-									/>
-								</Group>
-								{filesQuery.isLoading ? (
-									<Text size="sm" c="dimmed">
-										Загрузка…
-									</Text>
-								) : libraryFiles.length === 0 ? (
-									<Text size="sm" c="dimmed">
-										Библиотека пуста — загрузите файлы
-									</Text>
-								) : (
-									<Stack gap={4} mah={220} style={{ overflow: 'auto' }}>
-										{libraryFiles.map((file) => (
-											<Checkbox
-												key={file.id}
-												label={file.name}
-												checked={attachedSet.has(file.id)}
-												onChange={(event) =>
-													toggleAttach(file.id, event.currentTarget.checked)
-												}
-											/>
-										))}
-									</Stack>
-								)}
-							</Box>
-						</Stack>
+						<Group justify="space-between" align="center">
+							<Text size="sm" c="dimmed">
+								Прикреплено файлов: {attachedIds.length}
+							</Text>
+							<Button
+								variant="light"
+								leftSection={<IconFiles size={16} />}
+								onClick={openFilesWindow}
+							>
+								Файлы урока
+							</Button>
+						</Group>
 					</Stack>
 				</ScrollArea>
 

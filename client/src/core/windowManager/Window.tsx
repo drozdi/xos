@@ -34,6 +34,7 @@ import {
 	XOS_WINDOW_TITLEBAR_CLASS,
 } from './windowDrag';
 import { getWindowDragBounds } from './windowDragBounds';
+import { getMaximizedBounds } from './windowLayout';
 
 const ChildWindowPortal = lazy(() =>
 	import('./ChildWindowPortal').then((module) => ({ default: module.ChildWindowPortal })),
@@ -77,15 +78,54 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const shellRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const titlebarHeight = isMobile ? 44 : 36;
+	const taskbarHeight = HKEY_CONFIG_DEFAULTS.taskbar.height;
+	const { minWidth, minHeight, dragMargin } = HKEY_CONFIG_DEFAULTS.window;
+	const viewport = useWindowManagerViewport();
+
+	const mobileBounds = useMemo(
+		() => ({
+			x: 0,
+			y: 0,
+			width: viewport.width > 0 ? viewport.width : typeof window !== 'undefined' ? window.innerWidth : 0,
+			height:
+				viewport.height > 0
+					? viewport.height
+					: typeof window !== 'undefined'
+						? Math.max(0, window.innerHeight - taskbarHeight)
+						: 0,
+		}),
+		[taskbarHeight, viewport.height, viewport.width],
+	);
+
+	const desktopMaxBounds = useMemo(() => getMaximizedBounds(viewport), [viewport.height, viewport.width]);
+
+	const isMaximizedLayout = Boolean(isMobile || windowState?.maximized);
 	const contentSizeValue = useMemo(() => {
 		if (!windowState) {
 			return { width: 0, height: 0 };
+		}
+		if (isMaximizedLayout) {
+			const bounds = isMobile ? mobileBounds : desktopMaxBounds;
+			return {
+				width: bounds.width,
+				height: Math.max(0, bounds.height - titlebarHeight),
+			};
 		}
 		return {
 			width: windowState.width,
 			height: Math.max(0, windowState.height - titlebarHeight),
 		};
-	}, [titlebarHeight, windowState?.height, windowState?.width]);
+	}, [
+		desktopMaxBounds.height,
+		desktopMaxBounds.width,
+		isMaximizedLayout,
+		isMobile,
+		mobileBounds.height,
+		mobileBounds.width,
+		titlebarHeight,
+		windowState?.height,
+		windowState?.width,
+	]);
 
 	const dragConfig = useMemo(
 		() =>
@@ -147,26 +187,6 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		}
 	}, [activeWindowId, windowId]);
 
-	const taskbarHeight = HKEY_CONFIG_DEFAULTS.taskbar.height;
-	const { minWidth, minHeight, dragMargin } = HKEY_CONFIG_DEFAULTS.window;
-	const viewport = useWindowManagerViewport();
-
-	const mobileBounds = useMemo(
-		() => ({
-			x: 0,
-			y: 0,
-			width: typeof window !== 'undefined' ? window.innerWidth : 0,
-			height:
-				typeof window !== 'undefined'
-					? Math.max(0, window.innerHeight - taskbarHeight)
-					: 0,
-		}),
-		[taskbarHeight],
-	);
-
-	const desktopMaxBounds = mobileBounds;
-
-	const isMaximizedLayout = Boolean(isMobile || windowState?.maximized);
 	const resizable = windowState?.resizable ?? true;
 	const positionFixed = windowState?.positionFixed ?? false;
 	const autoSize = windowState?.autoSize ?? false;
@@ -191,6 +211,40 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	}, [autoSize, isMaximizedLayout, windowState?.height, windowState?.width]);
 
 	const boundsReady = viewport.width > 0 && viewport.height > 0;
+
+	useEffect(() => {
+		if (!windowState?.maximized || isMobile || !boundsReady) {
+			return;
+		}
+		const bounds = desktopMaxBounds;
+		if (
+			windowState.x === bounds.x &&
+			windowState.y === bounds.y &&
+			windowState.width === bounds.width &&
+			windowState.height === bounds.height
+		) {
+			rndRef.current?.updateSize({ width: bounds.width, height: bounds.height });
+			rndRef.current?.updatePosition({ x: bounds.x, y: bounds.y });
+			emitWindowResize(windowId);
+			return;
+		}
+		updateWindow(windowId, bounds);
+		rndRef.current?.updateSize({ width: bounds.width, height: bounds.height });
+		rndRef.current?.updatePosition({ x: bounds.x, y: bounds.y });
+		emitWindowResize(windowId);
+	}, [
+		boundsReady,
+		desktopMaxBounds.height,
+		desktopMaxBounds.width,
+		isMobile,
+		updateWindow,
+		windowId,
+		windowState?.height,
+		windowState?.maximized,
+		windowState?.width,
+		windowState?.x,
+		windowState?.y,
+	]);
 	const dragBounds = useMemo(() => {
 		if (!windowState || isMaximizedLayout || !boundsReady) {
 			return undefined;

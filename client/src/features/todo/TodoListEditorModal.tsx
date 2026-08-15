@@ -98,6 +98,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 			setNotesMd(data.notes_md ?? '');
 			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.lists });
 			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.list(listId!) });
+			void queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] });
 			notifications.show({ color: 'green', message: 'Сохранено' });
 		},
 		onError: () => {
@@ -109,6 +110,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 		mutationFn: () => todoApi.remove(listId!),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.lists });
+			void queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] });
 			onClose();
 		},
 	});
