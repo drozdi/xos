@@ -9,6 +9,7 @@ registerExplorerFileAssociation({
 	appId: 'explorer-audio-player',
 	label: 'Аудиоплеер',
 	fileTypes: ['audio'],
+	extensions: ['xos-playlist'],
 	contextMenuLabel: 'Воспроизвести аудио',
 });
 
@@ -20,8 +21,8 @@ const manifest: AppManifest = {
 	version: '1.0.0',
 	icon: AudioPlayerIcon,
 	component: ExplorerAudioPlayerApp,
-	defaultSize: { width: 640, height: 420 },
-	minSize: { width: 420, height: 280 },
+	defaultSize: { width: 720, height: 560 },
+	minSize: { width: 480, height: 400 },
 	wmGroup: 'tools',
 	startMenuGroup: 'tools',
 	taskbarGroup: 'explorer-tools',

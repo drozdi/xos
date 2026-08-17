@@ -24,7 +24,10 @@ function handleAction(
 		event.preventDefault();
 		event.stopPropagation();
 		onAction?.();
-		void item.onClick?.(ctx);
+		// Mantine may unmount the menu before click handlers run — defer one tick.
+		window.setTimeout(() => {
+			void item.onClick?.(ctx);
+		}, 0);
 	};
 }
 

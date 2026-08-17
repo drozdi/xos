@@ -9,6 +9,7 @@ registerExplorerFileAssociation({
 	appId: 'explorer-video-player',
 	label: 'Видеоплеер',
 	fileTypes: ['video'],
+	extensions: ['xos-playlist'],
 	contextMenuLabel: 'Воспроизвести видео',
 });
 
@@ -20,8 +21,8 @@ const manifest: AppManifest = {
 	version: '1.0.0',
 	icon: VideoPlayerIcon,
 	component: ExplorerVideoPlayerApp,
-	defaultSize: { width: 900, height: 620 },
-	minSize: { width: 520, height: 360 },
+	defaultSize: { width: 960, height: 720 },
+	minSize: { width: 520, height: 480 },
 	wmGroup: 'tools',
 	startMenuGroup: 'tools',
 	taskbarGroup: 'explorer-tools',
