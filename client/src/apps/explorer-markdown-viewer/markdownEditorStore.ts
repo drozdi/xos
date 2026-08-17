@@ -33,6 +33,8 @@ export interface MarkdownEditorSession {
 	loadedPath: string | null;
 	formatNonce: number;
 	formatCommand: MarkdownFormatCommand | null;
+	undoNonce: number;
+	redoNonce: number;
 	saveNonce: number;
 	saveAsNonce: number;
 	closeNonce: number;
@@ -50,6 +52,8 @@ function emptySession(): MarkdownEditorSession {
 		loadedPath: null,
 		formatNonce: 0,
 		formatCommand: null,
+		undoNonce: 0,
+		redoNonce: 0,
 		saveNonce: 0,
 		saveAsNonce: 0,
 		closeNonce: 0,
@@ -72,6 +76,8 @@ interface MarkdownEditorStore {
 	markLoaded: (windowId: string, path: string, content: string) => void;
 	resetDocument: (windowId: string) => void;
 	requestFormat: (windowId: string, command: MarkdownFormatCommand) => void;
+	requestUndo: (windowId: string) => void;
+	requestRedo: (windowId: string) => void;
 	requestSave: (windowId: string) => void;
 	requestSaveAs: (windowId: string) => void;
 	requestClose: (windowId: string) => void;
@@ -180,6 +186,22 @@ export const useMarkdownEditorStore = create<MarkdownEditorStore>((set, get) => 
 		get().patchSession(windowId, {
 			formatCommand: command,
 			formatNonce: prev.formatNonce + 1,
+		});
+	},
+
+
+	requestUndo: (windowId) => {
+		const prev = get().ensureSession(windowId);
+		get().patchSession(windowId, {
+			undoNonce: prev.undoNonce + 1,
+		});
+	},
+
+
+	requestRedo: (windowId) => {
+		const prev = get().ensureSession(windowId);
+		get().patchSession(windowId, {
+			redoNonce: prev.redoNonce + 1,
 		});
 	},
 

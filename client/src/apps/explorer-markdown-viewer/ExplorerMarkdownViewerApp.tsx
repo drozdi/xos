@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAppContext } from '@/core/context/AppContext';
 import { useCoreApi } from '@/core/hooks/useCoreApi';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import { useWmStore } from '@/core/windowManager/useWmStore';
 import { saveExplorerText } from '@/features/explorer/explorerApi';
 import { canWriteExplorerEntry, fetchExplorerInfo } from '@/features/explorer/explorerApi';
 import { invalidateExplorerFolder } from '@/features/explorer/explorerQueryUtils';
@@ -37,6 +38,11 @@ import {
 
 const MARKDOWN_FILE_TYPES = ['markdown'];
 const MARKDOWN_EXTENSIONS = ['md', 'markdown', 'mdown'];
+const MAX_SOURCE_UNDO_STACK = 200;
+
+function isTiptapTarget(target: EventTarget | null): boolean {
+	return target instanceof Element && Boolean(target.closest('.tiptap'));
+}
 
 function markdownQueryKey(path: string) {
 	return ['explorer', 'markdown', path] as const;
@@ -48,6 +54,8 @@ function explorerInfoQueryKey(path: string) {
 
 export default function ExplorerMarkdownViewerApp() {
 	const { windowId } = useAppContext();
+	const activeWindowId = useWmStore((state) => state.activeWindowId);
+	const isActive = activeWindowId === windowId;
 	const coreApi = useCoreApi();
 	const queryClient = useQueryClient();
 	const canWriteExplorer = useCanWriteExplorer();
@@ -67,6 +75,22 @@ export default function ExplorerMarkdownViewerApp() {
 	const setViewMode = useMarkdownEditorStore((state) => state.setViewMode);
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const undoStackRef = useRef<string[]>([]);
+	const redoStackRef = useRef<string[]>([]);
+	const skipSourceHistoryRef = useRef(false);
+
+	const resetSourceHistory = useCallback(() => {
+		undoStackRef.current = [];
+		redoStackRef.current = [];
+	}, []);
+
+	const pushSourceHistory = useCallback((snapshot: string) => {
+		undoStackRef.current.push(snapshot);
+		if (undoStackRef.current.length > MAX_SOURCE_UNDO_STACK) {
+			undoStackRef.current.shift();
+		}
+		redoStackRef.current = [];
+	}, []);
 
 	const syncMarkdownQueryCache = useCallback(
 		(path: string, content: string) => {
@@ -311,6 +335,7 @@ export default function ExplorerMarkdownViewerApp() {
 		const start = el?.selectionStart ?? session.content.length;
 		const end = el?.selectionEnd ?? session.content.length;
 		const next = applyMarkdownFormat(session.content, start, end, command);
+		pushSourceHistory(session.content);
 		setContent(windowId, next.value);
 		requestAnimationFrame(() => {
 			const area = textareaRef.current;
@@ -328,41 +353,111 @@ export default function ExplorerMarkdownViewerApp() {
 		session.formatNonce,
 		session.viewMode,
 		setContent,
+		pushSourceHistory,
 		windowId,
 		writable,
 	]);
 
 	useEffect(() => {
+		if (session.undoNonce === 0 || !writable) {
+			return;
+		}
+		if (normalizeMarkdownViewMode(session.viewMode) !== 'source') {
+			return;
+		}
+		const previous = undoStackRef.current.pop();
+		if (previous === undefined) {
+			return;
+		}
+		redoStackRef.current.push(session.content);
+		skipSourceHistoryRef.current = true;
+		setContent(windowId, previous);
+		skipSourceHistoryRef.current = false;
+	}, [session.undoNonce, session.viewMode, session.content, setContent, windowId, writable]);
+
+	useEffect(() => {
+		if (session.redoNonce === 0 || !writable) {
+			return;
+		}
+		if (normalizeMarkdownViewMode(session.viewMode) !== 'source') {
+			return;
+		}
+		const next = redoStackRef.current.pop();
+		if (next === undefined) {
+			return;
+		}
+		undoStackRef.current.push(session.content);
+		if (undoStackRef.current.length > MAX_SOURCE_UNDO_STACK) {
+			undoStackRef.current.shift();
+		}
+		skipSourceHistoryRef.current = true;
+		setContent(windowId, next);
+		skipSourceHistoryRef.current = false;
+	}, [session.redoNonce, session.viewMode, session.content, setContent, windowId, writable]);
+
+	useEffect(() => {
+		resetSourceHistory();
+	}, [resetSourceHistory, session.loadedPath, session.viewMode]);
+
+	useEffect(() => {
+		if (!isActive) {
+			return undefined;
+		}
+
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (!(event.ctrlKey || event.metaKey)) {
 				return;
 			}
 			const key = event.key.toLowerCase();
+			const viewMode = normalizeMarkdownViewMode(
+				useMarkdownEditorStore.getState().sessions[windowId]?.viewMode,
+			);
+			const canEdit = writable && viewMode !== 'reading';
+
 			if (key === 's') {
 				event.preventDefault();
 				if (writable) {
 					void save();
 				}
+				return;
 			}
 			if (key === 'o') {
 				event.preventDefault();
 				void openFile();
+				return;
 			}
-			if (!writable) {
+			if (!canEdit) {
+				return;
+			}
+			if (key === 'z' && !event.shiftKey) {
+				if (viewMode === 'live' && isTiptapTarget(event.target)) {
+					return;
+				}
+				event.preventDefault();
+				useMarkdownEditorStore.getState().requestUndo(windowId);
+				return;
+			}
+			if ((key === 'z' && event.shiftKey) || key === 'y') {
+				if (viewMode === 'live' && isTiptapTarget(event.target)) {
+					return;
+				}
+				event.preventDefault();
+				useMarkdownEditorStore.getState().requestRedo(windowId);
 				return;
 			}
 			if (key === 'b') {
 				event.preventDefault();
 				useMarkdownEditorStore.getState().requestFormat(windowId, 'bold');
+				return;
 			}
 			if (key === 'i') {
 				event.preventDefault();
 				useMarkdownEditorStore.getState().requestFormat(windowId, 'italic');
 			}
 		};
-		window.addEventListener('keydown', onKeyDown);
-		return () => window.removeEventListener('keydown', onKeyDown);
-	}, [openFile, save, windowId, writable]);
+		document.addEventListener('keydown', onKeyDown);
+		return () => document.removeEventListener('keydown', onKeyDown);
+	}, [isActive, openFile, save, windowId, writable]);
 
 	const viewMode = normalizeMarkdownViewMode(session.viewMode);
 	const showWysiwyg = showsMarkdownWysiwyg(viewMode);
@@ -447,6 +542,8 @@ export default function ExplorerMarkdownViewerApp() {
 							onChange={(value) => setContent(windowId, value)}
 							formatNonce={session.formatNonce}
 							formatCommand={session.formatCommand}
+							undoNonce={session.undoNonce}
+							redoNonce={session.redoNonce}
 							onFormatHandled={handleFormatHandled}
 						/>
 					) : null}
@@ -456,9 +553,14 @@ export default function ExplorerMarkdownViewerApp() {
 							value={session.content}
 							readOnly={!writable}
 							onChange={(event) => {
-								if (writable) {
-									setContent(windowId, event.currentTarget.value);
+								if (!writable) {
+									return;
 								}
+								const next = event.currentTarget.value;
+								if (!skipSourceHistoryRef.current && next !== session.content) {
+									pushSourceHistory(session.content);
+								}
+								setContent(windowId, next);
 							}}
 							autosize={false}
 							placeholder={

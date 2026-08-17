@@ -13,6 +13,8 @@ interface MarkdownWysiwygEditorProps {
 	onChange: (content: string) => void;
 	formatNonce: number;
 	formatCommand: MarkdownFormatCommand | null;
+	undoNonce: number;
+	redoNonce: number;
 	onFormatHandled: () => void;
 }
 
@@ -68,6 +70,8 @@ export function MarkdownWysiwygEditor({
 	onChange,
 	formatNonce,
 	formatCommand,
+	undoNonce,
+	redoNonce,
 	onFormatHandled,
 }: MarkdownWysiwygEditorProps) {
 	const syncedMarkdownRef = useRef(content);
@@ -111,6 +115,20 @@ export function MarkdownWysiwygEditor({
 		applyFormatCommand(editor, formatCommand);
 		onFormatHandled();
 	}, [editor, formatCommand, formatNonce, onFormatHandled]);
+
+	useEffect(() => {
+		if (!editor || editor.isDestroyed || undoNonce === 0) {
+			return;
+		}
+		editor.chain().focus().undo().run();
+	}, [editor, undoNonce]);
+
+	useEffect(() => {
+		if (!editor || editor.isDestroyed || redoNonce === 0) {
+			return;
+		}
+		editor.chain().focus().redo().run();
+	}, [editor, redoNonce]);
 
 	return (
 		<RichTextEditor editor={editor} className={classes.markdownWysiwyg}>
