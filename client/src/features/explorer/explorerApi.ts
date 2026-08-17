@@ -142,6 +142,15 @@ export async function saveExplorerText(path: string, content: string) {
 	return explorerEntrySchema.parse(data);
 }
 
+export async function fetchExplorerInfo(path: string) {
+	const { data } = await apiClient.get<unknown>(`${BASE}/info`, { params: { path } });
+	return explorerEntrySchema.parse(data);
+}
+
+export function canWriteExplorerEntry(permissions: string[] | undefined): boolean {
+	return permissions?.includes('write') ?? false;
+}
+
 export async function copyExplorerItem(from: string, to: string, overwrite = false) {
 	const { data } = await apiClient.post<unknown>(`${BASE}/copy`, { from, to, overwrite });
 	return explorerEntrySchema.parse(data);

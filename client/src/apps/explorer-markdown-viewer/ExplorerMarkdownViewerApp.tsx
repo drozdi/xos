@@ -1,31 +1,39 @@
-import { Box, Button, Center, Group, Loader, ScrollArea, Stack, Text, Textarea } from '@mantine/core';
+import { Box, Button, Center, Group, Loader, ScrollArea, SegmentedControl, Stack, Text, Textarea } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-
 
 import { useAppContext } from '@/core/context/AppContext';
 import { useCoreApi } from '@/core/hooks/useCoreApi';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { saveExplorerText } from '@/features/explorer/explorerApi';
+import { canWriteExplorerEntry, fetchExplorerInfo } from '@/features/explorer/explorerApi';
 import { invalidateExplorerFolder } from '@/features/explorer/explorerQueryUtils';
+import { useCanWriteExplorer } from '@/features/explorer/explorerAccess';
 import { getExplorerFileName, getExplorerFolderPath } from '@/features/explorer/explorerPathUtils';
 import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { fetchExplorerText } from '@/features/explorer/useExplorerOpenFile';
 import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
-
 import { applyMarkdownFormat } from './markdownFormat';
 import {
 	MARKDOWN_SAVE_AS_CONSUMER,
+	EMPTY_MARKDOWN_SESSION,
 	useMarkdownEditorStore,
 } from './markdownEditorStore';
-import classes from './markdownViewer.module.css';
-
+import { MarkdownPreview } from './MarkdownPreview';
+import { MarkdownWysiwygEditor } from './MarkdownWysiwygEditor';
+import {
+	defaultMarkdownViewMode,
+	MARKDOWN_VIEW_MODE_LABELS,
+	normalizeMarkdownViewMode,
+	showsMarkdownPreview,
+	showsMarkdownSource,
+	showsMarkdownWysiwyg,
+	type MarkdownViewMode,
+} from './markdownViewMode';
 
 const MARKDOWN_FILE_TYPES = ['markdown'];
 const MARKDOWN_EXTENSIONS = ['md', 'markdown', 'mdown'];
@@ -34,11 +42,15 @@ function markdownQueryKey(path: string) {
 	return ['explorer', 'markdown', path] as const;
 }
 
+function explorerInfoQueryKey(path: string) {
+	return ['explorer', 'info', path] as const;
+}
 
 export default function ExplorerMarkdownViewerApp() {
 	const { windowId } = useAppContext();
 	const coreApi = useCoreApi();
 	const queryClient = useQueryClient();
+	const canWriteExplorer = useCanWriteExplorer();
 	const saveAsConsumerId = `${MARKDOWN_SAVE_AS_CONSUMER}:${windowId}`;
 	const { currentPath, setCurrentPath, openFile } = useExplorerSatelliteFile({
 		appId: 'explorer-markdown-viewer',
@@ -46,17 +58,15 @@ export default function ExplorerMarkdownViewerApp() {
 		extensions: MARKDOWN_EXTENSIONS,
 	});
 
-
-	const session = useMarkdownEditorStore((state) => state.getSession(windowId));
+	const session = useMarkdownEditorStore((state) => state.sessions[windowId]) ?? EMPTY_MARKDOWN_SESSION;
 	const ensureSession = useMarkdownEditorStore((state) => state.ensureSession);
 	const setPath = useMarkdownEditorStore((state) => state.setPath);
 	const setContent = useMarkdownEditorStore((state) => state.setContent);
 	const markLoaded = useMarkdownEditorStore((state) => state.markLoaded);
 	const patchSession = useMarkdownEditorStore((state) => state.patchSession);
-
+	const setViewMode = useMarkdownEditorStore((state) => state.setViewMode);
 
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const remarkPlugins = useMemo(() => [remarkGfm], []);
 
 	const syncMarkdownQueryCache = useCallback(
 		(path: string, content: string) => {
@@ -65,20 +75,16 @@ export default function ExplorerMarkdownViewerApp() {
 		[queryClient],
 	);
 
-
 	useEffect(() => {
 		ensureSession(windowId);
 	}, [ensureSession, windowId]);
-
 
 	useEffect(() => {
 		setPath(windowId, currentPath);
 	}, [currentPath, setPath, windowId]);
 
-
 	const fileName = currentPath ? getExplorerFileName(currentPath) : 'Markdown';
 	useWindowTitle(session.dirty ? `${fileName} *` : fileName);
-
 
 	const contentQuery = useQuery({
 		queryKey: markdownQueryKey(currentPath ?? ''),
@@ -86,13 +92,30 @@ export default function ExplorerMarkdownViewerApp() {
 		enabled: Boolean(currentPath),
 	});
 
+	const fileInfoQuery = useQuery({
+		queryKey: explorerInfoQueryKey(currentPath ?? ''),
+		queryFn: () => fetchExplorerInfo(currentPath!),
+		enabled: Boolean(currentPath),
+	});
+
+	const writable = useMemo(() => {
+		if (!canWriteExplorer) {
+			return false;
+		}
+		if (!currentPath) {
+			return true;
+		}
+		if (!fileInfoQuery.isSuccess) {
+			return true;
+		}
+		return canWriteExplorerEntry(fileInfoQuery.data.permissions);
+	}, [canWriteExplorer, currentPath, fileInfoQuery.data?.permissions, fileInfoQuery.isSuccess]);
 
 	useEffect(() => {
 		if (!currentPath || !contentQuery.isSuccess || contentQuery.data === undefined) {
 			return;
 		}
 		const existing = useMarkdownEditorStore.getState().getSession(windowId);
-		// Keep unsaved edits; when clean, re-apply if query data differs (save + reopen).
 		if (existing.dirty) {
 			return;
 		}
@@ -100,20 +123,31 @@ export default function ExplorerMarkdownViewerApp() {
 			return;
 		}
 		markLoaded(windowId, currentPath, contentQuery.data);
-	}, [
-		contentQuery.data,
-		contentQuery.isSuccess,
-		currentPath,
-		markLoaded,
-		windowId,
-	]);
+	}, [contentQuery.data, contentQuery.isSuccess, currentPath, markLoaded, windowId]);
 
+	useEffect(() => {
+		const nextReadOnly = !writable;
+		const current = useMarkdownEditorStore.getState().sessions[windowId]?.readOnly;
+		if (current !== nextReadOnly) {
+			patchSession(windowId, { readOnly: nextReadOnly });
+		}
+	}, [patchSession, windowId, writable]);
+
+	useEffect(() => {
+		if (writable) {
+			return;
+		}
+		const mode = normalizeMarkdownViewMode(
+			useMarkdownEditorStore.getState().sessions[windowId]?.viewMode,
+		);
+		if (mode === 'live') {
+			setViewMode(windowId, defaultMarkdownViewMode(false));
+		}
+	}, [setViewMode, windowId, writable]);
 
 	const openSaveAsPicker = useCallback(async () => {
 		const latest = useMarkdownEditorStore.getState().getSession(windowId);
-		const defaultName = latest.path
-			? getExplorerFileName(latest.path)
-			: 'untitled.md';
+		const defaultName = latest.path ? getExplorerFileName(latest.path) : 'untitled.md';
 		await openExplorerPicker({
 			mode: 'save',
 			consumerAppId: saveAsConsumerId,
@@ -125,8 +159,10 @@ export default function ExplorerMarkdownViewerApp() {
 		});
 	}, [saveAsConsumerId, windowId]);
 
-
 	const save = useCallback(async () => {
+		if (!writable) {
+			return;
+		}
 		const latest = useMarkdownEditorStore.getState().getSession(windowId);
 		if (!latest.path) {
 			patchSession(windowId, { closeAfterSaveAs: false });
@@ -138,24 +174,16 @@ export default function ExplorerMarkdownViewerApp() {
 			await invalidateExplorerFolder(queryClient, getExplorerFolderPath(latest.path));
 			syncMarkdownQueryCache(latest.path, latest.content);
 			patchSession(windowId, { dirty: false });
-			notifications.show({
-				color: 'green',
-				message: 'Файл сохранён',
-			});
+			notifications.show({ color: 'green', message: 'Файл сохранён' });
 		} catch {
-			notifications.show({
-				color: 'red',
-				message: 'Не удалось сохранить файл',
-			});
+			notifications.show({ color: 'red', message: 'Не удалось сохранить файл' });
 		}
-	}, [openSaveAsPicker, patchSession, syncMarkdownQueryCache, windowId]);
-
+	}, [openSaveAsPicker, patchSession, queryClient, syncMarkdownQueryCache, windowId, writable]);
 
 	const forceCloseWindow = useCallback(() => {
 		useMarkdownEditorStore.getState().clearSession(windowId);
 		void coreApi.window.close(true);
 	}, [coreApi, windowId]);
-
 
 	const promptCloseWithSave = useCallback(() => {
 		const modalId = modals.open({
@@ -179,18 +207,15 @@ export default function ExplorerMarkdownViewerApp() {
 									}
 									try {
 										await saveExplorerText(latest.path, latest.content);
-										await invalidateExplorerFolder(queryClient, getExplorerFolderPath(latest.path));
+										await invalidateExplorerFolder(
+											queryClient,
+											getExplorerFolderPath(latest.path),
+										);
 										syncMarkdownQueryCache(latest.path, latest.content);
-										notifications.show({
-											color: 'green',
-											message: 'Файл сохранён',
-										});
+										notifications.show({ color: 'green', message: 'Файл сохранён' });
 										forceCloseWindow();
 									} catch {
-										notifications.show({
-											color: 'red',
-											message: 'Не удалось сохранить файл',
-										});
+										notifications.show({ color: 'red', message: 'Не удалось сохранить файл' });
 									}
 								})();
 							}}
@@ -222,8 +247,7 @@ export default function ExplorerMarkdownViewerApp() {
 				</Stack>
 			),
 		});
-	}, [forceCloseWindow, openSaveAsPicker, syncMarkdownQueryCache, windowId]);
-
+	}, [forceCloseWindow, openSaveAsPicker, queryClient, syncMarkdownQueryCache, windowId]);
 
 	useExplorerPickerResult(saveAsConsumerId, (path) => {
 		void (async () => {
@@ -234,44 +258,31 @@ export default function ExplorerMarkdownViewerApp() {
 				syncMarkdownQueryCache(path, latest.content);
 				const shouldClose = latest.closeAfterSaveAs;
 				if (shouldClose) {
-					notifications.show({
-						color: 'green',
-						message: 'Файл сохранён',
-					});
+					notifications.show({ color: 'green', message: 'Файл сохранён' });
 					forceCloseWindow();
 					return;
 				}
 				setCurrentPath(path);
 				markLoaded(windowId, path, latest.content);
-				notifications.show({
-					color: 'green',
-					message: 'Файл сохранён',
-				});
+				notifications.show({ color: 'green', message: 'Файл сохранён' });
 			} catch {
-				useMarkdownEditorStore.getState().patchSession(windowId, {
-					closeAfterSaveAs: false,
-				});
-				notifications.show({
-					color: 'red',
-					message: 'Не удалось сохранить файл',
-				});
+				useMarkdownEditorStore.getState().patchSession(windowId, { closeAfterSaveAs: false });
+				notifications.show({ color: 'red', message: 'Не удалось сохранить файл' });
 			}
 		})();
 	});
 
-
 	useEffect(() => {
 		return coreApi.window.on('close', () => {
 			const latest = useMarkdownEditorStore.getState().getSession(windowId);
-			if (!latest.dirty) {
+			if (!latest.dirty || !writable) {
 				useMarkdownEditorStore.getState().clearSession(windowId);
 				return;
 			}
 			promptCloseWithSave();
 			return false;
 		});
-	}, [coreApi, promptCloseWithSave, windowId]);
-
+	}, [coreApi, promptCloseWithSave, windowId, writable]);
 
 	useEffect(() => {
 		if (session.saveNonce === 0) {
@@ -279,7 +290,6 @@ export default function ExplorerMarkdownViewerApp() {
 		}
 		void save();
 	}, [save, session.saveNonce]);
-
 
 	useEffect(() => {
 		if (session.saveAsNonce === 0) {
@@ -289,9 +299,11 @@ export default function ExplorerMarkdownViewerApp() {
 		void openSaveAsPicker();
 	}, [openSaveAsPicker, patchSession, session.saveAsNonce, windowId]);
 
-
 	useEffect(() => {
-		if (session.formatNonce === 0 || !session.formatCommand) {
+		if (!writable || session.formatNonce === 0 || !session.formatCommand) {
+			return;
+		}
+		if (normalizeMarkdownViewMode(session.viewMode) !== 'source') {
 			return;
 		}
 		const el = textareaRef.current;
@@ -314,10 +326,11 @@ export default function ExplorerMarkdownViewerApp() {
 		session.content,
 		session.formatCommand,
 		session.formatNonce,
+		session.viewMode,
 		setContent,
 		windowId,
+		writable,
 	]);
-
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -327,11 +340,16 @@ export default function ExplorerMarkdownViewerApp() {
 			const key = event.key.toLowerCase();
 			if (key === 's') {
 				event.preventDefault();
-				void save();
+				if (writable) {
+					void save();
+				}
 			}
 			if (key === 'o') {
 				event.preventDefault();
 				void openFile();
+			}
+			if (!writable) {
+				return;
 			}
 			if (key === 'b') {
 				event.preventDefault();
@@ -344,20 +362,35 @@ export default function ExplorerMarkdownViewerApp() {
 		};
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);
-	}, [openFile, save, windowId]);
+	}, [openFile, save, windowId, writable]);
 
+	const viewMode = normalizeMarkdownViewMode(session.viewMode);
+	const showWysiwyg = showsMarkdownWysiwyg(viewMode);
+	const showSource = showsMarkdownSource(viewMode);
+	const showPreview = showsMarkdownPreview(viewMode);
 
-	const showEditor = session.viewMode === 'edit' || session.viewMode === 'split';
-	const showPreview = session.viewMode === 'preview' || session.viewMode === 'split';
+	const handleFormatHandled = useCallback(() => {
+		patchSession(windowId, { formatCommand: null });
+	}, [patchSession, windowId]);
+
+	const modeOptions = useMemo(
+		() =>
+			(['live', 'source', 'reading'] as MarkdownViewMode[]).map((mode) => ({
+				value: mode,
+				label: MARKDOWN_VIEW_MODE_LABELS[mode],
+				disabled: !writable && mode === 'live',
+			})),
+		[writable],
+	);
+
 	const isLoadingFile =
 		Boolean(currentPath) &&
-		contentQuery.isLoading &&
+		(contentQuery.isLoading || fileInfoQuery.isLoading) &&
 		session.loadedPath !== currentPath;
 	const isLoadError =
 		Boolean(currentPath) &&
-		contentQuery.isError &&
+		(contentQuery.isError || fileInfoQuery.isError) &&
 		session.loadedPath !== currentPath;
-
 
 	return (
 		<Box
@@ -369,6 +402,29 @@ export default function ExplorerMarkdownViewerApp() {
 				overflow: 'hidden',
 			}}
 		>
+			<Group
+				px="md"
+				py="xs"
+				gap="sm"
+				wrap="nowrap"
+				style={{
+					flexShrink: 0,
+					borderBottom: '1px solid var(--mantine-color-default-border)',
+				}}
+			>
+				<SegmentedControl
+					size="xs"
+					value={viewMode}
+					onChange={(value) => setViewMode(windowId, value as MarkdownViewMode)}
+					data={modeOptions}
+				/>
+				{!writable ? (
+					<Text size="xs" c="dimmed">
+						Только чтение
+					</Text>
+				) : null}
+			</Group>
+
 			{isLoadingFile ? (
 				<Center style={{ flex: 1 }} p="md">
 					<Loader size="sm" />
@@ -382,19 +438,34 @@ export default function ExplorerMarkdownViewerApp() {
 					style={{
 						flex: 1,
 						minHeight: 0,
-						display: 'grid',
-						gridTemplateColumns:
-							showEditor && showPreview ? '1fr 1fr' : '1fr',
 						overflow: 'hidden',
 					}}
 				>
-					{showEditor ? (
+					{showWysiwyg ? (
+						<MarkdownWysiwygEditor
+							content={session.content}
+							onChange={(value) => setContent(windowId, value)}
+							formatNonce={session.formatNonce}
+							formatCommand={session.formatCommand}
+							onFormatHandled={handleFormatHandled}
+						/>
+					) : null}
+					{showSource ? (
 						<Textarea
 							ref={textareaRef}
 							value={session.content}
-							onChange={(event) => setContent(windowId, event.currentTarget.value)}
+							readOnly={!writable}
+							onChange={(event) => {
+								if (writable) {
+									setContent(windowId, event.currentTarget.value);
+								}
+							}}
 							autosize={false}
-							placeholder="Файл → Открыть… или начните писать"
+							placeholder={
+								writable
+									? 'Файл → Открыть… или начните писать'
+									: 'Исходный код (только просмотр)'
+							}
 							styles={{
 								root: {
 									height: '100%',
@@ -413,25 +484,14 @@ export default function ExplorerMarkdownViewerApp() {
 									lineHeight: 1.55,
 									border: 'none',
 									borderRadius: 0,
-									borderRight:
-										showPreview
-											? '1px solid var(--mantine-color-default-border)'
-											: undefined,
+									cursor: writable ? 'text' : 'default',
 								},
 							}}
 						/>
 					) : null}
 					{showPreview ? (
 						<ScrollArea style={{ minHeight: 0, height: '100%' }} type="auto" offsetScrollbars>
-							<Box className={classes.markdownViewer} p="md" maw={900} mx="auto" pb="xl">
-								{session.content.trim() ? (
-									<ReactMarkdown remarkPlugins={remarkPlugins}>
-										{session.content}
-									</ReactMarkdown>
-								) : (
-									<Text c="dimmed">Нет содержимого для просмотра</Text>
-								)}
-							</Box>
+							<MarkdownPreview content={session.content} variant="reading" />
 						</ScrollArea>
 					) : null}
 				</Box>
