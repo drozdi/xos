@@ -375,6 +375,20 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		],
 	);
 
+	const handleTitlebarDoubleClick = useCallback(
+		(event: MouseEvent) => {
+			if (positionFixed) {
+				return;
+			}
+			const target = event.target as HTMLElement;
+			if (target.closest(`.${XOS_WINDOW_NO_DRAG_CLASS}`)) {
+				return;
+			}
+			handleMaximizeToggle(event);
+		},
+		[handleMaximizeToggle, positionFixed],
+	);
+
 	const handleClose = useCallback(
 		(event: MouseEvent) => {
 			event.stopPropagation();
@@ -483,6 +497,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 						paddingRight: 0,
 					}}
 					onMouseDown={handleFocus}
+					onDoubleClick={handleTitlebarDoubleClick}
 				>
 					<Text size="sm" fw={500} truncate style={{ flex: 1, minWidth: 0 }} c="inherit" pr="xs">
 						{windowState.title}
