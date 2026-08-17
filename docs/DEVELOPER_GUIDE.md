@@ -490,13 +490,21 @@ main:claimant:sync
 ### Scope sync vs Admin UI
 
 - Sync читает **все** `server/src/*/setting.json` (включая Todo, IBlock) → upsert в `main_claimant`.
-- Вкладка «Доступ к приложениям» / User & Group Access: только модули из `ProtectedAppModules` (`main`, `device`, `explorer`, `schooltask`, `inccom`, `calendar`). Todo/IBlock в UI **не** показываются, пока явно не добавят в `ProtectedAppModules`.
+- Вкладка «Доступ к приложениям» / User & Group Access: только модули из `ProtectedAppModules` (`main`, `device`, `explorer`, `schooltask`, `inccom`, `calendar`, `board`). Todo/IBlock в UI **не** показываются, пока явно не добавят в `ProtectedAppModules`.
 
 ### Каталог прав для Main Admin UI
 
 **Не** использовать `GET /api/account/map` (и `/api/scope/map`) как каталог чекбоксов для вкладок User/Group Access.  
 Каталог: `GET /api/main/claimant/app-access-modules` + поле `access_options` (также в list/detail claimant).  
 `/api/account/map` остаётся для auth/runtime (сырой file `map-access`).
+
+### Модуль Board (Kanban)
+
+- **Backend:** `server/src/Board/` — Symfony-модуль по образцу Todo: `config/routes.yaml`, `setting.json`, Doctrine entities, `BoardManager`, `PermissionResolver`.
+- **Claimant sync:** после изменения `Board/setting.json` — `php bin/console main:claimant:sync`; scope `board` попадает в `main_claimant`.
+- **Protected app:** модуль `board` в `ProtectedAppModules` (BE) и `protectedApps` (FE); доступ через User Settings → «Доступ к приложениям».
+- **Frontend:** `client/src/apps/board/` + `client/src/features/board/`; API — `boardApi.ts`; UI prefs — `board.ui.filters`, `board.ui.lastBoardId` в `user_app_data` (см. [ADR-user-app-data.md](ADR-user-app-data.md)).
+- **API:** см. [API_SPEC.md](API_SPEC.md) § Board module.
 
 ### Воспроизводимый путь
 

@@ -112,4 +112,14 @@ describe('userData endpoints helpers', () => {
 
 		expect(del).toHaveBeenCalledWith('/api/user-data/app.key');
 	});
+
+	it('accepts board.ui.filters prefs code', () => {
+		const dto = userAppDataDtoSchema.parse({
+			code: 'board.ui.filters',
+			value: { boards: { '1': { assigneeIds: [5], labelIds: [], q: '' } } },
+			createdAt: '2026-08-06T09:00:00+00:00',
+			updatedAt: '2026-08-06T09:05:00+00:00',
+		});
+		expect(dto.code).toBe('board.ui.filters');
+	});
 });

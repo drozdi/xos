@@ -1,0 +1,5 @@
+controllers:
+  resource:
+    path: '../Controller/'
+    namespace: Board\Controller
+  type: attribute

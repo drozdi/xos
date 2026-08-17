@@ -185,6 +185,17 @@ export function ClassIcon({ size = 32 }: { size?: number }) {
 	);
 }
 
+export function BoardIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<rect x="3" y="3" width="5" height="18" rx="1" />
+			<rect x="10" y="3" width="5" height="18" rx="1" />
+			<rect x="17" y="3" width="4" height="18" rx="1" />
+			<path d="M5 7h1M5 11h1M5 15h1M12 8h1M12 12h1M19 6h1M19 10h1" />
+		</svg>
+	);
+}
+
 export function TodoIcon({ size = 32 }: { size?: number }) {
 	return (
 		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>

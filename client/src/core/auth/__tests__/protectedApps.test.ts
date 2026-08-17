@@ -17,6 +17,7 @@ describe('protectedApps', () => {
 			'schooltask',
 			'inccom',
 			'calendar',
+			'board',
 		]);
 	});
 

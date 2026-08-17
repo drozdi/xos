@@ -1,0 +1,44 @@
+services:
+
+    _defaults:
+
+        autowire: true
+
+        autoconfigure: true
+
+
+
+    Board\Controller\:
+
+        resource: '../Controller/'
+
+        tags: ['controller.service_arguments']
+
+
+
+    Board\Repository\:
+
+        resource: '../Repository/'
+
+
+
+    Board\Service\PermissionResolver: ~
+
+
+
+    Board\Service\ActivityLogger: ~
+
+
+
+    Board\Service\BoardManager:
+
+        lazy: true
+
+        arguments:
+
+            $uploadDir: '%upload_dir%'
+
+        calls:
+
+            - setContainer: ['@service_container']
+

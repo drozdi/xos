@@ -8,6 +8,7 @@ export const PROTECTED_APP_MODULES = [
 	'schooltask',
 	'inccom',
 	'calendar',
+	'board',
 ] as const;
 
 export type ProtectedAppModule = (typeof PROTECTED_APP_MODULES)[number];

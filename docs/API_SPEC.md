@@ -947,3 +947,78 @@ Google-like calendars (own + shared) and standalone SPA `/calendar`.
 | GET | `/api/todo/items/due?start=&end=` | due items in range across accessible lists |
 
 SchoolTask overlay uses existing `POST /api/schooltask/calendar/teacher/events`.
+
+---
+
+## Board module (`/api/board`)
+
+Kanban boards: workspaces, lists, cards, labels, checklists, comments, attachments.  
+**Access:** JWT + claimant scope `board` (`#[Access('board')]` on controllers).
+
+### Workspaces
+
+| Method | Path | Notes |
+|--------|------|--------|
+| GET | `/api/board/workspaces` | List accessible workspaces |
+| POST | `/api/board/workspaces` | `{ name, description? }` |
+| GET | `/api/board/workspaces/{id}` | Detail with boards, members, permissions |
+| PUT | `/api/board/workspaces/{id}` | Update |
+| DELETE | `/api/board/workspaces/{id}` | Delete (owner) |
+| GET | `/api/board/workspaces/{id}/members` | List members |
+| POST | `/api/board/workspaces/{id}/members` | Invite `{ email, role }` |
+| PUT | `/api/board/workspaces/{id}/members/{userId}` | Change role |
+| DELETE | `/api/board/workspaces/{id}/members/{userId}` | Remove member |
+
+### Boards
+
+| Method | Path | Notes |
+|--------|------|--------|
+| POST | `/api/board/workspaces/{wsId}/boards` | Create `{ title, description?, visibility?, background_type?, background_value? }` |
+| GET | `/api/board/boards/{id}` | Full board detail (lists + card summaries) |
+| PUT | `/api/board/boards/{id}` | Update incl. `background_type=color`, `background_value=#hex` |
+| DELETE | `/api/board/boards/{id}` | Delete |
+| GET | `/api/board/boards/{id}/cards` | Filter cards — query: `assignee`, `label`, `due_before`, `due_after`, `q` → `{ card_ids, filtered }` |
+| GET | `/api/board/boards/{id}/members` | Board members |
+| POST | `/api/board/boards/{id}/members` | Invite `{ email, role }` |
+| PUT | `/api/board/boards/{id}/members/{userId}` | Change role |
+| DELETE | `/api/board/boards/{id}/members/{userId}` | Remove |
+| GET | `/api/board/boards/{id}/activity` | Activity log `?limit=&offset=` |
+| POST | `/api/board/boards/{id}/labels` | Create label `{ name, color }` |
+| POST | `/api/board/boards/{id}/lists` | Create list `{ title }` |
+| PUT | `/api/board/boards/{id}/lists/reorder` | `{ orders: [{ id, order_index }] }` |
+
+### Lists & cards
+
+| Method | Path | Notes |
+|--------|------|--------|
+| PUT | `/api/board/lists/{id}` | `{ title?, assignee_id? }` |
+| DELETE | `/api/board/lists/{id}` | Delete list (cards moved per policy) |
+| POST | `/api/board/lists/{listId}/cards` | Create `{ title }` |
+| GET | `/api/board/cards/{id}` | Card detail (checklists, comments, attachments) |
+| PUT | `/api/board/cards/{id}` | Update `{ title?, description_md?, due_date?, cover_color? }` |
+| DELETE | `/api/board/cards/{id}` | Delete |
+| PUT | `/api/board/cards/{id}/move` | `{ list_id, position }` |
+| PUT | `/api/board/cards/{id}/assignees` | `{ user_ids: number[] }` |
+| PUT | `/api/board/cards/{id}/labels` | `{ label_ids: number[] }` |
+
+### Labels, checklists, comments, attachments
+
+| Method | Path | Notes |
+|--------|------|--------|
+| PUT/DELETE | `/api/board/labels/{id}` | Label CRUD |
+| POST | `/api/board/cards/{cardId}/checklists` | `{ title }` |
+| PUT/DELETE | `/api/board/checklists/{id}` | Checklist |
+| POST | `/api/board/checklists/{id}/items` | `{ text }` |
+| PUT/DELETE | `/api/board/checklist-items/{id}` | Item `{ text?, checked? }` |
+| GET/POST | `/api/board/cards/{cardId}/comments` | Comments |
+| PUT/DELETE | `/api/board/comments/{id}` | Comment |
+| GET/POST | `/api/board/cards/{cardId}/attachments` | Multipart field `attachment` |
+| DELETE | `/api/board/attachments/{id}` | Delete attachment |
+
+### Client prefs (`user_app_data`)
+
+| Code | Value |
+|------|--------|
+| `board.ui.filters` | `{ boards: { [boardId]: { assigneeIds, labelIds, dueAfter?, dueBefore?, q } } }` |
+| `board.ui.lastBoardId` | `number` — last opened board |
+

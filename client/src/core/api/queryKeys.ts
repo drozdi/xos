@@ -103,4 +103,14 @@ export const queryKeys = {
 		dueItems: (range: { start: string; end: string }) =>
 			['calendar', 'dueItems', range] as const,
 	},
+	board: {
+		workspaces: ['board', 'workspaces'] as const,
+		workspace: (id: number) => ['board', 'workspace', id] as const,
+		boards: (workspaceId: number) => ['board', 'boards', workspaceId] as const,
+		board: (id: number) => ['board', 'board', id] as const,
+		card: (id: number) => ['board', 'card', id] as const,
+		members: (boardId: number) => ['board', 'members', boardId] as const,
+		filter: (boardId: number, params: Record<string, unknown>) =>
+			['board', 'filter', boardId, params] as const,
+	},
 } as const;

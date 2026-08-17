@@ -6,7 +6,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class UploadPathResolver
 {
-    public const ALLOWED_MODULES = ['device', 'common', 'task', 'main'];
+    public const ALLOWED_MODULES = ['device', 'common', 'task', 'main', 'board'];
 
     public function assertAllowedModule(string $module): void
     {
