@@ -24,7 +24,7 @@ class Claimant
     /**
      * @var array<string, mixed>
      */
-    #[ORM\Column(name: 'access_options', type: Types::JSON, options: ['default' => '{}'])]
+    #[ORM\Column(name: 'access_options', type: Types::JSON)]
     private array $accessOptions = [];
 
     public function getId(): ?int
