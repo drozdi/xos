@@ -18,6 +18,7 @@ describe('protectedApps', () => {
 			'inccom',
 			'calendar',
 			'board',
+			'pkb',
 		]);
 	});
 
@@ -39,6 +40,10 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('main')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_INCCOM']);
 		expect(canUseAppModule('inccom')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_PKB']);
+		expect(canUseAppModule('pkb')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_BOARD']);
+		expect(canUseAppModule('board')).toBe(true);
 		resetUserRoles();
 	});
 });

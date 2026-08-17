@@ -1,0 +1,8 @@
+{
+  "name": "Pkb",
+  "claimant": { "pkb": "База знаний" },
+  "map-access": {
+    "can_read": { "bit": 1, "title": "Чтение" },
+    "can_write": { "bit": 2, "title": "Запись" }
+  }
+}

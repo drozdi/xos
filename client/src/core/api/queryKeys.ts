@@ -113,4 +113,20 @@ export const queryKeys = {
 		filter: (boardId: number, params: Record<string, unknown>) =>
 			['board', 'filter', boardId, params] as const,
 	},
+	pkb: {
+		health: ['pkb', 'health'] as const,
+		vaults: ['pkb', 'vaults'] as const,
+		vault: (id: number) => ['pkb', 'vault', id] as const,
+		fileTree: (vaultId: number, path?: string) =>
+			['pkb', 'fileTree', vaultId, path ?? ''] as const,
+		notes: (vaultId: number) => ['pkb', 'notes', vaultId] as const,
+		backlinks: (vaultId: number, path: string) => ['pkb', 'backlinks', vaultId, path] as const,
+		noteByTitle: (vaultId: number, title: string) =>
+			['pkb', 'noteByTitle', vaultId, title] as const,
+		graph: (vaultId: number, filter?: string) => ['pkb', 'graph', vaultId, filter ?? ''] as const,
+		search: (vaultId: number, query: string) => ['pkb', 'search', vaultId, query] as const,
+		indexStatus: (vaultId: number) => ['pkb', 'indexStatus', vaultId] as const,
+		members: (vaultId: number) => ['pkb', 'members', vaultId] as const,
+		bookmarks: (vaultId: number) => ['pkb', 'bookmarks', vaultId] as const,
+	},
 } as const;

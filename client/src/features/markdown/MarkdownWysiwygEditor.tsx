@@ -1,9 +1,10 @@
 import { RichTextEditor, Link } from '@mantine/tiptap';
 import { Markdown } from '@tiptap/markdown';
+import type { AnyExtension } from '@tiptap/core';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type { MarkdownFormatCommand } from './markdownEditorStore';
 import classes from './markdownViewer.module.css';
@@ -16,6 +17,8 @@ interface MarkdownWysiwygEditorProps {
 	undoNonce: number;
 	redoNonce: number;
 	onFormatHandled: () => void;
+	extraExtensions?: AnyExtension[];
+	onEditorReady?: (editor: NonNullable<ReturnType<typeof useEditor>>) => void;
 }
 
 function applyFormatCommand(editor: NonNullable<ReturnType<typeof useEditor>>, command: MarkdownFormatCommand) {
@@ -73,18 +76,26 @@ export function MarkdownWysiwygEditor({
 	undoNonce,
 	redoNonce,
 	onFormatHandled,
+	extraExtensions = [],
+	onEditorReady,
 }: MarkdownWysiwygEditorProps) {
 	const syncedMarkdownRef = useRef(content);
 
-	const editor = useEditor({
-		extensions: [
+	const extensions = useMemo(
+		() => [
 			StarterKit.configure({
 				heading: { levels: [1, 2, 3] },
 			}),
 			Underline,
 			Link.configure({ openOnClick: false }),
+			...extraExtensions,
 			Markdown,
 		],
+		[extraExtensions],
+	);
+
+	const editor = useEditor({
+		extensions,
 		content: content || '',
 		contentType: 'markdown',
 		onUpdate: ({ editor: current }) => {
@@ -96,6 +107,13 @@ export function MarkdownWysiwygEditor({
 			onChange(markdown);
 		},
 	});
+
+	useEffect(() => {
+		if (!editor || editor.isDestroyed) {
+			return;
+		}
+		onEditorReady?.(editor);
+	}, [editor, onEditorReady]);
 
 	useEffect(() => {
 		if (!editor || editor.isDestroyed) {

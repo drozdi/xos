@@ -1,0 +1,5 @@
+controllers:
+  resource:
+    path: '../Controller/'
+    namespace: Pkb\Controller
+  type: attribute

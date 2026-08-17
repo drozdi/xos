@@ -13,6 +13,7 @@ final class ProtectedAppModules
         'inccom',
         'calendar',
         'board',
+        'pkb',
     ];
 
     public static function isProtected(string $module): bool

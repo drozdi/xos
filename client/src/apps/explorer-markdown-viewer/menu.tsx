@@ -3,10 +3,11 @@ import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { explorerOpenPickerConsumerId } from '@/features/explorer/useExplorerSatelliteFile';
 
 import {
+	MARKDOWN_VIEW_MODE_LABELS,
 	useMarkdownEditorStore,
 	type MarkdownFormatCommand,
-} from './markdownEditorStore';
-import { MARKDOWN_VIEW_MODE_LABELS, type MarkdownViewMode } from './markdownViewMode';
+	type MarkdownViewMode,
+} from '@/features/markdown';
 
 
 const MARKDOWN_FILE_TYPES = ['markdown'];

@@ -1,0 +1,51 @@
+services:
+
+    _defaults:
+
+        autowire: true
+
+        autoconfigure: true
+
+
+
+    Pkb\Controller\:
+
+        resource: '../Controller/'
+
+        tags: ['controller.service_arguments']
+
+
+
+    Pkb\Repository\:
+
+        resource: '../Repository/'
+
+
+
+    Pkb\Service\:
+
+        resource: '../Service/'
+
+        exclude: '../Service/PkbManager.php'
+
+
+
+    Pkb\Parser\:
+
+        resource: '../Parser/'
+
+
+
+    Pkb\Service\PkbManager:
+
+        lazy: true
+
+        calls:
+
+            - setContainer: ['@service_container']
+
+
+
+    Pkb\Security\:
+
+        resource: '../Security/'

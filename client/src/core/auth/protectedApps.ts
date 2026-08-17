@@ -9,6 +9,7 @@ export const PROTECTED_APP_MODULES = [
 	'inccom',
 	'calendar',
 	'board',
+	'pkb',
 ] as const;
 
 export type ProtectedAppModule = (typeof PROTECTED_APP_MODULES)[number];

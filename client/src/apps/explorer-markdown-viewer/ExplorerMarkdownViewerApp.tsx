@@ -18,23 +18,21 @@ import { fetchExplorerText } from '@/features/explorer/useExplorerOpenFile';
 import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
-import { applyMarkdownFormat } from './markdownFormat';
 import {
-	MARKDOWN_SAVE_AS_CONSUMER,
-	EMPTY_MARKDOWN_SESSION,
-	useMarkdownEditorStore,
-} from './markdownEditorStore';
-import { MarkdownPreview } from './MarkdownPreview';
-import { MarkdownWysiwygEditor } from './MarkdownWysiwygEditor';
-import {
+	applyMarkdownFormat,
 	defaultMarkdownViewMode,
+	EMPTY_MARKDOWN_SESSION,
+	MARKDOWN_SAVE_AS_CONSUMER,
 	MARKDOWN_VIEW_MODE_LABELS,
+	MarkdownPreview,
+	MarkdownWysiwygEditor,
 	normalizeMarkdownViewMode,
 	showsMarkdownPreview,
 	showsMarkdownSource,
 	showsMarkdownWysiwyg,
+	useMarkdownEditorStore,
 	type MarkdownViewMode,
-} from './markdownViewMode';
+} from '@/features/markdown';
 
 const MARKDOWN_FILE_TYPES = ['markdown'];
 const MARKDOWN_EXTENSIONS = ['md', 'markdown', 'mdown'];
