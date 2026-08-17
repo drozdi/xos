@@ -10,7 +10,6 @@ import {
 } from '@mantine/core';
 import { HINT_LEVELS } from '../models/hints/HintLevels';
 import GameRulesModal from './GameRulesModal';
-import ThemeSwitch from './ThemeSwitch';
 
 function GameSettingsPanel({
 	hintLevel,
@@ -27,10 +26,6 @@ function GameSettingsPanel({
 		<Paper p="md" radius="md" className="game-sidebar__paper">
 			<Stack gap="md">
 				<Title order={4}>Настройки</Title>
-
-				<ThemeSwitch />
-
-				<Divider />
 
 				<Select
 					label="Уровень подсказок"

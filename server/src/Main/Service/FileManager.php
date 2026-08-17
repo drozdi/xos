@@ -79,6 +79,51 @@ class FileManager extends AbstractManager {
         return $result;
     }
 
+    public function importFromLocalPath(
+        string $sourcePath,
+        string $module,
+        string $subDir,
+        string $originalName,
+    ): MainFile {
+        $this->uploadPathResolver->assertAllowedModule($module);
+        $this->uploadPathResolver->assertSafeSubDir($subDir);
+
+        if (!is_file($sourcePath) || !is_readable($sourcePath)) {
+            throw new \RuntimeException('Source file is not readable');
+        }
+
+        $uploadDir = $this->uploadDir;
+        $fileExt = pathinfo($originalName, PATHINFO_EXTENSION);
+        $fileExt = $fileExt !== '' ? '.'.$fileExt : '';
+        $fileName = $originalName;
+        $dir = $uploadDir.'/'.$module.'/'.$subDir.'/';
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new \RuntimeException('Unable to create upload directory');
+        }
+        while (file_exists($dir.$fileName)) {
+            $fileName = substr(md5((string) mt_rand()), 0, 10).$fileExt;
+        }
+
+        $targetPath = $dir.$fileName;
+        if (!copy($sourcePath, $targetPath)) {
+            throw new \RuntimeException('Unable to copy file');
+        }
+
+        $objectFile = new MainFile();
+        $objectFile->setFileSize((int) filesize($targetPath));
+        $mime = mime_content_type($targetPath);
+        $objectFile->setContentType(is_string($mime) && $mime !== '' ? $mime : 'application/octet-stream');
+        $objectFile->setOriginalName($originalName);
+        $objectFile->setModule($module);
+        $objectFile->setSubDir($subDir);
+        $objectFile->setFileName($fileName);
+
+        $this->getEntityManager()->persist($objectFile);
+        $this->getEntityManager()->flush();
+
+        return $objectFile;
+    }
+
     public function remove (MainFile $file) {
         unlink(implode('/',[
             $this->uploadDir,

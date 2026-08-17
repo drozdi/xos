@@ -1,0 +1,120 @@
+import { RichTextEditor, Link } from '@mantine/tiptap';
+import { Markdown } from '@tiptap/markdown';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import { useEffect, useRef } from 'react';
+
+import type { MarkdownFormatCommand } from './markdownEditorStore';
+import classes from './markdownViewer.module.css';
+
+interface MarkdownWysiwygEditorProps {
+	content: string;
+	onChange: (content: string) => void;
+	formatNonce: number;
+	formatCommand: MarkdownFormatCommand | null;
+	onFormatHandled: () => void;
+}
+
+function applyFormatCommand(editor: NonNullable<ReturnType<typeof useEditor>>, command: MarkdownFormatCommand) {
+	const chain = editor.chain().focus();
+
+	switch (command) {
+		case 'bold':
+			chain.toggleBold().run();
+			return;
+		case 'italic':
+			chain.toggleItalic().run();
+			return;
+		case 'heading1':
+			chain.toggleHeading({ level: 1 }).run();
+			return;
+		case 'heading2':
+			chain.toggleHeading({ level: 2 }).run();
+			return;
+		case 'heading3':
+			chain.toggleHeading({ level: 3 }).run();
+			return;
+		case 'ul':
+			chain.toggleBulletList().run();
+			return;
+		case 'ol':
+			chain.toggleOrderedList().run();
+			return;
+		case 'quote':
+			chain.toggleBlockquote().run();
+			return;
+		case 'code':
+			chain.toggleCode().run();
+			return;
+		case 'codeBlock':
+			chain.toggleCodeBlock().run();
+			return;
+		case 'link': {
+			const previousUrl = editor.getAttributes('link').href as string | undefined;
+			chain.extendMarkRange('link').setLink({ href: previousUrl || 'url' }).run();
+			return;
+		}
+		case 'hr':
+			chain.setHorizontalRule().run();
+			return;
+		default:
+			return;
+	}
+}
+
+export function MarkdownWysiwygEditor({
+	content,
+	onChange,
+	formatNonce,
+	formatCommand,
+	onFormatHandled,
+}: MarkdownWysiwygEditorProps) {
+	const syncedMarkdownRef = useRef(content);
+
+	const editor = useEditor({
+		extensions: [
+			StarterKit.configure({
+				heading: { levels: [1, 2, 3] },
+			}),
+			Underline,
+			Link.configure({ openOnClick: false }),
+			Markdown,
+		],
+		content: content || '',
+		contentType: 'markdown',
+		onUpdate: ({ editor: current }) => {
+			const markdown = current.getMarkdown();
+			if (markdown === syncedMarkdownRef.current) {
+				return;
+			}
+			syncedMarkdownRef.current = markdown;
+			onChange(markdown);
+		},
+	});
+
+	useEffect(() => {
+		if (!editor || editor.isDestroyed) {
+			return;
+		}
+		if (content === syncedMarkdownRef.current) {
+			return;
+		}
+		syncedMarkdownRef.current = content;
+		editor.commands.setContent(content, { contentType: 'markdown', emitUpdate: false });
+	}, [content, editor]);
+
+	useEffect(() => {
+		if (!editor || editor.isDestroyed || formatNonce === 0 || !formatCommand) {
+			return;
+		}
+		applyFormatCommand(editor, formatCommand);
+		onFormatHandled();
+	}, [editor, formatCommand, formatNonce, onFormatHandled]);
+
+	return (
+		<RichTextEditor editor={editor} className={classes.markdownWysiwyg}>
+			<RichTextEditor.Content className={classes.markdownViewer} />
+		</RichTextEditor>
+	);
+}

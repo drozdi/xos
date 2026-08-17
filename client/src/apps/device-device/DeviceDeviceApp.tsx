@@ -34,6 +34,7 @@ const initialData: DeviceDetail = {
 	properties: {},
 	licenses: {},
 	images: {},
+	file: null,
 };
 
 export default function DeviceDeviceApp() {
@@ -76,6 +77,10 @@ export default function DeviceDeviceApp() {
 			validate={validateDeviceForm}
 			canSave={canSave}
 			canDelete={canDelete}
+			transformBeforeSave={(payload) => ({
+				...payload,
+				file: payload.file ?? null,
+			})}
 		>
 			{({ data, setField, errors, readOnly }) => (
 				<Tabs value={activeTab} onChange={setActiveTab}>
@@ -93,6 +98,7 @@ export default function DeviceDeviceApp() {
 					<Tabs.Panel value="general" pt="sm">
 						<DeviceGeneralTab
 							data={data}
+							deviceId={data.id}
 							errors={errors}
 							readOnly={readOnly}
 							setField={setField}
@@ -143,7 +149,12 @@ export default function DeviceDeviceApp() {
 					</Tabs.Panel>
 
 					<Tabs.Panel value="images" pt="sm">
-						<DeviceImagesTab images={data.images} />
+						<DeviceImagesTab
+							deviceId={data.id}
+							images={(data.images ?? {}) as Record<string, { id: number; src: string; name?: string }>}
+							readOnly={readOnly}
+							onChange={(images) => setField('images', images)}
+						/>
 					</Tabs.Panel>
 
 					<Tabs.Panel value="info" pt="sm">

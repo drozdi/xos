@@ -1,7 +1,10 @@
 RewriteEngine On
 
 RewriteRule ^api(?:/.*)?$ server/public/index.php [L,QSA]
+<<<<<<< HEAD
 RewriteRule ^assets/vite.svg$ client/dist/assets/vite.svg [L,QSA]
+=======
+>>>>>>> 78ed34069d547822feda1829d69c6a07b6754a2e
 RewriteRule ^assets/(.*)$ client/dist/assets/$1 [L,QSA]
 
 RewriteRule ^$ client/dist/index.html [L]

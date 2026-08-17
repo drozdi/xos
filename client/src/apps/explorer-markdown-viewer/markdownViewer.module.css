@@ -121,3 +121,48 @@
 .markdownViewer :global(input[type='checkbox']) {
 	margin-right: 0.4em;
 }
+
+.markdownReading {
+	font-size: calc(var(--mantine-font-size-md) * 1.05);
+	line-height: 1.75;
+}
+
+.markdownReading :global(h1) {
+	margin-top: 0;
+}
+
+.markdownWysiwyg {
+	height: 100%;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	border: none;
+}
+
+.markdownWysiwyg :global(.mantine-RichTextEditor-root) {
+	height: 100%;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+}
+
+.markdownWysiwyg :global(.mantine-RichTextEditor-content) {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.markdownWysiwyg :global(.tiptap.ProseMirror) {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	padding: var(--mantine-spacing-md);
+	outline: none;
+	max-width: 900px;
+	margin: 0 auto;
+	width: 100%;
+}

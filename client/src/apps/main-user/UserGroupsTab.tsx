@@ -10,17 +10,19 @@ import {
 } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 import { mainGroupApi, type UserGroupItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { DateTimeField } from '@/core/dates';
+import { useAuthStore } from '@/core/auth/authStore';
 import { useWindowSize } from '@/core/windowManager';
 
 import { addUserGroup, removeUserGroup, updateUserGroup } from './userFormUtils';
 
 interface UserGroupsTabProps {
 	groups: Record<string, UserGroupItem>;
+	ouId?: number | null;
 	readOnly: boolean;
 	onChange: (groups: Record<string, UserGroupItem>) => void;
 }
@@ -106,16 +108,32 @@ function UserGroupEntry({
 	);
 }
 
-export function UserGroupsTab({ groups, readOnly, onChange }: UserGroupsTabProps) {
+export function UserGroupsTab({ groups, ouId, readOnly, onChange }: UserGroupsTabProps) {
 	const { width: windowWidth } = useWindowSize();
 	const isTableLayout = useTableLayout(windowWidth);
 	const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const resolvedOuId = ouId && ouId > 0 ? ouId : null;
+	const groupsEnabled = isAuthenticated && resolvedOuId !== null && !readOnly;
+
+	const listRequest = useMemo(
+		() => ({
+			limit: -1,
+			offset: 1,
+			filters: { ou: resolvedOuId },
+		}),
+		[resolvedOuId],
+	);
 
 	const groupSelectQuery = useQuery({
-		queryKey: queryKeys.main.groups({ limit: -1, offset: 1, filters: { ou: -1 } }),
-		queryFn: () => mainGroupApi.list({ limit: -1, offset: 1, filters: { ou: -1 } }),
-		enabled: !readOnly,
+		queryKey: queryKeys.main.groups(listRequest),
+		queryFn: () => mainGroupApi.list(listRequest),
+		enabled: groupsEnabled,
 	});
+
+	useEffect(() => {
+		setSelectedGroupId(null);
+	}, [resolvedOuId]);
 
 	const groupOptions = useMemo(
 		() =>
@@ -151,7 +169,14 @@ export function UserGroupsTab({ groups, readOnly, onChange }: UserGroupsTabProps
 						onChange={(value) => setSelectedGroupId(value ? Number(value) : null)}
 						searchable
 						clearable
-						nothingFoundMessage={groupSelectQuery.isLoading ? 'Загрузка…' : 'Ничего не найдено'}
+						disabled={!groupsEnabled}
+						nothingFoundMessage={
+							!resolvedOuId
+								? 'Сначала выберите подразделение'
+								: groupSelectQuery.isLoading
+									? 'Загрузка…'
+									: 'Нет групп в этом подразделении'
+						}
 					/>
 					<Button onClick={handleAdd} disabled={!selectedGroupId}>
 						Добавить

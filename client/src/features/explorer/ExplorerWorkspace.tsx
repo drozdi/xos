@@ -9,6 +9,7 @@ import { promptAction } from '@/core/confirm';
 import { useAppContext } from '@/core/context/AppContext';
 import { useCoreApi } from '@/core/hooks/useCoreApi';
 
+import { invalidateExplorerFolder } from './explorerQueryUtils';
 import { ExplorerPickerBar } from './components/ExplorerPickerBar';
 import { ExplorerPathBar } from './components/ExplorerPathBar';
 import { ConflictDialog, type ConflictPolicy, type ConflictState } from './components/ConflictDialog';
@@ -240,8 +241,10 @@ export function ExplorerWorkspace({ initialPath, pickerMode }: ExplorerWorkspace
 			await queryClient.invalidateQueries({ queryKey: queryKeys.explorer.trash(diskRoot) });
 			return;
 		}
-		await queryClient.invalidateQueries({ queryKey: queryKeys.explorer.list(currentPath, sortBy, sortDir) });
-		await queryClient.invalidateQueries({ queryKey: ['explorer', 'tree'] });
+		await invalidateExplorerFolder(queryClient, currentPath);
+		await queryClient.invalidateQueries({
+			queryKey: queryKeys.explorer.list(currentPath, sortBy, sortDir),
+		});
 	};
 
 	const runTransfer = async (
@@ -376,7 +379,9 @@ export function ExplorerWorkspace({ initialPath, pickerMode }: ExplorerWorkspace
 				return;
 			}
 			notifications.show({ message: `Распаковано: ${result.extracted}`, color: 'green' });
-			await invalidateCurrent();
+			const archivePath = selected[0];
+			const parentPath = archivePath ? getExplorerFolderPath(archivePath) : currentPath;
+			await invalidateExplorerFolder(queryClient, parentPath, result.destination, currentPath);
 		},
 	});
 

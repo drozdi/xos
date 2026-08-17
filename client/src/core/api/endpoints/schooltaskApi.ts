@@ -404,10 +404,12 @@ export const schooltaskCalendarApi = {
 		for (const file of files) {
 			formData.append('files[]', file);
 		}
-		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/upload`, formData, {
-			headers: { 'Content-Type': 'multipart/form-data' },
-		});
+		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/upload`, formData);
 		return z.array(teacherFileSchema).parse(data);
+	},
+	teacherFilesImport: async (path: string) => {
+		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/import`, { path });
+		return teacherFileSchema.parse(data);
 	},
 	teacherSave: async (payload: TeacherEventSavePayload, newFiles: File[] = []): Promise<void> => {
 		const formData = new FormData();
@@ -425,9 +427,7 @@ export const schooltaskCalendarApi = {
 		for (const file of newFiles) {
 			formData.append('files[]', file);
 		}
-		await apiClient.post(`${BASE}/calendar/teacher/events/save`, formData, {
-			headers: { 'Content-Type': 'multipart/form-data' },
-		});
+		await apiClient.post(`${BASE}/calendar/teacher/events/save`, formData);
 	},
 };
 

@@ -2,11 +2,11 @@ import type { AppMenuConfig } from '@/core/appMenu/types';
 import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { explorerOpenPickerConsumerId } from '@/features/explorer/useExplorerSatelliteFile';
 
-
 import {
 	useMarkdownEditorStore,
 	type MarkdownFormatCommand,
 } from './markdownEditorStore';
+import { MARKDOWN_VIEW_MODE_LABELS, type MarkdownViewMode } from './markdownViewMode';
 
 
 const MARKDOWN_FILE_TYPES = ['markdown'];
@@ -24,6 +24,19 @@ function formatIcon(label: string) {
 
 function requestFormat(windowId: string, command: MarkdownFormatCommand) {
 	useMarkdownEditorStore.getState().requestFormat(windowId, command);
+}
+
+function isReadOnly(windowId: string): boolean {
+	return useMarkdownEditorStore.getState().getSession(windowId).readOnly;
+}
+
+function canFormat(windowId: string): boolean {
+	const session = useMarkdownEditorStore.getState().getSession(windowId);
+	if (session.readOnly) {
+		return false;
+	}
+	const mode = session.viewMode;
+	return mode === 'live' || mode === 'source';
 }
 
 
@@ -57,7 +70,7 @@ const menu: AppMenuConfig = {
 					shortcut: 'Ctrl+S',
 					disabled: (ctx) => {
 						const session = useMarkdownEditorStore.getState().getSession(ctx.windowId);
-						return !session.path || !session.dirty;
+						return isReadOnly(ctx.windowId) || !session.path || !session.dirty;
 					},
 					onClick: (ctx) => {
 						useMarkdownEditorStore.getState().requestSave(ctx.windowId);
@@ -66,6 +79,7 @@ const menu: AppMenuConfig = {
 				{
 					id: 'file-save-as',
 					label: 'Сохранить как…',
+					disabled: (ctx) => isReadOnly(ctx.windowId),
 					onClick: (ctx) => {
 						useMarkdownEditorStore.getState().requestSaveAs(ctx.windowId);
 					},
@@ -83,29 +97,14 @@ const menu: AppMenuConfig = {
 			id: 'view',
 			type: 'submenu',
 			label: 'Вид',
-			items: [
-				{
-					id: 'view-edit',
-					label: 'Редактор',
-					onClick: (ctx) => {
-						useMarkdownEditorStore.getState().setViewMode(ctx.windowId, 'edit');
-					},
+			items: (['live', 'source', 'reading'] as MarkdownViewMode[]).map((mode) => ({
+				id: `view-${mode}`,
+				label: MARKDOWN_VIEW_MODE_LABELS[mode],
+				disabled: (ctx) => mode === 'live' && isReadOnly(ctx.windowId),
+				onClick: (ctx) => {
+					useMarkdownEditorStore.getState().setViewMode(ctx.windowId, mode);
 				},
-				{
-					id: 'view-split',
-					label: 'Разделённый',
-					onClick: (ctx) => {
-						useMarkdownEditorStore.getState().setViewMode(ctx.windowId, 'split');
-					},
-				},
-				{
-					id: 'view-preview',
-					label: 'Просмотр',
-					onClick: (ctx) => {
-						useMarkdownEditorStore.getState().setViewMode(ctx.windowId, 'preview');
-					},
-				},
-			],
+			})),
 		},
 	],
 	toolbarItems: [
@@ -113,72 +112,84 @@ const menu: AppMenuConfig = {
 			id: 'fmt-bold',
 			label: 'Жирный',
 			icon: formatIcon('B'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'bold'),
 		},
 		{
 			id: 'fmt-italic',
 			label: 'Курсив',
 			icon: formatIcon('I'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'italic'),
 		},
 		{
 			id: 'fmt-h1',
 			label: 'Заголовок 1',
 			icon: formatIcon('H1'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'heading1'),
 		},
 		{
 			id: 'fmt-h2',
 			label: 'Заголовок 2',
 			icon: formatIcon('H2'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'heading2'),
 		},
 		{
 			id: 'fmt-h3',
 			label: 'Заголовок 3',
 			icon: formatIcon('H3'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'heading3'),
 		},
 		{
 			id: 'fmt-ul',
 			label: 'Список',
 			icon: formatIcon('•'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'ul'),
 		},
 		{
 			id: 'fmt-ol',
 			label: 'Нумерованный список',
 			icon: formatIcon('1.'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'ol'),
 		},
 		{
 			id: 'fmt-quote',
 			label: 'Цитата',
 			icon: formatIcon('“'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'quote'),
 		},
 		{
 			id: 'fmt-code',
 			label: 'Код',
 			icon: formatIcon('<>'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'code'),
 		},
 		{
 			id: 'fmt-code-block',
 			label: 'Блок кода',
 			icon: formatIcon('{ }'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'codeBlock'),
 		},
 		{
 			id: 'fmt-link',
 			label: 'Ссылка',
 			icon: formatIcon('URL'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'link'),
 		},
 		{
 			id: 'fmt-hr',
 			label: 'Разделитель',
 			icon: formatIcon('—'),
+			disabled: (ctx) => !canFormat(ctx.windowId),
 			onClick: (ctx) => requestFormat(ctx.windowId, 'hr'),
 		},
 	],

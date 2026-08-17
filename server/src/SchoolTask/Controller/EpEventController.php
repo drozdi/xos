@@ -5,6 +5,7 @@ namespace SchoolTask\Controller;
 use App\Http\ApiResponse;
 use App\Security\UserScopeResolver;
 use Main\Entity\User;
+use Explorer\Service\ExplorerManager;
 use SchoolTask\Entity\EpGroup;
 use SchoolTask\Security\SchoolTaskAccessMessages;
 use SchoolTask\Service\EventManager;
@@ -359,6 +360,38 @@ class EpEventController extends AbstractController
         }
 
         return $this->json($items, Response::HTTP_CREATED);
+    }
+
+    #[Route('/teacher/files/import', methods: ['POST'])]
+    public function teacherFilesImport(
+        Request $request,
+        EventManager $eventManager,
+        ExplorerManager $explorerManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        if (!$userScopeResolver->canReadSchooltaskEvent($user) && !$userScopeResolver->canUpdateSchooltaskEvent($user)) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_EVENT);
+        }
+
+        $path = trim((string) ($request->toArray()['path'] ?? ''));
+        if ($path === '') {
+            return ApiResponse::badRequest('Path is required');
+        }
+
+        try {
+            $info = $explorerManager->info($user, $path);
+            if (($info['type'] ?? '') !== 'file') {
+                return ApiResponse::badRequest('Only files can be imported');
+            }
+            $absolute = $explorerManager->resolveAbsolutePath($user, $path);
+            $originalName = (string) ($info['name'] ?? basename($path));
+            $item = $eventManager->importTeacherFileFromLocalPath($user, $absolute, $originalName);
+        } catch (\Throwable $e) {
+            return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->json($item, Response::HTTP_CREATED);
     }
 
     #[Route('/teacher/events', methods: ['POST'])]

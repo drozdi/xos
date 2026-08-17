@@ -210,11 +210,37 @@ class DeviceController extends AbstractController {
     #[Access('can_update')]
     public function upload (Request $request, FileManager $fm, DeviceManager $dm, #[CurrentUser] User $user): JsonResponse {
         $device = $dm->device((int)$request->get('id'));
+        $uploaded = [];
         foreach ($fm->upload('device[images]', 'device') as $image) {
             $device->addImage($image);
+            $uploaded[] = [
+                'id' => $image->getId(),
+                'src' => $image->getFileSRC(),
+                'name' => $image->getOriginalName(),
+            ];
         }
         $dm->getEntityManager()->flush();
-        return $this->json([]);
+        return $this->json($uploaded);
+    }
+
+    #[Route('/upload-file', methods: ['POST'])]
+    #[Access('can_update')]
+    public function uploadFile (Request $request, FileManager $fm, DeviceManager $dm, #[CurrentUser] User $user): JsonResponse {
+        $device = $dm->device((int)$request->get('id'));
+        $uploaded = null;
+        foreach ($fm->upload('device[file]', 'device') as $file) {
+            if ($device->getFile()) {
+                $fm->remove($device->getFile());
+            }
+            $device->setFile($file);
+            $uploaded = [
+                'id' => $file->getId(),
+                'src' => $file->getFileSRC(),
+                'name' => $file->getOriginalName(),
+            ];
+        }
+        $dm->getEntityManager()->flush();
+        return $this->json($uploaded ?? null);
     }
 
 
@@ -296,6 +322,15 @@ class DeviceController extends AbstractController {
             ];
         }
 
+        $arFile = null;
+        if ($device->getFile()) {
+            $arFile = [
+                'id' => $device->getFile()->getId(),
+                'src' => $device->getFile()->getFileSRC(),
+                'name' => $device->getFile()->getOriginalName(),
+            ];
+        }
+
         return $this->json([
             'id' => $device->getId(),
             'dateCreated' => DateTimeFormat::format($device->getDateCreated(), 'Y.m.d H:i'),
@@ -322,7 +357,8 @@ class DeviceController extends AbstractController {
             'repairs' => $arRepairs,
             'properties' => $arProperties,
             'licenses' => $arLicenses,
-            'images' => $arImages
+            'images' => $arImages,
+            'file' => $arFile,
         ]);
     }
 
@@ -383,6 +419,14 @@ class DeviceController extends AbstractController {
                 if (!isset($req['images'][$image->getId()])) {
                     $device->removeImage($image);
                     $fm->remove($image);
+                }
+            }
+
+            if (array_key_exists('file', $req) && empty($req['file'])) {
+                if ($device->getFile()) {
+                    $oldFile = $device->getFile();
+                    $device->setFile(null);
+                    $fm->remove($oldFile);
                 }
             }
 

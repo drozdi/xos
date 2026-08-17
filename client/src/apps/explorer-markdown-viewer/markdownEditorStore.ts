@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 
 
-export type MarkdownViewMode = 'edit' | 'preview' | 'split';
+import {
+	defaultMarkdownViewMode,
+	normalizeMarkdownViewMode,
+	type MarkdownViewMode,
+} from './markdownViewMode';
+
+export type { MarkdownViewMode } from './markdownViewMode';
 
 
 export type MarkdownFormatCommand =
@@ -31,6 +37,7 @@ export interface MarkdownEditorSession {
 	saveAsNonce: number;
 	closeNonce: number;
 	closeAfterSaveAs: boolean;
+	readOnly: boolean;
 }
 
 
@@ -39,7 +46,7 @@ function emptySession(): MarkdownEditorSession {
 		path: null,
 		content: '',
 		dirty: false,
-		viewMode: 'edit',
+		viewMode: 'live',
 		loadedPath: null,
 		formatNonce: 0,
 		formatCommand: null,
@@ -47,8 +54,11 @@ function emptySession(): MarkdownEditorSession {
 		saveAsNonce: 0,
 		closeNonce: 0,
 		closeAfterSaveAs: false,
+		readOnly: false,
 	};
 }
+
+export const EMPTY_MARKDOWN_SESSION = emptySession();
 
 
 interface MarkdownEditorStore {
@@ -73,7 +83,13 @@ export const useMarkdownEditorStore = create<MarkdownEditorStore>((set, get) => 
 	sessions: {},
 
 
-	getSession: (windowId) => get().sessions[windowId] ?? emptySession(),
+	getSession: (windowId) => {
+		const session = get().sessions[windowId] ?? emptySession();
+		return {
+			...session,
+			viewMode: normalizeMarkdownViewMode(session.viewMode),
+		};
+	},
 
 
 	ensureSession: (windowId) => {
@@ -92,10 +108,28 @@ export const useMarkdownEditorStore = create<MarkdownEditorStore>((set, get) => 
 	patchSession: (windowId, patch) => {
 		set((state) => {
 			const prev = state.sessions[windowId] ?? emptySession();
+			const nextViewMode =
+				patch.viewMode !== undefined
+					? normalizeMarkdownViewMode(patch.viewMode)
+					: undefined;
+			const entries = Object.entries(patch) as [keyof MarkdownEditorSession, unknown][];
+			const unchanged = entries.every(([key, value]) => {
+				if (key === 'viewMode') {
+					return normalizeMarkdownViewMode(prev.viewMode) === nextViewMode;
+				}
+				return prev[key] === value;
+			});
+			if (unchanged) {
+				return state;
+			}
 			return {
 				sessions: {
 					...state.sessions,
-					[windowId]: { ...prev, ...patch },
+					[windowId]: {
+						...prev,
+						...patch,
+						...(nextViewMode !== undefined ? { viewMode: nextViewMode } : {}),
+					},
 				},
 			};
 		});
@@ -113,7 +147,7 @@ export const useMarkdownEditorStore = create<MarkdownEditorStore>((set, get) => 
 
 
 	setViewMode: (windowId, viewMode) => {
-		get().patchSession(windowId, { viewMode });
+		get().patchSession(windowId, { viewMode: normalizeMarkdownViewMode(viewMode) });
 	},
 
 

@@ -9,7 +9,8 @@ import { useAppContext } from '@/core/context/AppContext';
 import { useCoreApi } from '@/core/hooks/useCoreApi';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { saveExplorerText } from '@/features/explorer/explorerApi';
-import { getExplorerFileName } from '@/features/explorer/explorerPathUtils';
+import { invalidateExplorerFolder } from '@/features/explorer/explorerQueryUtils';
+import { getExplorerFileName, getExplorerFolderPath } from '@/features/explorer/explorerPathUtils';
 import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { fetchExplorerText } from '@/features/explorer/useExplorerOpenFile';
 import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
@@ -123,6 +124,7 @@ export default function ExplorerNotepadApp() {
 		}
 		try {
 			await saveExplorerText(latest.path, latest.content);
+			await invalidateExplorerFolder(queryClient, getExplorerFolderPath(latest.path));
 			syncNotepadQueryCache(latest.path, latest.content);
 			patchSession(windowId, { dirty: false });
 			notifications.show({
@@ -135,7 +137,7 @@ export default function ExplorerNotepadApp() {
 				message: 'Не удалось сохранить файл',
 			});
 		}
-	}, [openSaveAsPicker, patchSession, syncNotepadQueryCache, windowId]);
+	}, [openSaveAsPicker, patchSession, queryClient, syncNotepadQueryCache, windowId]);
 
 
 	const forceCloseWindow = useCallback(() => {
@@ -166,6 +168,10 @@ export default function ExplorerNotepadApp() {
 									}
 									try {
 										await saveExplorerText(latest.path, latest.content);
+										await invalidateExplorerFolder(
+											queryClient,
+											getExplorerFolderPath(latest.path),
+										);
 										syncNotepadQueryCache(latest.path, latest.content);
 										notifications.show({
 											color: 'green',
@@ -216,6 +222,7 @@ export default function ExplorerNotepadApp() {
 			const latest = useNotepadEditorStore.getState().getSession(windowId);
 			try {
 				await saveExplorerText(path, latest.content);
+				await invalidateExplorerFolder(queryClient, getExplorerFolderPath(path));
 				syncNotepadQueryCache(path, latest.content);
 				const shouldClose = latest.closeAfterSaveAs;
 				if (shouldClose) {

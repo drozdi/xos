@@ -1,19 +1,23 @@
-import { NumberInput, Select, Stack, TextInput, Textarea } from '@mantine/core';
+import { Anchor, Button, FileButton, Group, NumberInput, Select, Stack, Text, TextInput, Textarea } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { IconTrash, IconUpload } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import type { DeviceDetail } from '@/core/api/endpoints/deviceApi';
 import { deviceApi } from '@/core/api/endpoints/deviceApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { notifyApiError } from '@/core/api/apiError';
 
 interface DeviceGeneralTabProps {
 	data: DeviceDetail;
+	deviceId: number;
 	errors: Partial<Record<keyof DeviceDetail & string, string>>;
 	readOnly: boolean;
 	setField: <K extends keyof DeviceDetail>(key: K, value: DeviceDetail[K]) => void;
 }
 
-export function DeviceGeneralTab({ data, errors, readOnly, setField }: DeviceGeneralTabProps) {
+export function DeviceGeneralTab({ data, deviceId, errors, readOnly, setField }: DeviceGeneralTabProps) {
 	const filterQuery = useQuery({
 		queryKey: queryKeys.device.filter,
 		queryFn: () => deviceApi.filter(),
@@ -75,6 +79,68 @@ export function DeviceGeneralTab({ data, errors, readOnly, setField }: DeviceGen
 				autosize
 				onChange={(e) => setField('description', e.currentTarget.value)}
 			/>
+
+			<Stack gap="xs">
+				<Text size="sm" fw={500}>
+					Файл из API
+				</Text>
+				{deviceId <= 0 ? (
+					<Text size="sm" c="dimmed">
+						Сохраните устройство, чтобы загрузить файл
+					</Text>
+				) : !readOnly ? (
+					<Group>
+						<FileButton
+							onChange={async (file) => {
+								if (!file) {
+									return;
+								}
+								try {
+									const uploaded = await deviceApi.uploadFile(deviceId, file);
+									setField('file', uploaded);
+									notifications.show({ color: 'green', message: 'Файл загружен' });
+								} catch (error) {
+									notifyApiError(error, 'Ошибка загрузки файла');
+								}
+							}}
+						>
+							{(props) => (
+								<Button
+									{...props}
+									variant="light"
+									leftSection={<IconUpload size={16} />}
+								>
+									Загрузить файл
+								</Button>
+							)}
+						</FileButton>
+						{data.file ? (
+							<Button
+								variant="light"
+								color="red"
+								leftSection={<IconTrash size={16} />}
+								onClick={() => setField('file', null)}
+							>
+								Удалить файл
+							</Button>
+						) : null}
+					</Group>
+				) : null}
+				{data.file ? (
+					<Anchor href={data.file.src} target="_blank" download={data.file.name}>
+						{data.file.name}
+					</Anchor>
+				) : (
+					<Text size="sm" c="dimmed">
+						Файл не загружен
+					</Text>
+				)}
+				{!readOnly && data.file ? (
+					<Text size="xs" c="dimmed">
+						Удаление файла вступит в силу после нажатия «Сохранить»
+					</Text>
+				) : null}
+			</Stack>
 		</Stack>
 	);
 }

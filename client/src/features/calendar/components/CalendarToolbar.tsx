@@ -1,5 +1,5 @@
 import { Button, Group, SegmentedControl, Text } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconPlus, IconRefresh } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 
@@ -13,6 +13,8 @@ interface CalendarToolbarProps {
 	onViewChange: (view: CalendarViewMode) => void;
 	onDateChange: (date: string) => void;
 	onCreateEvent?: () => void;
+	onRefresh?: () => void;
+	refreshing?: boolean;
 	canCreate?: boolean;
 }
 
@@ -52,6 +54,8 @@ export function CalendarToolbar({
 	onViewChange,
 	onDateChange,
 	onCreateEvent,
+	onRefresh,
+	refreshing = false,
 	canCreate = true,
 }: CalendarToolbarProps) {
 	return (
@@ -90,6 +94,17 @@ export function CalendarToolbar({
 				</Text>
 			</Group>
 			<Group gap="sm">
+				{onRefresh ? (
+					<Button
+						variant="default"
+						size="xs"
+						leftSection={<IconRefresh size={14} />}
+						loading={refreshing}
+						onClick={onRefresh}
+					>
+						Обновить
+					</Button>
+				) : null}
 				<SegmentedControl
 					size="xs"
 					value={view}

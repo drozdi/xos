@@ -56,6 +56,15 @@ export function resolveInitialWindowPosition(
 	};
 }
 
+export function getMaximizedBounds(viewport: { width: number; height: number }) {
+	return {
+		x: 0,
+		y: 0,
+		width: viewport.width,
+		height: viewport.height,
+	};
+}
+
 export function clampWindowSize(
 	width: number,
 	height: number,

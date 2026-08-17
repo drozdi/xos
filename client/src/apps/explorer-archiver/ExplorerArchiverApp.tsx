@@ -1,12 +1,13 @@
 import { Button, Group, ScrollArea, Stack, Table, Text, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
 import { fetchArchiveContents, unpackExplorerArchive } from '@/features/explorer/explorerApi';
-import { getExplorerFileName } from '@/features/explorer/explorerPathUtils';
+import { invalidateExplorerFolder } from '@/features/explorer/explorerQueryUtils';
+import { getExplorerFileName, getExplorerFolderPath } from '@/features/explorer/explorerPathUtils';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 function defaultUnpackFolder(archivePath: string) {
@@ -19,6 +20,7 @@ function defaultUnpackFolder(archivePath: string) {
 }
 
 export default function ExplorerArchiverApp() {
+	const queryClient = useQueryClient();
 	const { currentPath } = useExplorerSatelliteFile({
 		appId: 'explorer-archiver',
 		fileTypes: ['archive'],
@@ -44,11 +46,16 @@ export default function ExplorerArchiverApp() {
 
 	const unpackMutation = useMutation({
 		mutationFn: () => unpackExplorerArchive(archivePath, destination),
-		onSuccess: (result) => {
+		onSuccess: async (result) => {
 			notifications.show({
 				message: `Распаковано файлов: ${result.extracted}`,
 				color: 'green',
 			});
+			await invalidateExplorerFolder(
+				queryClient,
+				getExplorerFolderPath(archivePath),
+				result.destination,
+			);
 		},
 		onError: () => {
 			notifications.show({ message: 'Не удалось распаковать архив', color: 'red' });
