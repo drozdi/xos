@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import axios from 'axios';
 
 const get = vi.fn();
 const put = vi.fn();
@@ -83,6 +84,20 @@ describe('userData endpoints helpers', () => {
 		expect(get).toHaveBeenCalledWith('/api/user-data/todo.ui.filters');
 		expect(userDataEndpoints.one('a/b')).toBe('/api/user-data/a%2Fb');
 		expect(dto).toEqual(sampleDto);
+	});
+
+	it('getOptional returns null on 404 without throwing', async () => {
+		get.mockRejectedValue(
+			new axios.AxiosError('Not Found', 'ERR_BAD_REQUEST', undefined, undefined, {
+				status: 404,
+				data: { message: 'User data not found' },
+			} as never),
+		);
+
+		const dto = await userDataApi.getOptional('board.ui.lastBoardId');
+
+		expect(dto).toBeNull();
+		expect(get).toHaveBeenCalledWith('/api/user-data/board.ui.lastBoardId', { _silent404: true });
 	});
 
 	it('upsert sends PUT body', async () => {

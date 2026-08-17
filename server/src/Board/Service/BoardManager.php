@@ -1192,6 +1192,7 @@ class BoardManager extends AbstractManager
                 'can_edit' => $this->permissionResolver->canEditWorkspace($workspace, $viewer),
                 'can_manage_members' => $this->permissionResolver->canManageWorkspaceMembers($workspace, $viewer),
                 'can_create_board' => $this->permissionResolver->canCreateBoard($workspace, $viewer),
+                'can_delete' => $this->permissionResolver->isWorkspaceOwner($workspace, $viewer),
             ],
             'created_at' => $workspace->getCreatedAt('Y-m-d H:i:s'),
         ];
@@ -1211,6 +1212,7 @@ class BoardManager extends AbstractManager
             ],
             'visibility' => $board->getVisibility(),
             'role' => $this->permissionResolver->resolveEffectiveBoardRole($board, $viewer),
+            'can_delete' => $this->permissionResolver->canEditBoard($board, $viewer),
             'updated_at' => $board->getUpdatedAt('Y-m-d H:i:s'),
         ];
     }
@@ -1229,6 +1231,7 @@ class BoardManager extends AbstractManager
             'permissions' => [
                 'can_edit' => $this->permissionResolver->canEditBoard($board, $viewer),
                 'can_admin' => $this->permissionResolver->canManageBoardMembers($board, $viewer),
+                'can_delete' => $this->permissionResolver->canEditBoard($board, $viewer),
             ],
             'created_at' => $board->getCreatedAt('Y-m-d H:i:s'),
         ];

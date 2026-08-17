@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 
 import { apiClient } from '@/core/api/client';
 
@@ -39,6 +40,21 @@ export async function get(code: string): Promise<UserAppDataDto> {
 	return userAppDataDtoSchema.parse(data);
 }
 
+/** Returns null when the key was never saved (404 is normal for optional prefs). */
+export async function getOptional(code: string): Promise<UserAppDataDto | null> {
+	try {
+		const { data } = await apiClient.get<unknown>(PATHS.one(code), {
+			_silent404: true,
+		} as InternalAxiosRequestConfig);
+		return userAppDataDtoSchema.parse(data);
+	} catch (error) {
+		if (axios.isAxiosError(error) && error.response?.status === 404) {
+			return null;
+		}
+		throw error;
+	}
+}
+
 export async function upsert(payload: UserAppDataUpsertRequest): Promise<UserAppDataDto> {
 	const { data } = await apiClient.put<unknown>(PATHS.all, payload);
 	return userAppDataDtoSchema.parse(data);
@@ -53,6 +69,7 @@ export async function deleteUserData(code: string): Promise<void> {
 export const userDataApi = {
 	list,
 	get,
+	getOptional,
 	upsert,
 	delete: deleteUserData,
 } as const;

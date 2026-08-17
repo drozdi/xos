@@ -80,6 +80,8 @@ const workspacePermissionsSchema = z.object({
 
 	can_create_board: z.boolean(),
 
+	can_delete: z.boolean(),
+
 });
 
 
@@ -89,6 +91,8 @@ const boardPermissionsSchema = z.object({
 	can_edit: z.boolean(),
 
 	can_admin: z.boolean(),
+
+	can_delete: z.boolean(),
 
 });
 
@@ -203,6 +207,8 @@ export const boardSummarySchema = z.object({
 	visibility: visibilitySchema.optional(),
 
 	role: memberRoleSchema.nullable().optional(),
+
+	can_delete: z.boolean().optional(),
 
 	updated_at: z.string().nullable().optional(),
 

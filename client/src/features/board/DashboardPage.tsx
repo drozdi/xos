@@ -1,4 +1,5 @@
 import {
+	ActionIcon,
 	Alert,
 	Button,
 	Card,
@@ -9,12 +10,14 @@ import {
 	Stack,
 	Text,
 } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
+import { notifications } from '@mantine/notifications';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { boardApi } from '@/core/api/endpoints/boardApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { confirmAction } from '@/core/confirm/confirmAction';
 
 import { CreateBoardModal } from './CreateBoardModal';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
@@ -25,6 +28,7 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ onOpenBoard }: DashboardPageProps) {
+	const queryClient = useQueryClient();
 	const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | null>(null);
 	const [createWorkspaceOpened, setCreateWorkspaceOpened] = useState(false);
 	const [createBoardOpened, setCreateBoardOpened] = useState(false);
@@ -51,8 +55,64 @@ export function DashboardPage({ onOpenBoard }: DashboardPageProps) {
 		}
 	}, [workspacesQuery.data, selectedWorkspaceId]);
 
+	const deleteWorkspaceMutation = useMutation({
+		mutationFn: (id: number) => boardApi.removeWorkspace(id),
+		onSuccess: async (_data, deletedId) => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.board.workspaces });
+			if (selectedWorkspaceId === deletedId) {
+				setSelectedWorkspaceId(null);
+			}
+			if (lastBoardId !== null) {
+				setLastBoardId(null);
+			}
+			notifications.show({ color: 'green', message: 'Workspace удалён' });
+		},
+		onError: () => {
+			notifications.show({ color: 'red', message: 'Не удалось удалить workspace' });
+		},
+	});
+
+	const deleteBoardMutation = useMutation({
+		mutationFn: (id: number) => boardApi.removeBoard(id),
+		onSuccess: async (_data, deletedId) => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.board.workspaces });
+			if (selectedWorkspaceId !== null) {
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.board.workspace(selectedWorkspaceId),
+				});
+			}
+			if (lastBoardId === deletedId) {
+				setLastBoardId(null);
+			}
+			notifications.show({ color: 'green', message: 'Доска удалена' });
+		},
+		onError: () => {
+			notifications.show({ color: 'red', message: 'Не удалось удалить доску' });
+		},
+	});
+
 	const handleWorkspaceCreated = (workspaceId: number) => {
 		setSelectedWorkspaceId(workspaceId);
+	};
+
+	const confirmDeleteWorkspace = (workspaceId: number, name: string) => {
+		confirmAction({
+			title: 'Удалить workspace?',
+			message: `«${name}» и все доски внутри будут удалены без возможности восстановления.`,
+			confirmLabel: 'Удалить',
+			confirmColor: 'red',
+			onConfirm: () => deleteWorkspaceMutation.mutate(workspaceId),
+		});
+	};
+
+	const confirmDeleteBoard = (boardId: number, title: string) => {
+		confirmAction({
+			title: 'Удалить доску?',
+			message: `«${title}» и все списки с карточками будут удалены.`,
+			confirmLabel: 'Удалить',
+			confirmColor: 'red',
+			onConfirm: () => deleteBoardMutation.mutate(boardId),
+		});
 	};
 
 	if (workspacesQuery.isLoading) {
@@ -75,6 +135,7 @@ export function DashboardPage({ onOpenBoard }: DashboardPageProps) {
 	const selectedWorkspace = workspaceDetailQuery.data;
 	const boards = selectedWorkspace?.boards ?? [];
 	const canCreateBoard = selectedWorkspace?.permissions.can_create_board ?? false;
+	const canDeleteWorkspace = selectedWorkspace?.permissions.can_delete ?? false;
 
 	return (
 		<Stack gap={0} h="100%" style={{ minHeight: 0 }}>
@@ -132,14 +193,34 @@ export function DashboardPage({ onOpenBoard }: DashboardPageProps) {
 										}}
 										onClick={() => setSelectedWorkspaceId(workspace.id)}
 									>
-										<Stack gap={2}>
-											<Text fw={600} size="sm" lineClamp={1}>
-												{workspace.name}
-											</Text>
-											<Text size="xs" c="dimmed">
-												{workspace.boards_count ?? 0} досок
-											</Text>
-										</Stack>
+										<Group justify="space-between" wrap="nowrap" gap="xs">
+											<Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+												<Text fw={600} size="sm" lineClamp={1}>
+													{workspace.name}
+												</Text>
+												<Text size="xs" c="dimmed">
+													{workspace.boards_count ?? 0} досок
+												</Text>
+											</Stack>
+											{workspace.is_owner ? (
+												<ActionIcon
+													variant="subtle"
+													color="red"
+													size="sm"
+													aria-label="Удалить workspace"
+													loading={
+														deleteWorkspaceMutation.isPending &&
+														deleteWorkspaceMutation.variables === workspace.id
+													}
+													onClick={(event) => {
+														event.stopPropagation();
+														confirmDeleteWorkspace(workspace.id, workspace.name);
+													}}
+												>
+													<IconTrash size={14} />
+												</ActionIcon>
+											) : null}
+										</Group>
 									</Card>
 								))
 							)}
@@ -171,15 +252,34 @@ export function DashboardPage({ onOpenBoard }: DashboardPageProps) {
 										</Text>
 									) : null}
 								</Stack>
-								{canCreateBoard ? (
-									<Button
-										size="xs"
-										leftSection={<IconPlus size={14} />}
-										onClick={() => setCreateBoardOpened(true)}
-									>
-										Доска
-									</Button>
-								) : null}
+								<Group gap="xs">
+									{canDeleteWorkspace ? (
+										<Button
+											size="xs"
+											variant="light"
+											color="red"
+											leftSection={<IconTrash size={14} />}
+											loading={deleteWorkspaceMutation.isPending}
+											onClick={() =>
+												confirmDeleteWorkspace(
+													selectedWorkspaceId,
+													selectedWorkspace?.name ?? '',
+												)
+											}
+										>
+											Удалить workspace
+										</Button>
+									) : null}
+									{canCreateBoard ? (
+										<Button
+											size="xs"
+											leftSection={<IconPlus size={14} />}
+											onClick={() => setCreateBoardOpened(true)}
+										>
+											Доска
+										</Button>
+									) : null}
+								</Group>
 							</Group>
 
 							{boards.length === 0 ? (
@@ -198,10 +298,30 @@ export function DashboardPage({ onOpenBoard }: DashboardPageProps) {
 											style={{ cursor: 'pointer', minHeight: 100 }}
 											onClick={() => onOpenBoard(board.id)}
 										>
-											<Stack gap="xs">
-												<Text fw={600} size="sm" lineClamp={2}>
-													{board.title}
-												</Text>
+											<Stack gap="xs" h="100%">
+												<Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+													<Text fw={600} size="sm" lineClamp={2} style={{ flex: 1 }}>
+														{board.title}
+													</Text>
+													{board.can_delete ? (
+														<ActionIcon
+															variant="subtle"
+															color="red"
+															size="sm"
+															aria-label="Удалить доску"
+															loading={
+																deleteBoardMutation.isPending &&
+																deleteBoardMutation.variables === board.id
+															}
+															onClick={(event) => {
+																event.stopPropagation();
+																confirmDeleteBoard(board.id, board.title);
+															}}
+														>
+															<IconTrash size={14} />
+														</ActionIcon>
+													) : null}
+												</Group>
 												{board.description ? (
 													<Text size="sm" c="dimmed" lineClamp={2}>
 														{board.description}

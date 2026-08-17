@@ -146,6 +146,8 @@ describe('board endpoints', () => {
 
 					can_create_board: true,
 
+					can_delete: true,
+
 				},
 
 			});
@@ -334,6 +336,8 @@ describe('board endpoints', () => {
 
 					can_admin: false,
 
+					can_delete: true,
+
 				},
 
 			});
@@ -402,7 +406,7 @@ describe('board endpoints', () => {
 
 				members: [{ user_id: 5, email: 'dev@example.com', role: 'editor' }],
 
-				permissions: { can_edit: true, can_admin: false },
+				permissions: { can_edit: true, can_admin: false, can_delete: false },
 
 			});
 

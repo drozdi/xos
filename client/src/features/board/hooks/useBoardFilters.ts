@@ -26,12 +26,16 @@ export function useBoardFilters(boardId: number) {
 
 		void (async () => {
 			try {
-				const dto = await userDataApi.get(BOARD_PREFS.filters);
-				const parsed = boardFiltersPrefsSchema.parse(dto.value);
-				prefsRef.current = parsed.boards;
-				const saved = parsed.boards[String(boardId)];
-				if (!cancelled && saved) {
-					setFiltersState(boardUiFiltersSchema.parse(saved));
+				const dto = await userDataApi.getOptional(BOARD_PREFS.filters);
+				if (dto) {
+					const parsed = boardFiltersPrefsSchema.parse(dto.value);
+					prefsRef.current = parsed.boards;
+					const saved = parsed.boards[String(boardId)];
+					if (!cancelled && saved) {
+						setFiltersState(boardUiFiltersSchema.parse(saved));
+					}
+				} else {
+					prefsRef.current = {};
 				}
 			} catch {
 				prefsRef.current = {};
@@ -101,10 +105,6 @@ export async function saveLastBoardId(boardId: number): Promise<void> {
 }
 
 export async function loadLastBoardId(): Promise<number | null> {
-	try {
-		const dto = await userDataApi.get(BOARD_PREFS.lastBoardId);
-		return typeof dto.value === 'number' ? dto.value : null;
-	} catch {
-		return null;
-	}
+	const dto = await userDataApi.getOptional(BOARD_PREFS.lastBoardId);
+	return dto && typeof dto.value === 'number' ? dto.value : null;
 }

@@ -8,7 +8,7 @@ import {
 	Stack,
 	Text,
 } from '@mantine/core';
-import { IconArrowLeft, IconUsers } from '@tabler/icons-react';
+import { IconArrowLeft, IconTrash, IconUsers } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -19,6 +19,7 @@ import {
 } from '@/core/api/endpoints/boardApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { confirmAction } from '@/core/confirm/confirmAction';
+import { notifications } from '@mantine/notifications';
 
 import { BackgroundPicker } from './BackgroundPicker';
 import { BoardColumn } from './BoardColumn';
@@ -139,7 +140,26 @@ export function BoardViewPage({ boardId, onBack }: BoardViewPageProps) {
 		},
 	});
 
+	const deleteBoardMutation = useMutation({
+		mutationFn: () => boardApi.removeBoard(boardId),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.board.workspaces });
+			const workspaceId = boardQuery.data?.workspace_id;
+			if (workspaceId) {
+				await queryClient.invalidateQueries({
+					queryKey: queryKeys.board.workspace(workspaceId),
+				});
+			}
+			notifications.show({ color: 'green', message: 'Доска удалена' });
+			onBack();
+		},
+		onError: () => {
+			notifications.show({ color: 'red', message: 'Не удалось удалить доску' });
+		},
+	});
+
 	const canEdit = boardQuery.data?.permissions.can_edit ?? false;
+	const canDelete = boardQuery.data?.permissions.can_delete ?? false;
 	const canAdmin = boardQuery.data?.permissions.can_admin ?? false;
 	const labels = boardQuery.data?.labels ?? [];
 	const members = boardQuery.data?.members ?? [];
@@ -234,6 +254,26 @@ export function BoardViewPage({ boardId, onBack }: BoardViewPageProps) {
 					>
 						Участники
 					</Button>
+					{canDelete ? (
+						<Button
+							variant="light"
+							color="red"
+							size="compact-sm"
+							leftSection={<IconTrash size={16} />}
+							loading={deleteBoardMutation.isPending}
+							onClick={() =>
+								confirmAction({
+									title: 'Удалить доску?',
+									message: `«${board.title}» и все списки с карточками будут удалены.`,
+									confirmLabel: 'Удалить',
+									confirmColor: 'red',
+									onConfirm: () => deleteBoardMutation.mutate(),
+								})
+							}
+						>
+							Удалить
+						</Button>
+					) : null}
 				</Group>
 			</Group>
 

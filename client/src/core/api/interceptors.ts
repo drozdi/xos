@@ -12,6 +12,8 @@ interface AuthStoreRef {
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
 	_retry?: boolean;
 	_errorToastShown?: boolean;
+	/** Skip 404 toast when missing resource is expected (e.g. optional user_app_data). */
+	_silent404?: boolean;
 }
 
 let isRefreshing = false;
@@ -99,6 +101,9 @@ function showErrorToast(error: AxiosError, config: RetryableRequestConfig | unde
 	}
 
 	if (error.response?.status === 404) {
+		if (config?._silent404) {
+			return;
+		}
 		notifications.show({
 			color: 'red',
 			title: 'Не найдено',
