@@ -215,7 +215,7 @@ export const teacherEventDetailSchema = z.object({
 	files: z
 		.array(
 			z.object({
-				id: z.number(),
+				id: z.coerce.number(),
 				name: z.string(),
 				src: z.string().optional(),
 			}),
@@ -224,7 +224,7 @@ export const teacherEventDetailSchema = z.object({
 });
 
 export const teacherFileSchema = z.object({
-	id: z.number(),
+	id: z.coerce.number(),
 	name: z.string(),
 	src: z.string().optional(),
 });
@@ -404,7 +404,9 @@ export const schooltaskCalendarApi = {
 		for (const file of files) {
 			formData.append('files[]', file);
 		}
-		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/upload`, formData);
+		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/upload`, formData, {
+			headers: { 'Content-Type': 'multipart/form-data' },
+		});
 		return z.array(teacherFileSchema).parse(data);
 	},
 	teacherFilesImport: async (path: string) => {
@@ -427,7 +429,9 @@ export const schooltaskCalendarApi = {
 		for (const file of newFiles) {
 			formData.append('files[]', file);
 		}
-		await apiClient.post(`${BASE}/calendar/teacher/events/save`, formData);
+		await apiClient.post(`${BASE}/calendar/teacher/events/save`, formData, {
+			headers: { 'Content-Type': 'multipart/form-data' },
+		});
 	},
 };
 

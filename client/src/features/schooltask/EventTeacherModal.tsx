@@ -45,6 +45,9 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	const [netResource, setNetResource] = useState('');
 	const [attachedIds, setAttachedIds] = useState<number[]>([]);
 	const [attachedMeta, setAttachedMeta] = useState<LibraryFile[]>([]);
+	const attachedIdsRef = useRef(attachedIds);
+	attachedIdsRef.current = attachedIds;
+	const attachedDirtyRef = useRef(false);
 
 	const editor = useEditor({
 		extensions: [StarterKit, Underline, Link],
@@ -61,6 +64,10 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	});
 
 	useEffect(() => {
+		attachedDirtyRef.current = false;
+	}, [eventId, opened]);
+
+	useEffect(() => {
 		if (!detailQuery.data) {
 			return;
 		}
@@ -70,12 +77,18 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 		const nextDescription = detailQuery.data.description ?? '';
 		setDescription(nextDescription);
 		setNetResource(detailQuery.data.netResource ?? '');
-		const files = detailQuery.data.files ?? [];
-		setAttachedIds(files.map((file) => file.id));
-		setAttachedMeta(files);
-		if (editor && !editor.isDestroyed) {
-			editor.commands.setContent(nextDescription || '');
+		if (!attachedDirtyRef.current) {
+			const files = detailQuery.data.files ?? [];
+			setAttachedIds(files.map((file) => file.id));
+			setAttachedMeta(files);
 		}
+	}, [detailQuery.data]);
+
+	useEffect(() => {
+		if (!detailQuery.data || !editor || editor.isDestroyed) {
+			return;
+		}
+		editor.commands.setContent(detailQuery.data.description ?? '');
 	}, [detailQuery.data, editor]);
 
 	useEffect(() => {
@@ -97,7 +110,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 				pt,
 				description: editor?.getHTML() ?? description,
 				netResource,
-				files: attachedIds,
+				files: attachedIdsRef.current,
 			};
 			await schooltaskCalendarApi.teacherSave(payload);
 		},
@@ -111,9 +124,7 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 	});
 
 	const openFilesWindow = () => {
-		if (filesWindowRef.current) {
-			return;
-		}
+		filesWindowRef.current?.close();
 		const handle = coreApi.window.createChildWindow({
 			title: 'Файлы урока',
 			width: 640,
@@ -122,7 +133,10 @@ export function EventTeacherModal({ eventId, opened, onClose, onSaved }: EventTe
 				<EventLessonFilesPanel
 					attachedIds={attachedIds}
 					attachedMeta={attachedMeta}
-					onAttachedChange={setAttachedIds}
+					onAttachedChange={(nextIds) => {
+						attachedDirtyRef.current = true;
+						setAttachedIds(nextIds);
+					}}
 				/>
 			),
 		});

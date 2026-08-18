@@ -85,7 +85,7 @@ function ChildWindowDialog({ parentWindowId, child }: ChildWindowDialogProps) {
 				size="auto"
 				centered
 				withinPortal={false}
-				zIndex={100}
+				zIndex={300}
 				styles={{
 					inner: { position: 'absolute', inset: 0, padding: 0 },
 					content: {

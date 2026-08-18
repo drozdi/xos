@@ -227,18 +227,6 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			return;
 		}
 		const bounds = desktopMaxBounds;
-		if (
-			windowState.x === bounds.x &&
-			windowState.y === bounds.y &&
-			windowState.width === bounds.width &&
-			windowState.height === bounds.height
-		) {
-			rndRef.current?.updateSize({ width: bounds.width, height: bounds.height });
-			rndRef.current?.updatePosition({ x: bounds.x, y: bounds.y });
-			emitWindowResize(windowId);
-			return;
-		}
-		updateWindow(windowId, bounds);
 		rndRef.current?.updateSize({ width: bounds.width, height: bounds.height });
 		rndRef.current?.updatePosition({ x: bounds.x, y: bounds.y });
 		emitWindowResize(windowId);
@@ -247,13 +235,8 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		desktopMaxBounds.height,
 		desktopMaxBounds.width,
 		isMobile,
-		updateWindow,
 		windowId,
-		windowState?.height,
 		windowState?.maximized,
-		windowState?.width,
-		windowState?.x,
-		windowState?.y,
 	]);
 	const dragBounds = useMemo(() => {
 		if (!windowState || isMaximizedLayout || !boundsReady) {

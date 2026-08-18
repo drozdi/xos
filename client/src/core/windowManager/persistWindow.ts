@@ -21,12 +21,22 @@ export function parseWinSettingKey(key: string): { appId: string; windowId: stri
 }
 
 export function toPersistedState(window: WindowState): PersistedWindowState {
+	const bounds =
+		window.maximized && window.preMaximize
+			? window.preMaximize
+			: {
+				x: window.x,
+				y: window.y,
+				width: window.width,
+				height: window.height,
+			};
+
 	return {
 		position: {
-			x: window.x,
-			y: window.y,
-			width: window.width,
-			height: window.height,
+			x: bounds.x,
+			y: bounds.y,
+			width: bounds.width,
+			height: bounds.height,
 		},
 		state: {
 			minimized: window.minimized,

@@ -61,6 +61,14 @@ describe('useWmStore', () => {
 		useWmStore.getState().minimizeWindow(windowId);
 		expect(useWmStore.getState().windows[windowId]?.minimized).toBe(true);
 
+		const beforeMaximize = useWmStore.getState().windows[windowId];
+		const restoreBounds = {
+			x: beforeMaximize!.x,
+			y: beforeMaximize!.y,
+			width: beforeMaximize!.width,
+			height: beforeMaximize!.height,
+		};
+
 		useWmStore.getState().maximizeWindow(windowId, {
 			x: 0,
 			y: 0,
@@ -71,17 +79,45 @@ describe('useWmStore', () => {
 		const maximized = useWmStore.getState().windows[windowId];
 		expect(maximized?.maximized).toBe(true);
 		expect(maximized?.width).toBe(1200);
-		expect(maximized?.preMaximize).toEqual({
-			x: expect.any(Number),
-			y: expect.any(Number),
-			width: expect.any(Number),
-			height: expect.any(Number),
-		});
+		expect(maximized?.preMaximize).toEqual(restoreBounds);
 
 		useWmStore.getState().restoreWindow(windowId);
 		const restored = useWmStore.getState().windows[windowId];
 		expect(restored?.maximized).toBe(false);
 		expect(restored?.minimized).toBe(false);
+	});
+
+	it('keeps preMaximize when geometry is patched while maximized', () => {
+		const windowId = useWmStore.getState().openWindow({
+			appId: 'demo',
+			instanceKey: 'a',
+			title: 'Demo',
+			x: 80,
+			y: 60,
+			width: 800,
+			height: 600,
+		});
+
+		useWmStore.getState().maximizeWindow(windowId, {
+			x: 0,
+			y: 0,
+			width: 1200,
+			height: 800,
+		});
+
+		useWmStore.getState().updateWindow(windowId, {
+			x: 0,
+			y: 0,
+			width: 1920,
+			height: 1080,
+		});
+
+		expect(useWmStore.getState().windows[windowId]?.preMaximize).toEqual({
+			x: 80,
+			y: 60,
+			width: 800,
+			height: 600,
+		});
 	});
 
 	it('increments contentKey on refresh via updateWindow', () => {

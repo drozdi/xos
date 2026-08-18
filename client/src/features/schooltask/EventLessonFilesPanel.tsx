@@ -39,20 +39,42 @@ export function EventLessonFilesPanel({
 }: EventLessonFilesPanelProps) {
 	const queryClient = useQueryClient();
 	const [librarySearch, setLibrarySearch] = useState('');
+	const [ids, setIds] = useState<number[]>(attachedIds);
+	const [meta, setMeta] = useState<LibraryFile[]>(attachedMeta);
 
 	const filesQuery = useQuery({
 		queryKey: queryKeys.schooltask.teacherFiles,
 		queryFn: () => schooltaskCalendarApi.teacherFiles(),
 	});
 
+	const commitIds = (updater: (prev: number[]) => number[]) => {
+		setIds((prev) => {
+			const nextIds = updater(prev);
+			onAttachedChange(nextIds);
+			return nextIds;
+		});
+	};
+
+	const mergeMeta = (incoming: LibraryFile[]) => {
+		if (incoming.length === 0) {
+			return;
+		}
+		setMeta((prev) => {
+			const byId = new Map(prev.map((file) => [file.id, file]));
+			for (const file of incoming) {
+				byId.set(file.id, file);
+			}
+			return [...byId.values()];
+		});
+	};
+
 	const uploadMutation = useMutation({
 		mutationFn: (files: File[]) => schooltaskCalendarApi.teacherFilesUpload(files),
 		onSuccess: (uploaded) => {
 			notifications.show({ message: 'Файлы загружены', color: 'green' });
 			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.teacherFiles });
-			onAttachedChange([
-				...new Set([...attachedIds, ...uploaded.map((file) => file.id)]),
-			]);
+			mergeMeta(uploaded);
+			commitIds((prev) => [...new Set([...prev, ...uploaded.map((file) => file.id)])]);
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка загрузки файлов'),
 	});
@@ -62,7 +84,8 @@ export function EventLessonFilesPanel({
 		onSuccess: (file) => {
 			notifications.show({ message: 'Файл скопирован из проводника', color: 'green' });
 			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.teacherFiles });
-			onAttachedChange([...new Set([...attachedIds, file.id])]);
+			mergeMeta([file]);
+			commitIds((prev) => [...new Set([...prev, file.id])]);
 		},
 		onError: (error) => notifyApiError(error, 'Не удалось импортировать файл'),
 	});
@@ -80,26 +103,21 @@ export function EventLessonFilesPanel({
 		return items.filter((file) => file.name.toLowerCase().includes(query));
 	}, [filesQuery.data, librarySearch]);
 
-	const attachedSet = useMemo(() => new Set(attachedIds), [attachedIds]);
+	const attachedSet = useMemo(() => new Set(ids), [ids]);
 
 	const attachedFiles = useMemo(() => {
 		const byId = new Map((filesQuery.data ?? []).map((file) => [file.id, file]));
-		for (const file of attachedMeta) {
-			if (!byId.has(file.id)) {
-				byId.set(file.id, file);
-			}
+		for (const file of meta) {
+			byId.set(file.id, file);
 		}
-		return attachedIds
-			.map((id) => byId.get(id))
-			.filter((file): file is LibraryFile => Boolean(file));
-	}, [attachedIds, attachedMeta, filesQuery.data]);
+		return ids.map((id) => byId.get(id) ?? { id, name: `Файл #${id}` });
+	}, [ids, meta, filesQuery.data]);
 
-	const toggleAttach = (fileId: number) => {
-		if (attachedSet.has(fileId)) {
-			onAttachedChange(attachedIds.filter((id) => id !== fileId));
-			return;
-		}
-		onAttachedChange([...attachedIds, fileId]);
+	const toggleAttach = (file: LibraryFile) => {
+		mergeMeta([file]);
+		commitIds((prev) =>
+			prev.includes(file.id) ? prev.filter((id) => id !== file.id) : [...prev, file.id],
+		);
 	};
 
 	const openExplorer = () => {
@@ -152,9 +170,9 @@ export function EventLessonFilesPanel({
 					<Stack gap="md" pr="xs">
 						<Box>
 							<Text size="sm" fw={500} mb={6}>
-								Прикреплено к уроку ({attachedFiles.length})
+								Прикреплено к уроку ({ids.length})
 							</Text>
-							{attachedFiles.length === 0 ? (
+							{ids.length === 0 ? (
 								<Text size="sm" c="dimmed">
 									Нет прикреплённых файлов
 								</Text>
@@ -178,7 +196,7 @@ export function EventLessonFilesPanel({
 												color="red"
 												variant="light"
 												aria-label="Открепить"
-												onClick={() => toggleAttach(file.id)}
+												onClick={() => toggleAttach(file)}
 											>
 												<IconTrash size={16} />
 											</ActionIcon>
@@ -230,7 +248,7 @@ export function EventLessonFilesPanel({
 												<Button
 													size="compact-xs"
 													variant={attached ? 'filled' : 'light'}
-													onClick={() => toggleAttach(file.id)}
+													onClick={() => toggleAttach(file)}
 												>
 													{attached ? 'Открепить' : 'Прикрепить'}
 												</Button>

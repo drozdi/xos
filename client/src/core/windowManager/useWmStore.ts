@@ -153,7 +153,17 @@ export const useWmStore = create<WmStore>((set, get) => ({
 		const current = get().windows[id];
 		if (!current) {return;}
 
-		const hasChanges = Object.entries(patch).some(
+		const hasGeometryPatch =
+			patch.x !== undefined ||
+			patch.y !== undefined ||
+			patch.width !== undefined ||
+			patch.height !== undefined;
+		const nextPatch =
+			current.maximized && current.preMaximize && hasGeometryPatch
+				? { ...patch, preMaximize: current.preMaximize }
+				: patch;
+
+		const hasChanges = Object.entries(nextPatch).some(
 			([key, value]) => current[key as keyof WindowState] !== value,
 		);
 		if (!hasChanges) {return;}
@@ -161,7 +171,7 @@ export const useWmStore = create<WmStore>((set, get) => ({
 		set((state) => ({
 			windows: {
 				...state.windows,
-				[id]: { ...current, ...patch },
+				[id]: { ...current, ...nextPatch },
 			},
 		}));
 

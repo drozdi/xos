@@ -163,8 +163,19 @@ async function refreshAccessToken(requestUrl?: string): Promise<string> {
 	return refreshPromise;
 }
 
+export function stripJsonContentTypeForFormData(
+	config: InternalAxiosRequestConfig,
+): InternalAxiosRequestConfig {
+	if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+		config.headers.delete('Content-Type');
+		config.headers.delete('content-type');
+	}
+	return config;
+}
+
 export function setupInterceptors(authStore: AuthStoreRef): void {
 	apiClient.interceptors.request.use((config) => {
+		stripJsonContentTypeForFormData(config);
 		const accessToken = tokenStorage.getAccessToken(
 			resolveRealmForApiUrl(config.url),
 		);
