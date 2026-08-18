@@ -164,7 +164,17 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 	}, []);
 
 	return (
-		<Stack gap={0} h="100%">
+		<Box
+			style={{
+				position: 'absolute',
+				inset: 0,
+				display: 'flex',
+				flexDirection: 'column',
+				minHeight: 0,
+				overflow: 'hidden',
+			}}
+		>
+		<Stack gap={0} h="100%" style={{ minHeight: 0, overflow: 'hidden' }}>
 			<Group px="md" py="xs" justify="space-between" wrap="nowrap" style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
 				<Group gap="sm" wrap="nowrap">
 					<Button
@@ -235,7 +245,7 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 				</Group>
 			</Group>
 
-			<Group align="stretch" gap={0} flex={1} style={{ minHeight: 0 }}>
+			<Group align="stretch" gap={0} flex={1} wrap="nowrap" style={{ minHeight: 0, overflow: 'hidden' }}>
 				<Box
 					w={sidebarWidth}
 					style={{
@@ -282,9 +292,11 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 					/>
 				</Box>
 
-				<Box flex={1} style={{ minHeight: 0, minWidth: 0 }}>
+				<Box flex={1} h="100%" style={{ minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 					{workspaceView === 'graph' ? (
-						<GraphView vaultId={vaultId} onNavigateNote={handleNavigateNote} />
+						<Box flex={1} h="100%" mih={0} style={{ overflow: 'hidden' }}>
+							<GraphView vaultId={vaultId} onNavigateNote={handleNavigateNote} />
+						</Box>
 					) : selectedPath && !editorPath ? (
 						<Stack gap="xs" p="md">
 							<Text size="sm" c="dimmed">
@@ -344,5 +356,6 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 				canWrite={canWrite}
 			/>
 		</Stack>
+		</Box>
 	);
 }

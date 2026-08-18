@@ -658,17 +658,19 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 					}}
 				>
 					{showWysiwyg ? (
-						<MarkdownWysiwygEditor
-							content={session.content}
-							onChange={(value) => setContent(sessionKey, value)}
-							formatNonce={session.formatNonce}
-							formatCommand={session.formatCommand}
-							undoNonce={session.undoNonce}
-							redoNonce={session.redoNonce}
-							onFormatHandled={handleFormatHandled}
-							extraExtensions={editorExtensions}
-							onEditorReady={handleEditorReady}
-						/>
+						<Box h="100%" mih={0} style={{ overflow: 'hidden' }}>
+							<MarkdownWysiwygEditor
+								content={session.content}
+								onChange={(value) => setContent(sessionKey, value)}
+								formatNonce={session.formatNonce}
+								formatCommand={session.formatCommand}
+								undoNonce={session.undoNonce}
+								redoNonce={session.redoNonce}
+								onFormatHandled={handleFormatHandled}
+								extraExtensions={editorExtensions}
+								onEditorReady={handleEditorReady}
+							/>
+						</Box>
 					) : null}
 					{wikilinkAutocomplete && showWysiwyg ? (
 						<WikilinkAutocompleteMenu
@@ -702,6 +704,8 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 									flex: 1,
 									height: '100%',
 									minHeight: 0,
+									overflow: 'auto',
+									resize: 'none',
 									padding: 'var(--mantine-spacing-md)',
 									fontFamily: 'var(--mantine-font-family-monospace)',
 									fontSize: 'var(--mantine-font-size-sm)',
