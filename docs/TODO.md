@@ -150,3 +150,44 @@
 - [x] Reload → documentPath каждого окна восстановлен *(auto: restoreFromHistory / WIN; F5 — manual)*
 - [x] Файл→Открыть / Start в окне меняет только это окно *(auto: window-scoped consumer; UI — manual)*
 - [x] Без коммита
+
+---
+
+## Hotfix — Migration access_options JSON DEFAULT
+
+**Зависимости:** —  
+**Субагент:** `developer` (PHP)
+
+- [x] **HF.1** `Version20260817140336`: убрать `DEFAULT '{}'` у `main_claimant.access_options` (up/down) → `JSON NOT NULL`
+- [x] **HF.2** `Claimant.php`: убрать `options: ['default' => '{}']`; PHP `= []` оставлен
+- [x] **HF.3** Без коммита; инструкция migrate ниже в отчёте оркестратора
+
+---
+
+## Hotfix — Version20260817140336 duplicate schema dump
+
+**Диагноз:** `Version20260817140336` = ошибочный полный `migrations:diff` dump (CREATE board_* / pkb_* + DATETIME→TIMESTAMP noise). Таблицы уже созданы инкрементальными `Version20260817130000`…`180000` (файлы удалены в working tree, но уже применены в БД). Ошибка на `board_activity_log already exists` — **duplicate dump**, не «новая» таблица. Partial apply этой Version возможен на чистой БД (MySQL DDL auto-commit), но у пользователя таблицы есть от старых миграций.
+
+**Зависимости:** —  
+**Субагент:** `developer` (PHP)
+
+- [x] **HF2.1** Восстановлены `Version20260817130000`…`Version20260817180000` из git HEAD
+- [x] **HF2.2** `Version20260817140336`: убраны CREATE/DROP board/pkb + FK и DATETIME↔TIMESTAMP noise
+- [x] **HF2.3** Slim delta: `access_options` без DEFAULT + DEFAULT на `board_board` (background_*/visibility)
+- [x] **HF2.4** Без коммита; migrate — см. отчёт оркестратора
+
+---
+
+## Hotfix — Idempotent board migrations (1050 already exists)
+
+**Диагноз:** После HF2 инкрементальные `130000`…`180000` восстановлены, но в БД пользователя `board_*`/`pkb_*` уже есть (partial dump / ручной migrate), а stamps в `doctrine_migration_versions` отсутствуют. `130000`/`140000` делают голый `CREATE TABLE` → `SQLSTATE[42S01] 1050`. `150000`…`180000` уже идемпотентны (`tableExists` / `foreignKeyExists`). `140336` — slim ALTER, ок.
+
+**Подход:** идемпотентный `up()` как в `Version20260817150000` (skip CREATE/FK если объект есть). Не DROP. Не коммитить.
+
+**Зависимости:** HF2  
+**Субагент:** `developer` (PHP)
+
+- [x] **HF3.1** `Version20260817130000`: idempotent CREATE/FK (`tableExists` / `foreignKeyExists`)
+- [x] **HF3.2** `Version20260817140000`: idempotent CREATE/FK (как 150000)
+- [x] **HF3.3** `150000`…`180000` уже были idempotent; `140336` не трогали
+- [x] **HF3.4** Без коммита; инструкция migrate в отчёте оркестратора
