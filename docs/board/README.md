@@ -69,5 +69,6 @@ client/src/features/board/
 
 | Файл | Содержание |
 |------|------------|
+| [TZ.md](TZ.md) | Техническое задание |
 | [PLAN.md](PLAN.md) | Полный план MVP + v2 |
 | [TODO.md](TODO.md) | Трекинг задач |

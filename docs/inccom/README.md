@@ -45,3 +45,7 @@ client/src/features/inccom/
 ## API
 
 Детали эндпоинтов — [API_SPEC.md](../API_SPEC.md), секция IncCom.
+
+## Документы
+
+- [TZ.md](TZ.md) — техническое задание

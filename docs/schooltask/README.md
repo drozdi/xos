@@ -54,4 +54,5 @@ client/src/features/schooltask/    # EventTeacherModal, LessonFilesPanel, …
 
 ## Документы
 
-- [SCHOOLTASK_REVIEW.md](../SCHOOLTASK_REVIEW.md) — обзор и замечания
+- [REVIEW.md](REVIEW.md) — ревью и backlog
+- [TZ.md](TZ.md) — техническое задание

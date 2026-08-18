@@ -54,3 +54,7 @@ client/src/features/todo/
 ## Доступ
 
 `canUseTodo()` — проверка прав модуля todo.
+
+## Документы
+
+- [TZ.md](TZ.md) — техническое задание

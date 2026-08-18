@@ -58,3 +58,7 @@ client/src/features/main/   # если есть общие компоненты
 | claimant | ✓ | ✓ | ✓ | ✓ | — |
 
 Синхронизация claimants: `php bin/console main:claimant:sync` (см. [ARCHITECTURE.md](../ARCHITECTURE.md)).
+
+## Документы
+
+- [TZ.md](TZ.md) — техническое задание

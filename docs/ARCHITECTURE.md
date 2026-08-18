@@ -240,7 +240,7 @@ CRUD `/api/settings` и `/api/user-data` **сохраняются**. Целев�
 ## ADR: Desktop state batch (один запрос)
 
 Полный текст: **`docs/ADR-desktop-state-batch.md`** (Accepted, 2026-08-06).  
-План: **`docs/PLAN.md`**. Спека: **`docs/API_SPEC.md`** § Desktop state.
+План: **[platform/README.md](platform/README.md)**. Спека: **`docs/API_SPEC.md`** § Desktop state.
 
 **Выбор (A):** `GET` + `PUT /api/desktop-state` — aggregate над `user_settings` (managed) + `user_app_data` `explorer.last_path`. Вариант (B) (всё в settings) отклонён: ломает границы KV / миграция path.
 

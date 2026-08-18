@@ -69,3 +69,7 @@ client/src/features/device/       # DeviceAccountingFields, editors, gallery
 Вкладки: общие данные, свойства, комплектующие, ремонты, лицензии, изображения, файлы.
 
 Дополнительные scope: `can_mod`, `can_location`, `can_write_off`, `can_repair` — см. `setting.json`.
+
+## Документы
+
+- [TZ.md](TZ.md) — техническое задание

@@ -60,3 +60,7 @@ client/src/features/calendar/
 ## Доступ
 
 `canUseCalendar()` — авторизованный пользователь с правами модуля calendar.
+
+## Документы
+
+- [TZ.md](TZ.md) — техническое задание

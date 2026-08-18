@@ -27,18 +27,20 @@
 
 ## Документация по доменам
 
-| Домен | Claimant | Приложений | Документ |
-|-------|----------|------------|----------|
-| Система | — | 6 | [system/README.md](system/README.md) |
-| Main | `main` | 8 | [main/README.md](main/README.md) |
-| Device | `device` | 17 | [device/README.md](device/README.md) |
-| Explorer | `explorer` | 9 | [explorer/README.md](explorer/README.md) |
-| SchoolTask | `schooltask` | 8 | [schooltask/README.md](schooltask/README.md) |
-| IncCom | `inccom` | 1 | [inccom/README.md](inccom/README.md) |
-| Calendar | `calendar` | 1 | [calendar/README.md](calendar/README.md) |
-| Todo | `todo` | 1 | [todo/README.md](todo/README.md) |
-| Board | `board` | 1 | [board/README.md](board/README.md) |
-| PKB | `pkb` | 1 | [pkb/README.md](pkb/README.md) |
+| Домен | Claimant | Приложений | Обзор | ТЗ |
+|-------|----------|------------|-------|-----|
+| Система | — | 6 | [system/README.md](system/README.md) | [system/TZ.md](system/TZ.md) |
+| Main | `main` | 8 | [main/README.md](main/README.md) | [main/TZ.md](main/TZ.md) |
+| Device | `device` | 17 | [device/README.md](device/README.md) | [device/TZ.md](device/TZ.md) |
+| Explorer | `explorer` | 9 | [explorer/README.md](explorer/README.md) | [explorer/TZ.md](explorer/TZ.md) |
+| SchoolTask | `schooltask` | 8 | [schooltask/README.md](schooltask/README.md) | [schooltask/TZ.md](schooltask/TZ.md) |
+| IncCom | `inccom` | 1 | [inccom/README.md](inccom/README.md) | [inccom/TZ.md](inccom/TZ.md) |
+| Calendar | `calendar` | 1 | [calendar/README.md](calendar/README.md) | [calendar/TZ.md](calendar/TZ.md) |
+| Todo | `todo` | 1 | [todo/README.md](todo/README.md) | [todo/TZ.md](todo/TZ.md) |
+| Board | `board` | 1 | [board/README.md](board/README.md) | [board/TZ.md](board/TZ.md) |
+| PKB | `pkb` | 1 | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) |
+
+Полный индекс документации: [README.md](README.md)
 
 ---
 
@@ -153,7 +155,8 @@ IBlock — API инфоблоков, отдельного desktop-приложе
 
 | Документ | Содержание |
 |----------|------------|
+| [README.md](README.md) | Индекс всей документации |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Как добавить новое приложение |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Архитектура monorepo |
 | [API_SPEC.md](API_SPEC.md) | REST API (общий) |
-| [TZ.md](TZ.md) | Техническое задание |
+| [TZ.md](TZ.md) | Общее ТЗ системы |

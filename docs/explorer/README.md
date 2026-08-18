@@ -54,3 +54,11 @@ client/src/features/media-player/    # плейлисты audio/video
 ## Пользовательские диски
 
 `GET/POST/DELETE /api/explorer/disks` — виртуальные точки монтирования с произвольным root-path.
+
+## Документы
+
+| Файл | Содержание |
+|------|------------|
+| [TZ.md](TZ.md) | Техническое задание |
+| [PLAN.md](PLAN.md) | План pickers / multi-instance |
+| [TODO.md](TODO.md) | Трекинг |

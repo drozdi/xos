@@ -1,6 +1,6 @@
 # STATUS — Desktop state batch
 
-> Финал оркестрации 2026-08-06 · Источник: `docs/PLAN.md`
+> Финал оркестрации 2026-08-06 · Источник: [platform/README.md](platform/README.md)
 
 ## Closed: предыдущие планы
 
@@ -43,6 +43,6 @@
 ## Артефакты
 
 - ADR: `docs/ADR-desktop-state-batch.md`
-- Tracking: `docs/TODO.md`
+- Tracking: [platform/README.md](platform/README.md), [explorer/TODO.md](explorer/TODO.md)
 - Tests: `docs/TEST_REPORT.md`
 - Apps: `docs/APPS.md` · API: `docs/API_SPEC.md` · Guide: `docs/DEVELOPER_GUIDE.md` · Arch: `docs/ARCHITECTURE.md`

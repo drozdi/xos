@@ -55,6 +55,7 @@ client/src/features/pkb/
 
 | Файл | Содержание |
 |------|------------|
+| [TZ.md](TZ.md) | Техническое задание |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Структура, checklist фич |
 | [API_SPEC.md](API_SPEC.md) | REST endpoints PKB |
 | [PLAN.md](PLAN.md) | План фаз 0–6 |

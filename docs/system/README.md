@@ -43,3 +43,7 @@ client/src/apps/demo-calculator/
 ## Игры
 
 Полностью клиентские, без API. Используются как примеры UI и window manager.
+
+## Документы
+
+- [TZ.md](TZ.md) — техническое задание

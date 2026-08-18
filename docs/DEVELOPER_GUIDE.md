@@ -178,7 +178,7 @@ const [theme, setTheme] = useSetting('USER', 'theme', 'light');
 
 > Полный контракт границ: [`docs/ADR-user-app-data.md`](ADR-user-app-data.md).  
 > Политика sync (Accepted): [`docs/ADR-desktop-ux-sync.md`](ADR-desktop-ux-sync.md) — **DONE**.  
-> **Target wire:** один load/save — [`docs/ADR-desktop-state-batch.md`](ADR-desktop-state-batch.md) · план [`PLAN.md`](PLAN.md).  
+> **Target wire:** один load/save — [`docs/ADR-desktop-state-batch.md`](ADR-desktop-state-batch.md) · план [`platform/README.md`](platform/README.md).  
 > Поведение as-is — раздел **«Desktop UX sync»** ниже; target — **«Desktop state batch»**.
 
 Четыре разных места — **не** смешивать:
@@ -519,5 +519,5 @@ main:claimant:sync
 - [ADR-desktop-state-batch.md](ADR-desktop-state-batch.md) — aggregate `GET`/`PUT /api/desktop-state` (Accepted)
 - § **Desktop UX sync** / **Desktop state batch** (этот файл) — as-is vs target
 - [API_SPEC.md](API_SPEC.md) — REST (`/api/settings`, `/api/user-data`, `/api/desktop-state`, …)
-- [PLAN.md](PLAN.md) — текущий план desktop-state batch
+- [platform/README.md](platform/README.md) — shell ADR и desktop-state batch
 - [README.md](../README.md) — запуск проекта
