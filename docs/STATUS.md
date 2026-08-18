@@ -45,4 +45,4 @@
 - ADR: `docs/ADR-desktop-state-batch.md`
 - Tracking: `docs/TODO.md`
 - Tests: `docs/TEST_REPORT.md`
-- API: `docs/API_SPEC.md` · Guide: `docs/DEVELOPER_GUIDE.md` · Arch: `docs/ARCHITECTURE.md`
+- Apps: `docs/APPS.md` · API: `docs/API_SPEC.md` · Guide: `docs/DEVELOPER_GUIDE.md` · Arch: `docs/ARCHITECTURE.md`

@@ -13,8 +13,12 @@
 | IncCom | `server/src/IncCom/` | Учёт доходов/расходов |
 | SchoolTask | `server/src/SchoolTask/` | Школьное расписание |
 | Explorer | `server/src/Explorer/` | Файловый менеджер |
+| Calendar | `server/src/Calendar/` | Личные календари и события |
+| Todo | `server/src/Todo/` | Заметки и списки задач |
+| Board | `server/src/Board/` | Kanban-доски |
+| Pkb | `server/src/Pkb/` | База знаний (vaults) |
 
-Клиент: `client/src/apps/*` — окна рабочего стола; `client/src/core/*` — auth, API, theme.
+Клиент: `client/src/apps/*` — окна рабочего стола (55 приложений, см. [APPS.md](APPS.md)); `client/src/core/*` — auth, API, theme.
 
 ## Безопасность API
 
