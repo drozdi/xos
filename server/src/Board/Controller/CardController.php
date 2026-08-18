@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
@@ -16,6 +17,27 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 #[Access('board')]
 class CardController extends AbstractController
 {
+    #[Route('/cards/due', name: 'cards_due', methods: ['GET'])]
+    public function cardsDue(Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $startRaw = (string) $request->query->get('start', '');
+        $endRaw = (string) $request->query->get('end', '');
+        if ('' === trim($startRaw) || '' === trim($endRaw)) {
+            throw new BadRequestHttpException('Укажите start и end (ISO datetime)');
+        }
+        try {
+            $start = new \DateTime($startRaw);
+            $end = new \DateTime($endRaw);
+        } catch (\Exception) {
+            throw new BadRequestHttpException('Некорректный start или end');
+        }
+
+        return $this->json($boardManager->findDueCardsInRange($user, $start, $end));
+    }
+
     #[Route('/lists/{listId}/cards', requirements: ['listId' => '\d+'], methods: ['POST'])]
     public function create(int $listId, Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
     {

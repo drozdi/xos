@@ -17,15 +17,18 @@ import type { CalendarDto } from '@/core/api/endpoints/calendarApi';
 import { BATTLE_NET } from '@/core/theme/battleNetTheme';
 
 import {
+	OVERLAY_BOARD_ID,
 	OVERLAY_SCHOOLTASK_ID,
 	OVERLAY_TODO_ID,
 	ownCalendarVisibilityId,
 	useCalendarVisibilityStore,
 } from '../visibilityStore';
+import { BOARD_OVERLAY_COLOR } from '../types';
 
 interface CalendarSidebarProps {
 	calendars: CalendarDto[];
 	showSchooltaskOverlay: boolean;
+	showBoardOverlay?: boolean;
 	onCreateCalendar: (title: string, color: string) => void;
 	onShare: (calendar: CalendarDto) => void;
 	onDelete: (calendar: CalendarDto) => void;
@@ -95,6 +98,7 @@ function CalendarRow({
 export function CalendarSidebar({
 	calendars,
 	showSchooltaskOverlay,
+	showBoardOverlay,
 	onCreateCalendar,
 	onShare,
 	onDelete,
@@ -233,6 +237,9 @@ export function CalendarSidebar({
 				</Text>
 				<Stack gap={6}>
 					<CalendarRow id={OVERLAY_TODO_ID} title="Заметки" color="#78909c" />
+					{showBoardOverlay ? (
+						<CalendarRow id={OVERLAY_BOARD_ID} title="Доска" color={BOARD_OVERLAY_COLOR} />
+					) : null}
 					{showSchooltaskOverlay ? (
 						<CalendarRow id={OVERLAY_SCHOOLTASK_ID} title="Моё расписание" color={BATTLE_NET.accent} />
 					) : null}

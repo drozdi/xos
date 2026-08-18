@@ -97,4 +97,28 @@ class CardRepository extends ServiceEntityRepository
 
         return array_map(static fn (array $row): int => (int) $row['id'], $rows);
     }
+
+    /** @return list<Card> */
+    public function findDueInRangeForUser(User $user, \DateTimeInterface $start, \DateTimeInterface $end): array
+    {
+        return $this->createQueryBuilder('c')
+            ->distinct()
+            ->innerJoin('c.list', 'l')
+            ->innerJoin('l.board', 'b')
+            ->innerJoin('b.workspace', 'w')
+            ->leftJoin('w.members', 'wm', 'WITH', 'wm.user = :user')
+            ->leftJoin('b.members', 'bm', 'WITH', 'bm.user = :user')
+            ->andWhere('c.archivedAt IS NULL')
+            ->andWhere('c.dueDate IS NOT NULL')
+            ->andWhere('c.dueDate >= :start')
+            ->andWhere('c.dueDate <= :end')
+            ->andWhere('w.owner = :user OR wm.user IS NOT NULL OR bm.user IS NOT NULL')
+            ->setParameter('user', $user)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->orderBy('c.dueDate', 'ASC')
+            ->addOrderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

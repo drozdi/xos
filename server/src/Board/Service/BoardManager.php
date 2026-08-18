@@ -266,6 +266,25 @@ class BoardManager extends AbstractManager
         ];
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function findDueCardsInRange(User $user, \DateTimeInterface $start, \DateTimeInterface $end): array
+    {
+        $cards = $this->getCardRepository()->findDueInRangeForUser($user, $start, $end);
+        $result = [];
+
+        foreach ($cards as $card) {
+            $board = $card->getBoard();
+            if (null === $board || !$this->permissionResolver->canViewBoard($board, $user)) {
+                continue;
+            }
+            $result[] = $this->serializeCalendarDueCard($card);
+        }
+
+        return $result;
+    }
+
     public function updateBoard(Board $board, User $user, array $data): Board
     {
         if (!$this->permissionResolver->canEditBoard($board, $user)) {
@@ -1262,6 +1281,24 @@ class BoardManager extends AbstractManager
             'cover_color' => $card->getCoverColor(),
             'label_ids' => $this->extractLabelIds($card),
             'assignee_ids' => $this->extractAssigneeIds($card),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeCalendarDueCard(Card $card): array
+    {
+        $board = $card->getBoard();
+        $list = $card->getList();
+
+        return [
+            'id' => $card->getId(),
+            'board_id' => $board?->getId(),
+            'board_title' => $board?->getTitle(),
+            'list_id' => $list?->getId(),
+            'list_title' => $list?->getTitle(),
+            'title' => $card->getTitle(),
+            'due_date' => $this->formatDateTime($card->getDueDate()),
+            'cover_color' => $card->getCoverColor(),
         ];
     }
 

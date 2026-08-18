@@ -5,6 +5,7 @@ import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
 
 import { calendarApi, type CalendarDto, type CalendarEventDto } from '@/core/api/endpoints/calendarApi';
+import { boardApi } from '@/core/api/endpoints/boardApi';
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { todoApi } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -13,11 +14,13 @@ import {
 	useCanReadSchooltaskEvent,
 	useCanUpdateSchooltaskEvent,
 } from '@/features/schooltask/schooltaskAccess';
+import { canUseBoard } from '@/features/board/boardAccess';
 
 import { canUseCalendar } from '../calendarAccess';
-import { mapOwnEvent, mapSchooltaskEvent, mapTodoDue } from '../mappers';
+import { mapBoardCardDue, mapOwnEvent, mapSchooltaskEvent, mapTodoDue } from '../mappers';
 import type { CalendarEventViewModel, CalendarViewMode } from '../types';
 import {
+	OVERLAY_BOARD_ID,
 	OVERLAY_SCHOOLTASK_ID,
 	OVERLAY_TODO_ID,
 	ownCalendarVisibilityId,
@@ -101,6 +104,12 @@ export function CalendarShell() {
 		enabled: canUseCalendar() && range !== null && isVisible(OVERLAY_TODO_ID),
 	});
 
+	const boardDueQuery = useQuery({
+		queryKey: queryKeys.calendar.boardDueCards(range ?? { start: '', end: '' }),
+		queryFn: () => boardApi.dueCards(range!.start, range!.end),
+		enabled: canUseCalendar() && canUseBoard() && range !== null && isVisible(OVERLAY_BOARD_ID),
+	});
+
 	const showSchooltaskOverlay = showSchooltaskByRights && !schooltaskForbidden;
 
 	const schooltaskQuery = useQuery({
@@ -178,6 +187,15 @@ export function CalendarShell() {
 			}
 		}
 
+		if (isVisible(OVERLAY_BOARD_ID)) {
+			for (const item of boardDueQuery.data ?? []) {
+				const mapped = mapBoardCardDue(item);
+				if (mapped) {
+					result.push(mapped);
+				}
+			}
+		}
+
 		if (showSchooltaskOverlay && isVisible(OVERLAY_SCHOOLTASK_ID)) {
 			for (const event of schooltaskQuery.data ?? []) {
 				result.push(mapSchooltaskEvent(event));
@@ -188,6 +206,7 @@ export function CalendarShell() {
 	}, [
 		eventsQuery.data,
 		dueQuery.data,
+		boardDueQuery.data,
 		schooltaskQuery.data,
 		calendarById,
 		isVisible,
@@ -208,6 +227,7 @@ export function CalendarShell() {
 			queryClient.invalidateQueries({ queryKey: queryKeys.calendar.calendars }),
 			queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] }),
 			queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] }),
+			queryClient.invalidateQueries({ queryKey: ['calendar', 'boardDueCards'] }),
 			queryClient.invalidateQueries({ queryKey: ['schooltask', 'teacherEvents'] }),
 		]);
 	}, [queryClient]);
@@ -230,6 +250,10 @@ export function CalendarShell() {
 			return;
 		}
 		if (event.source === 'todo') {
+			setOverlayEvent(event);
+			return;
+		}
+		if (event.source === 'board') {
 			setOverlayEvent(event);
 			return;
 		}
@@ -260,11 +284,15 @@ export function CalendarShell() {
 	}
 
 	const isLoading =
-		eventsQuery.isFetching || dueQuery.isFetching || schooltaskQuery.isFetching;
+		eventsQuery.isFetching ||
+		dueQuery.isFetching ||
+		boardDueQuery.isFetching ||
+		schooltaskQuery.isFetching;
 	const isRefreshing =
 		calendarsQuery.isFetching ||
 		eventsQuery.isFetching ||
 		dueQuery.isFetching ||
+		boardDueQuery.isFetching ||
 		schooltaskQuery.isFetching;
 
 	return (
@@ -273,6 +301,7 @@ export function CalendarShell() {
 				<CalendarSidebar
 					calendars={calendars}
 					showSchooltaskOverlay={showSchooltaskOverlay}
+					showBoardOverlay={canUseBoard()}
 					creating={createCalendarMutation.isPending}
 					onCreateCalendar={(title, color) =>
 						createCalendarMutation.mutate({ title, color })

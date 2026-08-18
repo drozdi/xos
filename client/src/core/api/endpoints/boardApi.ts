@@ -482,6 +482,19 @@ export type ChecklistItemWritePayload = {
 
 
 
+export const boardDueCardSchema = z.object({
+	id: z.number(),
+	board_id: z.number().nullable().optional(),
+	board_title: z.string().nullable().optional(),
+	list_id: z.number().nullable().optional(),
+	list_title: z.string().nullable().optional(),
+	title: z.string(),
+	due_date: z.string().nullable().optional(),
+	cover_color: z.string().nullable().optional(),
+});
+
+export type BoardDueCard = z.infer<typeof boardDueCardSchema>;
+
 export type CommentWritePayload = {
 
 	text?: string;
@@ -756,6 +769,13 @@ export const boardApi = {
 
 		return z.array(boardMemberSchema).parse(data);
 
+	},
+
+	dueCards: async (start: string, end: string): Promise<BoardDueCard[]> => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/cards/due`, {
+			params: { start, end },
+		});
+		return z.array(boardDueCardSchema).parse(data);
 	},
 
 };

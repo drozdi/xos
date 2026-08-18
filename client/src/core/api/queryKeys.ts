@@ -102,6 +102,8 @@ export const queryKeys = {
 			['calendar', 'events', range, ids ?? null] as const,
 		dueItems: (range: { start: string; end: string }) =>
 			['calendar', 'dueItems', range] as const,
+		boardDueCards: (range: { start: string; end: string }) =>
+			['calendar', 'boardDueCards', range] as const,
 	},
 	board: {
 		workspaces: ['board', 'workspaces'] as const,

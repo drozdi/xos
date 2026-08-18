@@ -28,6 +28,7 @@ import remarkGfm from 'remark-gfm';
 import {
 	type BoardLabel,
 	type BoardMember,
+	type CardDetail,
 	boardApi,
 } from '@/core/api/endpoints/boardApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -80,11 +81,16 @@ export function CardModal({
 		enabled: opened,
 	});
 
-	const invalidateBoard = async () => {
-		await queryClient.invalidateQueries({ queryKey: queryKeys.board.board(boardId) });
+	const invalidateCard = async () => {
 		if (cardId != null) {
 			await queryClient.invalidateQueries({ queryKey: queryKeys.board.card(cardId) });
 		}
+	};
+
+	const invalidateBoard = async () => {
+		await queryClient.invalidateQueries({ queryKey: queryKeys.board.board(boardId) });
+		await invalidateCard();
+		await queryClient.invalidateQueries({ queryKey: ['calendar', 'boardDueCards'] });
 	};
 
 	const handleClose = async () => {
@@ -178,13 +184,13 @@ export function CardModal({
 			boardApi.createChecklist(cardId!, { title: checklistTitle }),
 		onSuccess: () => {
 			setNewChecklistTitle('');
-			invalidateBoard();
+			void invalidateCard();
 		},
 	});
 
 	const deleteChecklistMutation = useMutation({
 		mutationFn: (id: number) => boardApi.deleteChecklist(id),
-		onSuccess: () => invalidateBoard(),
+		onSuccess: () => invalidateCard(),
 	});
 
 	const createItemMutation = useMutation({
@@ -192,7 +198,7 @@ export function CardModal({
 			boardApi.createChecklistItem(checklistId, { text }),
 		onSuccess: (_data, vars) => {
 			setNewItemText((prev) => ({ ...prev, [vars.checklistId]: '' }));
-			invalidateBoard();
+			void invalidateCard();
 		},
 	});
 
@@ -204,19 +210,45 @@ export function CardModal({
 			id: number;
 			payload: { text?: string; checked?: boolean };
 		}) => boardApi.updateChecklistItem(id, payload),
-		onSuccess: () => invalidateBoard(),
+		onMutate: async ({ id, payload }) => {
+			if (cardId == null) {
+				return;
+			}
+			await queryClient.cancelQueries({ queryKey: queryKeys.board.card(cardId) });
+			const previous = queryClient.getQueryData<CardDetail>(queryKeys.board.card(cardId));
+			if (previous) {
+				queryClient.setQueryData<CardDetail>(queryKeys.board.card(cardId), {
+					...previous,
+					checklists: previous.checklists.map((checklist) => ({
+						...checklist,
+						items: checklist.items.map((item) =>
+							item.id === id ? { ...item, ...payload } : item,
+						),
+					})),
+				});
+			}
+			return { previous };
+		},
+		onError: (_error, _vars, context) => {
+			if (cardId != null && context?.previous) {
+				queryClient.setQueryData(queryKeys.board.card(cardId), context.previous);
+			}
+		},
+		onSettled: () => {
+			void invalidateCard();
+		},
 	});
 
 	const deleteItemMutation = useMutation({
 		mutationFn: (id: number) => boardApi.deleteChecklistItem(id),
-		onSuccess: () => invalidateBoard(),
+		onSuccess: () => invalidateCard(),
 	});
 
 	const createCommentMutation = useMutation({
 		mutationFn: (text: string) => boardApi.createComment(cardId!, { text }),
 		onSuccess: () => {
 			setNewComment('');
-			invalidateBoard();
+			void invalidateCard();
 		},
 	});
 
@@ -225,23 +257,23 @@ export function CardModal({
 			boardApi.updateComment(id, { text }),
 		onSuccess: () => {
 			setEditingCommentId(null);
-			invalidateBoard();
+			void invalidateCard();
 		},
 	});
 
 	const deleteCommentMutation = useMutation({
 		mutationFn: (id: number) => boardApi.deleteComment(id),
-		onSuccess: () => invalidateBoard(),
+		onSuccess: () => invalidateCard(),
 	});
 
 	const uploadAttachmentMutation = useMutation({
 		mutationFn: (file: File) => boardApi.uploadAttachment(cardId!, file),
-		onSuccess: () => invalidateBoard(),
+		onSuccess: () => invalidateCard(),
 	});
 
 	const deleteAttachmentMutation = useMutation({
 		mutationFn: (id: number) => boardApi.deleteAttachment(id),
-		onSuccess: () => invalidateBoard(),
+		onSuccess: () => invalidateCard(),
 	});
 
 	const handleDueDateChange = (value: string | null) => {
@@ -276,7 +308,7 @@ export function CardModal({
 							<TextInput
 								label="Название"
 								value={title}
-								onChange={(e) => setTitle(e.currentTarget.value)}
+								onChange={(e) => setTitle(e.target.value)}
 								onBlur={() => {
 									if (!canEdit) {
 										return;
@@ -321,7 +353,7 @@ export function CardModal({
 								) : (
 									<Textarea
 										value={description}
-										onChange={(e) => setDescription(e.currentTarget.value)}
+										onChange={(e) => setDescription(e.target.value)}
 										minRows={4}
 										placeholder="Markdown-описание"
 										readOnly={!canEdit}
@@ -379,13 +411,13 @@ export function CardModal({
 												<Group key={item.id} gap="xs" wrap="nowrap">
 													<Checkbox
 														checked={item.checked}
-														onChange={(e) => {
+														onChange={() => {
 															if (!canEdit) {
 																return;
 															}
 															updateItemMutation.mutate({
 																id: item.id,
-																payload: { checked: e.currentTarget.checked },
+																payload: { checked: !item.checked },
 															});
 														}}
 														disabled={!canEdit}
@@ -425,7 +457,7 @@ export function CardModal({
 													onChange={(e) =>
 														setNewItemText((prev) => ({
 															...prev,
-															[checklist.id]: e.currentTarget.value,
+															[checklist.id]: e.target.value,
 														}))
 													}
 													onKeyDown={(e) => {
@@ -467,7 +499,7 @@ export function CardModal({
 										placeholder="Название чеклиста"
 										style={{ flex: 1 }}
 										value={newChecklistTitle}
-										onChange={(e) => setNewChecklistTitle(e.currentTarget.value)}
+										onChange={(e) => setNewChecklistTitle(e.target.value)}
 										onKeyDown={(e) => {
 											if (e.key === 'Enter') {
 												const t = newChecklistTitle.trim();
@@ -517,7 +549,7 @@ export function CardModal({
 													<Textarea
 														value={editingCommentText}
 														onChange={(e) =>
-															setEditingCommentText(e.currentTarget.value)
+															setEditingCommentText(e.target.value)
 														}
 														minRows={2}
 														autosize
@@ -590,7 +622,7 @@ export function CardModal({
 									<Textarea
 										placeholder="Написать комментарий…"
 										value={newComment}
-										onChange={(e) => setNewComment(e.currentTarget.value)}
+										onChange={(e) => setNewComment(e.target.value)}
 										minRows={2}
 									/>
 									<Group justify="flex-end">

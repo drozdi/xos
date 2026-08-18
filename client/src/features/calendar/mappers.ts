@@ -1,10 +1,12 @@
 import dayjs from 'dayjs';
 
+import type { BoardDueCard } from '@/core/api/endpoints/boardApi';
 import type { CalendarEventDto } from '@/core/api/endpoints/calendarApi';
 import type { CalendarEvent as SchooltaskCalendarEvent } from '@/core/api/endpoints/schooltaskApi';
 import type { TodoDueItem } from '@/core/api/endpoints/todoApi';
 
 import {
+	BOARD_OVERLAY_COLOR,
 	SCHOOLTASK_OVERLAY_COLOR,
 	TODO_OVERLAY_COLOR,
 	type CalendarEventViewModel,
@@ -67,6 +69,32 @@ export function mapTodoDue(item: TodoDueItem): CalendarEventViewModel | null {
 		end,
 		allDay,
 		color: item.list_color || TODO_OVERLAY_COLOR,
+		editable: false,
+		payload: item,
+	};
+}
+
+export function mapBoardCardDue(item: BoardDueCard): CalendarEventViewModel | null {
+	if (!item.due_date) {
+		return null;
+	}
+	const due = dayjs(item.due_date);
+	if (!due.isValid()) {
+		return null;
+	}
+	const allDay = isMidnight(item.due_date);
+	const start = due.format('YYYY-MM-DD HH:mm:ss');
+	const end = allDay
+		? start
+		: due.add(TODO_TIMED_DURATION_MINUTES, 'minute').format('YYYY-MM-DD HH:mm:ss');
+	return {
+		uid: `board-${item.id}`,
+		source: 'board',
+		title: item.title,
+		start,
+		end,
+		allDay,
+		color: item.cover_color || BOARD_OVERLAY_COLOR,
 		editable: false,
 		payload: item,
 	};

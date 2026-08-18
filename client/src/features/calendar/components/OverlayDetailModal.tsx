@@ -1,6 +1,7 @@
 import { Modal, Stack, Text } from '@mantine/core';
 import dayjs from 'dayjs';
 
+import type { BoardDueCard } from '@/core/api/endpoints/boardApi';
 import type { CalendarEvent as SchooltaskCalendarEvent } from '@/core/api/endpoints/schooltaskApi';
 import type { TodoDueItem } from '@/core/api/endpoints/todoApi';
 
@@ -46,9 +47,11 @@ export function OverlayDetailModal({ event, opened, onClose }: OverlayDetailModa
 	const title =
 		event.source === 'todo'
 			? 'Заметка'
-			: event.source === 'schooltask'
-				? 'Урок'
-				: 'Событие';
+			: event.source === 'board'
+				? 'Задача'
+				: event.source === 'schooltask'
+					? 'Урок'
+					: 'Событие';
 
 	return (
 		<Modal opened={opened} onClose={onClose} title={title} centered>
@@ -57,7 +60,9 @@ export function OverlayDetailModal({ event, opened, onClose }: OverlayDetailModa
 				<Text size="sm" c="dimmed">
 					{event.source === 'todo'
 						? `Срок: ${formatTodoDue((event.payload as TodoDueItem).due_at)}`
-						: formatRange(event.start, event.end, event.allDay)}
+						: event.source === 'board'
+							? `Срок: ${formatTodoDue((event.payload as BoardDueCard).due_date)}`
+							: formatRange(event.start, event.end, event.allDay)}
 				</Text>
 				{event.source === 'todo' ? (
 					<>
@@ -67,6 +72,16 @@ export function OverlayDetailModal({ event, opened, onClose }: OverlayDetailModa
 						</Text>
 						<Text size="sm">
 							Статус: {(event.payload as TodoDueItem).done ? 'выполнено' : 'не выполнено'}
+						</Text>
+					</>
+				) : null}
+				{event.source === 'board' ? (
+					<>
+						<Text size="sm">
+							Доска: {(event.payload as BoardDueCard).board_title ?? '—'}
+						</Text>
+						<Text size="sm">
+							Список: {(event.payload as BoardDueCard).list_title ?? '—'}
 						</Text>
 					</>
 				) : null}

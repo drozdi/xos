@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import {
+	OVERLAY_BOARD_ID,
 	OVERLAY_SCHOOLTASK_ID,
 	OVERLAY_TODO_ID,
 	type VisibilityId,
@@ -64,4 +65,4 @@ export const useCalendarVisibilityStore = create<VisibilityState>((set, get) => 
 	},
 }));
 
-export { OVERLAY_TODO_ID, OVERLAY_SCHOOLTASK_ID };
+export { OVERLAY_TODO_ID, OVERLAY_SCHOOLTASK_ID, OVERLAY_BOARD_ID };

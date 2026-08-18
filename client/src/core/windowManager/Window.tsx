@@ -200,17 +200,27 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		contentKey: windowState?.contentKey,
 	});
 
+	const boundsReady = viewport.width > 0 && viewport.height > 0;
+
 	useEffect(() => {
-		if (!autoSize || isMaximizedLayout || !windowState) {
+		if (!windowState || isMaximizedLayout || !boundsReady) {
 			return;
 		}
 		rndRef.current?.updateSize({
 			width: windowState.width,
 			height: windowState.height,
 		});
-	}, [autoSize, isMaximizedLayout, windowState?.height, windowState?.width]);
-
-	const boundsReady = viewport.width > 0 && viewport.height > 0;
+		rndRef.current?.updatePosition({ x: windowState.x, y: windowState.y });
+		emitWindowResize(windowId);
+	}, [
+		boundsReady,
+		isMaximizedLayout,
+		windowId,
+		windowState?.height,
+		windowState?.width,
+		windowState?.x,
+		windowState?.y,
+	]);
 
 	useEffect(() => {
 		if (!windowState?.maximized || isMobile || !boundsReady) {
@@ -398,7 +408,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	);
 
 	const rndKey = windowState
-		? `${windowState.contentKey}-${isMaximizedLayout ? 'max' : 'free'}-${isMobile ? 'mob' : 'desk'}`
+		? `${windowState.contentKey}-${isMobile ? 'mob' : 'desk'}`
 		: 'missing';
 	const defaultBounds = useMemo(
 		() => {
