@@ -565,6 +565,7 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 			style={{
 				display: 'flex',
 				flexDirection: 'column',
+				flex: 1,
 				minHeight: 0,
 				overflow: 'hidden',
 			}}
@@ -653,12 +654,15 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 					style={{
 						flex: 1,
 						minHeight: 0,
+						minWidth: 0,
 						overflow: 'hidden',
 						position: 'relative',
+						display: 'flex',
+						flexDirection: 'column',
 					}}
 				>
 					{showWysiwyg ? (
-						<Box h="100%" mih={0} style={{ overflow: 'hidden' }}>
+						<Box h="100%" mih={0} style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 							<MarkdownWysiwygEditor
 								content={session.content}
 								onChange={(value) => setContent(sessionKey, value)}
@@ -694,6 +698,7 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 							placeholder="Исходный код Markdown"
 							styles={{
 								root: {
+									flex: 1,
 									height: '100%',
 									minHeight: 0,
 									display: 'flex',
@@ -717,7 +722,7 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 						/>
 					) : null}
 					{showPreview ? (
-						<ScrollArea style={{ minHeight: 0, height: '100%' }} type="auto" offsetScrollbars>
+						<ScrollArea h="100%" style={{ minHeight: 0, flex: 1 }} type="auto" offsetScrollbars>
 							<MarkdownPreview
 								content={session.content}
 								variant="reading"

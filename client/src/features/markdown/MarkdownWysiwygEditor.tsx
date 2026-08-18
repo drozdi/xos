@@ -149,7 +149,11 @@ export function MarkdownWysiwygEditor({
 	}, [editor, redoNonce]);
 
 	return (
-		<RichTextEditor editor={editor} className={classes.markdownWysiwyg}>
+		<RichTextEditor
+			editor={editor}
+			className={classes.markdownWysiwyg}
+			classNames={{ content: classes.markdownWysiwygContent }}
+		>
 			<RichTextEditor.Content className={classes.markdownViewer} />
 		</RichTextEditor>
 	);

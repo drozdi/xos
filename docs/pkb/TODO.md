@@ -80,6 +80,7 @@
 | PKB-063 | Search/replace | M | ✅ |
 | PKB-064 | 10k notes benchmark | M | ✅ |
 | PKB-065 | Docs API_SPEC | S | ✅ |
+| PKB-070 | Markdown note scroll in workspace | S | ✅ |
 
 ---
 
