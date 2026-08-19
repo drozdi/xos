@@ -31,7 +31,14 @@ class FileManager extends AbstractManager {
         $arField = explode('[', $field);
         $files = $this->getRequest()->files->get($arField[0]);
         for ($i = 1, $cnt = count($arField); $i < $cnt; $i++) {
-            $files = $files[trim($arField[$i], ']')];
+            if (!is_array($files)) {
+                $files = null;
+                break;
+            }
+            $files = $files[trim($arField[$i], ']')] ?? null;
+        }
+        if (!$files) {
+            return [];
         }
         if (!is_array($files)) {
             $files = [$files];

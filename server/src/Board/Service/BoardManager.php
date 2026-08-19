@@ -30,6 +30,7 @@ use Board\Repository\WorkspaceRepository;
 use Main\Entity\File as MainFile;
 use Main\Entity\User;
 use Main\Repository\UserRepository;
+use Main\Service\FileManager;
 use Main\Service\UploadPathResolver;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -45,6 +46,7 @@ class BoardManager extends AbstractManager
         private readonly PermissionResolver $permissionResolver,
         private readonly ActivityLogger $activityLogger,
         private readonly UploadPathResolver $uploadPathResolver,
+        private readonly FileManager $fileManager,
         private readonly string $uploadDir,
     ) {
         parent::__construct($validator);
@@ -912,6 +914,24 @@ class BoardManager extends AbstractManager
         return $attachment;
     }
 
+    public function resolveBoardAttachmentSubDir(Board $board): string
+    {
+        return sprintf('boards/%d', (int) $board->getId());
+    }
+
+    public function importAttachmentFromLocalPath(
+        Card $card,
+        User $user,
+        string $sourcePath,
+        string $originalName,
+    ): Attachment {
+        $board = $this->requireCardBoard($card);
+        $subDir = $this->resolveBoardAttachmentSubDir($board);
+        $file = $this->fileManager->importFromLocalPath($sourcePath, 'board', $subDir, $originalName);
+
+        return $this->createAttachmentFromUpload($card, $user, $file);
+    }
+
     public function getAttachment(int $id, User $user): Attachment
     {
         $attachment = $this->getAttachmentRepository()->find($id);
@@ -1764,23 +1784,36 @@ class BoardManager extends AbstractManager
         return $resolved;
     }
 
-    private function removeAttachmentFile(Attachment $attachment): void
+    public function resolveAttachmentAbsolutePath(Attachment $attachment): string
     {
-        $fileUrl = $attachment->getFileUrl();
+        $fileUrl = trim($attachment->getFileUrl());
         if ('' === $fileUrl) {
-            return;
+            throw new NotFoundHttpException('Файл вложения не найден');
         }
 
         $parts = explode('/', $fileUrl, 2);
         if (2 !== count($parts)) {
-            return;
+            throw new NotFoundHttpException('Файл вложения не найден');
         }
 
         [$subDir, $fileName] = $parts;
-        $this->uploadPathResolver->assertAllowedModule('board');
-        $this->uploadPathResolver->assertSafeSubDir($subDir);
 
-        $path = $this->uploadDir.'/board/'.$subDir.'/'.$fileName;
+        return $this->uploadPathResolver->resolveReadablePath(
+            $this->uploadDir,
+            'board',
+            $subDir,
+            $fileName,
+        );
+    }
+
+    private function removeAttachmentFile(Attachment $attachment): void
+    {
+        try {
+            $path = $this->resolveAttachmentAbsolutePath($attachment);
+        } catch (NotFoundHttpException) {
+            return;
+        }
+
         if (is_file($path)) {
             unlink($path);
         }

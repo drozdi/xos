@@ -231,6 +231,53 @@ class BoardManagerTest extends AuthWebTestCase
         @unlink($tmp);
     }
 
+    public function testImportAttachmentFromLocalPathUsesBoardSubDir(): void
+    {
+        $client = static::createClient();
+        $fixture = $this->prepareFixture($client);
+        /** @var BoardManager $manager */
+        $manager = $client->getContainer()->get(BoardManager::class);
+
+        $list = $manager->createList($fixture['board'], $fixture['owner'], ['title' => 'Import']);
+        $card = $manager->createCard($list, $fixture['owner'], ['title' => 'Imported file']);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'board');
+        self::assertNotFalse($tmp);
+        file_put_contents($tmp, 'imported body');
+
+        $boardId = (int) $fixture['board']->getId();
+        $attachment = $manager->importAttachmentFromLocalPath($card, $fixture['owner'], $tmp, 'import.txt');
+
+        self::assertSame('import.txt', $attachment->getFileName());
+        self::assertSame(sprintf('boards/%d/import.txt', $boardId), $attachment->getFileUrl());
+
+        $manager->deleteAttachment($attachment, $fixture['owner']);
+        @unlink($tmp);
+    }
+
+    public function testResolveAttachmentAbsolutePath(): void
+    {
+        $client = static::createClient();
+        $fixture = $this->prepareFixture($client);
+        /** @var BoardManager $manager */
+        $manager = $client->getContainer()->get(BoardManager::class);
+
+        $list = $manager->createList($fixture['board'], $fixture['owner'], ['title' => 'Path']);
+        $card = $manager->createCard($list, $fixture['owner'], ['title' => 'Path card']);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'board');
+        self::assertNotFalse($tmp);
+        file_put_contents($tmp, 'path test');
+
+        $attachment = $manager->importAttachmentFromLocalPath($card, $fixture['owner'], $tmp, 'path.txt');
+        $resolvedPath = $manager->resolveAttachmentAbsolutePath($attachment);
+
+        self::assertSame('path test', file_get_contents($resolvedPath));
+
+        $manager->deleteAttachment($attachment, $fixture['owner']);
+        @unlink($tmp);
+    }
+
     public function testCardAssigneesAndLabelsSync(): void
     {
         $client = static::createClient();

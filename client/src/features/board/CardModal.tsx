@@ -1,5 +1,6 @@
 import {
 	ActionIcon,
+	Anchor,
 	Avatar,
 	Button,
 	Checkbox,
@@ -10,15 +11,18 @@ import {
 	Loader,
 	Modal,
 	MultiSelect,
+	Popover,
 	Stack,
 	Text,
 	Textarea,
 	TextInput,
 	Tooltip,
+	UnstyledButton,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import { IconFolderOpen, IconDownload, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
@@ -34,6 +38,13 @@ import {
 import { queryKeys } from '@/core/api/queryKeys';
 import { useAuthStore } from '@/core/auth/authStore';
 import { confirmAction } from '@/core/confirm/confirmAction';
+import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
+import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
+
+import { BOARD_BACKGROUND_COLORS } from './BackgroundPicker';
+import { downloadBoardAttachment, openBoardAttachment } from './openBoardAttachment';
+
+const CARD_ATTACHMENTS_PICKER = 'board:card-attachments';
 
 interface CardModalProps {
 	cardId: number | null;
@@ -271,9 +282,46 @@ export function CardModal({
 		onSuccess: () => invalidateCard(),
 	});
 
+	const importAttachmentMutation = useMutation({
+		mutationFn: (path: string) => boardApi.importAttachment(cardId!, path),
+		onSuccess: () => {
+			notifications.show({ message: 'Файл скопирован из проводника', color: 'green' });
+			void invalidateCard();
+		},
+		onError: () => {
+			notifications.show({ message: 'Не удалось импортировать файл', color: 'red' });
+		},
+	});
+
+	useExplorerPickerResult(CARD_ATTACHMENTS_PICKER, (path) => {
+		importAttachmentMutation.mutate(path);
+	});
+
 	const deleteAttachmentMutation = useMutation({
 		mutationFn: (id: number) => boardApi.deleteAttachment(id),
 		onSuccess: () => invalidateCard(),
+	});
+
+	const [quickLabelOpen, setQuickLabelOpen] = useState(false);
+	const [quickLabelName, setQuickLabelName] = useState('');
+	const [quickLabelColor, setQuickLabelColor] = useState<string>(BOARD_BACKGROUND_COLORS[0]);
+
+	const createLabelMutation = useMutation({
+		mutationFn: (payload: { name: string; color: string }) =>
+			boardApi.createLabel(boardId, payload),
+		onSuccess: (label) => {
+			setQuickLabelOpen(false);
+			setQuickLabelName('');
+			setQuickLabelColor(BOARD_BACKGROUND_COLORS[0]);
+			void invalidateBoard();
+			if (card) {
+				labelMutation.mutate([...card.label_ids, label.id]);
+			}
+			notifications.show({ message: 'Метка создана', color: 'green' });
+		},
+		onError: () => {
+			notifications.show({ message: 'Не удалось создать метку', color: 'red' });
+		},
 	});
 
 	const handleDueDateChange = (value: string | null) => {
@@ -643,48 +691,90 @@ export function CardModal({
 							<Stack gap="xs">
 								{card.attachments.map((attachment) => (
 									<Group key={attachment.id} justify="space-between" wrap="nowrap">
-										<Text size="sm" truncate style={{ flex: 1 }}>
+										<Anchor
+											component="button"
+											type="button"
+											size="sm"
+											lineClamp={1}
+											style={{ flex: 1, textAlign: 'left' }}
+											onClick={() =>
+												void openBoardAttachment(attachment.id, attachment.file_name)
+											}
+										>
 											{attachment.file_name}
-										</Text>
-										{canEdit ? (
+										</Anchor>
+										<Group gap={4} wrap="nowrap">
 											<ActionIcon
 												variant="subtle"
-												color="red"
 												size="sm"
+												aria-label="Скачать"
 												onClick={() =>
-													confirmAction({
-														title: 'Удалить вложение',
-														message: `Удалить «${attachment.file_name}»?`,
-														confirmColor: 'red',
-														onConfirm: () =>
-															deleteAttachmentMutation.mutate(attachment.id),
-													})
+													void downloadBoardAttachment(
+														attachment.id,
+														attachment.file_name,
+													)
 												}
 											>
-												<IconTrash size={14} />
+												<IconDownload size={14} />
 											</ActionIcon>
-										) : null}
+											{canEdit ? (
+												<ActionIcon
+													variant="subtle"
+													color="red"
+													size="sm"
+													aria-label="Удалить"
+													onClick={() =>
+														confirmAction({
+															title: 'Удалить вложение',
+															message: `Удалить «${attachment.file_name}»?`,
+															confirmColor: 'red',
+															onConfirm: () =>
+																deleteAttachmentMutation.mutate(attachment.id),
+														})
+													}
+												>
+													<IconTrash size={14} />
+												</ActionIcon>
+											) : null}
+										</Group>
 									</Group>
 								))}
 								{canEdit ? (
-									<FileButton
-										onChange={(file) => {
-											if (file) {
-												uploadAttachmentMutation.mutate(file);
+									<Group gap="xs">
+										<Button
+											size="xs"
+											variant="light"
+											leftSection={<IconFolderOpen size={14} />}
+											loading={importAttachmentMutation.isPending}
+											onClick={() =>
+												void openExplorerPicker({
+													mode: 'open',
+													consumerAppId: CARD_ATTACHMENTS_PICKER,
+													title: 'Выбор файла из проводника',
+												})
 											}
-										}}
-									>
-										{(props) => (
-											<Button
-												{...props}
-												size="xs"
-												variant="light"
-												loading={uploadAttachmentMutation.isPending}
-											>
-												Загрузить файл
-											</Button>
-										)}
-									</FileButton>
+										>
+											Из проводника
+										</Button>
+										<FileButton
+											onChange={(file) => {
+												if (file) {
+													uploadAttachmentMutation.mutate(file);
+												}
+											}}
+										>
+											{(props) => (
+												<Button
+													{...props}
+													size="xs"
+													variant="light"
+													loading={uploadAttachmentMutation.isPending}
+												>
+													Загрузить файл
+												</Button>
+											)}
+										</FileButton>
+									</Group>
 								) : null}
 							</Stack>
 						</Stack>
@@ -707,39 +797,108 @@ export function CardModal({
 								readOnly={!canEdit}
 							/>
 
-							<MultiSelect
-								label="Метки"
-								data={labelOptions}
-								value={card.label_ids.map(String)}
-								onChange={(values) => {
-									if (!canEdit) {
-										return;
-									}
-									labelMutation.mutate(values.map(Number));
-								}}
-								searchable
-								clearable
-								readOnly={!canEdit}
-								renderOption={({ option }) => {
-									const label = labels.find((l) => String(l.id) === option.value);
-									return (
-										<Group gap="xs">
-											{label ? (
-												<span
-													style={{
-														width: 12,
-														height: 12,
-														borderRadius: 4,
-														backgroundColor: label.color,
-														flexShrink: 0,
-													}}
+							<Group gap="xs" align="flex-end" wrap="nowrap">
+								<MultiSelect
+									label="Метки"
+									style={{ flex: 1 }}
+									data={labelOptions}
+									value={card.label_ids.map(String)}
+									onChange={(values) => {
+										if (!canEdit) {
+											return;
+										}
+										labelMutation.mutate(values.map(Number));
+									}}
+									searchable
+									clearable
+									readOnly={!canEdit}
+									renderOption={({ option }) => {
+										const label = labels.find((l) => String(l.id) === option.value);
+										return (
+											<Group gap="xs">
+												{label ? (
+													<span
+														style={{
+															width: 12,
+															height: 12,
+															borderRadius: 4,
+															backgroundColor: label.color,
+															flexShrink: 0,
+														}}
+													/>
+												) : null}
+												<span>{option.label}</span>
+											</Group>
+										);
+									}}
+								/>
+								{canEdit ? (
+									<Popover
+										opened={quickLabelOpen}
+										onChange={setQuickLabelOpen}
+										position="bottom-end"
+										withArrow
+										shadow="md"
+									>
+										<Popover.Target>
+											<ActionIcon
+												variant="light"
+												size="lg"
+												aria-label="Создать метку"
+												onClick={() => setQuickLabelOpen((open) => !open)}
+											>
+												<IconPlus size={16} />
+											</ActionIcon>
+										</Popover.Target>
+										<Popover.Dropdown>
+											<Stack gap="xs" w={220}>
+												<TextInput
+													size="xs"
+													placeholder="Название метки"
+													value={quickLabelName}
+													onChange={(e) => setQuickLabelName(e.currentTarget.value)}
 												/>
-											) : null}
-											<span>{option.label}</span>
-										</Group>
-									);
-								}}
-							/>
+												<Group gap={6}>
+													{BOARD_BACKGROUND_COLORS.map((color) => (
+														<UnstyledButton
+															key={color}
+															onClick={() => setQuickLabelColor(color)}
+															style={{
+																width: 22,
+																height: 22,
+																borderRadius: 4,
+																backgroundColor: color,
+																border:
+																	quickLabelColor === color
+																		? '2px solid var(--mantine-color-text)'
+																		: '1px solid var(--mantine-color-default-border)',
+															}}
+														/>
+													))}
+												</Group>
+												<Button
+													size="xs"
+													loading={createLabelMutation.isPending}
+													disabled={!quickLabelName.trim()}
+													onClick={() =>
+														createLabelMutation.mutate({
+															name: quickLabelName.trim(),
+															color: quickLabelColor,
+														})
+													}
+												>
+													Создать
+												</Button>
+											</Stack>
+										</Popover.Dropdown>
+									</Popover>
+								) : null}
+							</Group>
+							{canEdit && labels.length === 0 ? (
+								<Text size="xs" c="dimmed">
+									Нет меток на доске. Создайте через «+» или кнопку «Метки» в шапке доски.
+								</Text>
+							) : null}
 
 							{card.assignee_ids.length > 0 ? (
 								<Stack gap="xs">

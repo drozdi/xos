@@ -719,10 +719,26 @@ export const boardApi = {
 
 	},
 
+	importAttachment: async (cardId: number, path: string): Promise<BoardAttachment> =>
+
+		postJson(`${BASE}/cards/${cardId}/attachments/import`, { path }, attachmentSchema),
+
 	deleteAttachment: async (id: number): Promise<void> => {
 
 		await apiClient.delete(`${BASE}/attachments/${id}`);
 
+	},
+
+	downloadAttachment: async (
+		id: number,
+		disposition: 'inline' | 'attachment' = 'inline',
+	): Promise<Blob> => {
+		const { data } = await apiClient.get<Blob>(`${BASE}/attachments/${id}/download`, {
+			params: { disposition },
+			responseType: 'blob',
+		});
+
+		return data;
 	},
 
 	setCardAssignees: (id: number, userIds: number[]) =>

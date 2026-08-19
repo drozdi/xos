@@ -8,7 +8,7 @@ import {
 	Stack,
 	Text,
 } from '@mantine/core';
-import { IconArrowLeft, IconTrash, IconUsers } from '@tabler/icons-react';
+import { IconArrowLeft, IconTags, IconTrash, IconUsers } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -25,6 +25,7 @@ import { BackgroundPicker } from './BackgroundPicker';
 import { BoardColumn } from './BoardColumn';
 import { BoardFilters } from './BoardFilters';
 import { CardModal } from './CardModal';
+import { LabelManageModal } from './LabelManageModal';
 import { MemberInviteModal } from './MemberInviteModal';
 import { BoardDndContext } from './dnd/BoardDndContext';
 import { useBoardDnd } from './dnd/useBoardDnd';
@@ -56,6 +57,7 @@ export function BoardViewPage({ boardId, onBack }: BoardViewPageProps) {
 	const [lists, setLists] = useState<BoardList[]>([]);
 	const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
 	const [membersOpened, setMembersOpened] = useState(false);
+	const [labelsOpened, setLabelsOpened] = useState(false);
 
 	const { filters, setFilters, matchingIds, restored } = useBoardFilters(boardId);
 
@@ -246,6 +248,16 @@ export function BoardViewPage({ boardId, onBack }: BoardViewPageProps) {
 						onChange={(color) => updateBackgroundMutation.mutate(color)}
 						disabled={!canEdit || updateBackgroundMutation.isPending}
 					/>
+					{canEdit ? (
+						<Button
+							variant="light"
+							size="compact-sm"
+							leftSection={<IconTags size={16} />}
+							onClick={() => setLabelsOpened(true)}
+						>
+							Метки
+						</Button>
+					) : null}
 					<Button
 						variant="light"
 						size="compact-sm"
@@ -335,6 +347,14 @@ export function BoardViewPage({ boardId, onBack }: BoardViewPageProps) {
 				members={members}
 				canEdit={canEdit}
 				onClose={() => setSelectedCardId(null)}
+			/>
+
+			<LabelManageModal
+				boardId={boardId}
+				labels={labels}
+				opened={labelsOpened}
+				canEdit={canEdit}
+				onClose={() => setLabelsOpened(false)}
 			/>
 
 			<MemberInviteModal
