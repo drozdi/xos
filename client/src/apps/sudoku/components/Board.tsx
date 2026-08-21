@@ -19,7 +19,7 @@ export function Board() {
 			style={{
 				display: 'grid',
 				gridTemplateColumns: `repeat(${size}, ${cellSize}px)`,
-				border: '2px solid var(--mantine-color-gray-6)',
+				border: '2px solid var(--mantine-color-default-border)',
 				width: 'fit-content',
 			}}
 		>

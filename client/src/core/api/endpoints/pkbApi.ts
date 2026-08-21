@@ -259,7 +259,7 @@ export const pkbApi = {
 			})
 			.then(({ data }) => getDetail(data)),
 
-	fileTree: (vaultId: number, path?: string, depth = 3) =>
+	fileTree: (vaultId: number, path?: string, depth = 8) =>
 		apiClient
 			.get<unknown>(`${BASE}/vaults/${vaultId}/files/tree`, {
 				params: { path: path || undefined, depth },

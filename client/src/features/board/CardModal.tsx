@@ -340,6 +340,7 @@ export function CardModal({
 			title="Карточка"
 			size="xl"
 			centered
+			withinPortal={false}
 		>
 			{cardQuery.isLoading ? (
 				<Group justify="center" py="xl">

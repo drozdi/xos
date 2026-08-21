@@ -52,14 +52,14 @@ export function Cell({ index, cellSize, isBoxBorderRight, isBoxBorderBottom }: C
 				width: cellSize,
 				height: cellSize,
 				padding: 0,
-				border: '1px solid var(--mantine-color-gray-4)',
+				border: '1px solid var(--mantine-color-default-border)',
 				borderRightWidth: isBoxBorderRight ? 2 : 1,
 				borderBottomWidth: isBoxBorderBottom ? 2 : 1,
 				background: isSelected
-					? 'var(--mantine-color-blue-1)'
+					? 'var(--mantine-color-blue-light)'
 					: isHighlighted
-						? 'var(--mantine-color-blue-0)'
-						: 'var(--mantine-color-white)',
+						? 'var(--mantine-color-blue-light-hover)'
+						: 'var(--mantine-color-body)',
 				cursor: 'pointer',
 				position: 'relative',
 				overflow: 'hidden',
@@ -69,7 +69,12 @@ export function Cell({ index, cellSize, isBoxBorderRight, isBoxBorderBottom }: C
 				<Text
 					size={sizeConfig.size <= 4 ? 'xl' : sizeConfig.size === 6 ? 'lg' : 'md'}
 					fw={givenMask ? 700 : 500}
-					c={hasError ? 'red' : givenMask ? 'dark' : 'blue'}
+					c={hasError ? 'red' : givenMask ? undefined : 'blue'}
+					style={
+						hasError || !givenMask
+							? undefined
+							: { color: 'var(--mantine-color-text)' }
+					}
 					ta="center"
 					lh={`${cellSize}px`}
 				>
@@ -114,11 +119,11 @@ export function Cell({ index, cellSize, isBoxBorderRight, isBoxBorderBottom }: C
 							>
 								<Text
 									size="xs"
-									c="dimmed"
 									ta="center"
 									style={{
 										fontSize: Math.max(8, Math.floor(cellSize / (noteGrid.rows * 2.5))),
 										lineHeight: 1,
+										color: 'var(--mantine-color-dimmed)',
 									}}
 								>
 									{number}

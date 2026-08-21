@@ -1,11 +1,30 @@
-import { Alert, Box, Button, Group, Loader, ScrollArea, SegmentedControl, Stack, Text } from '@mantine/core';
-
-import { IconArrowLeft, IconCalendar, IconFilePlus, IconReplace, IconUsers } from '@tabler/icons-react';
-
+import {
+	ActionIcon,
+	Alert,
+	Box,
+	Button,
+	Group,
+	Loader,
+	Modal,
+	ScrollArea,
+	SegmentedControl,
+	Stack,
+	Text,
+	TextInput,
+} from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import {
+	IconArrowLeft,
+	IconCalendar,
+	IconFilePlus,
+	IconPencil,
+	IconReplace,
+	IconUsers,
+} from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
 import { useCallback, useMemo, useRef, useState } from 'react';
 
+import { notifyApiError } from '@/core/api/apiError';
 import { pkbApi } from '@/core/api/endpoints/pkbApi';
 import { queryKeys } from '@/core/api/queryKeys';
 
@@ -62,6 +81,8 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 	const [shareOpened, setShareOpened] = useState(false);
 	const [templateOpened, setTemplateOpened] = useState(false);
 	const [searchReplaceOpened, setSearchReplaceOpened] = useState(false);
+	const [vaultRenameOpened, setVaultRenameOpened] = useState(false);
+	const [vaultRenameName, setVaultRenameName] = useState('');
 	const queryClient = useQueryClient();
 	const { sidebarWidth, setSidebarWidth } = usePkbUiPrefs();
 	const dragging = useRef(false);
@@ -75,7 +96,7 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 
 	const treeQuery = useQuery({
 		queryKey: queryKeys.pkb.fileTree(vaultId),
-		queryFn: () => pkbApi.fileTree(vaultId),
+		queryFn: () => pkbApi.fileTree(vaultId, undefined, 8),
 	});
 
 	const treeNodes = useMemo(() => {
@@ -122,7 +143,49 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 	});
 
 	const canWrite = vaultQuery.data?.permissions?.can_write ?? false;
+	const canUpdate = vaultQuery.data?.permissions?.can_update ?? false;
 	const templatesFolder = vaultQuery.data?.config?.templatesFolder ?? 'Templates';
+
+	const renameFileMutation = useMutation({
+		mutationFn: ({ fromPath, toPath }: { fromPath: string; toPath: string }) =>
+			pkbApi.renameFile(vaultId, fromPath, toPath),
+		onSuccess: async (entry, { fromPath }) => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTree(vaultId) });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.notes(vaultId) });
+			if (selectedPath === fromPath || selectedPath?.startsWith(`${fromPath}/`)) {
+				const nextPath =
+					selectedPath === fromPath
+						? entry.path
+						: `${entry.path}${selectedPath!.slice(fromPath.length)}`;
+				setSelectedPath(nextPath);
+			}
+			notifications.show({ color: 'green', message: 'Переименовано' });
+		},
+		onError: (error) => notifyApiError(error, 'Не удалось переименовать'),
+	});
+
+	const renameVaultMutation = useMutation({
+		mutationFn: (name: string) => pkbApi.updateVault(vaultId, { name }),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.vault(vaultId) });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.vaults });
+			setVaultRenameOpened(false);
+			notifications.show({ color: 'green', message: 'Пространство переименовано' });
+		},
+		onError: (error) => notifyApiError(error, 'Не удалось переименовать пространство'),
+	});
+
+	const handleRenameFile = useCallback(
+		async (fromPath: string, toPath: string) => {
+			await renameFileMutation.mutateAsync({ fromPath, toPath });
+		},
+		[renameFileMutation],
+	);
+
+	const openVaultRename = () => {
+		setVaultRenameName(vaultQuery.data?.name ?? '');
+		setVaultRenameOpened(true);
+	};
 
 	const handleToggleFolder = (path: string) => {
 		setExpandedPaths((prev) => {
@@ -186,6 +249,16 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 						Назад
 					</Button>
 					<Text fw={600}>{vaultQuery.data?.name ?? 'Vault'}</Text>
+					{canUpdate ? (
+						<ActionIcon
+							variant="subtle"
+							size="sm"
+							aria-label="Переименовать пространство"
+							onClick={openVaultRename}
+						>
+							<IconPencil size={14} />
+						</ActionIcon>
+					) : null}
 				</Group>
 
 				<VaultSearchBar vaultId={vaultId} onNavigateNote={handleNavigateNote} />
@@ -272,6 +345,8 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 								onSelectFile={setSelectedPath}
 								onToggleFolder={handleToggleFolder}
 								expandedPaths={expandedPaths}
+								canEdit={canWrite}
+								onRename={handleRenameFile}
 							/>
 						)}
 					</ScrollArea>
@@ -355,6 +430,40 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 				onClose={() => setSearchReplaceOpened(false)}
 				canWrite={canWrite}
 			/>
+
+			<Modal
+				opened={vaultRenameOpened}
+				onClose={() => setVaultRenameOpened(false)}
+				title="Переименовать пространство"
+				centered
+				withinPortal={false}
+			>
+				<Stack gap="sm">
+					<TextInput
+						label="Название"
+						value={vaultRenameName}
+						onChange={(event) => setVaultRenameName(event.currentTarget.value)}
+						onKeyDown={(event) => {
+							if (event.key === 'Enter' && vaultRenameName.trim()) {
+								renameVaultMutation.mutate(vaultRenameName.trim());
+							}
+						}}
+						data-autofocus
+					/>
+					<Group justify="flex-end">
+						<Button variant="default" onClick={() => setVaultRenameOpened(false)}>
+							Отмена
+						</Button>
+						<Button
+							loading={renameVaultMutation.isPending}
+							disabled={!vaultRenameName.trim()}
+							onClick={() => renameVaultMutation.mutate(vaultRenameName.trim())}
+						>
+							Сохранить
+						</Button>
+					</Group>
+				</Stack>
+			</Modal>
 		</Stack>
 		</Box>
 	);
