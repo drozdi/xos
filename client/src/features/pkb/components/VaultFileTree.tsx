@@ -133,15 +133,15 @@ function VaultFileTreeNode({
 			<Group
 				gap={0}
 				wrap="nowrap"
-				px="xs"
 				py={2}
 				style={{
 					paddingLeft: indent,
+					paddingRight: 8,
 					borderRadius: 4,
 					background: isSelected ? 'var(--mantine-color-blue-light)' : undefined,
 					borderLeft:
 						level > 0 ? '1px solid var(--mantine-color-default-border)' : undefined,
-					marginLeft: level > 0 ? 4 : 0,
+					marginLeft: level * 12,
 				}}
 			>
 				{isRenaming ? (
