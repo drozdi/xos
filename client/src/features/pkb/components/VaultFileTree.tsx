@@ -126,7 +126,7 @@ function VaultFileTreeNode({
 		}
 	};
 
-	const indent = 8 + level * 16;
+	const indent = level === 0 ? 0 : `calc(0.5rem * ${level})`;
 
 	return (
 		<Box>
@@ -141,7 +141,6 @@ function VaultFileTreeNode({
 					background: isSelected ? 'var(--mantine-color-blue-light)' : undefined,
 					borderLeft:
 						level > 0 ? '1px solid var(--mantine-color-default-border)' : undefined,
-					marginLeft: level * 12,
 				}}
 			>
 				{isRenaming ? (

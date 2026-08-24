@@ -1,0 +1,18 @@
+import { Stack, Text, Title } from '@mantine/core';
+
+export function RulesContent() {
+	return (
+		<Stack gap="sm" p="md">
+			<Title order={5}>Косынка (Klondike)</Title>
+			<Text size="sm">
+				Соберите все карты на четырёх фундаментах по мастям от туза до короля.
+			</Text>
+			<Text size="sm">
+				В столбцах карты кладутся по убыванию с чередованием цвета. На пустой столбец — только король.
+			</Text>
+			<Text size="sm" c="dimmed">
+				Сток открывает по 1 или по 3 карты. Отмена — один или несколько последних ходов.
+			</Text>
+		</Stack>
+	);
+}
