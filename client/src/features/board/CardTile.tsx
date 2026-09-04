@@ -1,7 +1,7 @@
 import { ActionIcon, Avatar, Badge, Box, Card, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { IconGripVertical } from '@tabler/icons-react';
+import { IconFileText, IconGripVertical } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { memo } from 'react';
 
@@ -120,9 +120,18 @@ function CardTileContent({
 						}}
 					/>
 				) : null}
-				<Text size="sm" fw={500} lineClamp={4}>
-					{card.title}
-				</Text>
+				<Group gap="xs" wrap="nowrap" align="flex-start">
+					<Text size="sm" fw={500} lineClamp={4} style={{ flex: 1, minWidth: 0 }}>
+						{card.title}
+					</Text>
+					{card.pkb_note_path ? (
+						<Tooltip label="Есть заметка">
+							<Box c="dimmed" style={{ flexShrink: 0, marginTop: 2 }}>
+								<IconFileText size={14} />
+							</Box>
+						</Tooltip>
+					) : null}
+				</Group>
 				<CardLabels card={card} labels={labels} />
 				<Group justify="space-between" align="center" wrap="nowrap">
 					{dueLabel ? (

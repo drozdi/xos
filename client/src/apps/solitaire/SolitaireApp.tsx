@@ -26,6 +26,12 @@ export default function SolitaireApp() {
 					clearSelection();
 				}
 			}}
+			onContextMenu={(event) => {
+				event.preventDefault();
+				if (event.target === event.currentTarget) {
+					useSolitaireStore.getState().autoMoveAll();
+				}
+			}}
 		>
 			<Stack gap="md">
 				<Group justify="space-between" wrap="wrap">
@@ -48,7 +54,8 @@ export default function SolitaireApp() {
 				</Group>
 				<Tableau />
 				<Text size="xs" c="dimmed">
-					Клик — выбрать карту, повторный клик по цели — ход. Двойной клик — на фундамент.
+					Клик — выбрать карту, повторный клик по цели — ход. Двойной клик или ПКМ — на
+					фундамент (или в столбец). ПКМ по пустому месту — все возможные на фундамент.
 				</Text>
 			</Stack>
 		</Box>

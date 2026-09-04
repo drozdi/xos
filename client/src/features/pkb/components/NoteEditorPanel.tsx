@@ -21,6 +21,9 @@ import type { Editor } from '@tiptap/react';
 
 import { pkbApi } from '@/core/api/endpoints/pkbApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { useAppManager } from '@/core/appManager/useAppManager';
+import { boardApi } from '@/core/api/endpoints/boardApi';
+import { canUseBoard } from '@/features/board/boardAccess';
 import {
 	applyMarkdownFormat,
 	EMPTY_MARKDOWN_SESSION,
@@ -121,6 +124,14 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 	);
 
 	const handleWikilinkClick = useWikilinkNavigate(vaultId, handleNavigate);
+	const launchApp = useAppManager((state) => state.launchApp);
+	const boardAvailable = canUseBoard();
+
+	const linkedCardsQuery = useQuery({
+		queryKey: queryKeys.board.linkedCards(vaultId, filePath ?? ''),
+		queryFn: () => boardApi.linkedCards(vaultId, filePath!),
+		enabled: boardAvailable && Boolean(filePath),
+	});
 
 	const notesQuery = useQuery({
 		queryKey: queryKeys.pkb.notes(vaultId),
@@ -635,6 +646,39 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 					</Button>
 				</Group>
 			</Group>
+			{(linkedCardsQuery.data?.cards ?? []).length > 0 ? (
+				<Group
+					px="md"
+					py={6}
+					gap="xs"
+					wrap="wrap"
+					style={{
+						flexShrink: 0,
+						borderBottom: '1px solid var(--mantine-color-default-border)',
+					}}
+				>
+					<Text size="xs" c="dimmed">
+						Карточки:
+					</Text>
+					{(linkedCardsQuery.data?.cards ?? []).map((linked) => (
+						<Button
+							key={linked.id}
+							size="compact-xs"
+							variant="light"
+							onClick={() => {
+								if (linked.board_id == null) {
+									return;
+								}
+								void launchApp('board', {
+									props: { boardId: linked.board_id, cardId: linked.id },
+								});
+							}}
+						>
+							{linked.title}
+						</Button>
+					))}
+				</Group>
+			) : null}
 
 			{isLoadingFile ? (
 				<Center style={{ flex: 1 }} p="md">

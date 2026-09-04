@@ -1,6 +1,8 @@
 import { Alert } from '@mantine/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { asPositiveInt } from '@/core/appManager/appLaunchProps';
+import { useAppContext } from '@/core/context/AppContext';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { BoardViewPage } from '@/features/board/BoardViewPage';
 import { canUseBoard } from '@/features/board/boardAccess';
@@ -10,8 +12,19 @@ type BoardView = 'dashboard' | 'board';
 
 export default function BoardApp() {
 	useWindowTitle('Доска');
+	const { props } = useAppContext();
+	const propBoardId = asPositiveInt(props?.boardId);
+	const propCardId = asPositiveInt(props?.cardId);
+
 	const [view, setView] = useState<BoardView>('dashboard');
 	const [boardId, setBoardId] = useState<number | null>(null);
+
+	useEffect(() => {
+		if (propBoardId) {
+			setBoardId(propBoardId);
+			setView('board');
+		}
+	}, [propBoardId]);
 
 	if (!canUseBoard()) {
 		return (
@@ -25,6 +38,7 @@ export default function BoardApp() {
 		return (
 			<BoardViewPage
 				boardId={boardId}
+				initialCardId={propBoardId === boardId ? propCardId : null}
 				onBack={() => {
 					setView('dashboard');
 					setBoardId(null);

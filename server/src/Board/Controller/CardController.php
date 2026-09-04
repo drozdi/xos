@@ -38,6 +38,18 @@ class CardController extends AbstractController
         return $this->json($boardManager->findDueCardsInRange($user, $start, $end));
     }
 
+    #[Route('/cards/linked', name: 'cards_linked', methods: ['GET'])]
+    public function cardsLinked(Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $vaultId = (int) $request->query->get('vault_id', 0);
+        $path = (string) $request->query->get('path', '');
+
+        return $this->json(['cards' => $boardManager->findLinkedCards($user, $vaultId, $path)]);
+    }
+
     #[Route('/lists/{listId}/cards', requirements: ['listId' => '\d+'], methods: ['POST'])]
     public function create(int $listId, Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
     {

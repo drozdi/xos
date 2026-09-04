@@ -194,6 +194,60 @@ export function tryAutoFoundation(state: SolitaireState, from: PileRef): Solitai
 	return null;
 }
 
+export function tryAutoTableau(state: SolitaireState, from: PileRef): SolitaireState | null {
+	for (let col = 0; col < state.tableau.length; col += 1) {
+		if (from.type === 'tableau' && from.col === col) {
+			continue;
+		}
+		const moved = moveCards(state, from, { type: 'tableau', col });
+		if (moved) {
+			return moved;
+		}
+	}
+	return null;
+}
+
+/** Foundation first, then another tableau column. */
+export function tryAutoPlace(state: SolitaireState, from: PileRef): SolitaireState | null {
+	return tryAutoFoundation(state, from) ?? tryAutoTableau(state, from);
+}
+
+export function autoMoveAllToFoundations(state: SolitaireState): SolitaireState | null {
+	let current = state;
+	let movedAny = false;
+	let changed = true;
+
+	while (changed) {
+		changed = false;
+		const fromWaste = tryAutoFoundation(current, { type: 'waste' });
+		if (fromWaste) {
+			current = fromWaste;
+			movedAny = true;
+			changed = true;
+			continue;
+		}
+		for (let col = 0; col < current.tableau.length; col += 1) {
+			const column = current.tableau[col]!;
+			if (column.length === 0) {
+				continue;
+			}
+			const moved = tryAutoFoundation(current, {
+				type: 'tableau',
+				col,
+				index: column.length - 1,
+			});
+			if (moved) {
+				current = moved;
+				movedAny = true;
+				changed = true;
+				break;
+			}
+		}
+	}
+
+	return movedAny ? current : null;
+}
+
 export function isWon(state: SolitaireState): boolean {
 	return state.foundations.every((pile) => pile.length === 13);
 }

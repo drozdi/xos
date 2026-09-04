@@ -132,6 +132,10 @@ export const boardCardSchema = z.object({
 
 	cover_color: z.string().nullable().optional(),
 
+	pkb_vault_id: z.number().nullable().optional(),
+
+	pkb_note_path: z.string().nullable().optional(),
+
 	label_ids: z.array(z.number()).default([]),
 
 	assignee_ids: z.array(z.number()).default([]),
@@ -264,6 +268,19 @@ export type BoardList = z.infer<typeof boardListSchema>;
 
 export type BoardMember = z.infer<typeof boardMemberSchema>;
 
+export const linkedBoardCardSchema = z.object({
+	id: z.number(),
+	title: z.string(),
+	board_id: z.number().nullable(),
+	board_title: z.string().nullable().optional(),
+});
+
+export const linkedBoardCardsResponseSchema = z.object({
+	cards: z.array(linkedBoardCardSchema).default([]),
+});
+
+export type LinkedBoardCard = z.infer<typeof linkedBoardCardSchema>;
+
 
 
 export type WorkspaceWritePayload = {
@@ -311,6 +328,10 @@ export type CardWritePayload = {
 	due_date?: string | null;
 
 	cover_color?: string | null;
+
+	pkb_vault_id?: number | null;
+
+	pkb_note_path?: string | null;
 
 };
 
@@ -628,6 +649,11 @@ export const boardApi = {
 		postJson(`${BASE}/lists/${listId}/cards`, payload, boardCardSchema),
 
 	card: (id: number) => getDetail(`${BASE}/cards/${id}`, cardDetailSchema),
+
+	linkedCards: (vaultId: number, path: string) =>
+		apiClient
+			.get<unknown>(`${BASE}/cards/linked`, { params: { vault_id: vaultId, path } })
+			.then(({ data }) => linkedBoardCardsResponseSchema.parse(data)),
 
 	updateCard: (id: number, payload: CardWritePayload) =>
 

@@ -34,6 +34,7 @@ import { QuickAddList } from './QuickAddList';
 
 interface BoardViewPageProps {
 	boardId: number;
+	initialCardId?: number | null;
 	onBack: () => void;
 }
 
@@ -47,7 +48,7 @@ function patchBoardLists(
 	return { ...board, lists };
 }
 
-export function BoardViewPage({ boardId, onBack }: BoardViewPageProps) {
+export function BoardViewPage({ boardId, initialCardId = null, onBack }: BoardViewPageProps) {
 	const queryClient = useQueryClient();
 	const boardQuery = useQuery({
 		queryKey: queryKeys.board.board(boardId),
@@ -64,6 +65,12 @@ export function BoardViewPage({ boardId, onBack }: BoardViewPageProps) {
 	useEffect(() => {
 		void saveLastBoardId(boardId);
 	}, [boardId]);
+
+	useEffect(() => {
+		if (initialCardId) {
+			setSelectedCardId(initialCardId);
+		}
+	}, [initialCardId]);
 
 	useEffect(() => {
 		if (boardQuery.data?.lists) {

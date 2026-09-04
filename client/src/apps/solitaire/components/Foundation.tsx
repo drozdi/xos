@@ -8,6 +8,7 @@ export function Foundation() {
 	const selected = useSolitaireStore((s) => s.selected);
 	const selectPile = useSolitaireStore((s) => s.selectPile);
 	const dropOnFoundation = useSolitaireStore((s) => s.dropOnFoundation);
+	const autoMoveAll = useSolitaireStore((s) => s.autoMoveAll);
 
 	return (
 		<Group gap="sm" wrap="nowrap">
@@ -26,6 +27,7 @@ export function Foundation() {
 									dropOnFoundation(index);
 								}
 							}}
+							onContextMenu={autoMoveAll}
 						/>
 					);
 				}
@@ -42,6 +44,7 @@ export function Foundation() {
 							selectPile({ type: 'foundation', index });
 						}}
 						style={{ width: CARD_W }}
+						onContextMenu={autoMoveAll}
 					/>
 				);
 			})}

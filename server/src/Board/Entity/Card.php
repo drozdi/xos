@@ -38,6 +38,12 @@ class Card
     #[ORM\Column(name: 'cover_color', length: 16, nullable: true)]
     private ?string $coverColor = null;
 
+    #[ORM\Column(name: 'pkb_vault_id', type: Types::INTEGER, nullable: true)]
+    private ?int $pkbVaultId = null;
+
+    #[ORM\Column(name: 'pkb_note_path', length: 512, nullable: true)]
+    private ?string $pkbNotePath = null;
+
     #[ORM\Column(name: 'archived_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $archivedAt = null;
 
@@ -180,6 +186,30 @@ class Card
     public function setCoverColor(?string $coverColor): self
     {
         $this->coverColor = $coverColor;
+
+        return $this;
+    }
+
+    public function getPkbVaultId(): ?int
+    {
+        return $this->pkbVaultId;
+    }
+
+    public function setPkbVaultId(?int $pkbVaultId): self
+    {
+        $this->pkbVaultId = $pkbVaultId;
+
+        return $this;
+    }
+
+    public function getPkbNotePath(): ?string
+    {
+        return $this->pkbNotePath;
+    }
+
+    public function setPkbNotePath(?string $pkbNotePath): self
+    {
+        $this->pkbNotePath = $pkbNotePath;
 
         return $this;
     }

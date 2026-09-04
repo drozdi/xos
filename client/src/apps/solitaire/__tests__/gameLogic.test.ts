@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	autoMoveAllToFoundations,
 	canStackOnFoundation,
 	canStackOnTableau,
 	dealKlondike,
@@ -8,6 +9,7 @@ import {
 	getTableauRun,
 	isWon,
 	moveCards,
+	tryAutoPlace,
 } from '../gameLogic';
 
 describe('solitaire gameLogic', () => {
@@ -89,5 +91,44 @@ describe('solitaire gameLogic', () => {
 			{ id: '2', suit: 'spades' as const, rank: 4 as const, faceUp: true },
 		];
 		expect(getTableauRun(column, 0)).toBeNull();
+	});
+
+	it('auto-places ace on foundation then remaining cards', () => {
+		const ace = { id: 'as', suit: 'spades' as const, rank: 1 as const, faceUp: true };
+		const two = { id: '2s', suit: 'spades' as const, rank: 2 as const, faceUp: true };
+		const state = {
+			...dealKlondike(1),
+			waste: [ace],
+			tableau: [
+				[two],
+				[],
+				[],
+				[],
+				[],
+				[],
+				[],
+			],
+			foundations: [[], [], [], []],
+			stock: [],
+		};
+		const all = autoMoveAllToFoundations(state);
+		expect(all).not.toBeNull();
+		expect(all!.foundations.some((pile) => pile.length === 2)).toBe(true);
+		expect(all!.waste).toHaveLength(0);
+	});
+
+	it('auto-places queen on king via tableau', () => {
+		const king = { id: 'ks', suit: 'spades' as const, rank: 13 as const, faceUp: true };
+		const queen = { id: 'qh', suit: 'hearts' as const, rank: 12 as const, faceUp: true };
+		const state = {
+			...dealKlondike(1),
+			waste: [queen],
+			tableau: [[king], [], [], [], [], [], []],
+			foundations: [[], [], [], []],
+			stock: [],
+		};
+		const placed = tryAutoPlace(state, { type: 'waste' });
+		expect(placed).not.toBeNull();
+		expect(placed!.tableau[0]).toHaveLength(2);
 	});
 });

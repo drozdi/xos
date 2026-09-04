@@ -132,8 +132,15 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 		if (existing) {
 			useWmStore.getState().focusWindow(existing.windowId);
 			useWmStore.getState().restoreWindow(existing.windowId);
+			const existingPatch: { title?: string; props?: Record<string, unknown> } = {};
 			if (params?.title) {
-				useWmStore.getState().updateWindow(existing.windowId, { title: params.title });
+				existingPatch.title = params.title;
+			}
+			if (params?.props) {
+				existingPatch.props = params.props;
+			}
+			if (Object.keys(existingPatch).length > 0) {
+				useWmStore.getState().updateWindow(existing.windowId, existingPatch);
 			}
 			return existing.windowId;
 		}

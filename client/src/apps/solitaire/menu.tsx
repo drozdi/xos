@@ -27,10 +27,9 @@ const menu: AppMenuConfig = {
 					onClick: openNewGameFromMenu,
 				},
 				{
-					id: 'undo',
-					label: 'Отменить ход',
-					shortcut: 'Ctrl+Z',
-					onClick: () => useSolitaireStore.getState().undo(),
+					id: 'auto-all',
+					label: 'На фундамент (все)',
+					onClick: () => useSolitaireStore.getState().autoMoveAll(),
 				},
 			],
 		},

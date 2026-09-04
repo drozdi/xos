@@ -10,8 +10,10 @@ import {
 	dealKlondike,
 	drawFromStock,
 	isWon,
+	autoMoveAllToFoundations,
 	moveCards,
 	tryAutoFoundation,
+	tryAutoPlace,
 } from './gameLogic';
 
 interface StoreState extends SolitaireState {
@@ -27,6 +29,8 @@ interface StoreState extends SolitaireState {
 	dropOnTableau: (col: number) => void;
 	dropOnFoundation: (index: number) => void;
 	autoMove: (ref: PileRef) => void;
+	autoPlace: (ref: PileRef) => void;
+	autoMoveAll: () => void;
 	setActiveDialogId: (id: string | null) => void;
 	closeActiveDialog: (parentWindowId: string) => void;
 }
@@ -138,6 +142,40 @@ export const useSolitaireStore = create<StoreState>((set, get) => ({
 			return;
 		}
 		const moved = tryAutoFoundation(state, ref);
+		if (!moved) {
+			return;
+		}
+		set({
+			...moved,
+			history: pushHistory(state),
+			selected: null,
+			won: isWon(moved),
+		});
+	},
+
+	autoPlace: (ref) => {
+		const state = get();
+		if (state.won) {
+			return;
+		}
+		const moved = tryAutoPlace(state, ref);
+		if (!moved) {
+			return;
+		}
+		set({
+			...moved,
+			history: pushHistory(state),
+			selected: null,
+			won: isWon(moved),
+		});
+	},
+
+	autoMoveAll: () => {
+		const state = get();
+		if (state.won) {
+			return;
+		}
+		const moved = autoMoveAllToFoundations(state);
 		if (!moved) {
 			return;
 		}

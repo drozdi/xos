@@ -22,7 +22,7 @@ import {
 	IconUsers,
 } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { notifyApiError } from '@/core/api/apiError';
 import { pkbApi } from '@/core/api/endpoints/pkbApi';
@@ -54,6 +54,7 @@ import { usePkbUiPrefs } from '@/features/pkb/hooks/usePkbUiPrefs';
 
 interface VaultWorkspacePageProps {
 	vaultId: number;
+	initialNotePath?: string | null;
 	onBack: () => void;
 }
 
@@ -74,8 +75,8 @@ function expandFoldersForPath(path: string): string[] {
 	return folders;
 }
 
-export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps) {
-	const [selectedPath, setSelectedPath] = useState<string | null>(null);
+export function VaultWorkspacePage({ vaultId, initialNotePath = null, onBack }: VaultWorkspacePageProps) {
+	const [selectedPath, setSelectedPath] = useState<string | null>(initialNotePath);
 	const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['']));
 	const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('editor');
 	const [shareOpened, setShareOpened] = useState(false);
@@ -120,6 +121,13 @@ export function VaultWorkspacePage({ vaultId, onBack }: VaultWorkspacePageProps)
 			return next;
 		});
 	}, []);
+
+	useEffect(() => {
+		if (!initialNotePath) {
+			return;
+		}
+		handleNavigateNote(initialNotePath);
+	}, [handleNavigateNote, initialNotePath, vaultId]);
 
 	const dailyNoteMutation = useMutation({
 		mutationFn: async () => {

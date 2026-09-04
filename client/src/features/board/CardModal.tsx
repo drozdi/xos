@@ -42,6 +42,7 @@ import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
 
 import { BOARD_BACKGROUND_COLORS } from './BackgroundPicker';
+import { CardPkbNoteSection } from './CardPkbNoteSection';
 import { downloadBoardAttachment, openBoardAttachment } from './openBoardAttachment';
 
 const CARD_ATTACHMENTS_PICKER = 'board:card-attachments';
@@ -409,6 +410,16 @@ export function CardModal({
 									/>
 								)}
 							</Stack>
+
+							<CardPkbNoteSection
+								card={card}
+								boardId={boardId}
+								members={members}
+								canEdit={canEdit}
+								onUpdated={() => {
+									void invalidateBoard();
+								}}
+							/>
 
 							<DatePickerInput
 								label="Срок"

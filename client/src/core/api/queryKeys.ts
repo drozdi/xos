@@ -111,6 +111,8 @@ export const queryKeys = {
 		boards: (workspaceId: number) => ['board', 'boards', workspaceId] as const,
 		board: (id: number) => ['board', 'board', id] as const,
 		card: (id: number) => ['board', 'card', id] as const,
+		linkedCards: (vaultId: number, path: string) =>
+			['board', 'linkedCards', vaultId, path] as const,
 		members: (boardId: number) => ['board', 'members', boardId] as const,
 		filter: (boardId: number, params: Record<string, unknown>) =>
 			['board', 'filter', boardId, params] as const,

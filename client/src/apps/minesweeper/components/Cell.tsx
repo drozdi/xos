@@ -62,6 +62,7 @@ export function Cell({ cell, size, lost, onOpen, onFlag, onChord }: CellProps) {
 	}
 
 	const opened = cell.state === 'open';
+	const bevel = Math.max(2, Math.round(size / 10));
 
 	return (
 		<Box
@@ -77,11 +78,13 @@ export function Cell({ cell, size, lost, onOpen, onFlag, onChord }: CellProps) {
 				display: 'flex',
 				alignItems: 'center',
 				justifyContent: 'center',
-				border: '1px solid var(--mantine-color-default-border)',
+				border: opened ? '1px solid var(--mantine-color-default-border)' : 'none',
 				background: opened
 					? 'var(--mantine-color-default)'
-					: 'var(--mantine-color-body)',
-				boxShadow: opened ? 'none' : 'inset 0 0 0 1px var(--mantine-color-default-border)',
+					: 'var(--mantine-color-default-hover)',
+				boxShadow: opened
+					? 'inset 1px 1px 0 color-mix(in srgb, var(--mantine-color-black) 22%, transparent)'
+					: `inset ${bevel}px ${bevel}px 0 color-mix(in srgb, var(--mantine-color-white) 38%, transparent), inset -${bevel}px -${bevel}px 0 color-mix(in srgb, var(--mantine-color-black) 38%, transparent)`,
 				cursor: 'pointer',
 				fontSize: Math.max(10, Math.floor(size * 0.45)),
 				lineHeight: 1,

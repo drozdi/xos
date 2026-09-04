@@ -1,5 +1,5 @@
 import { Box, Text } from '@mantine/core';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, MouseEvent } from 'react';
 
 import { type Card as CardModel, isRed, rankLabel, suitSymbol } from '../deck';
 
@@ -11,14 +11,24 @@ interface CardProps {
 	selected?: boolean;
 	onClick?: () => void;
 	onDoubleClick?: () => void;
+	onContextMenu?: () => void;
 	style?: CSSProperties;
 }
 
-export function CardView({ card, selected, onClick, onDoubleClick, style }: CardProps) {
+export function CardView({ card, selected, onClick, onDoubleClick, onContextMenu, style }: CardProps) {
+	const handleContextMenu = onContextMenu
+		? (event: MouseEvent) => {
+				event.preventDefault();
+				event.stopPropagation();
+				onContextMenu();
+			}
+		: undefined;
+
 	if (!card.faceUp) {
 		return (
 			<Box
 				onClick={onClick}
+				onContextMenu={handleContextMenu}
 				style={{
 					width: CARD_W,
 					height: CARD_H,
@@ -40,6 +50,7 @@ export function CardView({ card, selected, onClick, onDoubleClick, style }: Card
 		<Box
 			onClick={onClick}
 			onDoubleClick={onDoubleClick}
+			onContextMenu={handleContextMenu}
 			style={{
 				width: CARD_W,
 				height: CARD_H,
@@ -77,14 +88,25 @@ export function EmptySlot({
 	label,
 	selected,
 	onClick,
+	onContextMenu,
 }: {
 	label?: string;
 	selected?: boolean;
 	onClick?: () => void;
+	onContextMenu?: () => void;
 }) {
 	return (
 		<Box
 			onClick={onClick}
+			onContextMenu={
+				onContextMenu
+					? (event) => {
+							event.preventDefault();
+							event.stopPropagation();
+							onContextMenu();
+						}
+					: undefined
+			}
 			style={{
 				width: CARD_W,
 				height: CARD_H,

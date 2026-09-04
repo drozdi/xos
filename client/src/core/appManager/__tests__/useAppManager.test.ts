@@ -113,6 +113,23 @@ describe('useAppManager', () => {
 		expect(useAppManager.getState().running).toHaveLength(1);
 	});
 
+	it('updates props on existing singleInstance window', async () => {
+		const manifest = createManifest({ singleInstance: true });
+		useAppManager.getState().registerApps([manifest]);
+
+		const firstId = await useAppManager.getState().launchApp('test-app', {
+			props: { vaultId: 1 },
+		});
+		await useAppManager.getState().launchApp('test-app', {
+			props: { vaultId: 2, notePath: 'a.md' },
+		});
+
+		expect(useWmStore.getState().windows[firstId!]?.props).toEqual({
+			vaultId: 2,
+			notePath: 'a.md',
+		});
+	});
+
 	it('blocks launch when required role is missing', async () => {
 		const manifest = createManifest({ requiredRole: 'main' });
 		useAppManager.getState().registerApps([manifest]);

@@ -32,6 +32,8 @@ use Main\Entity\User;
 use Main\Repository\UserRepository;
 use Main\Service\FileManager;
 use Main\Service\UploadPathResolver;
+use Pkb\Service\PkbManager;
+use Pkb\Service\PkbPermissionResolver;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -48,6 +50,8 @@ class BoardManager extends AbstractManager
         private readonly UploadPathResolver $uploadPathResolver,
         private readonly FileManager $fileManager,
         private readonly string $uploadDir,
+        private readonly PkbManager $pkbManager,
+        private readonly PkbPermissionResolver $pkbPermissionResolver,
     ) {
         parent::__construct($validator);
     }
@@ -287,6 +291,33 @@ class BoardManager extends AbstractManager
         return $result;
     }
 
+    /** @return list<array<string, mixed>> */
+    public function findLinkedCards(User $user, int $vaultId, string $notePath): array
+    {
+        $path = trim($notePath);
+        if ($vaultId < 1 || '' === $path) {
+            throw new BadRequestHttpException('Укажите vault_id и path');
+        }
+
+        $cards = $this->getCardRepository()->findLinkedForUser($user, $vaultId, $path);
+        $result = [];
+
+        foreach ($cards as $card) {
+            $board = $card->getBoard();
+            if (null === $board || !$this->permissionResolver->canViewBoard($board, $user)) {
+                continue;
+            }
+            $result[] = [
+                'id' => $card->getId(),
+                'title' => $card->getTitle(),
+                'board_id' => $board->getId(),
+                'board_title' => $board->getTitle(),
+            ];
+        }
+
+        return $result;
+    }
+
     public function updateBoard(Board $board, User $user, array $data): Board
     {
         if (!$this->permissionResolver->canEditBoard($board, $user)) {
@@ -475,10 +506,15 @@ class BoardManager extends AbstractManager
         if (array_key_exists('cover_color', $data)) {
             $card->setCoverColor($this->normalizeNullableText($data['cover_color']));
         }
+        if (array_key_exists('pkb_vault_id', $data) || array_key_exists('pkb_note_path', $data)) {
+            $vaultId = array_key_exists('pkb_vault_id', $data) ? $data['pkb_vault_id'] : $card->getPkbVaultId();
+            $path = array_key_exists('pkb_note_path', $data) ? $data['pkb_note_path'] : $card->getPkbNotePath();
+            $this->applyPkbNoteLink($card, $user, $vaultId, $path);
+        }
 
         $this->getEntityManager()->flush();
 
-        $tracked = ['title', 'description_md', 'due_date', 'cover_color'];
+        $tracked = ['title', 'description_md', 'due_date', 'cover_color', 'pkb_vault_id', 'pkb_note_path'];
         $changed = array_values(array_intersect(array_keys($data), $tracked));
         if ([] !== $changed) {
             $this->activityLogger->log(
@@ -492,6 +528,40 @@ class BoardManager extends AbstractManager
         }
 
         return $card;
+    }
+
+    private function applyPkbNoteLink(Card $card, User $user, mixed $vaultIdRaw, mixed $pathRaw): void
+    {
+        $vaultId = null;
+        if (null !== $vaultIdRaw && '' !== $vaultIdRaw && false !== $vaultIdRaw) {
+            $vaultId = (int) $vaultIdRaw;
+            if ($vaultId < 1) {
+                $vaultId = null;
+            }
+        }
+        $path = is_string($pathRaw) ? trim($pathRaw) : (null === $pathRaw ? '' : trim((string) $pathRaw));
+        if (strlen($path) > 512) {
+            throw new BadRequestHttpException('Путь заметки слишком длинный');
+        }
+
+        if (null === $vaultId || '' === $path) {
+            $card->setPkbVaultId(null);
+            $card->setPkbNotePath(null);
+
+            return;
+        }
+
+        try {
+            $vault = $this->pkbManager->getVault($vaultId, $user);
+        } catch (AccessDeniedHttpException|NotFoundHttpException) {
+            throw new BadRequestHttpException('Нет доступа к vault');
+        }
+        if (!$this->pkbPermissionResolver->canReadFiles($vault, $user)) {
+            throw new BadRequestHttpException('Нет доступа к заметкам vault');
+        }
+
+        $card->setPkbVaultId($vaultId);
+        $card->setPkbNotePath($path);
     }
 
     public function deleteCard(Card $card, User $user): void
@@ -1299,6 +1369,8 @@ class BoardManager extends AbstractManager
             'position' => $card->getPosition(),
             'due_date' => $this->formatDateTime($card->getDueDate()),
             'cover_color' => $card->getCoverColor(),
+            'pkb_vault_id' => $card->getPkbVaultId(),
+            'pkb_note_path' => $card->getPkbNotePath(),
             'label_ids' => $this->extractLabelIds($card),
             'assignee_ids' => $this->extractAssigneeIds($card),
         ];

@@ -12,6 +12,8 @@ export function Tableau() {
 	const selectPile = useSolitaireStore((s) => s.selectPile);
 	const dropOnTableau = useSolitaireStore((s) => s.dropOnTableau);
 	const autoMove = useSolitaireStore((s) => s.autoMove);
+	const autoPlace = useSolitaireStore((s) => s.autoPlace);
+	const autoMoveAll = useSolitaireStore((s) => s.autoMoveAll);
 
 	return (
 		<Group gap="sm" align="flex-start" wrap="nowrap">
@@ -28,6 +30,12 @@ export function Tableau() {
 							dropOnTableau(col);
 						}
 					}}
+					onContextMenu={(event) => {
+						event.preventDefault();
+						if (column.length === 0) {
+							autoMoveAll();
+						}
+					}}
 				>
 					{column.length === 0 ? (
 						<EmptySlot
@@ -37,6 +45,7 @@ export function Tableau() {
 									dropOnTableau(col);
 								}
 							}}
+							onContextMenu={autoMoveAll}
 						/>
 					) : (
 						column.map((card, index) => {
@@ -73,6 +82,12 @@ export function Tableau() {
 										if (card.faceUp && index === column.length - 1) {
 											autoMove({ type: 'tableau', col, index });
 										}
+									}}
+									onContextMenu={() => {
+										if (!card.faceUp) {
+											return;
+										}
+										autoPlace({ type: 'tableau', col, index });
 									}}
 									style={{
 										position: 'absolute',

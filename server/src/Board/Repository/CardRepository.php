@@ -6,6 +6,7 @@ use Board\Entity\Board;
 use Board\Entity\BoardList;
 use Board\Entity\Card;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Main\Entity\User;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -118,6 +119,28 @@ class CardRepository extends ServiceEntityRepository
             ->setParameter('end', $end)
             ->orderBy('c.dueDate', 'ASC')
             ->addOrderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<Card> */
+    public function findLinkedForUser(User $user, int $vaultId, string $notePath): array
+    {
+        return $this->createQueryBuilder('c')
+            ->distinct()
+            ->innerJoin('c.list', 'l')
+            ->innerJoin('l.board', 'b')
+            ->innerJoin('b.workspace', 'w')
+            ->leftJoin('w.members', 'wm', 'WITH', 'wm.user = :user')
+            ->leftJoin('b.members', 'bm', 'WITH', 'bm.user = :user')
+            ->andWhere('c.archivedAt IS NULL')
+            ->andWhere('c.pkbVaultId = :vaultId')
+            ->andWhere('c.pkbNotePath = :notePath')
+            ->andWhere('w.owner = :user OR wm.user IS NOT NULL OR bm.user IS NOT NULL')
+            ->setParameter('user', $user)
+            ->setParameter('vaultId', $vaultId)
+            ->setParameter('notePath', $notePath)
+            ->orderBy('c.id', 'ASC')
             ->getQuery()
             ->getResult();
     }
