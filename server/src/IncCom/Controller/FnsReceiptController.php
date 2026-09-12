@@ -74,6 +74,9 @@ class FnsReceiptController extends AbstractController
             } catch (\Throwable) {
                 $body = [];
             }
+            if ($request->query->has('fill_items') && !array_key_exists('fill_items', $body)) {
+                $body['fill_items'] = $request->query->get('fill_items');
+            }
             $result = $this->fnsReceiptService->fetchIntoTransaction($user, $transaction, $body);
         } catch (BadRequestHttpException $e) {
             return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -86,6 +89,31 @@ class FnsReceiptController extends AbstractController
             'ticket' => $result['ticket'],
             'transaction' => $this->mapTransaction($result['transaction']),
         ]);
+    }
+
+    #[Route('/api/IncCom/transactions/{id}/receipt/apply-items', name: 'api_inccom_transactions_receipt_apply_items', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function applyItems(int $id, #[CurrentUser] ?User $user): JsonResponse
+    {
+        if ($user === null) {
+            return $this->json(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $transaction = $this->transactionRepository->find($id);
+        if (!$transaction instanceof Transaction) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $this->denyAccessUnlessGranted(TransactionVoter::EDIT, $transaction);
+
+        try {
+            $transaction = $this->fnsReceiptService->applyStoredReceiptItems($user, $transaction);
+        } catch (BadRequestHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->json(['transaction' => $this->mapTransaction($transaction)]);
     }
 
     /** @return array<string, mixed> */

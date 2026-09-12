@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
 	deleteFnsCredentials,
 	fetchTransactionReceipt,
+	applyReceiptItems,
 	previewFnsReceipt,
 	requestFnsCredentials,
 	saveFnsCredentials,
@@ -53,11 +54,24 @@ export function useFnsReceiptFetch() {
 			payload,
 		}: {
 			transactionId: number;
-			payload?: FnsReceiptPreviewPayload;
+			payload?: FnsReceiptPreviewPayload & { fill_items?: boolean };
 		}) => fetchTransactionReceipt(transactionId, payload),
 		onSuccess: (_data, vars) => {
 			void queryClient.invalidateQueries({
 				queryKey: ['transactions', vars.transactionId],
+			});
+			void queryClient.invalidateQueries({ queryKey: ['transactions'] });
+		},
+	});
+}
+
+export function useFnsReceiptApplyItems() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (transactionId: number) => applyReceiptItems(transactionId),
+		onSuccess: (_data, transactionId) => {
+			void queryClient.invalidateQueries({
+				queryKey: ['transactions', transactionId],
 			});
 			void queryClient.invalidateQueries({ queryKey: ['transactions'] });
 		},

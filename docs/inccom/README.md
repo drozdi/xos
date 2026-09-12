@@ -41,6 +41,23 @@ client/src/features/inccom/
 - Категории операций (доход/расход)
 - Фильтрация и таблицы через `@/components/table`
 - Отдельный QueryClient не используется — общий из `App.tsx`
+- Чеки ФНС: `receipt_json` на транзакции, позиции → `TransactionItem` (`fill_items` / `receipt/apply-items`)
+
+## Env: FNS token encryption
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `INCCOM_FNS_SECRET` | рекомендуется (prod) | Секрет для AES-256-GCM шифрования `UserFnsCredential.master_token` at rest |
+
+- Без секрета токен пишется plaintext (dev/legacy).
+- С секретом: на PUT — ciphertext с префиксом `enc:v1:`; decrypt только в `FnsReceiptService`.
+- Legacy plaintext при чтении принимается; следующий PUT перешифровывает.
+
+Пример в `server/.env`:
+
+```env
+INCCOM_FNS_SECRET=change-me-long-random-string
+```
 
 ## API
 

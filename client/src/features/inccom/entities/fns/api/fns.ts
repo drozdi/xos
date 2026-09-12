@@ -55,11 +55,18 @@ export async function previewFnsReceipt(
 
 export async function fetchTransactionReceipt(
 	transactionId: number,
-	payload?: FnsReceiptPreviewPayload,
+	payload?: FnsReceiptPreviewPayload & { fill_items?: boolean },
 ): Promise<FnsReceiptResult> {
 	const res = await api.post<FnsReceiptResult>(
 		`/transactions/${transactionId}/receipt/fetch`,
 		payload ?? {},
+	);
+	return res.data;
+}
+
+export async function applyReceiptItems(transactionId: number): Promise<{ transaction: unknown }> {
+	const res = await api.post<{ transaction: unknown }>(
+		`/transactions/${transactionId}/receipt/apply-items`,
 	);
 	return res.data;
 }

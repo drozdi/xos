@@ -20,6 +20,8 @@ class FnsReceiptService
     public function __construct(
         private readonly UserFnsCredentialRepository $credentialRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly FnsTokenCipher $tokenCipher,
+        private readonly TransactionService $transactionService,
     ) {
     }
 
@@ -39,7 +41,7 @@ class FnsReceiptService
     }
 
     /**
-     * @return array{configured: bool, server: string|null, username: string|null, master_token_masked: string|null}
+     * @return array{configured: bool, server: string|null, username: string|null, master_token_masked: string|null, encryption?: bool}
      */
     public function serializeCredentialPublic(User $user): array
     {
@@ -50,19 +52,26 @@ class FnsReceiptService
                 'server' => null,
                 'username' => null,
                 'master_token_masked' => null,
+                'encryption' => $this->tokenCipher->isEnabled(),
             ];
         }
 
         $token = $credential->getMasterToken();
-        $masked = '' === $token
-            ? null
-            : (strlen($token) <= 8 ? str_repeat('*', strlen($token)) : substr($token, 0, 4).str_repeat('*', max(4, strlen($token) - 8)).substr($token, -4));
+        try {
+            $plain = $this->tokenCipher->decrypt($token);
+        } catch (\Throwable) {
+            $plain = '';
+        }
+        $masked = '' === $plain
+            ? ($this->tokenCipher->isEncrypted($token) ? '••••••••' : null)
+            : (strlen($plain) <= 8 ? str_repeat('*', strlen($plain)) : substr($plain, 0, 4).str_repeat('*', max(4, strlen($plain) - 8)).substr($plain, -4));
 
         return [
             'configured' => $this->hasCredentials($user),
             'server' => $credential->getServer(),
             'username' => $credential->getUsername(),
             'master_token_masked' => $masked,
+            'encryption' => $this->tokenCipher->isEnabled(),
         ];
     }
 
@@ -87,7 +96,7 @@ class FnsReceiptService
 
         $credential->setServer(rtrim($server, '/'));
         $credential->setUsername($username);
-        $credential->setMasterToken($masterToken);
+        $credential->setMasterToken($this->tokenCipher->encrypt($masterToken));
         $this->entityManager->flush();
 
         return $credential;
@@ -144,11 +153,12 @@ class FnsReceiptService
             'date' => $overrides['date'] ?? $transaction->getDate()?->format(\DateTimeInterface::ATOM),
             'type' => $overrides['type'] ?? $transaction->getType()->value,
         ];
+        $fillItems = filter_var($overrides['fill_items'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $result = $this->checkAndGet($user, $fields);
         $ticket = $result['ticket'];
         if (null === $ticket) {
-            throw new BadRequestHttpException($result['check']['message'] ?? 'Не удалось загрузить чек');
+            throw new BadRequestHttpException($result['error'] ?? $result['check']['message'] ?? 'Не удалось загрузить чек');
         }
 
         $asArray = json_decode(json_encode($ticket, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
@@ -172,10 +182,32 @@ class FnsReceiptService
         }
         $this->entityManager->flush();
 
+        if ($fillItems) {
+            try {
+                $transaction = $this->transactionService->applyReceiptItems($transaction, $asArray, $user);
+            } catch (\InvalidArgumentException $e) {
+                throw new BadRequestHttpException($e->getMessage());
+            }
+        }
+
         return [
             ...$result,
             'transaction' => $transaction,
         ];
+    }
+
+    public function applyStoredReceiptItems(User $user, Transaction $transaction): Transaction
+    {
+        $json = $transaction->getReceiptJson();
+        if (null === $json || $json === []) {
+            throw new BadRequestHttpException('Сначала загрузите чек');
+        }
+
+        try {
+            return $this->transactionService->applyReceiptItems($transaction, $json, $user);
+        } catch (\InvalidArgumentException $e) {
+            throw new BadRequestHttpException($e->getMessage());
+        }
     }
 
     /**
@@ -240,7 +272,7 @@ class FnsReceiptService
         return new FNSApi(
             $credential->getServer(),
             $credential->getUsername(),
-            $credential->getMasterToken(),
+            $this->tokenCipher->decrypt($credential->getMasterToken()),
         );
     }
 

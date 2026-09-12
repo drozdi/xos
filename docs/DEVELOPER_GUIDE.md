@@ -506,6 +506,7 @@ main:claimant:sync
 - **Protected app:** модуль `board` в `ProtectedAppModules` (BE) и `protectedApps` (FE); доступ через User Settings → «Доступ к приложениям».
 - **Frontend:** `client/src/apps/board/` + `client/src/features/board/`; API — `boardApi.ts`; UI prefs — `board.ui.filters`, `board.ui.lastBoardId` в `user_app_data` (см. [ADR-user-app-data.md](ADR-user-app-data.md)).
 - **API:** см. [API_SPEC.md](API_SPEC.md) § Board module.
+- **Демо Board↔PKB (локаль):** `php bin/console xos:seed-project --force` — vault + доска XOS со связанными карточками/заметками. На prod не запускать (см. `server/update`).
 
 ### Воспроизводимый путь
 

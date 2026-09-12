@@ -99,6 +99,75 @@ class TransactionService
     }
 
     /**
+     * Replace transaction items from FNS receipt_json and recalculate amount.
+     *
+     * @param array<string, mixed> $receiptJson
+     */
+    public function applyReceiptItems(Transaction $transaction, array $receiptJson, User $author): Transaction
+    {
+        $this->assertAuthor($transaction, $author);
+
+        if ($transaction->getType() !== TransactionType::Expense) {
+            throw new \InvalidArgumentException('Позиции из чека применяются только к расходу.');
+        }
+
+        $parsed = (new ReceiptJsonParser())->extractItems($receiptJson);
+        if ($parsed === []) {
+            throw new \InvalidArgumentException('В чеке нет позиций для импорта.');
+        }
+
+        return $this->em->wrapInTransaction(function () use ($transaction, $parsed, $author): Transaction {
+            $oldAccount = $transaction->getAccount();
+            $oldDelta = $this->computeBalanceDelta($transaction);
+
+            $itemsPayload = [];
+            foreach ($parsed as $row) {
+                $product = $this->findOrCreateProduct($author, $row['name']);
+                $itemsPayload[] = [
+                    'item' => $product,
+                    'quantity' => $row['quantity'],
+                    'price' => $row['price'],
+                ];
+            }
+
+            $transaction->setIsManualAmount(false);
+            $this->syncItems($transaction, $itemsPayload);
+            $transaction->setAmount($this->sumItems($transaction));
+
+            $this->balanceService->applyDelta($oldAccount, $this->invertDelta($oldDelta));
+            $this->balanceService->applyDelta(
+                $transaction->getAccount(),
+                $this->computeBalanceDelta($transaction),
+            );
+
+            $this->em->flush();
+
+            return $transaction;
+        });
+    }
+
+    private function findOrCreateProduct(User $user, string $name): Product
+    {
+        $userId = $user->getId();
+        if (null === $userId) {
+            throw new \InvalidArgumentException('User id is required.');
+        }
+
+        $existing = $this->productRepository->findOneByUserAndName($userId, $name);
+        if ($existing instanceof Product) {
+            return $existing;
+        }
+
+        $product = new Product();
+        $product->setUser($user);
+        $product->setName($name);
+        $this->em->persist($product);
+        $this->em->flush();
+
+        return $product;
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     private function populateTransaction(Transaction $transaction, array $data): void

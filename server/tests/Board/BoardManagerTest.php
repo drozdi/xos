@@ -98,6 +98,36 @@ class BoardManagerTest extends AuthWebTestCase
         self::assertSame('Observer task', $card->getTitle());
     }
 
+    public function testPkbNoteLinkSerializeAndLinkedLookup(): void
+    {
+        $client = static::createClient();
+        $fixture = $this->prepareFixture($client);
+        /** @var BoardManager $manager */
+        $manager = $client->getContainer()->get(BoardManager::class);
+
+        $list = $manager->createList($fixture['board'], $fixture['owner'], ['title' => 'Docs']);
+        $card = $manager->createCard($list, $fixture['owner'], ['title' => 'Linked note']);
+        $card->setPkbVaultId(42);
+        $card->setPkbNotePath('Board/1/2.md');
+        /** @var EntityManagerInterface $em */
+        $em = $client->getContainer()->get(EntityManagerInterface::class);
+        $em->flush();
+
+        $summary = $manager->serializeCardSummary($card);
+        self::assertSame(42, $summary['pkb_vault_id']);
+        self::assertSame('Board/1/2.md', $summary['pkb_note_path']);
+
+        $linked = $manager->findLinkedCards($fixture['owner'], 42, 'Board/1/2.md');
+        self::assertCount(1, $linked);
+        self::assertSame($card->getId(), $linked[0]['id']);
+        self::assertSame($fixture['board']->getId(), $linked[0]['board_id']);
+
+        $card->setPkbVaultId(null);
+        $card->setPkbNotePath(null);
+        $em->flush();
+        self::assertSame([], $manager->findLinkedCards($fixture['owner'], 42, 'Board/1/2.md'));
+    }
+
     public function testLabelCrud(): void
     {
         $client = static::createClient();

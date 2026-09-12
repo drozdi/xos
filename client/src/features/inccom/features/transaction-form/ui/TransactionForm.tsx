@@ -1,6 +1,7 @@
 ﻿import { useAccountsQuery, useEnumsTypeAccount } from '@inccom/entities/account';
 import {
 	useFnsCredentialsQuery,
+	useFnsReceiptApplyItems,
 	useFnsReceiptFetch,
 	useFnsReceiptPreview,
 } from '@inccom/entities/fns';
@@ -135,6 +136,7 @@ export function TransactionForm({
 	const fnsCredentialsQuery = useFnsCredentialsQuery();
 	const previewReceiptMutation = useFnsReceiptPreview();
 	const fetchReceiptMutation = useFnsReceiptFetch();
+	const applyItemsMutation = useFnsReceiptApplyItems();
 	const [previewTicket, setPreviewTicket] = useState<unknown>(null);
 	const fnsConfigured = Boolean(fnsCredentialsQuery.data?.configured);
 
@@ -249,6 +251,18 @@ export function TransactionForm({
 		};
 	}
 
+	async function handleApplyReceiptItems() {
+		if (!id) {
+			return;
+		}
+		try {
+			await applyItemsMutation.mutateAsync(id);
+			notification.success('Чек', 'Позиции заполнены из чека');
+		} catch (error) {
+			notification.error('Ошибка', getErrorMessage(error));
+		}
+	}
+
 	async function handleCheckReceipt() {
 		if (!fnsConfigured) {
 			notification.error('ФНС', 'Сначала укажите данные ФНС в настройках');
@@ -258,10 +272,10 @@ export function TransactionForm({
 			if (id) {
 				const result = await fetchReceiptMutation.mutateAsync({
 					transactionId: id,
-					payload: buildReceiptPayload(),
+					payload: { ...buildReceiptPayload(), fill_items: true },
 				});
 				setPreviewTicket(result.ticket);
-				notification.success('Чек', 'Чек проверен и сохранён');
+				notification.success('Чек', 'Чек проверен, сохранён и позиции заполнены');
 			} else {
 				const result = await previewReceiptMutation.mutateAsync(buildReceiptPayload());
 				setPreviewTicket(result.ticket);
@@ -440,11 +454,21 @@ export function TransactionForm({
 							</Text>
 						) : null}
 						{transactionData?.has_receipt ? (
-							<Alert color="green" title="Чек загружен">
-								{transactionData.receipt_checked_at
-									? `Сохранён: ${transactionData.receipt_checked_at}`
-									: 'Данные чека есть в транзакции'}
-							</Alert>
+							<Stack gap="xs">
+								<Alert color="green" title="Чек загружен">
+									{transactionData.receipt_checked_at
+										? `Сохранён: ${transactionData.receipt_checked_at}`
+										: 'Данные чека есть в транзакции'}
+								</Alert>
+								<Button
+									variant="light"
+									onClick={() => void handleApplyReceiptItems()}
+									loading={applyItemsMutation.isPending}
+									disabled={!id}
+								>
+									Заполнить позиции из чека
+								</Button>
+							</Stack>
 						) : null}
 						{previewTicket ? (
 							<Stack gap={4}>

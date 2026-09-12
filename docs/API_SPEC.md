@@ -995,11 +995,35 @@ Kanban boards: workspaces, lists, cards, labels, checklists, comments, attachmen
 | DELETE | `/api/board/lists/{id}` | Delete list (cards moved per policy) |
 | POST | `/api/board/lists/{listId}/cards` | Create `{ title }` |
 | GET | `/api/board/cards/{id}` | Card detail (checklists, comments, attachments) |
-| PUT | `/api/board/cards/{id}` | Update `{ title?, description_md?, due_date?, cover_color? }` |
+| PUT | `/api/board/cards/{id}` | Update `{ title?, description_md?, due_date?, cover_color?, pkb_vault_id?, pkb_note_path? }` |
 | DELETE | `/api/board/cards/{id}` | Delete |
 | PUT | `/api/board/cards/{id}/move` | `{ list_id, position }` |
 | PUT | `/api/board/cards/{id}/assignees` | `{ user_ids: number[] }` |
 | PUT | `/api/board/cards/{id}/labels` | `{ label_ids: number[] }` |
+| GET | `/api/board/cards/linked` | Карточки, привязанные к заметке PKB — query: `vault_id`, `path` → `{ cards: [{ id, title, board_id, board_title }] }` |
+
+### Board ↔ PKB (soft link)
+
+На карточке хранятся опциональные поля:
+
+| Field | Type | Notes |
+|-------|------|--------|
+| `pkb_vault_id` | `number \| null` | ID vault PKB |
+| `pkb_note_path` | `string \| null` | Путь заметки внутри vault (до 512) |
+
+- **Bind:** `PUT /api/board/cards/{id}` с обоими полями (user должен иметь read в vault).
+- **Unlink:** передать `pkb_vault_id: null` и/или пустой `pkb_note_path`.
+- **Linked from note:** `GET /api/board/cards/linked?vault_id=&path=`.
+- Ответ card summary/detail всегда включает `pkb_vault_id` и `pkb_note_path`.
+
+**Deep-link (клиент, props окна):**
+
+| App | Props | Назначение |
+|-----|--------|------------|
+| PKB | `vaultId`, `notePath` | Открыть vault + заметку |
+| Board | `boardId`, `cardId` | Открыть доску и карточку |
+
+Типичный путь заметки при создании из карточки: `Board/{boardId}/{cardId}.md`.
 
 ### Labels, checklists, comments, attachments
 
