@@ -641,6 +641,12 @@ class TransactionsController extends AbstractController
 
             'fd' => $transaction->getFd(),
 
+            'has_receipt' => null !== $transaction->getReceiptJson(),
+
+            'receipt_json' => $transaction->getReceiptJson(),
+
+            'receipt_checked_at' => $this->formatDateTime($transaction->getReceiptCheckedAt()),
+
             'transferId' => $transaction->getTransfer()?->getId(),
 
             'transferCounterparty' => $this->mapTransferCounterparty($transaction),

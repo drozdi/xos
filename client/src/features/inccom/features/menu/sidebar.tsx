@@ -8,6 +8,7 @@ import {
 	TbCategory,
 	TbHistory,
 	TbListDetails,
+	TbReceipt,
 	TbTable,
 	TbTags,
 } from 'react-icons/tb';
@@ -92,6 +93,11 @@ const navItems: NavItem[] = [
 		icon: <TbCategory />,
 		path: '/categories',
 		matchPrefix: true,
+	},
+	{
+		label: 'ФНС',
+		icon: <TbReceipt />,
+		path: '/fns',
 	},
 ];
 

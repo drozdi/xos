@@ -1,5 +1,10 @@
 ﻿import { useAccountsQuery, useEnumsTypeAccount } from '@inccom/entities/account';
 import {
+	useFnsCredentialsQuery,
+	useFnsReceiptFetch,
+	useFnsReceiptPreview,
+} from '@inccom/entities/fns';
+import {
 	useTransactionCreate,
 	useTransactionQuery,
 	useTransactionUpdate,
@@ -25,17 +30,21 @@ import {
 import { notification } from '@inccom/shared/notification';
 import { getErrorMessage } from '@inccom/shared/utils/error';
 import {
+	Alert,
 	Button,
+	Code,
 	Group,
 	NumberInput,
 	Select,
 	Stack,
 	Switch,
+	Text,
 	TextInput,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { isNotEmpty, useForm } from '@mantine/form';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { TransactionItemsEditor } from './TransactionItemsEditor';
 
 interface TransactionFormValues {
@@ -123,6 +132,11 @@ export function TransactionForm({
 	const { data: transactionData } = useTransactionQuery(id);
 	const createMutation = useTransactionCreate();
 	const updateMutation = useTransactionUpdate();
+	const fnsCredentialsQuery = useFnsCredentialsQuery();
+	const previewReceiptMutation = useFnsReceiptPreview();
+	const fetchReceiptMutation = useFnsReceiptFetch();
+	const [previewTicket, setPreviewTicket] = useState<unknown>(null);
+	const fnsConfigured = Boolean(fnsCredentialsQuery.data?.configured);
 
 	const accountOptions = useMemo(
 		() =>
@@ -215,6 +229,47 @@ export function TransactionForm({
 		if (data.fd) form.setFieldValue('fd', data.fd);
 		if (data.amount) form.setFieldValue('amount', Number(data.amount));
 		if (data.date) form.setFieldValue('date', toFormDate(data.date));
+	}
+
+	function buildReceiptPayload() {
+		const values = form.values;
+		const amount = calculateExpenseAmount(
+			values.amount,
+			values.isManualAmount,
+			values.items,
+		);
+		return {
+			fn: values.fn || null,
+			fd: values.fd || null,
+			fp: values.fp || null,
+			fpd: values.fpd || null,
+			amount: amount > 0 ? amount.toFixed(2) : null,
+			date: toIsoDate(values.date),
+			type,
+		};
+	}
+
+	async function handleCheckReceipt() {
+		if (!fnsConfigured) {
+			notification.error('ФНС', 'Сначала укажите данные ФНС в настройках');
+			return;
+		}
+		try {
+			if (id) {
+				const result = await fetchReceiptMutation.mutateAsync({
+					transactionId: id,
+					payload: buildReceiptPayload(),
+				});
+				setPreviewTicket(result.ticket);
+				notification.success('Чек', 'Чек проверен и сохранён');
+			} else {
+				const result = await previewReceiptMutation.mutateAsync(buildReceiptPayload());
+				setPreviewTicket(result.ticket);
+				notification.success('Чек', 'Чек получен (сохранится после создания расхода)');
+			}
+		} catch (error) {
+			notification.error('Ошибка ФНС', getErrorMessage(error));
+		}
 	}
 
 	function buildPayload(values: TransactionFormValues): ITransactionPayload {
@@ -364,7 +419,43 @@ export function TransactionForm({
 							<Button variant="light" onClick={() => setQrOpened(true)}>
 								Сканировать QR
 							</Button>
+							<Button
+								variant="light"
+								onClick={() => void handleCheckReceipt()}
+								loading={
+									previewReceiptMutation.isPending || fetchReceiptMutation.isPending
+								}
+								disabled={!fnsConfigured}
+							>
+								{id ? 'Проверить и сохранить чек' : 'Проверить чек'}
+							</Button>
 						</Group>
+						{!fnsConfigured ? (
+							<Text size="sm" c="dimmed">
+								Чтобы проверять чеки, укажите данные ФНС в{' '}
+								<Text span component={Link} to="/fns" c="blue">
+									настройках
+								</Text>
+								.
+							</Text>
+						) : null}
+						{transactionData?.has_receipt ? (
+							<Alert color="green" title="Чек загружен">
+								{transactionData.receipt_checked_at
+									? `Сохранён: ${transactionData.receipt_checked_at}`
+									: 'Данные чека есть в транзакции'}
+							</Alert>
+						) : null}
+						{previewTicket ? (
+							<Stack gap={4}>
+								<Text size="sm" fw={500}>
+									Ответ ФНС
+								</Text>
+								<Code block style={{ maxHeight: 180, overflow: 'auto' }}>
+									{JSON.stringify(previewTicket, null, 2)}
+								</Code>
+							</Stack>
+						) : null}
 						<TextInput
 							label="ФН"
 							{...form.getInputProps('fn')}

@@ -67,6 +67,13 @@ class Transaction
     #[ORM\Column(name: 'fd', length: 20, nullable: true)]
     private ?string $fd = null;
 
+    /** @var array<string, mixed>|null */
+    #[ORM\Column(name: 'receipt_json', type: Types::JSON, nullable: true)]
+    private ?array $receiptJson = null;
+
+    #[ORM\Column(name: 'receipt_checked_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $receiptCheckedAt = null;
+
     #[ORM\Column(name: 'is_manual_amount', type: Types::BOOLEAN, options: ["default" => false])]
     private bool $isManualAmount = false;
 
@@ -217,6 +224,32 @@ class Transaction
     }
     public function setFp(?string $fp = null): self {
         $this->fp = $fp;
+        return $this;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getReceiptJson(): ?array
+    {
+        return $this->receiptJson;
+    }
+
+    /** @param array<string, mixed>|null $receiptJson */
+    public function setReceiptJson(?array $receiptJson): self
+    {
+        $this->receiptJson = $receiptJson;
+
+        return $this;
+    }
+
+    public function getReceiptCheckedAt(): ?\DateTimeInterface
+    {
+        return $this->receiptCheckedAt;
+    }
+
+    public function setReceiptCheckedAt(?\DateTimeInterface $receiptCheckedAt): self
+    {
+        $this->receiptCheckedAt = $receiptCheckedAt;
+
         return $this;
     }
 

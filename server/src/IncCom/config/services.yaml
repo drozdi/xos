@@ -14,6 +14,7 @@ services:
         exclude:
             - '../Entity/'
             - '../config/'
+            - '../FnsClient/'
 
     IncCom\Service\IncComManager:
         public: true

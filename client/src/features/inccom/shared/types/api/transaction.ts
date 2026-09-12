@@ -36,6 +36,9 @@ export interface ApiTransaction {
 	fpd: string | null;
 	fp: string | null;
 	fd: string | null;
+	has_receipt?: boolean;
+	receipt_json?: Record<string, unknown> | null;
+	receipt_checked_at?: string | null;
 	transferId: number | null;
 	transferCounterparty: ApiTransferCounterparty | null;
 	items: ApiTransactionItem[];

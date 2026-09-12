@@ -1,4 +1,5 @@
-﻿import { ProtectedRoute } from '@inccom/features/auth/protected-route';
+﻿import { FnsSettingsPage } from '@inccom/pages/fns';
+import { ProtectedRoute } from '@inccom/features/auth/protected-route';
 import {
 	AccountCreatePage,
 	AccountDetailPage,
@@ -94,6 +95,7 @@ export function AppRouters() {
 					],
 				},
 				{ path: 'item-categories', element: <ItemCategoriesPage /> },
+				{ path: 'fns', element: <FnsSettingsPage /> },
 				{
 					path: 'categories',
 					element: <Outlet />,
