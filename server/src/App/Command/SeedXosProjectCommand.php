@@ -162,7 +162,7 @@ final class SeedXosProjectCommand extends Command
         }
 
         $this->addLinkedDocCards($user, $lists, $labels, $vault);
-        $this->addRoadmapCards($user, $lists, $labels);
+        $this->addRoadmapCards($user, $lists, $labels, $vault);
 
         $io->text(sprintf('Созданы workspace id=%d, board id=%d', $workspace->getId(), $board->getId()));
 
@@ -232,14 +232,15 @@ final class SeedXosProjectCommand extends Command
      * @param array<string, BoardList> $lists
      * @param array<string, Label> $labels
      */
-    private function addRoadmapCards(User $user, array $lists, array $labels): void
+    private function addRoadmapCards(User $user, array $lists, array $labels, ?Vault $vault): void
     {
         $card = function (
             string $title,
             string $description,
             array $labelKeys = [],
             ?array $checklist = null,
-        ) use ($user, $lists, $labels): void {
+            ?string $pkbNotePath = null,
+        ) use ($user, $lists, $labels, $vault): void {
             $created = $this->boardManager->createCard($lists['Roadmap'], $user, ['title' => $title]);
             $this->boardManager->updateCard($created, $user, ['description_md' => $description]);
             $this->applyLabels($created, $user, $labels, $labelKeys);
@@ -249,7 +250,32 @@ final class SeedXosProjectCommand extends Command
                     $this->boardManager->addChecklistItem($cl, $user, ['text' => $item]);
                 }
             }
+            if ($vault instanceof Vault && null !== $pkbNotePath && '' !== $pkbNotePath) {
+                $this->boardManager->updateCard($created, $user, [
+                    'pkb_vault_id' => $vault->getId(),
+                    'pkb_note_path' => $pkbNotePath,
+                ]);
+            }
         };
+
+        $card(
+            'Волна 1 IncCom+DX — DONE',
+            <<<'MD'
+Сдано: позиции из чека ФНС, шифрование `master_token`, DX Board↔PKB.
+
+Детали: [[Changelog]] · [[IncCom]] · `docs/inccom/README.md` · `docs/API_SPEC.md` § Board↔PKB.
+MD,
+            ['inccom', 'docs', 'mvp'],
+            [
+                'title' => 'Критерии',
+                'items' => [
+                    'Позиции из receipt_json (fill_items / apply-items)',
+                    'Encrypt FNS master_token (INCCOM_FNS_SECRET)',
+                    'API_SPEC Board↔PKB + PHPUnit linked',
+                ],
+            ],
+            'Notes/Changelog.md',
+        );
 
         $card('SchoolTask: исправить права тьютор / ROOT / Access', <<<'MD'
 См. [[SchoolTask]] и `docs/schooltask/REVIEW.md`.
@@ -272,12 +298,12 @@ Plugin API, encryption at-rest, real-time. См. [[PKB]] и `docs/pkb/PLAN.md`.
 MD, ['pkb', 'v2']);
 
         $card('Документация приложений', <<<'MD'
-Каталог `docs/APPS.md`, ТЗ по доменам, индекс `docs/README.md`. Связано с [[AppsCatalog]] и vault XOS.
+Каталог `docs/APPS.md`, ТЗ по доменам, индекс `docs/README.md`. Связано с [[AppsCatalog]], [[Changelog]] и vault XOS.
 MD, ['docs', 'mvp'], [
             'title' => 'Осталось',
             'items' => [
                 'Сверять ТЗ с кодом при крупных фичах',
-                'Дописать API_SPEC для Board',
+                'Сверять seed Board/PKB с `docs/` после крупных фич',
             ],
         ]);
     }
@@ -327,6 +353,13 @@ MD, ['docs', 'mvp'], [
                 'boardList' => 'Обзор',
                 'labels' => ['docs'],
                 'description' => "Реестр ~55 приложений и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/APPS.md`.",
+            ],
+            [
+                'title' => 'Changelog',
+                'notePath' => 'Notes/Changelog.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs', 'mvp'],
+                'description' => "Недавние сдачи (Волна 1 IncCom+DX, Board↔PKB).\n\nСм. [[Changelog]].",
             ],
         ];
 
@@ -471,7 +504,7 @@ MD,
                 'title' => 'IncCom',
                 'notePath' => 'Notes/Apps/IncCom.md',
                 'labels' => ['inccom'],
-                'cardDescription' => "Доходы и расходы, чеки ФНС.\n\nЗаметка: [[IncCom]] · API `/api/IncCom/`",
+                'cardDescription' => "Доходы и расходы, чеки ФНС → позиции.\n\nЗаметка: [[IncCom]] · [[Changelog]] · API `/api/IncCom/`",
                 'body' => <<<'MD'
 # IncCom
 
@@ -487,13 +520,21 @@ Claimant `inccom` (`can_read` / `can_write`) · `server/src/IncCom/` · `client/
 |----|----------|
 | `inccom` | Доходы и расходы |
 
+## Чеки ФНС (Волна 1)
+
+- Credentials: `GET/PUT/DELETE /api/IncCom/fns/credentials`
+- Preview: `POST /api/IncCom/receipts/preview`
+- Fetch: `POST …/transactions/{id}/receipt/fetch` (+ `fill_items=true` в body/query)
+- Позиции из сохранённого чека: `POST …/transactions/{id}/receipt/apply-items`
+- UI: «Проверить и сохранить чек» (с `fill_items`) и «Заполнить позиции из чека»
+- At rest: `INCCOM_FNS_SECRET` → AES-256-GCM (`enc:v1:`); legacy plaintext принимается до следующего PUT
+
 ## Ключевое
 
 - API: `/api/IncCom/`
-- ФНС: `/api/IncCom/fns/credentials`, `…/receipts/preview`, `…/transactions/{id}/receipt/fetch`
-- Документы: `docs/inccom/README.md`, `TZ.md`
+- Документы: `docs/inccom/README.md`, `TZ.md` · журнал: [[Changelog]]
 
-← [[Home]] · [[AppsCatalog]]
+← [[Home]] · [[AppsCatalog]] · [[Changelog]]
 MD,
             ],
             [
@@ -550,7 +591,7 @@ MD,
                 'title' => 'Board',
                 'notePath' => 'Notes/Apps/Board.md',
                 'labels' => ['board'],
-                'cardDescription' => "Kanban workspaces.\n\nЗаметка: [[Board]] · API `/api/board/`",
+                'cardDescription' => "Kanban + soft-link PKB.\n\nЗаметка: [[Board]] · [[Changelog]] · API `/api/board/`",
                 'body' => <<<'MD'
 # Board
 
@@ -562,22 +603,26 @@ Workspaces → boards → lists → cards. DnD, чеклисты, коммент
 
 ## Связь с [[PKB]]
 
-На карточке: `pkb_vault_id` + `pkb_note_path`. UI: привязка / создание `Board/{boardId}/{cardId}.md`, invite readers. Обратно: `GET /api/board/cards/linked`.
+На карточке: `pkb_vault_id` + `pkb_note_path`. UI: привязка / создание `Board/{boardId}/{cardId}.md`, invite readers. Обратно: `GET /api/board/cards/linked?vault_id=&path=`.
 
-Эта доска «XOS — roadmap» связана с vault `slug=xos`.
+Deep-link окна Board: props `boardId`, `cardId`.
+
+DX: `docs/API_SPEC.md` § Board↔PKB; PHPUnit `BoardManagerTest::testPkbNoteLinkSerializeAndLinkedLookup`.
+
+Эта доска «XOS — roadmap» связана с vault `slug=xos`. Журнал сдач: [[Changelog]].
 
 ## Приложения
 
 `board`
 
-← [[Home]] · [[PKB]] · [[Calendar]]
+← [[Home]] · [[PKB]] · [[Calendar]] · [[Changelog]]
 MD,
             ],
             [
                 'title' => 'PKB',
                 'notePath' => 'Notes/Apps/PKB.md',
                 'labels' => ['pkb'],
-                'cardDescription' => "База знаний (vaults).\n\nЗаметка: [[PKB]] · API `/api/pkb/`",
+                'cardDescription' => "База знаний (vaults) + deep-link.\n\nЗаметка: [[PKB]] · [[Changelog]] · API `/api/pkb/`",
                 'body' => <<<'MD'
 # PKB
 
@@ -587,13 +632,17 @@ Claimant `pkb` · `server/src/Pkb/` · `client/src/features/pkb/` · app `pkb`
 
 Vault = папка [[Explorer]] + индекс в БД. Wikilinks `[[Note]]`, backlinks, graph, search, sharing.
 
-Этот vault **XOS** (`slug=xos`) — проектная документация: [[Home]], [[Architecture]], [[AppsCatalog]], модули в `Notes/Apps/`.
+Этот vault **XOS** (`slug=xos`) — проектная документация: [[Home]], [[Architecture]], [[AppsCatalog]], [[Changelog]], модули в `Notes/Apps/`.
+
+Deep-link окна PKB: props `vaultId`, `notePath`. Связанные карточки [[Board]]: `GET /api/board/cards/linked`.
+
+Документация в vault обновляется через seed: `php bin/console xos:seed-project --force` (локаль; см. `docs/DEVELOPER_GUIDE.md`).
 
 ## Приложения
 
 `pkb`
 
-← [[Home]] · [[Board]] · [[Explorer]]
+← [[Home]] · [[Board]] · [[Explorer]] · [[Changelog]]
 MD,
             ],
             [
@@ -681,12 +730,52 @@ MD,
 
 - [[Architecture]] — слои monorepo
 - [[AppsCatalog]] — реестр приложений
+- [[Changelog]] — недавние сдачи (Волна 1 и др.)
 
 ## Документы в репозитории
 
 Индекс: `docs/README.md` · каталог: `docs/APPS.md` · архитектура: `docs/ARCHITECTURE.md`
 
 Seed: `php bin/console xos:seed-project [--login=] [--force]`
+MD,
+            'Notes/Changelog.md' => <<<'MD'
+# Changelog
+
+Краткий журнал сдач в демо Board↔PKB. Полные ТЗ — в `docs/`.
+
+## Волна 1 — IncCom + DX (DONE)
+
+### IncCom: позиции из чека
+
+- Парсинг FNS JSON → `TransactionItem` (product по имени, qty/price, пересчёт `amount`, `isManualAmount=false`)
+- `POST …/receipt/fetch` с `fill_items=true` (body или query)
+- `POST …/receipt/apply-items` для уже сохранённого `receipt_json`
+- UI: «Заполнить позиции из чека» после загрузки чека
+
+См. [[IncCom]], `docs/inccom/README.md`.
+
+### Шифрование FNS `master_token`
+
+- Env `INCCOM_FNS_SECRET` → AES-256-GCM, префикс `enc:v1:`
+- Encrypt на PUT credentials; decrypt только в `FnsReceiptService`
+- Legacy plaintext читается; следующий PUT перешифровывает
+
+### Board ↔ PKB DX
+
+- Поля карточки `pkb_vault_id`, `pkb_note_path`; `GET /api/board/cards/linked`
+- Deep-link: Board `boardId`/`cardId`, PKB `vaultId`/`notePath`
+- `docs/API_SPEC.md` § Board↔PKB; PHPUnit linked/serialize
+- Seed локали: `xos:seed-project --force` (не на prod) — `docs/DEVELOPER_GUIDE.md`
+
+См. [[Board]], [[PKB]].
+
+## Далее (Roadmap)
+
+- SchoolTask B1–B3 / F1–F3 — [[SchoolTask]]
+- Explorer dirty-close — [[Explorer]]
+- Board v2 / PKB v3 — отдельные волны
+
+← [[Home]] · [[IncCom]] · [[Board]] · [[PKB]]
 MD,
             'Notes/Architecture.md' => <<<'MD'
 # Architecture
