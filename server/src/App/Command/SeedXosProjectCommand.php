@@ -4,6 +4,7 @@ namespace App\Command;
 
 use Board\Entity\Board;
 use Board\Entity\BoardList;
+use Board\Entity\Card;
 use Board\Entity\Label;
 use Board\Entity\Workspace;
 use Board\Repository\WorkspaceRepository;
@@ -23,7 +24,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'xos:seed-project',
-    description: 'Создаёт workspace/доску и vault PKB для проекта XOS',
+    description: 'Создаёт workspace/доску и vault PKB для проекта XOS со связью карточек и заметок',
 )]
 final class SeedXosProjectCommand extends Command
 {
@@ -58,12 +59,12 @@ final class SeedXosProjectCommand extends Command
         $io->title('XOS project seed');
         $io->text(sprintf('Владелец: %s (id=%d)', $user->getLogin() ?? '?', $user->getId() ?? 0));
 
-        $board = $this->seedBoard($io, $user, $force);
         $vault = $this->seedVault($io, $user, $force);
+        $board = $this->seedBoard($io, $user, $force, $vault);
 
         $io->success([
-            $board ? sprintf('Доска «%s» id=%d', self::BOARD_TITLE, $board->getId()) : 'Доска пропущена',
             $vault ? sprintf('Vault «XOS» slug=%s id=%d', self::VAULT_SLUG, $vault->getId()) : 'Vault пропущен',
+            $board ? sprintf('Доска «%s» id=%d', self::BOARD_TITLE, $board->getId()) : 'Доска пропущена',
         ]);
 
         return Command::SUCCESS;
@@ -86,165 +87,6 @@ final class SeedXosProjectCommand extends Command
         }
 
         return $user;
-    }
-
-    private function seedBoard(SymfonyStyle $io, User $user, bool $force): ?Board
-    {
-        $existing = $this->findWorkspace($user);
-        if ($existing instanceof Workspace) {
-            if (!$force) {
-                $io->warning('Workspace «XOS» уже есть — доска не создана (используйте --force).');
-
-                return null;
-            }
-            $this->boardManager->deleteWorkspace($existing, $user);
-            $io->note('Старый workspace XOS удалён.');
-        }
-
-        $workspace = $this->boardManager->createWorkspace($user, [
-            'name' => self::WORKSPACE_NAME,
-            'description' => 'Монорепозиторий XOS: desktop-shell, приложения и документация.',
-        ]);
-
-        $board = $this->boardManager->createBoard($workspace, $user, [
-            'title' => self::BOARD_TITLE,
-            'description' => 'Roadmap проекта: приложения, долги, интеграции.',
-            'background_type' => 'color',
-            'background_value' => '#1b2838',
-            'visibility' => 'workspace',
-        ]);
-
-        $labels = $this->createLabels($board, $user);
-        $lists = [];
-        foreach (['Backlog', 'In progress', 'Done', 'Приложения'] as $title) {
-            $lists[$title] = $this->boardManager->createList($board, $user, ['title' => $title]);
-        }
-
-        $this->addCards($user, $lists, $labels);
-
-        $io->text(sprintf('Созданы workspace id=%d, board id=%d', $workspace->getId(), $board->getId()));
-
-        return $board;
-    }
-
-    /**
-     * @return array<string, Label>
-     */
-    private function createLabels(Board $board, User $user): array
-    {
-        $defs = [
-            'docs' => '#5c6bc0',
-            'bug' => '#e53935',
-            'mvp' => '#43a047',
-            'v2' => '#fb8c00',
-            'explorer' => '#00897b',
-            'schooltask' => '#8e24aa',
-            'calendar' => '#1976d2',
-        ];
-        $result = [];
-        foreach ($defs as $name => $color) {
-            $result[$name] = $this->boardManager->createLabel($board, $user, [
-                'name' => $name,
-                'color' => $color,
-            ]);
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param array<string, BoardList> $lists
-     * @param array<string, Label> $labels
-     */
-    private function addCards(User $user, array $lists, array $labels): void
-    {
-        $card = function (
-            string $list,
-            string $title,
-            string $description,
-            array $labelKeys = [],
-            ?array $checklist = null,
-        ) use ($user, $lists, $labels): void {
-            $created = $this->boardManager->createCard($lists[$list], $user, ['title' => $title]);
-            $this->boardManager->updateCard($created, $user, ['description_md' => $description]);
-            $ids = [];
-            foreach ($labelKeys as $key) {
-                if (isset($labels[$key])) {
-                    $ids[] = (int) $labels[$key]->getId();
-                }
-            }
-            if ($ids !== []) {
-                $this->boardManager->setCardLabels($created, $user, $ids);
-            }
-            if ($checklist !== null) {
-                $cl = $this->boardManager->createChecklist($created, $user, ['title' => $checklist['title']]);
-                foreach ($checklist['items'] as $item) {
-                    $this->boardManager->addChecklistItem($cl, $user, ['text' => $item]);
-                }
-            }
-        };
-
-        $card('Backlog', 'SchoolTask: исправить права тьютор / ROOT / Access', <<<'MD'
-См. [[SchoolTask]] и `docs/schooltask/REVIEW.md`.
-
-Критично: B1–B3, F1–F3 (тьютор vs scope, публичные uploads, user_ids, FormData, launch editor).
-MD, ['schooltask', 'bug']);
-
-        $card('Backlog', 'Explorer: dirty-close notepad / markdown', <<<'MD'
-Manual DoD из [[Explorer]]: dirty-close и save после F5 для notepad и markdown.
-MD, ['explorer']);
-
-        $card('Backlog', 'Board v2: live-updates и глобальный поиск', <<<'MD'
-Out of scope MVP: Mercure, global search, Trello import, email-уведомления.
-
-См. `docs/board/PLAN.md`.
-MD, ['v2']);
-
-        $card('Backlog', 'PKB v3: plugins, encryption, co-editing', <<<'MD'
-Plugin API, encryption at-rest, real-time. См. [[PKB]] и `docs/pkb/PLAN.md`.
-MD, ['v2']);
-
-        $card('In progress', 'Документация приложений', <<<'MD'
-Каталог `docs/APPS.md`, ТЗ по доменам, индекс `docs/README.md`.
-MD, ['docs', 'mvp'], [
-            'title' => 'Осталось',
-            'items' => [
-                'Сверять ТЗ с кодом при крупных фичах',
-                'Дописать API_SPEC для Board',
-            ],
-        ]);
-
-        $card('Done', 'Календарь: overlay Доска + Todo + SchoolTask', <<<'MD'
-Карточки с due_date и заметки с due_at отображаются в Календаре.
-MD, ['calendar', 'mvp']);
-
-        $card('Done', 'Board MVP (фазы 0–4)', <<<'MD'
-Workspaces, Kanban DnD, карточка, чеклисты, фильтры, activity.
-MD, ['mvp']);
-
-        $card('Done', 'PKB MVP (фазы 0–6)', <<<'MD'
-Vaults, редактор, wikilinks, graph, search, sharing.
-MD, ['mvp']);
-
-        $card('Done', 'Explorer pickers и multi-instance', <<<'MD'
-Open/Save As, documentPath per window, media singleInstance.
-MD, ['explorer', 'mvp']);
-
-        $apps = [
-            'Main' => 'Пользователи, группы, OU, claimants.',
-            'Device' => 'Учёт оборудования, лицензии, ПО.',
-            'Explorer' => 'VFS, просмотрщики, pickers.',
-            'SchoolTask' => 'Расписание, классы, уроки.',
-            'IncCom' => 'Доходы и расходы.',
-            'Calendar' => 'События + overlay due dates.',
-            'Todo' => 'Списки, sharing, due_at.',
-            'Board' => 'Kanban workspaces.',
-            'PKB' => 'Vaults, wikilinks, graph.',
-            'Система' => 'Settings, browser, игры.',
-        ];
-        foreach ($apps as $title => $desc) {
-            $card('Приложения', $title, $desc."\n\nСм. `docs/` и заметку в vault [[Home]].", ['docs']);
-        }
     }
 
     private function findWorkspace(User $user): ?Workspace
@@ -282,15 +124,534 @@ MD, ['explorer', 'mvp']);
             $this->vaultFiles->putContent($vault, $user, $path, $content);
         }
 
-        $io->text(sprintf('Vault id=%d path=%s', $vault->getId(), $vault->getRootPath()));
+        $io->text(sprintf('Vault id=%d path=%s (%d notes)', $vault->getId(), $vault->getRootPath(), \count($this->vaultNotes())));
 
         return $vault;
+    }
+
+    private function seedBoard(SymfonyStyle $io, User $user, bool $force, ?Vault $vault): ?Board
+    {
+        $existing = $this->findWorkspace($user);
+        if ($existing instanceof Workspace) {
+            if (!$force) {
+                $io->warning('Workspace «XOS» уже есть — доска не создана (используйте --force).');
+
+                return null;
+            }
+            $this->boardManager->deleteWorkspace($existing, $user);
+            $io->note('Старый workspace XOS удалён.');
+        }
+
+        $workspace = $this->boardManager->createWorkspace($user, [
+            'name' => self::WORKSPACE_NAME,
+            'description' => 'Монорепозиторий XOS: desktop-shell, приложения и документация.',
+        ]);
+
+        $board = $this->boardManager->createBoard($workspace, $user, [
+            'title' => self::BOARD_TITLE,
+            'description' => 'Структура XOS: обзор, модули (связаны с vault), roadmap.',
+            'background_type' => 'color',
+            'background_value' => '#1b2838',
+            'visibility' => 'workspace',
+        ]);
+
+        $labels = $this->createLabels($board, $user);
+        $lists = [];
+        foreach (['Обзор', 'Модули', 'Roadmap'] as $title) {
+            $lists[$title] = $this->boardManager->createList($board, $user, ['title' => $title]);
+        }
+
+        $this->addLinkedDocCards($user, $lists, $labels, $vault);
+        $this->addRoadmapCards($user, $lists, $labels);
+
+        $io->text(sprintf('Созданы workspace id=%d, board id=%d', $workspace->getId(), $board->getId()));
+
+        return $board;
+    }
+
+    /**
+     * @return array<string, Label>
+     */
+    private function createLabels(Board $board, User $user): array
+    {
+        $defs = [
+            'docs' => '#5c6bc0',
+            'module' => '#26a69a',
+            'bug' => '#e53935',
+            'mvp' => '#43a047',
+            'v2' => '#fb8c00',
+            'main' => '#546e7a',
+            'device' => '#6d4c41',
+            'explorer' => '#00897b',
+            'schooltask' => '#8e24aa',
+            'inccom' => '#2e7d32',
+            'calendar' => '#1976d2',
+            'todo' => '#ef6c00',
+            'board' => '#3949ab',
+            'pkb' => '#00838f',
+            'system' => '#78909c',
+            'iblock' => '#5d4037',
+        ];
+        $result = [];
+        foreach ($defs as $name => $color) {
+            $result[$name] = $this->boardManager->createLabel($board, $user, [
+                'name' => $name,
+                'color' => $color,
+            ]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, BoardList> $lists
+     * @param array<string, Label> $labels
+     */
+    private function addLinkedDocCards(User $user, array $lists, array $labels, ?Vault $vault): void
+    {
+        foreach ($this->docCardCatalog() as $item) {
+            $listTitle = $item['boardList'];
+            if (!isset($lists[$listTitle])) {
+                continue;
+            }
+            $card = $this->boardManager->createCard($lists[$listTitle], $user, ['title' => $item['title']]);
+            $this->boardManager->updateCard($card, $user, [
+                'description_md' => $item['description'],
+            ]);
+            $this->applyLabels($card, $user, $labels, $item['labels']);
+            if ($vault instanceof Vault) {
+                $this->boardManager->updateCard($card, $user, [
+                    'pkb_vault_id' => $vault->getId(),
+                    'pkb_note_path' => $item['notePath'],
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @param array<string, BoardList> $lists
+     * @param array<string, Label> $labels
+     */
+    private function addRoadmapCards(User $user, array $lists, array $labels): void
+    {
+        $card = function (
+            string $title,
+            string $description,
+            array $labelKeys = [],
+            ?array $checklist = null,
+        ) use ($user, $lists, $labels): void {
+            $created = $this->boardManager->createCard($lists['Roadmap'], $user, ['title' => $title]);
+            $this->boardManager->updateCard($created, $user, ['description_md' => $description]);
+            $this->applyLabels($created, $user, $labels, $labelKeys);
+            if ($checklist !== null) {
+                $cl = $this->boardManager->createChecklist($created, $user, ['title' => $checklist['title']]);
+                foreach ($checklist['items'] as $item) {
+                    $this->boardManager->addChecklistItem($cl, $user, ['text' => $item]);
+                }
+            }
+        };
+
+        $card('SchoolTask: исправить права тьютор / ROOT / Access', <<<'MD'
+См. [[SchoolTask]] и `docs/schooltask/REVIEW.md`.
+
+Критично: B1–B3, F1–F3 (тьютор vs scope, публичные uploads, user_ids, FormData, launch editor).
+MD, ['schooltask', 'bug']);
+
+        $card('Explorer: dirty-close notepad / markdown', <<<'MD'
+Manual DoD из [[Explorer]]: dirty-close и save после F5 для notepad и markdown.
+MD, ['explorer']);
+
+        $card('Board v2: live-updates и глобальный поиск', <<<'MD'
+Out of scope MVP: Mercure, global search, Trello import, email-уведомления.
+
+См. `docs/board/PLAN.md` и [[Board]].
+MD, ['board', 'v2']);
+
+        $card('PKB v3: plugins, encryption, co-editing', <<<'MD'
+Plugin API, encryption at-rest, real-time. См. [[PKB]] и `docs/pkb/PLAN.md`.
+MD, ['pkb', 'v2']);
+
+        $card('Документация приложений', <<<'MD'
+Каталог `docs/APPS.md`, ТЗ по доменам, индекс `docs/README.md`. Связано с [[AppsCatalog]] и vault XOS.
+MD, ['docs', 'mvp'], [
+            'title' => 'Осталось',
+            'items' => [
+                'Сверять ТЗ с кодом при крупных фичах',
+                'Дописать API_SPEC для Board',
+            ],
+        ]);
+    }
+
+    /**
+     * @param array<string, Label> $labels
+     * @param list<string> $labelKeys
+     */
+    private function applyLabels(Card $card, User $user, array $labels, array $labelKeys): void
+    {
+        $ids = [];
+        foreach ($labelKeys as $key) {
+            if (isset($labels[$key])) {
+                $ids[] = (int) $labels[$key]->getId();
+            }
+        }
+        if ($ids !== []) {
+            $this->boardManager->setCardLabels($card, $user, $ids);
+        }
+    }
+
+    /**
+     * Карточки Обзор + Модули, привязанные к заметкам.
+     *
+     * @return list<array{title: string, notePath: string, boardList: string, labels: list<string>, description: string}>
+     */
+    private function docCardCatalog(): array
+    {
+        $overview = [
+            [
+                'title' => 'Home',
+                'notePath' => 'Notes/Home.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs'],
+                'description' => "Точка входа в проектную базу знаний XOS.\n\nОткройте связанную заметку [[Home]].",
+            ],
+            [
+                'title' => 'Architecture',
+                'notePath' => 'Notes/Architecture.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs'],
+                'description' => "Слои monorepo, auth, клиент/сервер.\n\nСм. [[Architecture]] и `docs/ARCHITECTURE.md`.",
+            ],
+            [
+                'title' => 'Apps Catalog',
+                'notePath' => 'Notes/AppsCatalog.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs'],
+                'description' => "Реестр ~55 приложений и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/APPS.md`.",
+            ],
+        ];
+
+        $modules = [];
+        foreach ($this->moduleCatalog() as $mod) {
+            $modules[] = [
+                'title' => $mod['title'],
+                'notePath' => $mod['notePath'],
+                'boardList' => 'Модули',
+                'labels' => array_values(array_unique(array_merge(['module', 'docs'], $mod['labels']))),
+                'description' => $mod['cardDescription'],
+            ];
+        }
+
+        return array_merge($overview, $modules);
+    }
+
+    /**
+     * @return list<array{title: string, notePath: string, labels: list<string>, cardDescription: string, body: string}>
+     */
+    private function moduleCatalog(): array
+    {
+        return [
+            [
+                'title' => 'Main',
+                'notePath' => 'Notes/Apps/Main.md',
+                'labels' => ['main'],
+                'cardDescription' => "Пользователи, OU, группы, claimants.\n\nЗаметка: [[Main]] · API `/api/main/`",
+                'body' => <<<'MD'
+# Main
+
+Claimant `main` · роль `ROLE_MAIN` · `server/src/Main/` · `client/src/features/main/` · `client/src/apps/main-*`
+
+## Назначение
+
+Администрирование: пользователи, подразделения (OU), группы, каталог прав (claimants), файлы, настройки аккаунта.
+
+## Приложения (app id)
+
+| ID | Тип |
+|----|-----|
+| `main-users` / `main-user` | список / карточка |
+| `main-groups` / `main-group` | список / карточка |
+| `main-ous` / `main-ou` | список / карточка |
+| `main-claimants` / `main-claimant` | список / карточка |
+
+## Ключевое
+
+- JWT scopes из `setting.json` + sync в БД: `php bin/console main:claimant:sync`
+- UI прав: `access_options` в claimant после sync
+- Документы: `docs/main/README.md`, `docs/main/TZ.md`
+
+← [[Home]] · [[Architecture]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Device',
+                'notePath' => 'Notes/Apps/Device.md',
+                'labels' => ['device'],
+                'cardDescription' => "Учёт оборудования, ПО, лицензии.\n\nЗаметка: [[Device]] · API `/api/device/`",
+                'body' => <<<'MD'
+# Device
+
+Claimant `device` · `server/src/Device/` · `client/src/features/device/` · apps `device-*`
+
+## Назначение
+
+Инвентаризация: устройства, комплектующие, типы, свойства, программы, лицензии и ключи.
+
+## Приложения (app id)
+
+`device-devices`, `device-device`, `device-sub-devices`, `device-sub-device`, `device-types`, `device-type`, `device-properties`, `device-property`, `device-components`, `device-component`, `device-softwares`, `device-software`, `device-software-types`, `device-software-type`, `device-licenses`, `device-license`, `device-license-key`
+
+## Ключевое
+
+- Карточка устройства: свойства, ремонты, изображения, файлы
+- Документы: `docs/device/README.md`, `docs/device/TZ.md`
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Explorer',
+                'notePath' => 'Notes/Apps/Explorer.md',
+                'labels' => ['explorer'],
+                'cardDescription' => "VFS, pickers, просмотрщики.\n\nЗаметка: [[Explorer]] · API `/api/explorer/`",
+                'body' => <<<'MD'
+# Explorer
+
+Claimant `explorer` · `server/src/Explorer/` · `client/src/features/explorer/` · apps `explorer*`
+
+## Назначение
+
+Файловая система пользователя, Open/Save pickers, блокнот, markdown, изображения, архивы, медиа.
+
+## Приложения (app id)
+
+| ID | Примечание |
+|----|------------|
+| `explorer` | проводник, multi-instance |
+| `explorer-open-picker` / `explorer-save-picker` | диалоги |
+| `explorer-notepad` / `explorer-markdown-viewer` | редакторы |
+| `explorer-image-viewer` / `explorer-archiver` | просмотр |
+| `explorer-audio-player` / `explorer-video-player` | single-instance |
+
+## Ключевое
+
+- Persist: `WIN.documentPath`
+- Долг: dirty-close notepad/markdown
+- Документы: `docs/explorer/`
+
+← [[Home]] · [[PKB]] (vault = папка Explorer) · [[Calendar]]
+MD,
+            ],
+            [
+                'title' => 'SchoolTask',
+                'notePath' => 'Notes/Apps/SchoolTask.md',
+                'labels' => ['schooltask'],
+                'cardDescription' => "Расписание, классы, уроки.\n\nЗаметка: [[SchoolTask]] · API `/api/schooltask/`",
+                'body' => <<<'MD'
+# SchoolTask
+
+Claimant `schooltask` · `server/src/SchoolTask/` · `client/src/features/schooltask/` · apps `schooltask-*`
+
+## Назначение
+
+Предметы → классы → расписание → уроки учителя. Overlay «Моё расписание» в [[Calendar]].
+
+## Приложения (app id)
+
+`schooltask-subjects`, `schooltask-subject`, `schooltask-classes`, `schooltask-class`, `schooltask-calendars`, `schooltask-calendar`, `schooltask-calendar-editor`, `schooltask-calendar-teacher`
+
+## Ключевое
+
+- Backlog прав: `docs/schooltask/REVIEW.md`
+- Документы: `docs/schooltask/README.md`, `TZ.md`
+
+← [[Home]] · [[Calendar]]
+MD,
+            ],
+            [
+                'title' => 'IncCom',
+                'notePath' => 'Notes/Apps/IncCom.md',
+                'labels' => ['inccom'],
+                'cardDescription' => "Доходы и расходы, чеки ФНС.\n\nЗаметка: [[IncCom]] · API `/api/IncCom/`",
+                'body' => <<<'MD'
+# IncCom
+
+Claimant `inccom` (`can_read` / `can_write`) · `server/src/IncCom/` · `client/src/features/inccom/` · app `inccom`
+
+## Назначение
+
+Счета, категории, транзакции (доход/расход), переводы, товары. QR фискальных полей; проверка чека через OpenAPI ФНС (per-user credentials, `receipt_json` на транзакции).
+
+## Приложения
+
+| ID | Название |
+|----|----------|
+| `inccom` | Доходы и расходы |
+
+## Ключевое
+
+- API: `/api/IncCom/`
+- ФНС: `/api/IncCom/fns/credentials`, `…/receipts/preview`, `…/transactions/{id}/receipt/fetch`
+- Документы: `docs/inccom/README.md`, `TZ.md`
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Calendar',
+                'notePath' => 'Notes/Apps/Calendar.md',
+                'labels' => ['calendar'],
+                'cardDescription' => "Личные календари + overlay.\n\nЗаметка: [[Calendar]] · API `/api/calendar/`",
+                'body' => <<<'MD'
+# Calendar
+
+Claimant `calendar` · `server/src/Calendar/` · app `calendar`
+
+## Назначение
+
+Личные календари, шаринг, overlay сроков из других модулей.
+
+## Overlay
+
+| Источник | Поле |
+|----------|------|
+| [[Todo]] | `due_at` |
+| [[Board]] | `due_date` |
+| [[SchoolTask]] | teacher events |
+
+## Приложения
+
+`calendar`
+
+← [[Home]]
+MD,
+            ],
+            [
+                'title' => 'Todo',
+                'notePath' => 'Notes/Apps/Todo.md',
+                'labels' => ['todo'],
+                'cardDescription' => "Списки и заметки.\n\nЗаметка: [[Todo]] · API `/api/todo/`",
+                'body' => <<<'MD'
+# Todo
+
+Claimant `todo` · `server/src/Todo/` · `client/src/features/todo/` · app `todo`
+
+## Назначение
+
+Списки, пункты, markdown-заметки, sharing по email. Due → overlay в [[Calendar]].
+
+## Приложения
+
+`todo`
+
+← [[Home]] · [[Calendar]]
+MD,
+            ],
+            [
+                'title' => 'Board',
+                'notePath' => 'Notes/Apps/Board.md',
+                'labels' => ['board'],
+                'cardDescription' => "Kanban workspaces.\n\nЗаметка: [[Board]] · API `/api/board/`",
+                'body' => <<<'MD'
+# Board
+
+Claimant `board` · `server/src/Board/` · `client/src/features/board/` · app `board`
+
+## Назначение
+
+Workspaces → boards → lists → cards. DnD, чеклисты, комментарии, вложения, фильтры, activity, labels.
+
+## Связь с [[PKB]]
+
+На карточке: `pkb_vault_id` + `pkb_note_path`. UI: привязка / создание `Board/{boardId}/{cardId}.md`, invite readers. Обратно: `GET /api/board/cards/linked`.
+
+Эта доска «XOS — roadmap» связана с vault `slug=xos`.
+
+## Приложения
+
+`board`
+
+← [[Home]] · [[PKB]] · [[Calendar]]
+MD,
+            ],
+            [
+                'title' => 'PKB',
+                'notePath' => 'Notes/Apps/PKB.md',
+                'labels' => ['pkb'],
+                'cardDescription' => "База знаний (vaults).\n\nЗаметка: [[PKB]] · API `/api/pkb/`",
+                'body' => <<<'MD'
+# PKB
+
+Claimant `pkb` · `server/src/Pkb/` · `client/src/features/pkb/` · app `pkb`
+
+## Назначение
+
+Vault = папка [[Explorer]] + индекс в БД. Wikilinks `[[Note]]`, backlinks, graph, search, sharing.
+
+Этот vault **XOS** (`slug=xos`) — проектная документация: [[Home]], [[Architecture]], [[AppsCatalog]], модули в `Notes/Apps/`.
+
+## Приложения
+
+`pkb`
+
+← [[Home]] · [[Board]] · [[Explorer]]
+MD,
+            ],
+            [
+                'title' => 'System',
+                'notePath' => 'Notes/Apps/System.md',
+                'labels' => ['system'],
+                'cardDescription' => "Settings, browser, игры.\n\nЗаметка: [[System]]",
+                'body' => <<<'MD'
+# System
+
+Системные и развлекательные приложения без отдельного Symfony-claimant (кроме общих ролей).
+
+## Приложения (app id)
+
+| ID | Название |
+|----|----------|
+| `settings` | Settings (тема, desktop-state) |
+| `browser` | Браузер (`/api/browser/proxy`) |
+| `chess` | Шахматы |
+| `tic-tac-toe` | Крестики-нолики |
+| `sudoku` | Судоку |
+| `minesweeper` | Сапёр |
+| `solitaire` | Косынка |
+| `demo-calculator` | Calculator (демо) |
+
+Документы: `docs/system/README.md`, `TZ.md`
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'IBlock',
+                'notePath' => 'Notes/Apps/IBlock.md',
+                'labels' => ['iblock'],
+                'cardDescription' => "Инфоблоки API (без desktop-app).\n\nЗаметка: [[IBlock]]",
+                'body' => <<<'MD'
+# IBlock
+
+`server/src/IBlock/` — API инфоблоков. Отдельного окна в меню «Пуск» нет.
+
+## Назначение
+
+CRUD инфоблоков для интеграций / legacy-клиентов. Claimant в `setting.json` без desktop-приложения.
+
+## Документы
+
+См. общий `docs/API_SPEC.md`, индекс `docs/README.md`.
+
+← [[Home]] · [[Architecture]]
+MD,
+            ],
+        ];
     }
 
     /** @return array<string, string> */
     private function vaultNotes(): array
     {
-        return [
+        $notes = [
             'Notes/Home.md' => <<<'MD'
 # XOS
 
@@ -298,11 +659,11 @@ MD, ['explorer', 'mvp']);
 
 ## Стек
 
-- Backend: Symfony 7, Doctrine, MySQL
-- Frontend: React 19, Vite, Mantine, Zustand, TanStack Query
-- Auth: JWT + claimants / scopes
+- Backend: Symfony 7, Doctrine, MySQL — `server/`
+- Frontend: React 19, Vite, Mantine, Zustand, TanStack Query — `client/`
+- Auth: JWT + claimants / scopes (`setting.json`, `ProtectedAppModules`)
 
-## Карта приложений
+## Карта модулей
 
 - [[Main]] — администрирование
 - [[Device]] — учёт оборудования
@@ -313,142 +674,105 @@ MD, ['explorer', 'mvp']);
 - [[Todo]] — заметки
 - [[Board]] — канбан
 - [[PKB]] — база знаний
-- [[Система]] — settings, browser, игры
+- [[System]] — settings, browser, игры
+- [[IBlock]] — инфоблоки (API)
+
+## Обзорные заметки
+
+- [[Architecture]] — слои monorepo
+- [[AppsCatalog]] — реестр приложений
 
 ## Документы в репозитории
 
-Индекс: `docs/README.md` · каталог: `docs/APPS.md`
-MD,
-            'Notes/Apps/Main.md' => <<<'MD'
-# Main
+Индекс: `docs/README.md` · каталог: `docs/APPS.md` · архитектура: `docs/ARCHITECTURE.md`
 
-Claimant `main`. Роль `ROLE_MAIN`.
-
-Приложения: `main-users`, `main-user`, `main-groups`, `main-group`, `main-ous`, `main-ou`, `main-claimants`, `main-claimant`.
-
-API: `/api/main/`
-
-Синхронизация прав: `php bin/console main:claimant:sync`
-
-← [[Home]]
-MD,
-            'Notes/Apps/Device.md' => <<<'MD'
-# Device
-
-Claimant `device`. Устройства, комплектующие, типы, свойства, ПО, лицензии.
-
-Карточка устройства: учёт, свойства, ремонты, изображения, файлы.
-
-API: `/api/device/`
-
-← [[Home]]
-MD,
-            'Notes/Apps/Explorer.md' => <<<'MD'
-# Explorer
-
-VFS пользователя, pickers, notepad, markdown, image, archiver, audio/video.
-
-- Multi-instance: explorer, notepad, markdown, image, archiver
-- Single-instance: audio, video
-- Persist: `WIN.documentPath`
-
-Долг: dirty-close notepad/markdown (manual).
-
-← [[Home]] · см. также [[Calendar]] (файлы уроков через picker)
-MD,
-            'Notes/Apps/SchoolTask.md' => <<<'MD'
-# SchoolTask
-
-Предметы → классы → расписание → уроки учителя.
-
-Overlay в [[Calendar]]: «Моё расписание».
-
-Backlog: `docs/schooltask/REVIEW.md` (права тьютора, uploads, IDOR).
-
-← [[Home]]
-MD,
-            'Notes/Apps/IncCom.md' => <<<'MD'
-# IncCom
-
-Учёт доходов и расходов. Claimant `inccom` (`can_read` / `can_write`).
-
-API: `/api/IncCom/`
-
-← [[Home]]
-MD,
-            'Notes/Apps/Calendar.md' => <<<'MD'
-# Calendar
-
-Личные календари, шаринг, overlay:
-
-| Overlay | Источник |
-|---------|----------|
-| Заметки | [[Todo]] `due_at` |
-| Доска | [[Board]] `due_date` |
-| Расписание | [[SchoolTask]] teacher events |
-
-API: `/api/calendar/`
-
-← [[Home]]
-MD,
-            'Notes/Apps/Todo.md' => <<<'MD'
-# Todo
-
-Списки, пункты, markdown-заметки, sharing по email.
-
-Due items → overlay «Заметки» в [[Calendar]].
-
-API: `/api/todo/`
-
-← [[Home]]
-MD,
-            'Notes/Apps/Board.md' => <<<'MD'
-# Board
-
-Kanban: workspaces → boards → lists → cards.
-
-MVP: DnD, чеклисты, комментарии, вложения, фильтры, activity.
-
-Карточки со сроком → [[Calendar]].
-
-API: `/api/board/`
-
-← [[Home]]
-MD,
-            'Notes/Apps/PKB.md' => <<<'MD'
-# PKB
-
-Vault = папка Explorer + индекс в БД.
-
-Wikilinks `[[Note]]`, backlinks, graph, search, sharing.
-
-Этот vault — проектная база знаний [[Home]].
-
-API: `/api/pkb/`
-
-← [[Home]]
-MD,
-            'Notes/Apps/Система.md' => <<<'MD'
-# Система
-
-- Settings — тема, desktop-state
-- Browser — proxy `/api/browser/proxy`
-- Игры: шахматы, крестики-нолики, судоку
-- demo-calculator — образец приложения
-
-← [[Home]]
+Seed: `php bin/console xos:seed-project [--login=] [--force]`
 MD,
             'Notes/Architecture.md' => <<<'MD'
 # Architecture
 
-Модули `server/src/`: App, Main, Device, Explorer, IBlock, IncCom, SchoolTask, Calendar, Todo, Board, Pkb.
+Монорепозиторий: Symfony 7 (API) + React 19 (desktop-shell).
 
-Клиент: `client/src/apps/*` (55 манифестов) + `client/src/features/*`.
+## Слои backend (`server/src/`)
 
-Защищённые модули: `ProtectedAppModules`.
+| Модуль | Путь | Назначение |
+|--------|------|------------|
+| App | `App/` | Kernel, JWT, HTTP-утилиты |
+| Main | `Main/` | Пользователи, OU, claimants |
+| Device | `Device/` | Оборудование |
+| IBlock | `IBlock/` | Инфоблоки |
+| IncCom | `IncCom/` | Доходы/расходы |
+| SchoolTask | `SchoolTask/` | Расписание |
+| Explorer | `Explorer/` | Файлы |
+| Calendar | `Calendar/` | Календари |
+| Todo | `Todo/` | Заметки |
+| Board | `Board/` | Kanban |
+| Pkb | `Pkb/` | Vaults |
 
-Связано: [[Home]], [[Board]], [[PKB]]
+## Клиент
+
+- `client/src/apps/*` — манифесты окон (~55+)
+- `client/src/features/*` — доменная логика
+- `client/src/core/*` — auth, API, window manager, theme
+
+## Безопасность API
+
+- JWT: `/api/login`, refresh, logout
+- `#[Access]` + scopes; загрузки через `UploadPathResolver`
+- Защищённые модули: `ProtectedAppModules`
+
+## Пагинация и ошибки
+
+- Legacy: `limit` / `offset` + `Content-Range`
+- 400: `{ message, violations }`
+
+Связано: [[Home]], [[AppsCatalog]], [[Board]], [[PKB]]
+
+Полный текст: `docs/ARCHITECTURE.md`
+MD,
+            'Notes/AppsCatalog.md' => <<<'MD'
+# Apps Catalog
+
+Реестр приложений XOS (см. `docs/APPS.md`).
+
+## Как устроены приложения
+
+| Слой | Путь |
+|------|------|
+| Манифест | `client/src/apps/<id>/index.ts` |
+| UI | `client/src/apps/<id>/*.tsx` |
+| Фичи | `client/src/features/<domain>/` |
+| API client | `client/src/core/api/endpoints/*Api.ts` |
+| Backend | `server/src/<Module>/` |
+
+Типы: **regular** · **sub-app** · **picker** · **utility**.
+
+## Домены
+
+| Домен | Claimant | Apps (порядок) |
+|-------|----------|----------------|
+| System | — | settings, browser, games, demo-calculator |
+| Main | main | 8 (users/groups/ous/claimants) |
+| Device | device | 17 |
+| Explorer | explorer | 9 |
+| SchoolTask | schooltask | 8 |
+| IncCom | inccom | 1 |
+| Calendar | calendar | 1 |
+| Todo | todo | 1 |
+| Board | board | 1 |
+| PKB | pkb | 1 |
+| IBlock | — | нет desktop-app |
+
+Детали по модулям: [[Main]], [[Device]], [[Explorer]], [[SchoolTask]], [[IncCom]], [[Calendar]], [[Todo]], [[Board]], [[PKB]], [[System]], [[IBlock]]
+
+← [[Home]] · [[Architecture]]
 MD,
         ];
+
+        foreach ($this->moduleCatalog() as $mod) {
+            $notes[$mod['notePath']] = $mod['body'];
+        }
+
+        return $notes;
     }
 }
