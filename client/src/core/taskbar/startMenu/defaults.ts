@@ -14,6 +14,7 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	device: 'Устройства',
 	schooltask: 'Школа',
 	inccom: 'Финансы',
+	ts: 'TeamStorm',
 	default: 'Приложения',
 };
 
@@ -25,6 +26,7 @@ export const START_MENU_GROUP_SORT: Record<string, number> = {
 	device: 40,
 	schooltask: 50,
 	inccom: 60,
+	ts: 65,
 	default: 100,
 };
 

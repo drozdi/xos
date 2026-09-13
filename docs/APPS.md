@@ -39,6 +39,7 @@
 | Todo | `todo` | 1 | [todo/README.md](todo/README.md) | [todo/TZ.md](todo/TZ.md) |
 | Board | `board` | 1 | [board/README.md](board/README.md) | [board/TZ.md](board/TZ.md) |
 | PKB | `pkb` | 1 | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) |
+| TeamStorm | `ts` | 1 | [ts/README.md](ts/README.md) | — |
 
 Полный индекс документации: [README.md](README.md)
 
@@ -128,6 +129,7 @@
 | todo | Заметки | `/api/todo/` | списки, sharing, due dates |
 | board | Доска | `/api/board/` | Kanban, workspaces |
 | pkb | База знаний | `/api/pkb/` | vaults, wikilinks, graph |
+| teamstorm | TeamStorm | `/api/ts/` | связь: URL + PrivateToken (`ROLE_TS`) |
 
 ---
 
@@ -146,6 +148,7 @@
 | Todo | `server/src/Todo/` | todo | ✓ |
 | Board | `server/src/Board/` | board | ✓ |
 | Pkb | `server/src/Pkb/` | pkb | ✓ |
+| Ts | `server/src/Ts/` | ts | ✓ |
 
 IBlock — API инфоблоков, отдельного desktop-приложения нет.
 

@@ -19,6 +19,7 @@ describe('protectedApps', () => {
 			'calendar',
 			'board',
 			'pkb',
+			'ts',
 		]);
 	});
 
@@ -44,6 +45,8 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('pkb')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_BOARD']);
 		expect(canUseAppModule('board')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_TS']);
+		expect(canUseAppModule('ts')).toBe(true);
 		resetUserRoles();
 	});
 });

@@ -24,6 +24,7 @@
 | Explorer | [explorer/TZ.md](explorer/TZ.md) | [explorer/README.md](explorer/README.md) | [explorer/PLAN.md](explorer/PLAN.md), [explorer/TODO.md](explorer/TODO.md) |
 | SchoolTask | [schooltask/TZ.md](schooltask/TZ.md) | [schooltask/README.md](schooltask/README.md) | [schooltask/REVIEW.md](schooltask/REVIEW.md) |
 | IncCom | [inccom/TZ.md](inccom/TZ.md) | [inccom/README.md](inccom/README.md) | — |
+| TeamStorm | — | [ts/README.md](ts/README.md) | — |
 | Calendar | [calendar/TZ.md](calendar/TZ.md) | [calendar/README.md](calendar/README.md) | — |
 | Todo | [todo/TZ.md](todo/TZ.md) | [todo/README.md](todo/README.md) | — |
 | Board | [board/TZ.md](board/TZ.md) | [board/README.md](board/README.md) | [board/PLAN.md](board/PLAN.md), [board/TODO.md](board/TODO.md) |

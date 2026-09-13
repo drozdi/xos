@@ -10,6 +10,7 @@ export const PROTECTED_APP_MODULES = [
 	'calendar',
 	'board',
 	'pkb',
+	'ts',
 ] as const;
 
 export type ProtectedAppModule = (typeof PROTECTED_APP_MODULES)[number];

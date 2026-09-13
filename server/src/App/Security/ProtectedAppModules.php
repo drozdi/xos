@@ -14,6 +14,7 @@ final class ProtectedAppModules
         'calendar',
         'board',
         'pkb',
+        'ts',
     ];
 
     public static function isProtected(string $module): bool
