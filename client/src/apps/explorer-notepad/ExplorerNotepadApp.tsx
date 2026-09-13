@@ -210,6 +210,9 @@ export default function ExplorerNotepadApp() {
 						>
 							Не сохранять
 						</Button>
+						<Button variant="default" onClick={() => modals.close(modalId)}>
+							Отмена
+						</Button>
 					</Group>
 				</Stack>
 			),

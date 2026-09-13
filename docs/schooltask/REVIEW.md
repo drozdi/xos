@@ -1,46 +1,39 @@
 # Ревью модуля SchoolTask
 
-**Дата:** 2026-07-17  
+**Дата:** 2026-07-17 (Critical закрыты Волной 2 — 2026-09-13)  
 **Область:** `server/src/SchoolTask`, клиент `schooltask-*` / `features/schooltask`, PHPUnit, `@mantine/schedule`  
-**Статус:** замечания зафиксированы, исправления не внедрены
+**Статус:** Critical (B1–B3, F1–F3) **исправлены** (Волна 2); High/Medium/Low — backlog
 
 ---
 
 ## Краткий вывод
 
-Модуль собран по паттерну Device/Main и покрывает сценарий «предметы → классы → расписание → задания». Критичные пробелы: права (тьютор vs ROOT/scopes), публичные файлы заданий, битый save учителей предмета, multipart upload, недоступный UI редактора расписания.
+Модуль собран по паттерну Device/Main и покрывает сценарий «предметы → классы → расписание → задания». Critical-пробелы Волна 2 закрыты; остаются High/Medium/Low ниже.
 
 ---
 
 ## Critical
 
-### B1. Мутации событий только для классного руководителя
+### B1. Мутации событий только для классного руководителя — DONE
 **Где:** `EventManager::createEvent/editEvent/removeEvent`, `EpEventController::requireClassEditor`  
-Контроллер пускает по `canUpdateSchooltaskEvent` **или** тьютору; сервис жёстко требует только тьютора → ROOT/scope-пользователь получает 400.  
-**Предложение:** в EventManager разрешить тьютора **или** соответствующие scopes/ROOT; create → `can_create`, delete → `can_delete`.
+Тьютор **или** scopes/ROOT (`can_create` / `can_update` / `can_delete`).
 
-### B2. Bypass тьютора для классов не работает
+### B2. Bypass тьютора для классов не работает — DONE
 **Где:** `EpClassController` + `AccessSubscriber`  
-`#[Access('can_read'|'can_update')]` срабатывает до проверки `isClassTutor`. Тьютор без scope `schooltask.class` не доходит до логики контроллера.  
-**Предложение:** убрать method-level `Access` и оставить проверки в контроллере; либо расширить subscriber.
+`show`/`update`: `#[Access(..., checkScopes: false)]`; subscriber учитывает method opt-out.
 
-### B3. Файлы заданий доступны без авторизации
-**Где:** `getFileSRC()` → `/uploads/task/...`, `security.yaml` `PUBLIC_ACCESS` для `/uploads/`  
-**Предложение:** раздача через JWT API или signed URL; не отдавать `task` публично.
+### B3. Файлы заданий доступны без авторизации — DONE
+**Где:** было `/uploads/task/...`  
+Раздача через `GET /api/schooltask/files/{id}/download`; `/uploads/task/` запрещён.
 
-### F1. Сохранение учителей предмета ломает `user_ids`
-**Где:** `SchooltaskSubjectApp.tsx` → `SchoolTaskManager::subject`  
-В payload остаётся `users: [{user_id}]`, бэкенд берёт `users` и делает `intval` по объектам → неверные id.  
-**Предложение:** отправлять только числовые `user_ids`, без `users`.
+### F1. Сохранение учителей предмета ломает `user_ids` — DONE
+Payload: числовые `user_ids` (без `users` в save).
 
-### F2. Multipart upload без boundary
-**Где:** `schooltaskApi.teacherSave`  
-Принудительный `Content-Type: multipart/form-data` без boundary ломает разбор FormData.  
-**Предложение:** для FormData не задавать Content-Type (пусть axios выставит boundary).
+### F2. Multipart upload без boundary — DONE
+FormData без принудительного `Content-Type`.
 
-### F3. Редактор расписания недоступен из UI
-**Где:** `schooltask-calendar-editor` (`startMenu: false`), списки не вызывают `launchApp`  
-**Предложение:** запуск из списка классов/календарей с `instanceKey = classId`.
+### F3. Редактор расписания недоступен из UI — DONE
+Запуск `schooltask-calendar-editor` из списков классов/календарей.
 
 ---
 
@@ -58,9 +51,8 @@
 При `editType=all|after` в `buildEvent` одни и те же `start/end` пишутся во все вхождения.  
 **Предложение:** менять не-датовые поля или сдвигать каждое вхождение на delta.
 
-### B7. `can_create` / `can_delete` для event не используются
-Add/edit/remove опираются на `can_update`.  
-**Предложение:** развести глаголы прав.
+### B7. `can_create` / `can_delete` для event не используются — частично DONE (Волна 2)
+Editor add/edit/remove разведены по `can_create` / `can_update` / `can_delete` (+ тьютор). Остальные пути могут ещё опираться на update.
 
 ### B8. Глобальный `can_read.schooltask.event` открывает любой класс
 **Предложение:** для не-ROOT требовать membership / тьютора / учителя урока.
@@ -109,7 +101,7 @@ Add/edit/remove опираются на `can_update`.
 - `sort ?: 100` трактует `0` как 100.
 - Неиспользуемые `nextTempId`, `schooltaskEndpoints`.
 - SchoolTask не в `DEFAULT_PINNED_APPS` (опционально).
-- PHPUnit не ловит B1–B3, B5–B6, multipart, membership без event scope.
+- PHPUnit покрывает B1 (scope create) и B3 (uploads block + API download); B5–B6, multipart — ещё нет.
 
 ---
 
@@ -125,11 +117,10 @@ Add/edit/remove опираются на `can_update`.
 
 ## Рекомендуемый порядок исправлений
 
-1. F1 (user_ids), F2 (FormData), B1–B2 (права тьютор/ROOT/Access)  
-2. B3 (файлы), F3 (launch editor), B5 (IDOR)  
-3. B6 (серии), F4–F6 (access + pagination)  
-4. Тесты PHPUnit на критичные сценарии  
-5. Medium/Low по приоритету продукта
+1. ~~Critical B1–B3 / F1–F3~~ — DONE (Волна 2; см. `docs/ROADMAP_WAVES.md`)
+2. B5 (IDOR), B6 (серии), F4–F6 (access + pagination)
+3. Medium/Low по приоритету продукта
+4. Доп. PHPUnit (multipart, series)
 
 ---
 

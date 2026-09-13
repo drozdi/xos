@@ -14,6 +14,7 @@ import {
 	useCanDeleteSchooltaskClass,
 	useCanReadSchooltaskClass,
 	useCanUpdateSchooltaskClass,
+	useCanUpdateSchooltaskEvent,
 } from '@/features/schooltask/schooltaskAccess';
 import { useLaunchSchooltaskApp } from '@/features/schooltask/schooltaskAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
@@ -26,6 +27,7 @@ export default function SchooltaskClassesApp() {
 	const canCreate = useCanCreateSchooltaskClass();
 	const canUpdate = useCanUpdateSchooltaskClass();
 	const canDelete = useCanDeleteSchooltaskClass();
+	const canUpdateEvent = useCanUpdateSchooltaskEvent();
 	const pagination = usePaginatedList();
 	const [showGraduated, setShowGraduated] = useState(false);
 
@@ -109,12 +111,12 @@ export default function SchooltaskClassesApp() {
 					return action === 'graduate' ? 'Выпускается' : 'Переводится';
 				},
 			},
-			...(canUpdate
+			...(canUpdate || canUpdateEvent
 				? [
 						{
 							field: 'id' as const,
 							header: 'Действия',
-							width: 140,
+							width: canUpdate && canUpdateEvent ? 260 : 140,
 							render: (row: {
 								id: number;
 								name?: string;
@@ -125,18 +127,14 @@ export default function SchooltaskClassesApp() {
 								const action =
 									row.transition ??
 									(row.graduated ? 'graduated' : row.should_graduate ? 'graduate' : 'promote');
-								if (action === 'graduated') {
-									return null;
-								}
-								if (action === 'graduate') {
-									return (
+								const transitionButton =
+									canUpdate && action === 'graduate' ? (
 										<Button
 											size="compact-xs"
 											variant="light"
 											color="orange"
 											loading={graduateMutation.isPending}
-											onClick={(event) => {
-												event.stopPropagation();
+											onClick={() => {
 												confirmAction({
 													title: 'Выпуск класса',
 													message: `Выпустить класс «${row.name}»?`,
@@ -148,32 +146,54 @@ export default function SchooltaskClassesApp() {
 										>
 											Выпустить
 										</Button>
-									);
+									) : canUpdate && action === 'promote' ? (
+										<Button
+											size="compact-xs"
+											variant="light"
+											loading={promoteMutation.isPending}
+											onClick={() => {
+												confirmAction({
+													title: 'Перевод класса',
+													message: `Перевести класс «${row.name}» на следующий год?`,
+													confirmLabel: 'Перевести',
+													onConfirm: () => promoteMutation.mutate(row.id),
+												});
+											}}
+										>
+											Перевести
+										</Button>
+									) : null;
+
+								if (!canUpdateEvent && !transitionButton) {
+									return null;
 								}
+
 								return (
-									<Button
-										size="compact-xs"
-										variant="light"
-										loading={promoteMutation.isPending}
-										onClick={(event) => {
-											event.stopPropagation();
-											confirmAction({
-												title: 'Перевод класса',
-												message: `Перевести класс «${row.name}» на следующий год?`,
-												confirmLabel: 'Перевести',
-												onConfirm: () => promoteMutation.mutate(row.id),
-											});
-										}}
-									>
-										Перевести
-									</Button>
+									<Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
+										{canUpdateEvent ? (
+											<Button
+												size="compact-xs"
+												variant="light"
+												onClick={() =>
+													launchApp(
+														'schooltask-calendar-editor',
+														row.id,
+														`Редактор — ${row.name ?? row.id}`,
+													)
+												}
+											>
+												Расписание
+											</Button>
+										) : null}
+										{transitionButton}
+									</Group>
 								);
 							},
 						},
 					]
 				: []),
 		],
-		[canUpdate, graduateMutation, promoteMutation],
+		[canUpdate, canUpdateEvent, graduateMutation, launchApp, promoteMutation],
 	);
 
 	const openClass = (id: number) => launchApp('schooltask-class', id);

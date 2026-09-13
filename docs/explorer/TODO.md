@@ -85,7 +85,7 @@
 
 - [x] **6.1–6.3** Unit-тесты picker / singleInstance / close
 - [x] **6.4** Smoke checklist в `docs/TEST_REPORT.md`
-- [ ] Dirty-close/save notepad & markdown — manual pending
+- [x] Dirty-close/save notepad & markdown — fixed (taskbar → `getWindowApi().close()`; «Отмена» in notepad/markdown modals)
 
 ---
 

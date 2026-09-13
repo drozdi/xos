@@ -55,7 +55,7 @@ class EpClassController extends AbstractController
     }
 
     #[Route('/{id}', requirements: ['id' => '\d+'], methods: ['GET'])]
-    #[Access('can_read')]
+    #[Access('can_read', checkScopes: false)]
     public function show(
         int $id,
         SchoolTaskManager $schoolTaskManager,
@@ -97,7 +97,7 @@ class EpClassController extends AbstractController
     }
 
     #[Route('/{id}', requirements: ['id' => '\d+'], methods: ['PUT'])]
-    #[Access('can_update')]
+    #[Access('can_update', checkScopes: false)]
     public function update(
         int $id,
         Request $request,

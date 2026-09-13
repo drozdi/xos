@@ -21,6 +21,7 @@ import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
+import { openSchooltaskFile } from '@/features/schooltask/openSchooltaskFile';
 
 const LESSON_FILES_PICKER = 'schooltask:lesson-files';
 
@@ -182,15 +183,15 @@ export function EventLessonFilesPanel({
 										<Group key={file.id} justify="space-between" wrap="nowrap">
 											<Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
 												<IconPaperclip size={16} />
-												{file.src ? (
-													<Anchor href={file.src} target="_blank" size="sm" lineClamp={1}>
-														{file.name}
-													</Anchor>
-												) : (
-													<Text size="sm" lineClamp={1}>
-														{file.name}
-													</Text>
-												)}
+												<Anchor
+													component="button"
+													type="button"
+													size="sm"
+													lineClamp={1}
+													onClick={() => void openSchooltaskFile(file.id, file.name)}
+												>
+													{file.name}
+												</Anchor>
 											</Group>
 											<ActionIcon
 												color="red"

@@ -21,6 +21,8 @@ final class SchoolTaskAccessMessages
     public const UPDATE_EVENT = 'Нет прав на изменение события';
     public const DELETE_EVENT = 'Нет прав на удаление события';
     public const EVENT_NOT_FOUND = 'Событие не найдено';
+    public const READ_FILE = 'Нет прав на скачивание файла';
+    public const FILE_NOT_FOUND = 'Файл не найден';
 
     public const READ_ZAM = 'Нет прав на управление составом групп';
     public const UPDATE_ZAM = 'Нет прав на изменение состава групп';

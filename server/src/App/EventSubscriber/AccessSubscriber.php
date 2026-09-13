@@ -77,7 +77,8 @@ final class AccessSubscriber implements EventSubscriberInterface
             }
         }
 
-        if ($classAccess->checksScopes() || $methodAccess->checksScopes()) {
+        // Method-level checkScopes:false opts out even if class enables scopes (tutor bypass).
+        if ($methodAccess->checksScopes()) {
             if (!$this->userScopeResolver->checkHasScope($user, $fullScope)) {
                 $event->setController(fn () => ApiResponse::forbidden('Недостаточно прав'));
             }

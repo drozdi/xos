@@ -370,20 +370,55 @@ class SchoolTaskApiTest extends AuthWebTestCase
         self::assertCount(2, $detail['net']);
     }
 
-    public function testCalendarAddEventForbiddenForNonTutor(): void
+    public function testCalendarAddEventAllowedForScopeUserWithoutTutor(): void
     {
         $client = static::createClient();
         $this->prepareSchoolTaskDatabase($client);
 
         $tutor = $this->createTestUser($client, 'real_tutor', 'tutor_password', ['ROLE_USER']);
         $teacher = $this->createTestUser($client, 'other_teacher', 'teacher_password', ['ROLE_USER']);
-        $intruder = $this->createTestUser($client, 'intruder', 'intruder_password', ['ROLE_USER']);
+        $manager = $this->createTestUser($client, 'event_manager', 'manager_password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
 
-        $this->grantSchooltaskScope($client, $intruder, 'schooltask.event', self::SCOPE_ALL);
+        $this->grantSchooltaskScope($client, $manager, 'schooltask.event', self::SCOPE_ALL);
 
         $parallel = $this->createParallelGroup($client, 'class_7', '7 класс');
         $subject = $this->createSubject($client, 'Химия', $teacher);
         $classBundle = $this->createClassWithSubgroup($client, $parallel, '7-А', $tutor, $subject, $teacher);
+
+        $loginPayload = $this->login($client, 'event_manager', 'manager_password');
+
+        $client->request(
+            'POST',
+            '/api/schooltask/calendar/'.$classBundle['classId'].'/editor/events/add',
+            [],
+            [],
+            $this->jsonAuthHeaders($loginPayload['token']),
+            json_encode([
+                'group_id' => $classBundle['subgroupId'],
+                'user_id' => $teacher->getId(),
+                'start' => '2026-09-02 09:00:00',
+                'end' => '2026-09-02 09:40:00',
+            ], JSON_THROW_ON_ERROR),
+        );
+
+        self::assertResponseIsSuccessful();
+        /** @var array{id: int} $payload */
+        $payload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertGreaterThan(0, $payload['id']);
+    }
+
+    public function testCalendarAddEventForbiddenWithoutScopeOrTutor(): void
+    {
+        $client = static::createClient();
+        $this->prepareSchoolTaskDatabase($client);
+
+        $tutor = $this->createTestUser($client, 'real_tutor', 'tutor_password', ['ROLE_USER']);
+        $teacher = $this->createTestUser($client, 'other_teacher', 'teacher_password', ['ROLE_USER']);
+        $intruder = $this->createTestUser($client, 'intruder', 'intruder_password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+
+        $parallel = $this->createParallelGroup($client, 'class_7b', '7 класс Б');
+        $subject = $this->createSubject($client, 'Физика', $teacher);
+        $classBundle = $this->createClassWithSubgroup($client, $parallel, '7-Б', $tutor, $subject, $teacher);
 
         $loginPayload = $this->login($client, 'intruder', 'intruder_password');
 
@@ -401,7 +436,7 @@ class SchoolTaskApiTest extends AuthWebTestCase
             ], JSON_THROW_ON_ERROR),
         );
 
-        self::assertResponseStatusCodeSame(400);
+        self::assertResponseStatusCodeSame(403);
     }
 
     public function testCalendarListClassesRequiresEventReadScope(): void
@@ -424,6 +459,58 @@ class SchoolTaskApiTest extends AuthWebTestCase
         /** @var array{message: string} $payload */
         $payload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame(SchoolTaskAccessMessages::READ_EVENT, $payload['message']);
+    }
+
+    public function testTaskFileUploadsBlockedAndApiDownloadWorks(): void
+    {
+        $client = static::createClient();
+        $this->prepareAuthDatabase($client);
+
+        /** @var EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
+        $schemaTool = new SchemaTool($entityManager);
+        $fileMeta = [$entityManager->getClassMetadata(\Main\Entity\File::class)];
+        $schemaTool->dropSchema($fileMeta);
+        $schemaTool->createSchema($fileMeta);
+
+        $owner = $this->createTestUser($client, 'task_file_owner', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'stask');
+        self::assertNotFalse($tmp);
+        file_put_contents($tmp, 'schooltask assignment body');
+
+        /** @var \Main\Service\FileManager $fileManager */
+        $fileManager = $client->getContainer()->get(\Main\Service\FileManager::class);
+        $file = $fileManager->importFromLocalPath($tmp, 'task', 'teacher/'.$owner->getId(), 'hw.txt');
+        $file->setCreatedBy($owner)->setModifiedBy($owner);
+        $entityManager->flush();
+
+        $loginOwner = $this->login($client, 'task_file_owner', 'password');
+        $client->request(
+            'GET',
+            $file->getFileSRC(),
+            [],
+            [],
+            $this->authHeaders($loginOwner['token']),
+        );
+        self::assertResponseStatusCodeSame(403);
+
+        $client->request(
+            'GET',
+            sprintf('/api/schooltask/files/%d/download', (int) $file->getId()),
+            [],
+            [],
+            $this->authHeaders($loginOwner['token']),
+        );
+        self::assertResponseIsSuccessful();
+        $disposition = (string) $client->getResponse()->headers->get('content-disposition');
+        self::assertStringContainsString('hw.txt', $disposition);
+        ob_start();
+        $client->getResponse()->sendContent();
+        $body = ob_get_clean();
+        self::assertSame('schooltask assignment body', $body);
+
+        @unlink($tmp);
     }
 
     protected function prepareSchoolTaskDatabase(KernelBrowser $client): void

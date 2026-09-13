@@ -196,7 +196,7 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        $class = $this->requireClassEditor($classId, $user, $schoolTaskManager, $userScopeResolver);
+        $class = $this->requireClassEditor($classId, $user, $schoolTaskManager, $userScopeResolver, 'create');
         if ($class instanceof JsonResponse) {
             return $class;
         }
@@ -206,7 +206,7 @@ class EpEventController extends AbstractController
             $event = $eventManager->createEvent(
                 $payload,
                 $user,
-                $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver),
+                $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'create'),
             );
         } catch (\Throwable $e) {
             return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -235,7 +235,7 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        $class = $this->requireClassEditor($classId, $user, $schoolTaskManager, $userScopeResolver);
+        $class = $this->requireClassEditor($classId, $user, $schoolTaskManager, $userScopeResolver, 'update');
         if ($class instanceof JsonResponse) {
             return $class;
         }
@@ -252,7 +252,7 @@ class EpEventController extends AbstractController
                 $event,
                 $payload,
                 $user,
-                $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver),
+                $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'update'),
             );
         } catch (\Throwable $e) {
             return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -273,7 +273,7 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        $class = $this->requireClassEditor($classId, $user, $schoolTaskManager, $userScopeResolver);
+        $class = $this->requireClassEditor($classId, $user, $schoolTaskManager, $userScopeResolver, 'delete');
         if ($class instanceof JsonResponse) {
             return $class;
         }
@@ -289,7 +289,7 @@ class EpEventController extends AbstractController
                 $event,
                 $payload,
                 $user,
-                $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver),
+                $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'delete'),
             );
         } catch (\Throwable $e) {
             return $this->json(['message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -469,26 +469,57 @@ class EpEventController extends AbstractController
         SchoolTaskManager $schoolTaskManager,
         UserScopeResolver $userScopeResolver,
     ): bool {
-        return $userScopeResolver->canUpdateSchooltaskEvent($user)
-            || $schoolTaskManager->isClassTutor($user, $class);
+        return $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'update');
     }
 
+    /**
+     * @param 'read'|'create'|'update'|'delete' $mode
+     */
+    private function canMutateSchedule(
+        User $user,
+        EpGroup $class,
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+        string $mode = 'update',
+    ): bool {
+        if ($schoolTaskManager->isClassTutor($user, $class)) {
+            return true;
+        }
+
+        return match ($mode) {
+            'read' => $userScopeResolver->canReadSchooltaskEvent($user),
+            'create' => $userScopeResolver->canCreateSchooltaskEvent($user),
+            'update' => $userScopeResolver->canUpdateSchooltaskEvent($user),
+            'delete' => $userScopeResolver->canDeleteSchooltaskEvent($user),
+            default => false,
+        };
+    }
+
+    /**
+     * @param bool|'read'|'create'|'update'|'delete' $write
+     */
     private function requireClassEditor(
         int $classId,
         User $user,
         SchoolTaskManager $schoolTaskManager,
         UserScopeResolver $userScopeResolver,
-        bool $write = true,
+        bool|string $write = true,
     ): JsonResponse|EpGroup {
         $class = $schoolTaskManager->getClassGroup($classId);
         if (!$class) {
             return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
         }
-        $allowed = $write
-            ? ($userScopeResolver->canUpdateSchooltaskEvent($user) || $schoolTaskManager->isClassTutor($user, $class))
-            : ($userScopeResolver->canReadSchooltaskEvent($user) || $schoolTaskManager->isClassTutor($user, $class));
-        if (!$allowed) {
-            return ApiResponse::forbidden($write ? SchoolTaskAccessMessages::UPDATE_EVENT : SchoolTaskAccessMessages::READ_EVENT);
+
+        $mode = match (true) {
+            is_string($write) => $write,
+            false === $write => 'read',
+            default => 'update',
+        };
+
+        if (!$this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, $mode)) {
+            return ApiResponse::forbidden(
+                'read' === $mode ? SchoolTaskAccessMessages::READ_EVENT : SchoolTaskAccessMessages::UPDATE_EVENT
+            );
         }
 
         return $class;

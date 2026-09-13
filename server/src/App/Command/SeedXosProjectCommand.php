@@ -277,16 +277,24 @@ MD,
             'Notes/Changelog.md',
         );
 
-        $card('SchoolTask: исправить права тьютор / ROOT / Access', <<<'MD'
-См. [[SchoolTask]] и `docs/schooltask/REVIEW.md`.
+        $card(
+            'Волна 2 SchoolTask+Explorer — DONE',
+            <<<'MD'
+Сдано: SchoolTask Critical B1–B3 / F1–F3; Explorer dirty-close.
 
-Критично: B1–B3, F1–F3 (тьютор vs scope, публичные uploads, user_ids, FormData, launch editor).
-MD, ['schooltask', 'bug']);
-
-        $card('Explorer: dirty-close notepad / markdown', <<<'MD'
-Manual DoD из [[Explorer]]: dirty-close и save после F5 для notepad и markdown.
-MD, ['explorer']);
-
+Детали: [[Changelog]] · [[SchoolTask]] · [[Explorer]] · `docs/ROADMAP_WAVES.md` · `docs/schooltask/REVIEW.md`.
+MD,
+            ['schooltask', 'explorer', 'docs', 'mvp'],
+            [
+                'title' => 'Критерии',
+                'items' => [
+                    'B1/B2 права тьютор|scopes; B3 JWT download task files',
+                    'F1 user_ids, F2 FormData, F3 calendar-editor launch',
+                    'Explorer dirty-close + taskbar getWindowApi',
+                ],
+            ],
+            'Notes/Changelog.md',
+        );
         $card('Board v2: live-updates и глобальный поиск', <<<'MD'
 Out of scope MVP: Mercure, global search, Trello import, email-уведомления.
 
@@ -769,11 +777,29 @@ MD,
 
 См. [[Board]], [[PKB]].
 
+## Волна 2 — SchoolTask Critical + Explorer dirty-close (DONE)
+
+### SchoolTask
+
+- B1/B2: тьютор **или** scopes/ROOT; create/update/delete; class show/update `checkScopes: false`
+- B3: `GET /api/schooltask/files/{id}/download`; `/uploads/task/` запрещён
+- F1/F2: `user_ids` + FormData без forced Content-Type
+- F3: launch `schooltask-calendar-editor` из классов/календарей
+
+См. [[SchoolTask]], `docs/schooltask/REVIEW.md`, `docs/ROADMAP_WAVES.md`.
+
+### Explorer
+
+- Dirty-close notepad/markdown: save / discard / cancel
+- Taskbar close → `getWindowApi().close()` (не обход confirm)
+
+См. [[Explorer]], `docs/explorer/TODO.md`.
+
 ## Далее (Roadmap)
 
-- SchoolTask B1–B3 / F1–F3 — [[SchoolTask]]
-- Explorer dirty-close — [[Explorer]]
-- Board v2 / PKB v3 — отдельные волны
+- Волна 3: Board Mercure/SSE; search; PKB polish — `docs/ROADMAP_WAVES.md`
+- SchoolTask High/Medium — [[SchoolTask]]
+- Волна 4–5: bridges, PWA/offline — backlog
 
 ← [[Home]] · [[IncCom]] · [[Board]] · [[PKB]]
 MD,

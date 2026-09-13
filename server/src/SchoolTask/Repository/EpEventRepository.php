@@ -5,6 +5,7 @@ namespace SchoolTask\Repository;
 use AbstractRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
+use Main\Entity\File;
 use SchoolTask\Entity\EpEvent;
 
 /**
@@ -53,6 +54,17 @@ class EpEventRepository extends AbstractRepository
         }
 
         return $qb->orderBy('e.start', 'ASC')->getQuery()->getResult();
+    }
+
+    /** @return EpEvent[] */
+    public function findByFile(File $file): array
+    {
+        return $this->createQueryBuilder('e')
+            ->innerJoin('e.files', 'f')
+            ->andWhere('f = :file')
+            ->setParameter('file', $file)
+            ->getQuery()
+            ->getResult();
     }
 
     protected function filter(QueryBuilder $query, array $filters = [], string $n = 'en'): QueryBuilder

@@ -192,7 +192,15 @@ export const studentEventDetailSchema = z.object({
 	des: z.string().nullable().optional(),
 	pt: z.string().nullable().optional(),
 	net: z.array(z.string()).optional(),
-	files: z.record(z.string(), z.string()).optional(),
+	files: z
+		.array(
+			z.object({
+				id: z.coerce.number(),
+				name: z.string(),
+				src: z.string().optional(),
+			}),
+		)
+		.optional(),
 });
 
 export const editorEventDetailSchema = z.object({
@@ -404,14 +412,23 @@ export const schooltaskCalendarApi = {
 		for (const file of files) {
 			formData.append('files[]', file);
 		}
-		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/upload`, formData, {
-			headers: { 'Content-Type': 'multipart/form-data' },
-		});
+		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/upload`, formData);
 		return z.array(teacherFileSchema).parse(data);
 	},
 	teacherFilesImport: async (path: string) => {
 		const { data } = await apiClient.post<unknown>(`${BASE}/calendar/teacher/files/import`, { path });
 		return teacherFileSchema.parse(data);
+	},
+	downloadFile: async (
+		id: number,
+		disposition: 'inline' | 'attachment' = 'inline',
+	): Promise<Blob> => {
+		const { data } = await apiClient.get<Blob>(`${BASE}/files/${id}/download`, {
+			params: { disposition },
+			responseType: 'blob',
+		});
+
+		return data;
 	},
 	teacherSave: async (payload: TeacherEventSavePayload, newFiles: File[] = []): Promise<void> => {
 		const formData = new FormData();
@@ -429,12 +446,15 @@ export const schooltaskCalendarApi = {
 		for (const file of newFiles) {
 			formData.append('files[]', file);
 		}
-		await apiClient.post(`${BASE}/calendar/teacher/events/save`, formData, {
-			headers: { 'Content-Type': 'multipart/form-data' },
-		});
+		// Do not set Content-Type: axios must add multipart boundary.
+		await apiClient.post(`${BASE}/calendar/teacher/events/save`, formData);
 	},
 };
 
 export const schooltaskEndpoints = {
 	base: BASE,
 } as const;
+
+export const schooltaskApi = {
+	downloadFile: schooltaskCalendarApi.downloadFile,
+};

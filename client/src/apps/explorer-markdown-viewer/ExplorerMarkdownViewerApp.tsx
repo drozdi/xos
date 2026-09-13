@@ -265,6 +265,9 @@ export default function ExplorerMarkdownViewerApp() {
 						>
 							Не сохранять
 						</Button>
+						<Button variant="default" onClick={() => modals.close(modalId)}>
+							Отмена
+						</Button>
 					</Group>
 				</Stack>
 			),

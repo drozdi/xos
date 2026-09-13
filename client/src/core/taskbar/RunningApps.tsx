@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { useContextMenuAnchor, useContextMenuItems } from '@/core/contextMenu';
+import { getWindowApi } from '@/core/windowManager/windowApiRegistry';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 import type { WindowState } from '@/core/windowManager/types';
 
@@ -177,7 +178,6 @@ export function RunningApps() {
 	const activeWindowId = useWmStore((state) => state.activeWindowId);
 	const focusWindow = useWmStore((state) => state.focusWindow);
 	const restoreWindow = useWmStore((state) => state.restoreWindow);
-	const closeWindow = useWmStore((state) => state.closeWindow);
 	const minimizeGroup = useWmStore((state) => state.minimizeGroup);
 	const restoreGroup = useWmStore((state) => state.restoreGroup);
 
@@ -247,7 +247,9 @@ export function RunningApps() {
 									window={window}
 									taskbarGroup={taskbarGroup}
 									onActivate={() => handleActivate(window.id)}
-									onClose={() => closeWindow(window.id)}
+									onClose={() => {
+										void getWindowApi(window.id)?.close();
+									}}
 								/>
 							))}
 						</Menu.Dropdown>

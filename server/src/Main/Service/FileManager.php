@@ -141,4 +141,14 @@ class FileManager extends AbstractManager {
         $this->getEntityManager()->remove($file);
         $this->getEntityManager()->flush();
     }
+
+    public function resolveAbsolutePath(MainFile $file): string
+    {
+        return $this->uploadPathResolver->resolveReadablePath(
+            $this->uploadDir,
+            $file->getModule(),
+            $file->getSubDir(),
+            $file->getFileName(),
+        );
+    }
 }

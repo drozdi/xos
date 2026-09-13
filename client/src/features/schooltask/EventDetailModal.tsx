@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { openSchooltaskFile } from '@/features/schooltask/openSchooltaskFile';
 
 interface EventDetailModalProps {
 	classId: number;
@@ -81,12 +82,17 @@ export function EventDetailModal({ classId, eventId, opened, onClose }: EventDet
 							))}
 						</Stack>
 					) : null}
-					{detailQuery.data.files && Object.keys(detailQuery.data.files).length > 0 ? (
+					{detailQuery.data.files && detailQuery.data.files.length > 0 ? (
 						<Stack gap={4}>
 							<Text fw={600}>Файлы</Text>
-							{Object.entries(detailQuery.data.files).map(([name, url]) => (
-								<Anchor key={name} href={url} target="_blank" rel="noreferrer">
-									{name}
+							{detailQuery.data.files.map((file) => (
+								<Anchor
+									key={file.id}
+									component="button"
+									type="button"
+									onClick={() => void openSchooltaskFile(file.id, file.name)}
+								>
+									{file.name}
 								</Anchor>
 							))}
 						</Stack>

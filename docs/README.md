@@ -11,6 +11,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Архитектура backend/frontend |
 | [API_SPEC.md](API_SPEC.md) | REST API (сводная спецификация) |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Как добавить приложение |
+| [ROADMAP_WAVES.md](ROADMAP_WAVES.md) | Очередь волн расширения (W1–W5) |
 | [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md) | Схема БД |
 | [MIGRATIONS.md](MIGRATIONS.md) | Миграции Doctrine |
 

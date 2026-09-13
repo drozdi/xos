@@ -81,11 +81,13 @@ export default function SchooltaskSubjectApp() {
 			validate={validateSubjectForm}
 			canSave={canSave}
 			canDelete={canDelete}
-			transformBeforeSave={(data) => ({
-				...data,
-				users: [],
-				user_ids: extractSubjectUserIds(data.users),
-			})}
+			transformBeforeSave={(data) => {
+				const { users, ...rest } = data;
+				return {
+					...rest,
+					user_ids: extractSubjectUserIds(users),
+				};
+			}}
 		>
 			{({ data, setField, errors, readOnly }) => {
 				const selectedTeachers = extractSubjectUserIds(data.users).map(String);

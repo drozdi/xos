@@ -3,6 +3,8 @@
 namespace SchoolTask\Service;
 
 use AbstractManager;
+use App\Security\UserScopeResolver;
+use Main\Entity\File as MainFile;
 use Main\Entity\User;
 use Main\Service\FileManager;
 use SchoolTask\Entity\EpEvent;
@@ -31,6 +33,7 @@ class EventManager extends AbstractManager
         ValidatorInterface $validator,
         private readonly SchoolTaskManager $schoolTaskManager,
         private readonly FileManager $fileManager,
+        private readonly UserScopeResolver $userScopeResolver,
     ) {
         parent::__construct($validator);
     }
@@ -55,13 +58,13 @@ class EventManager extends AbstractManager
         return $this->buildEvent($event, $arEvent, $event->getClass());
     }
 
-    public function createEvent(array $arEvent, User $actor, bool $canManageSchedule): EpEvent
+    public function createEvent(array $arEvent, User $actor, bool $canManageSchedule = false): EpEvent
     {
         $class = $this->schoolTaskManager->getClassGroup((int) ($arEvent['class_id'] ?? 0));
         if (!$class instanceof EpGroup) {
             throw new \InvalidArgumentException('Класс не найден');
         }
-        if (!$canManageSchedule) {
+        if (!$canManageSchedule && !$this->canMutateSchedule($actor, $class, 'create')) {
             throw new \RuntimeException('Недостаточно прав для редактирования расписания');
         }
 
@@ -96,9 +99,13 @@ class EventManager extends AbstractManager
         return $first;
     }
 
-    public function editEvent(EpEvent $event, array $arEvent, User $actor, bool $canManageSchedule): EpEvent
+    public function editEvent(EpEvent $event, array $arEvent, User $actor, bool $canManageSchedule = false): EpEvent
     {
-        if (!$canManageSchedule) {
+        $class = $event->getClass();
+        if (
+            !$canManageSchedule
+            && (!($class instanceof EpGroup) || !$this->canMutateSchedule($actor, $class, 'update'))
+        ) {
             throw new \RuntimeException('Недостаточно прав для редактирования расписания');
         }
 
@@ -145,9 +152,13 @@ class EventManager extends AbstractManager
         return $event;
     }
 
-    public function removeEvent(EpEvent $event, array $arEvent, User $actor, bool $canManageSchedule): void
+    public function removeEvent(EpEvent $event, array $arEvent, User $actor, bool $canManageSchedule = false): void
     {
-        if (!$canManageSchedule) {
+        $class = $event->getClass();
+        if (
+            !$canManageSchedule
+            && (!($class instanceof EpGroup) || !$this->canMutateSchedule($actor, $class, 'delete'))
+        ) {
             throw new \RuntimeException('Недостаточно прав для редактирования расписания');
         }
 
@@ -189,7 +200,7 @@ class EventManager extends AbstractManager
                 continue;
             }
             $file = $this->fileManager->getFileRepository()?->find($fileId);
-            if (!$file instanceof \Main\Entity\File) {
+            if (!$file instanceof MainFile) {
                 continue;
             }
             if ((int) $file->getCreatedBy()?->getId() !== (int) $actor->getId()) {
@@ -220,13 +231,13 @@ class EventManager extends AbstractManager
 
         $items = [];
         foreach ($files as $file) {
-            if (!$file instanceof \Main\Entity\File) {
+            if (!$file instanceof MainFile) {
                 continue;
             }
             $items[] = [
                 'id' => (int) $file->getId(),
                 'name' => $file->getOriginalName(),
-                'src' => $file->getFileSRC(),
+                'src' => $this->fileDownloadUrl($file),
             ];
         }
 
@@ -245,7 +256,7 @@ class EventManager extends AbstractManager
             $items[] = [
                 'id' => (int) $file->getId(),
                 'name' => $file->getOriginalName(),
-                'src' => $file->getFileSRC(),
+                'src' => $this->fileDownloadUrl($file),
             ];
         }
 
@@ -263,7 +274,7 @@ class EventManager extends AbstractManager
         return [
             'id' => (int) $file->getId(),
             'name' => $file->getOriginalName(),
-            'src' => $file->getFileSRC(),
+            'src' => $this->fileDownloadUrl($file),
         ];
     }
 
@@ -342,7 +353,11 @@ class EventManager extends AbstractManager
     {
         $files = [];
         foreach ($event->getFiles() as $file) {
-            $files[$file->getOriginalName()] = $file->getFileSRC();
+            $files[] = [
+                'id' => (int) $file->getId(),
+                'name' => $file->getOriginalName(),
+                'src' => $this->fileDownloadUrl($file),
+            ];
         }
 
         $group = $event->getGroup();
@@ -378,7 +393,7 @@ class EventManager extends AbstractManager
             $files[] = [
                 'id' => $file->getId(),
                 'name' => $file->getOriginalName(),
-                'src' => $file->getFileSRC(),
+                'src' => $this->fileDownloadUrl($file),
             ];
         }
 
@@ -398,6 +413,63 @@ class EventManager extends AbstractManager
             'name' => $class->getName(),
             'teacher' => $class->getUser()?->getAlias(),
         ];
+    }
+
+    public function getTaskFile(int $id): ?MainFile
+    {
+        $file = $this->fileManager->getFileRepository()?->find($id);
+        if (!$file instanceof MainFile || 'task' !== $file->getModule()) {
+            return null;
+        }
+
+        return $file;
+    }
+
+    public function canAccessTaskFile(User $user, MainFile $file): bool
+    {
+        if ('task' !== $file->getModule()) {
+            return false;
+        }
+
+        if ((int) $file->getCreatedBy()?->getId() === (int) $user->getId()) {
+            return true;
+        }
+
+        if (
+            $this->userScopeResolver->canReadSchooltaskEvent($user)
+            || $this->userScopeResolver->canUpdateSchooltaskEvent($user)
+        ) {
+            return true;
+        }
+
+        foreach ($this->getEpEventRepository()->findByFile($file) as $event) {
+            if ((int) $event->getUser()?->getId() === (int) $user->getId()) {
+                return true;
+            }
+
+            $class = $event->getClass();
+            if (
+                $class instanceof EpGroup
+                && (
+                    $this->schoolTaskManager->isClassTutor($user, $class)
+                    || $this->schoolTaskManager->isClassMember($user, $class)
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function resolveTaskFileAbsolutePath(MainFile $file): string
+    {
+        return $this->fileManager->resolveAbsolutePath($file);
+    }
+
+    public function fileDownloadUrl(MainFile $file): string
+    {
+        return sprintf('/api/schooltask/files/%d/download', (int) $file->getId());
     }
 
     private function buildEvent(EpEvent $event, array $arEvent, ?EpGroup $class, bool $flush = true): EpEvent
@@ -618,5 +690,24 @@ class EventManager extends AbstractManager
         }
 
         return $this->parseDate($arEvent['repeate'] ?? null);
+    }
+
+    /**
+     * Tutor OR matching schooltask.event scope/ROOT (create/update/delete).
+     *
+     * @param 'create'|'update'|'delete' $action
+     */
+    private function canMutateSchedule(User $actor, EpGroup $class, string $action): bool
+    {
+        if ($this->schoolTaskManager->isClassTutor($actor, $class)) {
+            return true;
+        }
+
+        return match ($action) {
+            'create' => $this->userScopeResolver->canCreateSchooltaskEvent($actor),
+            'update' => $this->userScopeResolver->canUpdateSchooltaskEvent($actor),
+            'delete' => $this->userScopeResolver->canDeleteSchooltaskEvent($actor),
+            default => false,
+        };
     }
 }
