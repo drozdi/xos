@@ -321,6 +321,13 @@ final class UserScopeResolver
         return $this->canSchooltaskEvent($user, 'can_delete.schooltask.event');
     }
 
+    /** Полный доступ к событиям: ROOT / SCHOOLTASK_ROOT / EVENT_ROOT. */
+    public function isSchooltaskEventRoot(User $user): bool
+    {
+        return $this->hasFullAppAccess($user, 'schooltask')
+            || $this->userHasAnyRole($user, ['ROLE_SCHOOLTASK_EVENT_ROOT']);
+    }
+
     public function canCreateSchooltaskZam(User $user): bool
     {
         return $this->canSchooltaskZam($user, 'can_create.schooltask.zam');

@@ -4,6 +4,7 @@ namespace SchoolTask\Controller;
 
 use App\Attribute\Access;
 use App\Http\ApiResponse;
+use App\Http\ContentRangeHeaders;
 use App\Security\UserScopeResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Main\Entity\User;
@@ -46,8 +47,12 @@ class EpSubjectController extends AbstractController
             'filters' => [],
         ], $request->toArray());
 
+        $limit = (int) $req['limit'];
+        $offset = (int) $req['offset'];
+        $totalItems = $repository->cnt($req['filters']);
+
         $items = [];
-        foreach ($repository->findFilter($req['filters'], $req['sortBy'], (int) $req['limit'], (int) $req['offset']) as $subject) {
+        foreach ($repository->findFilter($req['filters'], $req['sortBy'], $limit, $offset) as $subject) {
             $items[] = [
                 'id' => $subject->getId(),
                 'name' => $subject->getName(),
@@ -55,7 +60,11 @@ class EpSubjectController extends AbstractController
             ];
         }
 
-        return $this->json($items);
+        return $this->json(
+            $items,
+            Response::HTTP_OK,
+            ContentRangeHeaders::forLegacyPagination($limit, $offset, $totalItems),
+        );
     }
 
     #[Route('/{id}', requirements: ['id' => '\d+'], methods: ['GET'])]

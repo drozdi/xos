@@ -295,14 +295,18 @@ MD,
             ],
             'Notes/Changelog.md',
         );
-        $card('Board v2: live-updates и глобальный поиск', <<<'MD'
-Out of scope MVP: Mercure, global search, Trello import, email-уведомления.
+        $card('Волна 3 Board — partial (polling+search)', <<<'MD'
+Сдано (slice): Board changes polling + global card search.
 
-См. `docs/board/PLAN.md` и [[Board]].
-MD, ['board', 'v2']);
+**W3b** backlog: Mercure/SSE; Trello import; email-уведомления.
 
-        $card('PKB v3: plugins, encryption, co-editing', <<<'MD'
-Plugin API, encryption at-rest, real-time. См. [[PKB]] и `docs/pkb/PLAN.md`.
+См. `docs/ROADMAP_WAVES.md`, `docs/board/PLAN.md`, [[Board]], [[Changelog]].
+MD, ['board', 'docs', 'mvp']);
+
+        $card('W3b PKB: templates/graph, encryption, plugins', <<<'MD'
+Backlog **W3b**: PKB templates/graph; encryption at-rest; plugins / co-editing.
+
+См. [[PKB]], `docs/pkb/PLAN.md`, `docs/ROADMAP_WAVES.md`.
 MD, ['pkb', 'v2']);
 
         $card('Документация приложений', <<<'MD'
@@ -619,6 +623,8 @@ DX: `docs/API_SPEC.md` § Board↔PKB; PHPUnit `BoardManagerTest::testPkbNoteLin
 
 Эта доска «XOS — roadmap» связана с vault `slug=xos`. Журнал сдач: [[Changelog]].
 
+W3: polling `GET /boards/{id}/changes`, search `GET /search` — см. [[Changelog]].
+
 ## Приложения
 
 `board`
@@ -795,9 +801,16 @@ MD,
 
 См. [[Explorer]], `docs/explorer/TODO.md`.
 
+## Волна 3 — Board polling + search (partial)
+
+- Board changes polling (`…/changes?since=`) + global search (`/api/board/search`) — **DONE**
+- **W3b** backlog: Mercure/SSE; PKB templates/graph (encryption/plugins)
+
+См. `docs/ROADMAP_WAVES.md`, [[Board]], [[PKB]].
+
 ## Далее (Roadmap)
 
-- Волна 3: Board Mercure/SSE; search; PKB polish — `docs/ROADMAP_WAVES.md`
+- **W3b**: Mercure/SSE; PKB templates/graph/encryption/plugins — `docs/ROADMAP_WAVES.md`
 - SchoolTask High/Medium — [[SchoolTask]]
 - Волна 4–5: bridges, PWA/offline — backlog
 

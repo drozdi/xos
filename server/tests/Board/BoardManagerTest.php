@@ -364,6 +364,40 @@ class BoardManagerTest extends AuthWebTestCase
         self::assertContains(ActivityAction::CommentAdded->value, $actions);
     }
 
+    public function testSearchCardsAndBoardChangesDelta(): void
+    {
+        $client = static::createClient();
+        $fixture = $this->prepareFixture($client);
+        /** @var BoardManager $manager */
+        $manager = $client->getContainer()->get(BoardManager::class);
+
+        $list = $manager->createList($fixture['board'], $fixture['owner'], ['title' => 'Search']);
+        $card = $manager->createCard($list, $fixture['owner'], ['title' => 'WaveThreeSearchHit']);
+
+        $hits = $manager->searchCards($fixture['owner'], 'WaveThreeSearchHit');
+        self::assertCount(1, $hits);
+        self::assertSame($card->getId(), $hits[0]['id']);
+        self::assertSame($fixture['board']->getId(), $hits[0]['board_id']);
+
+        $outsiderHits = $manager->searchCards($fixture['observer'], 'WaveThreeSearchHit');
+        // observer is workspace member but private board without board membership → filtered by canViewBoard
+        self::assertSame([], $outsiderHits);
+
+        $baseline = $manager->getBoardChanges($fixture['board'], $fixture['owner'], null);
+        self::assertFalse($baseline['has_changes']);
+        self::assertNotEmpty($baseline['server_time']);
+
+        sleep(1);
+        $manager->updateCard($card, $fixture['owner'], ['title' => 'WaveThreeSearchHit updated']);
+
+        $delta = $manager->getBoardChanges($fixture['board'], $fixture['owner'], $baseline['server_time']);
+        self::assertTrue($delta['has_changes']);
+        self::assertContains($card->getId(), $delta['updated_card_ids']);
+
+        $this->expectException(AccessDeniedHttpException::class);
+        $manager->getBoardChanges($fixture['board'], $fixture['observer'], $baseline['server_time']);
+    }
+
     /**
      * @return array{owner: User, editor: User, observer: User, board: Board}
      */

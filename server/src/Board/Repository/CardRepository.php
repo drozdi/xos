@@ -144,4 +144,54 @@ class CardRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /** @return list<int> */
+    public function findIdsUpdatedAfter(Board $board, \DateTimeInterface $since): array
+    {
+        /** @var list<array{id: int|string}> $rows */
+        $rows = $this->createQueryBuilder('c')
+            ->select('c.id')
+            ->innerJoin('c.list', 'l')
+            ->andWhere('l.board = :board')
+            ->andWhere('c.updatedAt > :since')
+            ->setParameter('board', $board)
+            ->setParameter('since', $since)
+            ->orderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+
+        return array_map(static fn (array $row): int => (int) $row['id'], $rows);
+    }
+
+    /**
+     * Global card search across workspaces the user can reach (owner / ws member / board member).
+     * Callers must still apply canViewBoard.
+     *
+     * @return list<Card>
+     */
+    public function searchForUser(User $user, string $q, int $limit = 50): array
+    {
+        $q = trim($q);
+        if ('' === $q) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('c')
+            ->distinct()
+            ->innerJoin('c.list', 'l')
+            ->innerJoin('l.board', 'b')
+            ->innerJoin('b.workspace', 'w')
+            ->leftJoin('w.members', 'wm', 'WITH', 'wm.user = :user')
+            ->leftJoin('b.members', 'bm', 'WITH', 'bm.user = :user')
+            ->andWhere('c.archivedAt IS NULL')
+            ->andWhere('c.title LIKE :search OR c.descriptionMd LIKE :search')
+            ->andWhere('w.owner = :user OR wm.user IS NOT NULL OR bm.user IS NOT NULL')
+            ->setParameter('user', $user)
+            ->setParameter('search', '%'.$q.'%')
+            ->orderBy('c.updatedAt', 'DESC')
+            ->addOrderBy('c.id', 'DESC')
+            ->setMaxResults(max(1, min(100, $limit)))
+            ->getQuery()
+            ->getResult();
+    }
 }

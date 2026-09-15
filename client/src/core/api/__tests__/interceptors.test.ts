@@ -24,4 +24,16 @@ describe('stripJsonContentTypeForFormData', () => {
 
 		expect(config.headers.get('Content-Type')).toBe('application/json');
 	});
+
+	it('does not force Content-Type when FormData has no Content-Type header', () => {
+		const formData = new FormData();
+		formData.append('files[]', new Blob(['x']), 'x.txt');
+
+		const config = stripJsonContentTypeForFormData({
+			headers: new AxiosHeaders(),
+			data: formData,
+		});
+
+		expect(config.headers.get('Content-Type')).toBeUndefined();
+	});
 });

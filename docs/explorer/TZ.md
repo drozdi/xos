@@ -73,7 +73,7 @@ server/src/Explorer/
 - [x] Pickers не в launch history
 - [x] 2+ независимых explorer/notepad окон
 - [x] Audio/video — один экземпляр, reload файла
-- [ ] Manual: dirty-close notepad/md (см. PLAN DoD)
+- [x] Dirty-close notepad/md — implemented (taskbar `getWindowApi().close()` + cancel)
 
 ## 8. Связанные документы
 

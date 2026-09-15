@@ -8,7 +8,6 @@ export interface NotepadEditorSession {
 	loadedPath: string | null;
 	saveNonce: number;
 	saveAsNonce: number;
-	closeNonce: number;
 	closeAfterSaveAs: boolean;
 }
 
@@ -21,7 +20,6 @@ function emptySession(): NotepadEditorSession {
 		loadedPath: null,
 		saveNonce: 0,
 		saveAsNonce: 0,
-		closeNonce: 0,
 		closeAfterSaveAs: false,
 	};
 }
@@ -38,7 +36,6 @@ interface NotepadEditorStore {
 	resetDocument: (windowId: string) => void;
 	requestSave: (windowId: string) => void;
 	requestSaveAs: (windowId: string) => void;
-	requestClose: (windowId: string) => void;
 	clearSession: (windowId: string) => void;
 }
 
@@ -120,14 +117,6 @@ export const useNotepadEditorStore = create<NotepadEditorStore>((set, get) => ({
 		const prev = get().ensureSession(windowId);
 		get().patchSession(windowId, {
 			saveAsNonce: prev.saveAsNonce + 1,
-		});
-	},
-
-
-	requestClose: (windowId) => {
-		const prev = get().ensureSession(windowId);
-		get().patchSession(windowId, {
-			closeNonce: prev.closeNonce + 1,
 		});
 	},
 

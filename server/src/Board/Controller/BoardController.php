@@ -146,6 +146,31 @@ class BoardController extends AbstractController
         return $this->json($boardManager->listBoardActivity($board, $user, $limit, $offset));
     }
 
+    #[Route('/boards/{id}/changes', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function changes(int $id, Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $board = $boardManager->getBoard($id, $user);
+        $since = $request->query->get('since');
+        $sinceStr = is_string($since) ? $since : null;
+
+        return $this->json($boardManager->getBoardChanges($board, $user, $sinceStr));
+    }
+
+    #[Route('/search', methods: ['GET'])]
+    public function search(Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $q = trim((string) $request->query->get('q', ''));
+        $limit = max(1, min(100, (int) $request->query->get('limit', 50)));
+
+        return $this->json(['cards' => $boardManager->searchCards($user, $q, $limit)]);
+    }
+
     /**
      * @return array{
      *     assignee_ids: list<int>,

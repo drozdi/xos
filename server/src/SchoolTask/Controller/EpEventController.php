@@ -2,6 +2,7 @@
 
 namespace SchoolTask\Controller;
 
+use App\Attribute\Access;
 use App\Http\ApiResponse;
 use App\Security\UserScopeResolver;
 use Main\Entity\User;
@@ -18,21 +19,16 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[Route('/api/schooltask/calendar')]
+#[Access('schooltask.event')]
 class EpEventController extends AbstractController
 {
     #[Route('/classes', methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function listClasses(
         SchoolTaskManager $schoolTaskManager,
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
-        if (
-            !$userScopeResolver->canReadSchooltaskEvent($user)
-            && !$userScopeResolver->canUpdateSchooltaskEvent($user)
-        ) {
-            return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_EVENT);
-        }
-
         $items = [];
         foreach ($schoolTaskManager->listClasses() as $class) {
             $canEdit = $this->canManageSchedule($user, $class, $schoolTaskManager, $userScopeResolver);
@@ -53,6 +49,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/info', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function classInfo(
         int $classId,
         SchoolTaskManager $schoolTaskManager,
@@ -72,6 +69,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/student/events', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function studentEvents(
         int $classId,
         Request $request,
@@ -98,6 +96,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/student/events/{id}', requirements: ['classId' => '\d+', 'id' => '\d+'], methods: ['GET'])]
+    #[Access('can_read', checkScopes: false)]
     public function studentEventDetail(
         int $classId,
         int $id,
@@ -123,6 +122,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/editor/events', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function editorEvents(
         int $classId,
         Request $request,
@@ -146,6 +146,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/editor/subgroups', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function editorSubgroups(
         int $classId,
         SchoolTaskManager $schoolTaskManager,
@@ -159,13 +160,19 @@ class EpEventController extends AbstractController
 
         $items = [];
         foreach ($class->getChildren() as $group) {
-            $items[] = ['value' => $group->getId(), 'text' => $group->getName()];
+            $items[] = [
+                'value' => $group->getId(),
+                'text' => $group->getName(),
+                'subject_id' => $schoolTaskManager->getSubjectForGroup($group)?->getId(),
+                'user_id' => $group->getUser()?->getId(),
+            ];
         }
 
         return $this->json($items);
     }
 
     #[Route('/{classId}/editor/teachers', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function editorTeachers(
         int $classId,
         Request $request,
@@ -188,6 +195,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/editor/events/add', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_create', checkScopes: false)]
     public function editorAdd(
         int $classId,
         Request $request,
@@ -227,6 +235,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/editor/events/edit', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_update', checkScopes: false)]
     public function editorEdit(
         int $classId,
         Request $request,
@@ -243,7 +252,7 @@ class EpEventController extends AbstractController
         $payload = $request->toArray();
         unset($payload['group_id'], $payload['class_id']);
         $event = $eventManager->event((int) ($payload['id'] ?? 0));
-        if (!(int) $event->getId()) {
+        if (!(int) $event->getId() || (int) $event->getClass()?->getId() !== $classId) {
             return ApiResponse::notFound(SchoolTaskAccessMessages::EVENT_NOT_FOUND);
         }
 
@@ -265,6 +274,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/editor/events/remove', requirements: ['classId' => '\d+'], methods: ['POST'])]
+    #[Access('can_delete', checkScopes: false)]
     public function editorRemove(
         int $classId,
         Request $request,
@@ -280,7 +290,7 @@ class EpEventController extends AbstractController
 
         $payload = $request->toArray();
         $event = $eventManager->event((int) ($payload['id'] ?? 0));
-        if (!(int) $event->getId()) {
+        if (!(int) $event->getId() || (int) $event->getClass()?->getId() !== $classId) {
             return ApiResponse::notFound(SchoolTaskAccessMessages::EVENT_NOT_FOUND);
         }
 
@@ -299,6 +309,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/{classId}/editor/events/{id}', requirements: ['classId' => '\d+', 'id' => '\d+'], methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function editorDetail(
         int $classId,
         int $id,
@@ -313,7 +324,7 @@ class EpEventController extends AbstractController
         }
 
         $event = $eventManager->event($id);
-        if (!(int) $event->getId()) {
+        if (!(int) $event->getId() || (int) $event->getClass()?->getId() !== $classId) {
             return ApiResponse::notFound(SchoolTaskAccessMessages::EVENT_NOT_FOUND);
         }
 
@@ -321,6 +332,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/lesson-templates', methods: ['GET'])]
+    #[Access('can_read')]
     public function lessonTemplates(EventManager $eventManager, UserScopeResolver $userScopeResolver, #[CurrentUser] User $user): JsonResponse
     {
         if (!$userScopeResolver->canReadSchooltaskEvent($user)) {
@@ -331,6 +343,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/teacher/files', methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function teacherFiles(
         EventManager $eventManager,
         UserScopeResolver $userScopeResolver,
@@ -344,6 +357,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/teacher/files/upload', methods: ['POST'])]
+    #[Access('can_update', checkScopes: false)]
     public function teacherFilesUpload(
         EventManager $eventManager,
         UserScopeResolver $userScopeResolver,
@@ -363,6 +377,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/teacher/files/import', methods: ['POST'])]
+    #[Access('can_update', checkScopes: false)]
     public function teacherFilesImport(
         Request $request,
         EventManager $eventManager,
@@ -395,6 +410,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/teacher/events', methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function teacherEvents(
         Request $request,
         EventManager $eventManager,
@@ -415,6 +431,7 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/teacher/events/{id}', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Access('can_read', checkScopes: false)]
     public function teacherDetail(
         int $id,
         EventManager $eventManager,
@@ -434,10 +451,10 @@ class EpEventController extends AbstractController
     }
 
     #[Route('/teacher/events/save', methods: ['POST'])]
+    #[Access('can_update', checkScopes: false)]
     public function teacherSave(
         Request $request,
         EventManager $eventManager,
-        UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
     ): JsonResponse {
         $payload = $request->request->all()['event'] ?? $request->toArray();
@@ -469,7 +486,9 @@ class EpEventController extends AbstractController
         SchoolTaskManager $schoolTaskManager,
         UserScopeResolver $userScopeResolver,
     ): bool {
-        return $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'update');
+        return $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'create')
+            || $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'update')
+            || $this->canMutateSchedule($user, $class, $schoolTaskManager, $userScopeResolver, 'delete');
     }
 
     /**
@@ -531,9 +550,13 @@ class EpEventController extends AbstractController
         UserScopeResolver $userScopeResolver,
         SchoolTaskManager $schoolTaskManager,
     ): bool {
-        return $userScopeResolver->canReadSchooltaskEvent($user)
-            || $schoolTaskManager->isClassMember($user, $class)
-            || $schoolTaskManager->isClassTutor($user, $class);
+        if ($userScopeResolver->isSchooltaskEventRoot($user)) {
+            return true;
+        }
+
+        return $schoolTaskManager->isClassMember($user, $class)
+            || $schoolTaskManager->isClassTutor($user, $class)
+            || $schoolTaskManager->isClassLessonTeacher($user, $class);
     }
 
     /** @return array{0: \DateTimeInterface, 1: \DateTimeInterface} */

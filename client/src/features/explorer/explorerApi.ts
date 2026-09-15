@@ -113,9 +113,8 @@ export async function uploadExplorerFile(path: string, file: File) {
 	const form = new FormData();
 	form.append('path', path);
 	form.append('file', file);
-	const { data } = await apiClient.post<unknown>(`${BASE}/upload`, form, {
-		headers: { 'Content-Type': 'multipart/form-data' },
-	});
+	// Do not set Content-Type: axios must add multipart boundary.
+	const { data } = await apiClient.post<unknown>(`${BASE}/upload`, form);
 	return explorerEntrySchema.parse(data);
 }
 

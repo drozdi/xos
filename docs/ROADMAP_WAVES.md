@@ -6,7 +6,7 @@
 |-------|--------|------------|
 | **1** | **DONE** | IncCom: чек → `TransactionItem` (`fill_items` / `apply-items`); FNS `master_token` encrypt; Board↔PKB DX; seed Changelog |
 | **2** | **DONE** | SchoolTask Critical B1–B3 / F1–F3; Explorer dirty-close (notepad/markdown + taskbar) |
-| **3** | backlog | Board Mercure/SSE; global search; PKB templates/graph (encryption/plugins — подфазы) |
+| **3** | **partial** | Board polling + global search (DONE); Mercure/SSE + PKB encryption/plugins → **W3b** |
 | **4** | backlog | Todo→Board; Device↔IncCom; due notify; новые apps по ТЗ |
 | **5** | backlog | PWA/offline; mobile layout; audit UI; multi-OU |
 
@@ -21,3 +21,11 @@
 - **B3** — файлы заданий через `GET /api/schooltask/files/{id}/download`; `/uploads/task/` запрещён
 - **F3** — запуск `schooltask-calendar-editor` из списков классов/календарей
 - **Explorer** — dirty-close save/discard/cancel; taskbar через `getWindowApi().close()`
+
+## Волна 3 — детали (pragmatic slice)
+
+Источник: `docs/board/PLAN.md` B-050/B-051, `docs/board/TODO.md` фаза 5.
+
+- **B-051 polling** — `GET /api/board/boards/{id}/changes?since=`; FE poll + React Query invalidate (без presence/conflict UI)
+- **B-050 search** — `GET /api/board/search?q=`; shell search UI в Board app
+- **W3b (later)** — Mercure/SSE; PKB encryption/plugins (templates/graph уже DONE в MVP)

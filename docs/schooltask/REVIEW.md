@@ -2,13 +2,13 @@
 
 **Дата:** 2026-07-17 (Critical закрыты Волной 2 — 2026-09-13)  
 **Область:** `server/src/SchoolTask`, клиент `schooltask-*` / `features/schooltask`, PHPUnit, `@mantine/schedule`  
-**Статус:** Critical (B1–B3, F1–F3) **исправлены** (Волна 2); High/Medium/Low — backlog
+**Статус:** Critical (B1–B3, F1–F3) **исправлены** (Волна 2); High (B4–B8, F4–F7) **исправлены**
 
 ---
 
 ## Краткий вывод
 
-Модуль собран по паттерну Device/Main и покрывает сценарий «предметы → классы → расписание → задания». Critical-пробелы Волна 2 закрыты; остаются High/Medium/Low ниже.
+Модуль собран по паттерну Device/Main и покрывает сценарий «предметы → классы → расписание → задания». Critical и High закрыты; остаются Medium/Low ниже.
 
 ---
 
@@ -39,39 +39,32 @@ FormData без принудительного `Content-Type`.
 
 ## High
 
-### B4. У `EpEventController` нет `#[Access]`
-Только ручные проверки — риск пропущенного endpoint.  
-**Предложение:** добавить class/method `Access` + сохранить membership/tutor-логику.
+### B4. У `EpEventController` нет `#[Access]` — DONE
+Class/method `Access` + `checkScopes: false` где нужен bypass тьютора/членства; ручные проверки сохранены.
 
-### B5. IDOR: `editorDetail` не сверяет `classId`
-Можно запросить чужой `event id` при доступе к URL-классу.  
-**Предложение:** как в student detail — `(int)$event->getClass()?->getId() === $classId`.
+### B5. IDOR: `editorDetail` не сверяет `classId` — DONE
+`(int)$event->getClass()?->getId() === $classId` (как student detail).
 
-### B6. Редактирование серии сдвигает все даты в один слот
-При `editType=all|after` в `buildEvent` одни и те же `start/end` пишутся во все вхождения.  
-**Предложение:** менять не-датовые поля или сдвигать каждое вхождение на delta.
+### B6. Редактирование серии сдвигает все даты в один слот — DONE
+При `editType=all|after` сдвиг каждого вхождения на delta от якоря.
 
-### B7. `can_create` / `can_delete` для event не используются — частично DONE (Волна 2)
-Editor add/edit/remove разведены по `can_create` / `can_update` / `can_delete` (+ тьютор). Остальные пути могут ещё опираться на update.
+### B7. `can_create` / `can_delete` для event не используются — DONE
+Editor add/edit/remove по `can_create` / `can_update` / `can_delete` (+ тьютор); `can_edit` в списке классов учитывает create/update/delete.
 
-### B8. Глобальный `can_read.schooltask.event` открывает любой класс
-**Предложение:** для не-ROOT требовать membership / тьютора / учителя урока.
+### B8. Глобальный `can_read.schooltask.event` открывает любой класс — DONE
+Не-ROOT: только membership / тьютор / учитель урока (`isClassLessonTeacher`).
 
-### F4. Frontend блокирует учеников/тьюторов, которых пускает backend
-Студенческий календарь и editor требуют scopes; backend допускает `isClassMember` / `isClassTutor`.  
-**Предложение:** выровнять `canAccess` и in-app checks с сервером.
+### F4. Frontend блокирует учеников/тьюторов, которых пускает backend — DONE
+`canAccessSchooltaskCalendars` (модуль или event scopes); манифесты и `SchooltaskCalendarsApp` выровнены.
 
-### F5. Editor modal зависит от `schooltask.class` read
-Учителя/подгруппы грузятся через `schooltaskClassApi.get`.  
-**Предложение:** использовать `editor/subgroups` (+ teachers API) без class CRUD.
+### F5. Editor modal зависит от `schooltask.class` read — DONE
+`editor/subgroups` отдаёт `subject_id`/`user_id`; modal без `schooltaskClassApi.get`.
 
-### F6. Subjects list: нет Content-Range + serverPagination
-`total` ≈ длина страницы → ломается пагинация.  
-**Предложение:** Content-Range + cnt, как в Device/Main, либо `limit: -1` без server pagination.
+### F6. Subjects list: нет Content-Range + serverPagination — DONE
+`Content-Range` + `cnt` в `EpSubjectController::list`.
 
-### F7. Teacher calendar: клик только при `canUpdate`
-При `canRead` деталь не открывается.  
-**Предложение:** read-only modal при read без update.
+### F7. Teacher calendar: клик только при `canUpdate` — DONE
+Деталь открывается при read; save по-прежнему для владельца урока.
 
 ---
 
@@ -101,7 +94,7 @@ Editor add/edit/remove разведены по `can_create` / `can_update` / `ca
 - `sort ?: 100` трактует `0` как 100.
 - Неиспользуемые `nextTempId`, `schooltaskEndpoints`.
 - SchoolTask не в `DEFAULT_PINNED_APPS` (опционально).
-- PHPUnit покрывает B1 (scope create) и B3 (uploads block + API download); B5–B6, multipart — ещё нет.
+- PHPUnit: B1 (scope create), B3 (uploads), B5 (editorDetail IDOR), B8 (scoped read без membership).
 
 ---
 
@@ -118,7 +111,7 @@ Editor add/edit/remove разведены по `can_create` / `can_update` / `ca
 ## Рекомендуемый порядок исправлений
 
 1. ~~Critical B1–B3 / F1–F3~~ — DONE (Волна 2; см. `docs/ROADMAP_WAVES.md`)
-2. B5 (IDOR), B6 (серии), F4–F6 (access + pagination)
+2. ~~High B4–B8 / F4–F7~~ — DONE
 3. Medium/Low по приоритету продукта
 4. Доп. PHPUnit (multipart, series)
 

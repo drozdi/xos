@@ -318,6 +318,94 @@ class BoardManager extends AbstractManager
         return $result;
     }
 
+    /**
+     * Delta for board polling (B-051). Empty/missing `since` returns baseline cursor only.
+     *
+     * @return array{
+     *     has_changes: bool,
+     *     since: ?string,
+     *     server_time: string,
+     *     updated_card_ids: list<int>,
+     *     activity_count: int
+     * }
+     */
+    public function getBoardChanges(Board $board, User $user, ?string $sinceRaw): array
+    {
+        if (!$this->permissionResolver->canViewBoard($board, $user)) {
+            throw new AccessDeniedHttpException('Нет доступа к доске');
+        }
+
+        $serverTime = (new \DateTimeImmutable())->format('Y-m-d H:i:s');
+        $sinceTrimmed = null !== $sinceRaw ? trim($sinceRaw) : '';
+
+        if ('' === $sinceTrimmed) {
+            return [
+                'has_changes' => false,
+                'since' => null,
+                'server_time' => $serverTime,
+                'updated_card_ids' => [],
+                'activity_count' => 0,
+            ];
+        }
+
+        try {
+            $since = new \DateTimeImmutable($sinceTrimmed);
+        } catch (\Exception) {
+            throw new BadRequestHttpException('Некорректный since');
+        }
+
+        $updatedCardIds = $this->getCardRepository()->findIdsUpdatedAfter($board, $since);
+        $activityCount = $this->getActivityLogRepository()->countCreatedAfter($board, $since);
+        $boardUpdatedAt = $board->getUpdatedAt();
+        $boardChanged = $boardUpdatedAt instanceof \DateTimeInterface && $boardUpdatedAt > $since;
+
+        return [
+            'has_changes' => $boardChanged || $activityCount > 0 || [] !== $updatedCardIds,
+            'since' => $since->format('Y-m-d H:i:s'),
+            'server_time' => $serverTime,
+            'updated_card_ids' => $updatedCardIds,
+            'activity_count' => $activityCount,
+        ];
+    }
+
+    /**
+     * Global card search across accessible boards (B-050). Reuses title/description `q` matching.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function searchCards(User $user, string $q, int $limit = 50): array
+    {
+        $query = trim($q);
+        if ('' === $query) {
+            return [];
+        }
+
+        $cards = $this->getCardRepository()->searchForUser($user, $query, $limit);
+        $result = [];
+
+        foreach ($cards as $card) {
+            $board = $card->getBoard();
+            if (null === $board || !$this->permissionResolver->canViewBoard($board, $user)) {
+                continue;
+            }
+            $list = $card->getList();
+            $workspace = $board->getWorkspace();
+            $result[] = [
+                'id' => $card->getId(),
+                'title' => $card->getTitle(),
+                'board_id' => $board->getId(),
+                'board_title' => $board->getTitle(),
+                'workspace_id' => $workspace?->getId(),
+                'workspace_name' => $workspace?->getName(),
+                'list_id' => $list?->getId(),
+                'list_title' => $list?->getTitle(),
+                'updated_at' => $card->getUpdatedAt('Y-m-d H:i:s'),
+            ];
+        }
+
+        return $result;
+    }
+
     public function updateBoard(Board $board, User $user, array $data): Board
     {
         if (!$this->permissionResolver->canEditBoard($board, $user)) {

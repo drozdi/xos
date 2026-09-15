@@ -7,23 +7,19 @@ import { extractApiErrorMessage } from '@/core/api/apiError';
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
-import {
-	useCanReadSchooltaskEvent,
-	useCanUpdateSchooltaskEvent,
-} from '@/features/schooltask/schooltaskAccess';
+import { useCanAccessSchooltaskCalendars } from '@/features/schooltask/schooltaskAccess';
 import { useLaunchSchooltaskApp } from '@/features/schooltask/schooltaskAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
 
 export default function SchooltaskCalendarsApp() {
 	useWindowTitle('Расписание');
 	const launchApp = useLaunchSchooltaskApp();
-	const canRead = useCanReadSchooltaskEvent();
-	const canUpdate = useCanUpdateSchooltaskEvent();
+	const canAccess = useCanAccessSchooltaskCalendars();
 
 	const listQuery = useQuery({
 		queryKey: queryKeys.schooltask.calendarClasses,
 		queryFn: () => schooltaskCalendarApi.listClasses(),
-		enabled: canRead || canUpdate,
+		enabled: canAccess,
 	});
 
 	const columns = useMemo(
@@ -45,7 +41,7 @@ export default function SchooltaskCalendarsApp() {
 					can_edit?: boolean;
 				}) => (
 					<Group gap="xs" wrap="nowrap" onClick={(event) => event.stopPropagation()}>
-						{(row.can_edit || canUpdate) && (
+						{row.can_edit ? (
 							<Button
 								size="compact-xs"
 								variant="light"
@@ -55,26 +51,24 @@ export default function SchooltaskCalendarsApp() {
 							>
 								Расписание
 							</Button>
-						)}
-						{(canRead || row.can_edit) && (
-							<Button
-								size="compact-xs"
-								variant="default"
-								onClick={() =>
-									launchApp('schooltask-calendar', row.id, `Расписание — ${row.name}`)
-								}
-							>
-								Посмотреть
-							</Button>
-						)}
+						) : null}
+						<Button
+							size="compact-xs"
+							variant="default"
+							onClick={() =>
+								launchApp('schooltask-calendar', row.id, `Расписание — ${row.name}`)
+							}
+						>
+							Посмотреть
+						</Button>
 					</Group>
 				),
 			},
 		],
-		[canRead, canUpdate, launchApp],
+		[launchApp],
 	);
 
-	if (!canRead && !canUpdate) {
+	if (!canAccess) {
 		return (
 			<MainListLayout title="Расписание" isLoading={false} isError={false} onRefresh={() => {}}>
 				<Alert color="red" title="Доступ запрещён">

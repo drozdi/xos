@@ -516,6 +516,35 @@ export const boardDueCardSchema = z.object({
 
 export type BoardDueCard = z.infer<typeof boardDueCardSchema>;
 
+export const boardChangesResponseSchema = z.object({
+	has_changes: z.boolean(),
+	since: z.string().nullable().optional(),
+	server_time: z.string(),
+	updated_card_ids: z.array(z.number()).default([]),
+	activity_count: z.number().optional().default(0),
+});
+
+export type BoardChangesResponse = z.infer<typeof boardChangesResponseSchema>;
+
+export const boardSearchCardSchema = z.object({
+	id: z.number(),
+	title: z.string(),
+	board_id: z.number().nullable(),
+	board_title: z.string().nullable().optional(),
+	workspace_id: z.number().nullable().optional(),
+	workspace_name: z.string().nullable().optional(),
+	list_id: z.number().nullable().optional(),
+	list_title: z.string().nullable().optional(),
+	updated_at: z.string().nullable().optional(),
+});
+
+export const boardSearchResponseSchema = z.object({
+	cards: z.array(boardSearchCardSchema).default([]),
+});
+
+export type BoardSearchCard = z.infer<typeof boardSearchCardSchema>;
+export type BoardSearchResponse = z.infer<typeof boardSearchResponseSchema>;
+
 export type CommentWritePayload = {
 
 	text?: string;
@@ -818,6 +847,22 @@ export const boardApi = {
 			params: { start, end },
 		});
 		return z.array(boardDueCardSchema).parse(data);
+	},
+
+	boardChanges: async (boardId: number, since?: string | null): Promise<BoardChangesResponse> => {
+		const params: Record<string, string> = {};
+		if (since?.trim()) {
+			params.since = since.trim();
+		}
+		const { data } = await apiClient.get<unknown>(`${BASE}/boards/${boardId}/changes`, { params });
+		return boardChangesResponseSchema.parse(data);
+	},
+
+	search: async (q: string, limit = 50): Promise<BoardSearchResponse> => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/search`, {
+			params: { q: q.trim(), limit },
+		});
+		return boardSearchResponseSchema.parse(data);
 	},
 
 };

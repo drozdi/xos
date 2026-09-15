@@ -919,6 +919,21 @@ class SchoolTaskManager extends AbstractManager
 
 
 
+    /** Учитель подгруппы (урока) в классе. */
+    public function isClassLessonTeacher(User $user, EpGroup $classGroup): bool
+    {
+        foreach ($classGroup->getChildren() as $child) {
+            $teacher = $child->getUser();
+            if ($teacher instanceof User && (int) $teacher->getId() === (int) $user->getId()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+
     /** @return EpGroup[] */
 
     public function listClasses(bool $includeGraduated = false): array

@@ -978,6 +978,8 @@ Kanban boards: workspaces, lists, cards, labels, checklists, comments, attachmen
 | PUT | `/api/board/boards/{id}` | Update incl. `background_type=color`, `background_value=#hex` |
 | DELETE | `/api/board/boards/{id}` | Delete |
 | GET | `/api/board/boards/{id}/cards` | Filter cards — query: `assignee`, `label`, `due_before`, `due_after`, `q` → `{ card_ids, filtered }` |
+| GET | `/api/board/boards/{id}/changes` | Polling delta `?since=` → `{ has_changes, since, server_time, updated_card_ids, activity_count }` |
+| GET | `/api/board/search` | Global card search `?q=&limit=` → `{ cards: [{ id, title, board_id, board_title, workspace_id, … }] }` |
 | GET | `/api/board/boards/{id}/members` | Board members |
 | POST | `/api/board/boards/{id}/members` | Invite `{ email, role }` |
 | PUT | `/api/board/boards/{id}/members/{userId}` | Change role |

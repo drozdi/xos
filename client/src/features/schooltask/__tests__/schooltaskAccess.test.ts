@@ -4,6 +4,7 @@ import { isAppRoot, isRoot, isScopeRoot, resetUserRoles, setUserRoles } from '@/
 import { joinScopes, resetScopes, setLevelScopes } from '@/core/auth/coreScopes';
 
 import {
+	canAccessSchooltaskCalendars,
 	canCreateSchooltaskClass,
 	canReadSchooltaskEvent,
 	canReadSchooltaskSubject,
@@ -59,5 +60,11 @@ describe('schooltaskAccess', () => {
 		setUserRoles(['ROLE_ROOT']);
 		expect(isRoot()).toBe(true);
 		expect(canReadSchooltaskEvent()).toBe(true);
+	});
+
+	it('allows calendars access with module role without event scopes', () => {
+		setUserRoles(['ROLE_SCHOOLTASK']);
+		expect(canAccessSchooltaskCalendars()).toBe(true);
+		expect(canReadSchooltaskEvent()).toBe(false);
 	});
 });

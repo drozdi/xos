@@ -6,26 +6,26 @@ import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { EventDetailModal } from '@/features/schooltask/EventDetailModal';
-import { useCanReadSchooltaskEvent } from '@/features/schooltask/schooltaskAccess';
+import { useCanAccessSchooltaskCalendars } from '@/features/schooltask/schooltaskAccess';
 import { useClassId } from '@/features/schooltask/schooltaskAppUtils';
 import { formatCalendarRange, WeekCalendar } from '@/features/schooltask/WeekCalendar';
 
 export default function SchooltaskCalendarApp() {
 	const classId = useClassId();
-	const canRead = useCanReadSchooltaskEvent();
+	const canAccess = useCanAccessSchooltaskCalendars();
 	const [range, setRange] = useState(() => formatCalendarRange(new Date(), new Date()));
 	const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
 	const infoQuery = useQuery({
 		queryKey: queryKeys.schooltask.calendarInfo(classId),
 		queryFn: () => schooltaskCalendarApi.classInfo(classId),
-		enabled: canRead && classId > 0,
+		enabled: canAccess && classId > 0,
 	});
 
 	const eventsQuery = useQuery({
 		queryKey: queryKeys.schooltask.studentEvents(classId, range),
 		queryFn: () => schooltaskCalendarApi.studentEvents(classId, range),
-		enabled: canRead && classId > 0,
+		enabled: canAccess && classId > 0,
 	});
 
 	useWindowTitle(infoQuery.data?.name ? `Расписание — ${infoQuery.data.name}` : 'Календарь класса');
@@ -34,7 +34,7 @@ export default function SchooltaskCalendarApp() {
 		setRange(formatCalendarRange(start, end));
 	}, []);
 
-	if (!canRead) {
+	if (!canAccess) {
 		return (
 			<Alert color="red" title="Доступ запрещён" m="md">
 				Нет прав на просмотр расписания

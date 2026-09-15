@@ -44,4 +44,18 @@ class ActivityLogRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function countCreatedAfter(Board $board, \DateTimeInterface $since): int
+    {
+        $result = $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->andWhere('a.board = :board')
+            ->andWhere('a.createdAt > :since')
+            ->setParameter('board', $board)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $result;
+    }
 }

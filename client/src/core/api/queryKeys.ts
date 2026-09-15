@@ -116,6 +116,8 @@ export const queryKeys = {
 		members: (boardId: number) => ['board', 'members', boardId] as const,
 		filter: (boardId: number, params: Record<string, unknown>) =>
 			['board', 'filter', boardId, params] as const,
+		changes: (boardId: number) => ['board', 'changes', boardId] as const,
+		search: (q: string) => ['board', 'search', q] as const,
 	},
 	pkb: {
 		health: ['pkb', 'health'] as const,

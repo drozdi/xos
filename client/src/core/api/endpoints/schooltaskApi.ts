@@ -45,6 +45,11 @@ const optionSchema = z.object({
 	graduates: z.boolean().optional(),
 });
 
+const editorSubgroupOptionSchema = optionSchema.extend({
+	subject_id: z.number().nullable().optional(),
+	user_id: z.number().nullable().optional(),
+});
+
 const subjectOptionSchema = optionSchema.extend({
 	users: z
 		.array(
@@ -387,7 +392,7 @@ export const schooltaskCalendarApi = {
 			z.array(calendarEventSchema),
 		),
 	editorSubgroups: (classId: number) =>
-		postJson(`${BASE}/calendar/${classId}/editor/subgroups`, {}, z.array(optionSchema)),
+		postJson(`${BASE}/calendar/${classId}/editor/subgroups`, {}, z.array(editorSubgroupOptionSchema)),
 	editorTeachers: (classId: number, subjectId: number) =>
 		postJson(
 			`${BASE}/calendar/${classId}/editor/teachers`,

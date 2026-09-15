@@ -512,6 +512,43 @@ main:claimant:sync
 
 `edit setting.json` → `php bin/console main:claimant:sync` → перезагрузить Main Admin → вкладки Access показывают новые `can_*` из БД.
 
+## PHPUnit: JWT keys
+
+API WebTest (SchoolTask, Board, Auth, …) кодируют JWT через Lexik. Нужны файлы `server/config/jwt/private.pem` и `public.pem` (в git **не** коммитятся: `server/.gitignore` → `/config/jwt/*.pem`).
+
+Пути и passphrase для тестов заданы в `server/.env.test`:
+
+- `JWT_SECRET_KEY` / `JWT_PUBLIC_KEY` → `%kernel.project_dir%/config/jwt/{private,public}.pem`
+- `JWT_PASSPHRASE` → должен совпадать с passphrase, которым зашифрован `private.pem`
+
+Если ключи уже есть для `.env`, но passphrase другой — **не** копируйте секрет в репозиторий. Создайте локальный override:
+
+```bash
+# server/.env.test.local  (gitignored)
+JWT_PASSPHRASE=<тот же, что у ваших config/jwt/*.pem>
+```
+
+Если ключей нет (или хотите отдельную test-пару под `.env.test`):
+
+```bash
+cd server
+mkdir -p config/jwt
+# Passphrase = значение JWT_PASSPHRASE из .env.test (не коммитьте private.pem)
+openssl genpkey -out config/jwt/private.pem -aes256 -algorithm rsa -pkeyopt rsa_keygen_bits:4096
+openssl pkey -in config/jwt/private.pem -out config/jwt/public.pem -pubout
+```
+
+Альтернатива (Symfony): `php bin/console lexik:jwt:generate-keypair` — passphrase тоже должен совпасть с `JWT_PASSPHRASE` в env теста.
+
+Проверка SchoolTask:
+
+```bash
+cd server
+php vendor/bin/phpunit tests/Controller/SchoolTaskApiTest.php
+```
+
+Ошибка `encode the JWT token` / `private key/passphrase` → нет pem или passphrase не совпадает (см. выше).
+
 ## См. также
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle, ADR access_options / user_app_data / desktop UX sync

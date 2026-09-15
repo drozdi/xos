@@ -37,7 +37,6 @@ export interface MarkdownEditorSession {
 	redoNonce: number;
 	saveNonce: number;
 	saveAsNonce: number;
-	closeNonce: number;
 	closeAfterSaveAs: boolean;
 	readOnly: boolean;
 }
@@ -56,7 +55,6 @@ function emptySession(): MarkdownEditorSession {
 		redoNonce: 0,
 		saveNonce: 0,
 		saveAsNonce: 0,
-		closeNonce: 0,
 		closeAfterSaveAs: false,
 		readOnly: false,
 	};
@@ -80,7 +78,6 @@ interface MarkdownEditorStore {
 	requestRedo: (windowId: string) => void;
 	requestSave: (windowId: string) => void;
 	requestSaveAs: (windowId: string) => void;
-	requestClose: (windowId: string) => void;
 	clearSession: (windowId: string) => void;
 }
 
@@ -218,14 +215,6 @@ export const useMarkdownEditorStore = create<MarkdownEditorStore>((set, get) => 
 		const prev = get().ensureSession(windowId);
 		get().patchSession(windowId, {
 			saveAsNonce: prev.saveAsNonce + 1,
-		});
-	},
-
-
-	requestClose: (windowId) => {
-		const prev = get().ensureSession(windowId);
-		get().patchSession(windowId, {
-			closeNonce: prev.closeNonce + 1,
 		});
 	},
 

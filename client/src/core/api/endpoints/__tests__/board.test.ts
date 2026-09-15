@@ -10,6 +10,10 @@ import {
 
 	boardFilterResponseSchema,
 
+	boardChangesResponseSchema,
+
+	boardSearchResponseSchema,
+
 	boardLabelSchema,
 
 	boardListSchema,
@@ -646,6 +650,39 @@ describe('board endpoints', () => {
 			});
 			expect(response.filtered).toBe(true);
 			expect(response.card_ids).toHaveLength(2);
+		});
+	});
+
+	describe('boardChangesResponseSchema', () => {
+		it('parses changes delta', () => {
+			const response = boardChangesResponseSchema.parse({
+				has_changes: true,
+				since: '2026-09-15 10:00:00',
+				server_time: '2026-09-15 10:00:05',
+				updated_card_ids: [3],
+				activity_count: 1,
+			});
+			expect(response.has_changes).toBe(true);
+			expect(response.updated_card_ids).toEqual([3]);
+		});
+	});
+
+	describe('boardSearchResponseSchema', () => {
+		it('parses search hits', () => {
+			const response = boardSearchResponseSchema.parse({
+				cards: [
+					{
+						id: 9,
+						title: 'Hit',
+						board_id: 2,
+						board_title: 'Sprint',
+						workspace_id: 1,
+						workspace_name: 'Team',
+					},
+				],
+			});
+			expect(response.cards[0]?.title).toBe('Hit');
+			expect(response.cards[0]?.board_id).toBe(2);
 		});
 	});
 });

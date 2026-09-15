@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { notifyApiError } from '@/core/api/apiError';
 import {
 	schooltaskCalendarApi,
-	schooltaskClassApi,
 	type EditorEventDetail,
 	type EditorEventPayload,
 } from '@/core/api/endpoints/schooltaskApi';
@@ -63,12 +62,6 @@ export function EventEditorModal({
 		enabled: opened && classId > 0,
 	});
 
-	const classQuery = useQuery({
-		queryKey: queryKeys.schooltask.class(classId),
-		queryFn: () => schooltaskClassApi.get(classId),
-		enabled: opened && classId > 0,
-	});
-
 	const resolvedSubjectId = useMemo(() => {
 		if (form.subject_id) {
 			return form.subject_id;
@@ -76,11 +69,9 @@ export function EventEditorModal({
 		if (!form.group_id) {
 			return 0;
 		}
-		const subgroup = (classQuery.data?.sub ?? []).find(
-			(item) => item.id === form.group_id || item.group_id === form.group_id,
-		);
+		const subgroup = (subgroupsQuery.data ?? []).find((item) => Number(item.value) === form.group_id);
 		return subgroup?.subject_id ?? 0;
-	}, [classQuery.data?.sub, form.group_id, form.subject_id]);
+	}, [form.group_id, form.subject_id, subgroupsQuery.data]);
 
 	const teachersQuery = useQuery({
 		queryKey: queryKeys.schooltask.editorTeachers(classId, resolvedSubjectId),
@@ -180,8 +171,8 @@ export function EventEditorModal({
 					disabled={!isNew}
 					onChange={(value) => {
 						const groupId = value ? Number(value) : null;
-						const subgroup = (classQuery.data?.sub ?? []).find(
-							(item) => item.id === groupId || item.group_id === groupId,
+						const subgroup = (subgroupsQuery.data ?? []).find(
+							(item) => Number(item.value) === groupId,
 						);
 						setForm((current) => ({
 							...current,

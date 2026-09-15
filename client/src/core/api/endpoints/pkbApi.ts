@@ -334,10 +334,9 @@ export const pkbApi = {
 		const formData = new FormData();
 		formData.append('path', folderPath);
 		formData.append('file', file);
+		// Do not set Content-Type: axios must add multipart boundary.
 		return apiClient
-			.post<unknown>(`${BASE}/vaults/${vaultId}/files/upload`, formData, {
-				headers: { 'Content-Type': 'multipart/form-data' },
-			})
+			.post<unknown>(`${BASE}/vaults/${vaultId}/files/upload`, formData)
 			.then(({ data }) => pkbFileEntrySchema.parse(data));
 	},
 

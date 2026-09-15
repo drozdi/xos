@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { useAuthStore } from '@/core/auth/authStore';
-import { canAccessApp, isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
+import { canAccessApp, getUserRoles, isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRoles';
 import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
 /** Доступ к модулю schooltask по списку ролей (ответ login/me). */
@@ -23,8 +23,12 @@ export function canAccessSchooltaskFromRoles(roles: string[] | undefined): boole
 	);
 }
 
+function canAccessSchooltaskModule(): boolean {
+	return canAccessApp('schooltask') || canAccessSchooltaskFromRoles(getUserRoles());
+}
+
 function canSchooltaskScope(scopePath: string, actionScope: string): boolean {
-	if (!canAccessApp('schooltask')) {
+	if (!canAccessSchooltaskModule()) {
 		return false;
 	}
 	if (isRoot() || isAppRoot('schooltask') || isScopeRoot(scopePath)) {
@@ -92,6 +96,24 @@ export const useCanReadSchooltaskEvent = eventCrud.useCanRead;
 export const useCanCreateSchooltaskEvent = eventCrud.useCanCreate;
 export const useCanUpdateSchooltaskEvent = eventCrud.useCanUpdate;
 export const useCanDeleteSchooltaskEvent = eventCrud.useCanDelete;
+
+/**
+ * Календари класса / список: event scopes или доступ к модулю
+ * (член класса / тьютор — как на backend).
+ */
+export function canAccessSchooltaskCalendars(): boolean {
+	return (
+		canAccessSchooltaskModule() ||
+		isScopeRoot(EVENT_SCOPE) ||
+		canReadSchooltaskEvent() ||
+		canUpdateSchooltaskEvent() ||
+		canCreateSchooltaskEvent()
+	);
+}
+
+export function useCanAccessSchooltaskCalendars(): boolean {
+	return useSchooltaskAccess(() => canAccessSchooltaskCalendars());
+}
 
 export const canReadSchooltaskZam = zamCrud.canRead;
 export const canCreateSchooltaskZam = zamCrud.canCreate;

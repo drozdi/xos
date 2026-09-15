@@ -262,9 +262,9 @@ class SchoolTaskApiTest extends AuthWebTestCase
         $client = static::createClient();
         $this->prepareSchoolTaskDatabase($client);
 
-        $tutor = $this->createTestUser($client, 'calendar_tutor', 'tutor_password', ['ROLE_USER']);
-        $teacher = $this->createTestUser($client, 'calendar_teacher', 'teacher_password', ['ROLE_USER']);
-        $pupil = $this->createTestUser($client, 'calendar_pupil', 'pupil_password', ['ROLE_USER']);
+        $tutor = $this->createTestUser($client, 'calendar_tutor', 'tutor_password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $teacher = $this->createTestUser($client, 'calendar_teacher', 'teacher_password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $pupil = $this->createTestUser($client, 'calendar_pupil', 'pupil_password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
 
         $this->grantSchooltaskScope($client, $tutor, 'schooltask.event', self::SCOPE_ALL);
         $this->grantSchooltaskScope($client, $teacher, 'schooltask.event', self::SCOPE_ALL);
@@ -439,7 +439,7 @@ class SchoolTaskApiTest extends AuthWebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
-    public function testCalendarListClassesRequiresEventReadScope(): void
+    public function testCalendarListClassesRequiresModuleAccess(): void
     {
         $client = static::createClient();
         $this->prepareSchoolTaskDatabase($client);
@@ -455,7 +455,114 @@ class SchoolTaskApiTest extends AuthWebTestCase
         );
 
         self::assertResponseStatusCodeSame(403);
+    }
 
+    public function testCalendarListClassesEmptyWithoutMembershipForScopedReader(): void
+    {
+        $client = static::createClient();
+        $this->prepareSchoolTaskDatabase($client);
+
+        $tutor = $this->createTestUser($client, 'list_tutor', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $teacher = $this->createTestUser($client, 'list_teacher', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $outsider = $this->createTestUser($client, 'list_outsider', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $this->grantSchooltaskScope($client, $outsider, 'schooltask.event', self::SCOPE_READ);
+
+        $parallel = $this->createParallelGroup($client, 'class_list', 'List класс');
+        $subject = $this->createSubject($client, 'География', $teacher);
+        $this->createClassWithSubgroup($client, $parallel, 'L-А', $tutor, $subject, $teacher);
+
+        $loginPayload = $this->login($client, 'list_outsider', 'password');
+        $client->request(
+            'POST',
+            '/api/schooltask/calendar/classes',
+            [],
+            [],
+            $this->jsonAuthHeaders($loginPayload['token']),
+        );
+
+        self::assertResponseIsSuccessful();
+        /** @var list<array{id: int}> $items */
+        $items = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame([], $items);
+    }
+
+    public function testEditorDetailRejectsEventFromOtherClass(): void
+    {
+        $client = static::createClient();
+        $this->prepareSchoolTaskDatabase($client);
+
+        $tutor = $this->createTestUser($client, 'idor_tutor', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $teacher = $this->createTestUser($client, 'idor_teacher', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $this->grantSchooltaskScope($client, $tutor, 'schooltask.event', self::SCOPE_ALL);
+
+        $parallel = $this->createParallelGroup($client, 'class_idor', 'IDOR класс');
+        $subject = $this->createSubject($client, 'Литература', $teacher);
+        $classA = $this->createClassWithSubgroup($client, $parallel, 'A-1', $tutor, $subject, $teacher);
+        $classB = $this->createClassWithSubgroup($client, $parallel, 'B-1', $tutor, $subject, $teacher);
+
+        $loginPayload = $this->login($client, 'idor_tutor', 'password');
+        $headers = $this->jsonAuthHeaders($loginPayload['token']);
+
+        $client->request(
+            'POST',
+            '/api/schooltask/calendar/'.$classA['classId'].'/editor/events/add',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'group_id' => $classA['subgroupId'],
+                'user_id' => $teacher->getId(),
+                'start' => '2026-09-03 08:00:00',
+                'end' => '2026-09-03 08:40:00',
+            ], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseIsSuccessful();
+        /** @var array{id: int} $created */
+        $created = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $eventId = $created['id'];
+
+        $client->request(
+            'POST',
+            '/api/schooltask/calendar/'.$classB['classId'].'/editor/events/'.$eventId,
+            [],
+            [],
+            $headers,
+        );
+
+        self::assertResponseStatusCodeSame(404);
+        /** @var array{message: string} $payload */
+        $payload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame(SchoolTaskAccessMessages::EVENT_NOT_FOUND, $payload['message']);
+    }
+
+    public function testStudentEventsForbiddenWithScopedReadWithoutMembership(): void
+    {
+        $client = static::createClient();
+        $this->prepareSchoolTaskDatabase($client);
+
+        $tutor = $this->createTestUser($client, 'b8_tutor', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $teacher = $this->createTestUser($client, 'b8_teacher', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $reader = $this->createTestUser($client, 'b8_reader', 'password', ['ROLE_USER', 'ROLE_SCHOOLTASK']);
+        $this->grantSchooltaskScope($client, $reader, 'schooltask.event', self::SCOPE_READ);
+
+        $parallel = $this->createParallelGroup($client, 'class_b8', 'B8 класс');
+        $subject = $this->createSubject($client, 'Астрономия', $teacher);
+        $classBundle = $this->createClassWithSubgroup($client, $parallel, 'B8-А', $tutor, $subject, $teacher);
+
+        $loginPayload = $this->login($client, 'b8_reader', 'password');
+        $client->request(
+            'POST',
+            '/api/schooltask/calendar/'.$classBundle['classId'].'/student/events',
+            [],
+            [],
+            $this->jsonAuthHeaders($loginPayload['token']),
+            json_encode([
+                'start' => '2026-09-01 00:00:00',
+                'end' => '2026-09-07 23:59:59',
+            ], JSON_THROW_ON_ERROR),
+        );
+
+        self::assertResponseStatusCodeSame(403);
         /** @var array{message: string} $payload */
         $payload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame(SchoolTaskAccessMessages::READ_EVENT, $payload['message']);

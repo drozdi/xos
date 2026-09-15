@@ -7,12 +7,11 @@ import { AppProvider } from '@/core/context/AppContext';
 import { CoreApiProvider } from '@/core/context/CoreApiContext';
 import { useAuthStore } from '@/core/auth/authStore';
 import {
+	canAccessSchooltaskCalendars,
 	canCreateSchooltaskClass,
 	canCreateSchooltaskSubject,
 	canReadSchooltaskClass,
-	canReadSchooltaskEvent,
 	canReadSchooltaskSubject,
-	canUpdateSchooltaskEvent,
 } from '@/features/schooltask/schooltaskAccess';
 
 import { schooltaskEmailLogout } from './authApi';
@@ -91,7 +90,7 @@ export function SchooltaskStandaloneLayout() {
 
 	const menuItems = useMemo(() => {
 		const items: { key: string; label: string }[] = [];
-		if (canReadSchooltaskEvent() || canUpdateSchooltaskEvent()) {
+		if (canAccessSchooltaskCalendars()) {
 			items.push({ key: '/calendars', label: 'Расписание' });
 			items.push({ key: '/teacher', label: 'Моё расписание' });
 		}

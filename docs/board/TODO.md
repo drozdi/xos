@@ -139,3 +139,17 @@
 
 - [x] **B-046** Docs  
   **Приёмка:** API_SPEC Board; DEVELOPER_GUIDE; PLAN §8 checklist [x]
+
+---
+
+## Фаза 5 — Wave 3 pragmatic (polling + search) ✅
+
+**Субагент:** `developer` · 2026-09-15
+
+- [x] **B-051** Board realtime polling (без Mercure/presence)  
+  **Приёмка:** `GET /api/board/boards/{id}/changes?since=`; FE poll + invalidate React Query
+
+- [x] **B-050** Global search endpoint + UI (простой shell search)  
+  **Приёмка:** `GET /api/board/search?q=`; UI в BoardApp; authz smoke в BoardApiTest
+
+> Mercure/SSE, encryption, conflict UI → W3b (`docs/ROADMAP_WAVES.md`)

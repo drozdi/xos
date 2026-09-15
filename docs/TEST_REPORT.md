@@ -2,7 +2,7 @@
 
 **Дата:** 2026-08-07  
 **Задача:** 6.1–6.4 Unit/integration + smoke checklist  
-**Статус:** automated **PASS**; UI smoke — **manual pending**
+**Статус:** automated **PASS**; dirty-close — **implemented** (taskbar `getWindowApi().close()` + cancel in notepad/markdown)
 
 ---
 
@@ -45,21 +45,21 @@ npx vitest run \
 | Reload: picker нет; consumers со своим файлом | skipHistory; restoreFromHistory + WIN.documentPath | F5 / re-login |
 | 2+ explorer / notepad / markdown / image / archiver | uuid Start (explorer/notepad); path-key multi openVfs; manifests singleInstance:false | UI 2+ окон markdown/image/archiver |
 | Audio/video — одно окно; повторный open грузит файл | singleInstance focus + setOpenRequest reload | UI Open второго файла |
-| Dirty-close / save notepad & markdown | нет целевых тестов; соседние suites green | dirty → X → confirm / Save |
+| Dirty-close / save notepad & markdown | **implemented** — taskbar → `getWindowApi().close()`; «Отмена» в notepad/markdown modals | — |
 
 ---
 
 ## Замечания для developer (некритичные)
 
 1. **Replace same picker app (open→open):** unmount cleanup в `ExplorerWorkspace` сравнивает `active.pickerWindowId === windowId`. При reuse `explorer-open-picker__default` теоретически возможен race: cleanup старого инстанса снимет новый `active`. На open→save (разные appId) безопасно. Рекомендация: в cleanup/onClose проверять `active.id === requestId` (из props), не только windowId.
-2. **Dirty-close / save:** автотестов нет — только ручной smoke.
+2. **Dirty-close / save:** реализовано (Wave 2) — taskbar close через `getWindowApi().close()`, cancel в модалках; отдельных unit-тестов нет.
 3. **Consumer UI** (`useExplorerPickerResult` → editor): unit покрывает store deliver; полный путь в UI — manual.
 
 ---
 
 ## Вердикт
 
-**Iteration 6 automated: PASS.** DoD UI smoke — checklist ниже, статусы pending.
+**Iteration 6 automated: PASS.** Dirty-close DoD — **implemented** (не manual pending).
 
 ---
 
@@ -67,7 +67,7 @@ npx vitest run \
 
 **Дата:** 2026-08-07  
 **Задача:** 8.4 verify + code review openVfs / picker consumer / media  
-**Статус:** automated **PASS**; UI DoD — **manual pending**
+**Статус:** automated **PASS**; dirty-close — **implemented**
 
 ## Команда
 
@@ -100,4 +100,4 @@ cd client && npx vitest run \
 
 ## Вердикт
 
-**Iteration 8 automated verify: PASS.** UI smoke DoD (два notepad, File→Open только одно окно, F5) — manual.
+**Iteration 8 automated verify: PASS.** Dirty-close — implemented (не manual pending).

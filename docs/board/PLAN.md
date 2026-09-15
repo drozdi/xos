@@ -539,7 +539,8 @@ Prefix: **`/api/board`**. Все endpoints требуют JWT.
 | Method | Path | Описание |
 |--------|------|----------|
 | GET | `/boards/{id}/cards` | Query: `assignee`, `label`, `due_before`, `due_after`, `q` |
-| GET | `/search` | Global search `?q=` — **v2**; MVP: board-scoped only |
+| GET | `/boards/{id}/changes` | Polling delta `?since=` → `{ has_changes, server_time, updated_card_ids, activity_count }` |
+| GET | `/search` | Global search `?q=` — cards across accessible workspaces |
 
 ### 5.10. Utility
 
@@ -696,13 +697,13 @@ client/src/features/board/
 
 ### Фаза 5+ (v2 backlog)
 
-| ID | Задача | Size |
-|----|--------|------|
-| B-050 | Global search endpoint + UI | L |
-| B-051 | Real-time updates (polling/Mercure) | L |
-| B-052 | Unsplash backgrounds | M |
-| B-053 | Mobile responsive board | M |
-| B-054 | Email notifications | M |
+| ID | Задача | Size | Статус |
+|----|--------|------|--------|
+| B-050 | Global search endpoint + UI | L | **DONE** (W3 pragmatic: `GET /search` + shell UI) |
+| B-051 | Real-time updates (polling/Mercure) | L | **DONE** polling slice; Mercure → W3b |
+| B-052 | Unsplash backgrounds | M | |
+| B-053 | Mobile responsive board | M | |
+| B-054 | Email notifications | M | |
 | B-055 | Card cover images | S |
 
 ### Граф зависимостей (критический путь)

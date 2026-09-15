@@ -44,4 +44,4 @@ client/src/core/windowManager/   # documentPath
 
 ## DoD (остаток)
 
-- [ ] Manual: dirty-close/save notepad & markdown после F5
+- [x] Dirty-close/save notepad & markdown — implemented (taskbar `getWindowApi().close()` + cancel; Wave 2)

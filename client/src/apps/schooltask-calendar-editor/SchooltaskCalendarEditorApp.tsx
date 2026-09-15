@@ -8,7 +8,8 @@ import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { EventEditorModal } from '@/features/schooltask/EventEditorModal';
 import {
-	useCanReadSchooltaskEvent,
+	useCanAccessSchooltaskCalendars,
+	useCanCreateSchooltaskEvent,
 	useCanUpdateSchooltaskEvent,
 } from '@/features/schooltask/schooltaskAccess';
 import { useClassId } from '@/features/schooltask/schooltaskAppUtils';
@@ -16,8 +17,11 @@ import { formatCalendarRange, WeekCalendar, type WeekCalendarSlot } from '@/feat
 
 export default function SchooltaskCalendarEditorApp() {
 	const classId = useClassId();
-	const canRead = useCanReadSchooltaskEvent();
+	const canAccess = useCanAccessSchooltaskCalendars();
+	const canCreate = useCanCreateSchooltaskEvent();
 	const canUpdate = useCanUpdateSchooltaskEvent();
+	// Тьютор без scopes: UI редактора доступен, backend enforce.
+	const canMutateUi = canCreate || canUpdate || canAccess;
 	const [range, setRange] = useState(() => formatCalendarRange(new Date(), new Date()));
 	const [editorOpen, setEditorOpen] = useState(false);
 	const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
@@ -27,13 +31,13 @@ export default function SchooltaskCalendarEditorApp() {
 	const infoQuery = useQuery({
 		queryKey: queryKeys.schooltask.calendarInfo(classId),
 		queryFn: () => schooltaskCalendarApi.classInfo(classId),
-		enabled: canRead && classId > 0,
+		enabled: canAccess && classId > 0,
 	});
 
 	const eventsQuery = useQuery({
 		queryKey: queryKeys.schooltask.editorEvents(classId, range),
 		queryFn: () => schooltaskCalendarApi.editorEvents(classId, range),
-		enabled: canRead && classId > 0,
+		enabled: canAccess && classId > 0,
 	});
 
 	useWindowTitle(infoQuery.data?.name ? `Редактор — ${infoQuery.data.name}` : 'Редактор расписания');
@@ -56,7 +60,7 @@ export default function SchooltaskCalendarEditorApp() {
 		setEditorOpen(true);
 	};
 
-	if (!canRead && !canUpdate) {
+	if (!canAccess) {
 		return (
 			<Alert color="red" title="Доступ запрещён" m="md">
 				Нет прав на редактирование расписания
@@ -83,7 +87,7 @@ export default function SchooltaskCalendarEditorApp() {
 						</Text>
 					) : null}
 				</Stack>
-				{canUpdate ? (
+				{canMutateUi ? (
 					<Button size="xs" onClick={openNewEvent}>
 						Добавить урок
 					</Button>
@@ -100,7 +104,7 @@ export default function SchooltaskCalendarEditorApp() {
 						setSlotEnd(null);
 						setEditorOpen(true);
 					}}
-					onSlotClick={canUpdate ? openSlot : undefined}
+					onSlotClick={canMutateUi ? openSlot : undefined}
 				/>
 			</Box>
 			<EventEditorModal

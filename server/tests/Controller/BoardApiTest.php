@@ -3,6 +3,7 @@
 namespace App\Tests\Controller;
 
 use App\Tests\AuthWebTestCase;
+use Board\Entity\ActivityLog;
 use Board\Entity\Board;
 use Board\Entity\BoardList;
 use Board\Entity\BoardMember;
@@ -157,6 +158,119 @@ class BoardApiTest extends AuthWebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function testSearchAndChangesAuthz(): void
+    {
+        $client = static::createClient();
+        $this->prepareBoardDatabase($client);
+
+        $owner = $this->createTestUser($client, 'search_owner', 'password', ['ROLE_USER']);
+        $owner->setEmail('search_owner@example.com');
+        $outsider = $this->createTestUser($client, 'search_outsider', 'password', ['ROLE_USER']);
+        $outsider->setEmail('search_outsider@example.com');
+        /** @var EntityManagerInterface $em */
+        $em = $client->getContainer()->get(EntityManagerInterface::class);
+        $em->flush();
+
+        $ownerHeaders = $this->jsonAuthHeaders($this->login($client, 'search_owner', 'password')['token']);
+
+        $client->request(
+            'POST',
+            '/api/board/workspaces',
+            [],
+            [],
+            $ownerHeaders,
+            json_encode(['name' => 'Search WS'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(201);
+        /** @var array{id: int} $workspace */
+        $workspace = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $client->request(
+            'POST',
+            '/api/board/workspaces/'.$workspace['id'].'/boards',
+            [],
+            [],
+            $ownerHeaders,
+            json_encode(['title' => 'Search Board', 'visibility' => 'private'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(201);
+        /** @var array{id: int} $board */
+        $board = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $client->request(
+            'POST',
+            '/api/board/boards/'.$board['id'].'/lists',
+            [],
+            [],
+            $ownerHeaders,
+            json_encode(['title' => 'Todo'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(201);
+        /** @var array{id: int} $list */
+        $list = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $client->request(
+            'POST',
+            '/api/board/lists/'.$list['id'].'/cards',
+            [],
+            [],
+            $ownerHeaders,
+            json_encode(['title' => 'UniqueSearchPhrase card'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(201);
+        /** @var array{id: int} $card */
+        $card = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $client->request('GET', '/api/board/search?q=UniqueSearchPhrase', [], [], $ownerHeaders);
+        self::assertResponseIsSuccessful();
+        /** @var array{cards: list<array{id: int, board_id: int}>} $search */
+        $search = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertCount(1, $search['cards']);
+        self::assertSame($card['id'], $search['cards'][0]['id']);
+        self::assertSame($board['id'], $search['cards'][0]['board_id']);
+
+        $outsiderHeaders = $this->jsonAuthHeaders($this->login($client, 'search_outsider', 'password')['token']);
+        $client->request('GET', '/api/board/search?q=UniqueSearchPhrase', [], [], $outsiderHeaders);
+        self::assertResponseIsSuccessful();
+        /** @var array{cards: list<array{id: int}>} $outsiderSearch */
+        $outsiderSearch = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame([], $outsiderSearch['cards']);
+
+        $client->request('GET', '/api/board/boards/'.$board['id'].'/changes', [], [], $outsiderHeaders);
+        self::assertResponseStatusCodeSame(403);
+
+        $client->request('GET', '/api/board/boards/'.$board['id'].'/changes', [], [], $ownerHeaders);
+        self::assertResponseIsSuccessful();
+        /** @var array{has_changes: bool, server_time: string} $baseline */
+        $baseline = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertFalse($baseline['has_changes']);
+        self::assertNotEmpty($baseline['server_time']);
+
+        sleep(1);
+        $client->request(
+            'PUT',
+            '/api/board/cards/'.$card['id'],
+            [],
+            [],
+            $ownerHeaders,
+            json_encode(['title' => 'UniqueSearchPhrase updated'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseIsSuccessful();
+
+        $client->request(
+            'GET',
+            '/api/board/boards/'.$board['id'].'/changes?since='.urlencode($baseline['server_time']),
+            [],
+            [],
+            $ownerHeaders,
+        );
+        self::assertResponseIsSuccessful();
+        /** @var array{has_changes: bool, updated_card_ids: list<int>} $delta */
+        $delta = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertTrue($delta['has_changes']);
+        self::assertContains($card['id'], $delta['updated_card_ids']);
+    }
+
     private function prepareBoardDatabase(KernelBrowser $client): void
     {
         /** @var EntityManagerInterface $entityManager */
@@ -174,6 +288,7 @@ class BoardApiTest extends AuthWebTestCase
             $entityManager->getClassMetadata(BoardList::class),
             $entityManager->getClassMetadata(Card::class),
             $entityManager->getClassMetadata(Label::class),
+            $entityManager->getClassMetadata(ActivityLog::class),
         ];
 
         $schemaTool = new SchemaTool($entityManager);
