@@ -491,7 +491,7 @@ main:claimant:sync
 ### Scope sync vs Admin UI
 
 - Sync читает **все** `server/src/*/setting.json` (включая Todo, IBlock) → upsert в `main_claimant`.
-- Вкладка «Доступ к приложениям» / User & Group Access: только модули из `ProtectedAppModules` (`main`, `device`, `explorer`, `schooltask`, `inccom`, `calendar`, `board`). Todo/IBlock в UI **не** показываются, пока явно не добавят в `ProtectedAppModules`.
+- Вкладка «Доступ к приложениям» / User & Group Access: только модули из `ProtectedAppModules` (`main`, `device`, `explorer`, `schooltask`, `inccom`, `calendar`, `board`, `pkb`, `ts`, `iblock`). Todo в UI **не** показывается, пока явно не добавят в `ProtectedAppModules`.
 
 ### Каталог прав для Main Admin UI
 

@@ -119,6 +119,7 @@ final class SeedXosProjectCommand extends Command
         ]);
 
         $this->vaultFiles->createFolder($vault, $user, 'Notes/Apps');
+        $this->vaultFiles->createFolder($vault, $user, 'Notes/Apps/IBlock');
 
         foreach ($this->vaultNotes() as $path => $content) {
             $this->vaultFiles->putContent($vault, $user, $path, $content);
@@ -375,6 +376,44 @@ MD, ['docs', 'mvp'], [
             ],
         ];
 
+        $iblockDocs = [
+            [
+                'title' => 'IBlock Fields',
+                'notePath' => 'Notes/Apps/IBlock/Fields.md',
+                'boardList' => 'Модули',
+                'labels' => ['iblock', 'docs'],
+                'description' => "Bitrix fields → XOS mapping.\n\nЗаметка: [[IBlock Fields]] · hub [[IBlock]]",
+            ],
+            [
+                'title' => 'IBlock API',
+                'notePath' => 'Notes/Apps/IBlock/API.md',
+                'boardList' => 'Модули',
+                'labels' => ['iblock', 'docs'],
+                'description' => "REST `/api/iblock/*`, managers, filters.\n\nЗаметка: [[IBlock API]]",
+            ],
+            [
+                'title' => 'IBlock Sections',
+                'notePath' => 'Notes/Apps/IBlock/Sections.md',
+                'boardList' => 'Модули',
+                'labels' => ['iblock', 'docs'],
+                'description' => "section_element M:N, section_mode, element_filter.\n\nЗаметка: [[IBlock Sections]]",
+            ],
+            [
+                'title' => 'IBlock Properties',
+                'notePath' => 'Notes/Apps/IBlock/Properties.md',
+                'boardList' => 'Модули',
+                'labels' => ['iblock', 'docs'],
+                'description' => "Свойства S/N/F/L/E/G + PROPERTY_VALUES.\n\nЗаметка: [[IBlock Properties]]",
+            ],
+            [
+                'title' => 'IBlock Frontend',
+                'notePath' => 'Notes/Apps/IBlock/Frontend.md',
+                'boardList' => 'Модули',
+                'labels' => ['iblock', 'docs'],
+                'description' => "Desktop apps iblock-* и фильтры списков.\n\nЗаметка: [[IBlock Frontend]]",
+            ],
+        ];
+
         $modules = [];
         foreach ($this->moduleCatalog() as $mod) {
             $modules[] = [
@@ -386,7 +425,7 @@ MD, ['docs', 'mvp'], [
             ];
         }
 
-        return array_merge($overview, $modules);
+        return array_merge($overview, $modules, $iblockDocs);
     }
 
     /**
@@ -691,21 +730,46 @@ MD,
                 'title' => 'IBlock',
                 'notePath' => 'Notes/Apps/IBlock.md',
                 'labels' => ['iblock'],
-                'cardDescription' => "Инфоблоки API (без desktop-app).\n\nЗаметка: [[IBlock]]",
+                'cardDescription' => "Инфоблоки Bitrix-like: API, managers, desktop apps.\n\nHub: [[IBlock]] · [[IBlock Fields]] · [[IBlock API]] · [[IBlock Sections]] · [[IBlock Properties]] · [[IBlock Frontend]]\n\ndocs/iblock/DEVELOPER_GUIDE.md",
                 'body' => <<<'MD'
 # IBlock
 
-`server/src/IBlock/` — API инфоблоков. Отдельного окна в меню «Пуск» нет.
+Claimant `iblock` · `ROLE_IBLOCK` · `server/src/IBlock/` · `client/src/features/iblock/` · apps `iblock-*`
+
+Ориентиры Bitrix: [поля таблиц](https://dev.1c-bitrix.ru/api_help/iblock/fields.php), [D7 API](https://dev.1c-bitrix.ru/api_help/iblock/iblock_d7.php).
 
 ## Назначение
 
-CRUD инфоблоков для интеграций / legacy-клиентов. Claimant в `setting.json` без desktop-приложения.
+Универсальные инфоблоки: Type → Block → Section / Element / Property → PROPERTY_VALUES. Сервер переиспользуемый (managers без UI).
 
-## Документы
+## Карта заметок
 
-См. общий `docs/API_SPEC.md`, индекс `docs/README.md`.
+- [[IBlock Fields]] — Bitrix → XOS поля и unique
+- [[IBlock API]] — REST + list filters
+- [[IBlock Sections]] — M:N, `section_mode`, `element_filter`
+- [[IBlock Properties]] — S/N/F/L/E/G
+- [[IBlock Frontend]] — desktop apps и фильтры списков
 
-← [[Home]] · [[Architecture]]
+## Быстрый старт
+
+```bash
+php bin/console doctrine:migrations:migrate
+php bin/console main:claimant:sync
+# демо PKB+Board:
+php bin/console xos:seed-project --force
+```
+
+Prefix API: `/api/iblock/`.
+
+## Документы в репо
+
+`docs/iblock/DEVELOPER_GUIDE.md` · `API.md` · `README.md` · `TZ.md` · `docs/DATABASE_SCHEMA.md`
+
+## Вне scope (как в Bitrix, но не в XOS)
+
+Facet `PROPERTY_INDEX`, LEFT/RIGHT_MARGIN, RSS, workflow, права раздела, полный SECTION_CHOOSER.
+
+← [[Home]] · [[Architecture]] · [[AppsCatalog]] · [[Changelog]]
 MD,
             ],
         ];
@@ -782,6 +846,13 @@ MD,
 - Seed локали: `xos:seed-project --force` (не на prod) — `docs/DEVELOPER_GUIDE.md`
 
 См. [[Board]], [[PKB]].
+
+## IBlock — developer docs (PKB + Board)
+
+- Guide: `docs/iblock/DEVELOPER_GUIDE.md` (Bitrix fields/D7 mapping)
+- Vault: [[IBlock]], [[IBlock Fields]], [[IBlock API]], [[IBlock Sections]], [[IBlock Properties]], [[IBlock Frontend]]
+- Доска XOS: карточки модуля + подкарточки Fields/API/Sections/Properties/Frontend
+- Seed: `php bin/console xos:seed-project --force`
 
 ## Волна 2 — SchoolTask Critical + Explorer dirty-close (DONE)
 
@@ -889,11 +960,191 @@ MD,
 | Todo | todo | 1 |
 | Board | board | 1 |
 | PKB | pkb | 1 |
-| IBlock | — | нет desktop-app |
+| IBlock | iblock | 10 (types/blocks/sections/elements/properties + details) |
 
 Детали по модулям: [[Main]], [[Device]], [[Explorer]], [[SchoolTask]], [[IncCom]], [[Calendar]], [[Todo]], [[Board]], [[PKB]], [[System]], [[IBlock]]
 
 ← [[Home]] · [[Architecture]]
+MD,
+            'Notes/Apps/IBlock/Fields.md' => <<<'MD'
+# IBlock Fields
+
+Соответствие [Bitrix fields](https://dev.1c-bitrix.ru/api_help/iblock/fields.php) → XOS.
+
+## Таблицы
+
+| Bitrix | XOS | Unique / ключ |
+|--------|-----|----------------|
+| `b_iblock_type` | `iblock_type` | `code` global |
+| `b_iblock` | `iblock_block` | `(type_id, code)` |
+| `b_iblock_section` | `iblock_section` | `(block_id, code)` |
+| `b_iblock_element` | `iblock_element` | `(block_id, code)` |
+| `b_iblock_section_element` | `iblock_section_element` | `(section_id, element_id, additional_property_id)` |
+| `b_iblock_property` | `iblock_property` | `(block_id, code)` — только Block |
+| `b_iblock_property_enum` | `iblock_property_enum` | `(property_id, code)` |
+| значения | `iblock_element_property` (+ enum M2M) | typed S/N/F/L/E/G |
+| `b_iblock_section_property` | `iblock_section_property` | `(section_id, property_id)` |
+
+## Поля элемента (часто используемые)
+
+| Bitrix | XOS |
+|--------|-----|
+| `ID` | `id` |
+| `IBLOCK_ID` | `block_id` |
+| `IBLOCK_SECTION_ID` | `section_id` (primary) |
+| `IBLOCK_SECTION` | `section_ids[]` |
+| `NAME` / `CODE` / `ACTIVE` / `SORT` | одноименные |
+| `PREVIEW_TEXT` / `DETAIL_TEXT` | `preview_text` / `detail_text` |
+| `PROPERTY_*` | `PROPERTY_VALUES` + фильтр `PROPERTY_{CODE}` |
+
+## Block extras
+
+- `sections`, `property` — флаги возможностей
+- `section_mode` — `bind` \| `tree` \| `filter` \| `bind_filter`
+
+Полный guide: `docs/iblock/DEVELOPER_GUIDE.md` · schema: `docs/DATABASE_SCHEMA.md`
+
+← [[IBlock]] · [[IBlock Sections]] · [[IBlock Properties]]
+MD,
+            'Notes/Apps/IBlock/API.md' => <<<'MD'
+# IBlock API
+
+Prefix `/api/iblock/`. JWT + `#[Access('iblock.*')]`.
+
+Стиль managers как Bitrix D7: `getById` / `getList` / `add` / `update` / `delete`.
+
+## Ресурсы
+
+| Path | Claimant | Особое |
+|------|----------|--------|
+| `/type` | `iblock.type` | CRUD |
+| `/block` | `iblock.block` | `section_mode`, filter `type_id` |
+| `/section` | `iblock.section` | `GET /{id}/filter`, `POST /{id}/elements` |
+| `/section-property` | `iblock.section` | smart filter |
+| `/element` | `iblock.element` | `PROPERTY_VALUES`, `section_ids` |
+| `/property` | `iblock.property` | `field_type`, `link_iblock_id` |
+| `/property-enum` | `iblock.property` | |
+
+## List
+
+```json
+{
+  "t": "list",
+  "limit": 50,
+  "offset": 1,
+  "sortBy": [{ "key": "sort", "order": "ASC" }],
+  "filters": { "block_id": 1, "PROPERTY_COLOR": "blue" }
+}
+```
+
+`t: "select"` → `[{value,label}]`. Ответ + `Content-Range`.
+
+## Element write
+
+```json
+{
+  "code": "item_1",
+  "name": "Item",
+  "block_id": 1,
+  "section_ids": [10, 11],
+  "PROPERTY_VALUES": { "COLOR": "RED", "DOC": 42 }
+}
+```
+
+Алиасы: `properties`; разделы: `sections` / `IBLOCK_SECTION`.
+
+Детали: `docs/iblock/API.md`
+
+← [[IBlock]] · [[IBlock Properties]] · [[IBlock Sections]]
+MD,
+            'Notes/Apps/IBlock/Sections.md' => <<<'MD'
+# IBlock Sections
+
+Аналог Bitrix `b_iblock_section` + `b_iblock_section_element`.
+
+## M:N
+
+Таблица `iblock_section_element`: `section_id`, `element_id`, `additional_property_id` (0 = обычная).
+
+- `Element.section_id` — основной раздел
+- `section_ids` — все обычные привязки; sync через `SectionElementManager`
+
+## section_mode (на Block)
+
+| Режим | Список по `section_id` |
+|-------|------------------------|
+| `bind` | только binds раздела |
+| `tree` | binds раздела + потомков |
+| `filter` | inherited `element_filter` |
+| `bind_filter` | tree ∪ filter |
+
+## element_filter
+
+JSON на Section. Наследование **root → leaf**, при конфликте ключа побеждает дочерний.
+
+В detail API: `element_filter` + `inherited_element_filter`.
+
+`POST /api/iblock/section/{id}/elements` — list с учётом mode.
+
+`GET …/section/{id}/filter` — smart UI (section-property), без смены семантики.
+
+Код: `SectionElementManager`, `ElementManager::applySectionModeConstraint`.
+
+← [[IBlock]] · [[IBlock Fields]] · [[IBlock API]]
+MD,
+            'Notes/Apps/IBlock/Properties.md' => <<<'MD'
+# IBlock Properties
+
+Property принадлежит **Block** (`block_id` required). Связи с Type нет.
+
+## field_type
+
+| Код | Хранение | Заметки |
+|-----|----------|---------|
+| `S` | `value` / `value_s` | строка |
+| `N` | `value_n` | число |
+| `F` | `value_file_id` | upload `POST /api/main/file/upload` `module=iblock` |
+| `L` | M2M `valueL` | enums `/property-enum` |
+| `E` | `value_element_id` | **`link_iblock_id`** |
+| `G` | `value_section_id` | **`link_iblock_id`** |
+
+`multiple`: L — несколько enum в одной строке; иначе несколько строк значений.
+
+## PROPERTY_VALUES
+
+На create/update элемента: map `CODE → value|value[]`.  
+Фильтр списка: `PROPERTY_{CODE}` (eq; `%` → LIKE).
+
+Section-property (`iblock_section_property`) — настройки smart filter UI, не значения.
+
+← [[IBlock]] · [[IBlock API]] · [[IBlock Frontend]]
+MD,
+            'Notes/Apps/IBlock/Frontend.md' => <<<'MD'
+# IBlock Frontend
+
+Start Menu «Инфоблоки» (`requiredRole: iblock`).
+
+| List | Detail |
+|------|--------|
+| `iblock-types` | `iblock-type` |
+| `iblock-blocks` | `iblock-block` (`section_mode`) |
+| `iblock-sections` | `iblock-section` (`element_filter` + smart filter) |
+| `iblock-elements` | `iblock-element` (MultiSelect разделов, PROPERTY_VALUES) |
+| `iblock-properties` | `iblock-property` (+ enums) |
+
+## Фильтры списков
+
+Хук `useIblockTypeBlockFilter`:
+
+- блоки — Select **тип** → `filters.type_id`
+- элементы / разделы / свойства — **тип → инфоблок** → `filters.block_id`
+- clearable; launch `blockId` подставляется
+
+Детальные фильтры (раздел, свойства…) — в task-specific apps, не в общих списках.
+
+Клиент: `iblockApi.ts`, `iblockAccess.ts`.
+
+← [[IBlock]] · [[AppsCatalog]]
 MD,
         ];
 

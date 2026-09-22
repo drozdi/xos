@@ -3,173 +3,131 @@
 namespace IBlock\Controller;
 
 use App\Attribute\Access;
-use AbstractRepository;
-use IBlock\Entity\Element;
-use IBlock\Repository\BlockRepository;
-use IBlock\Repository\ElementRepository;
-use IBlock\Repository\SectionRepository;
+use App\Http\ContentRangeHeaders;
+use IBlock\Service\ElementManager;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 #[Route('/api/iblock/element', name: 'api_iblock_element_')]
 #[Access('iblock.element')]
-class ElementController extends IBlockCrudController
+class ElementController extends AbstractController
 {
     public function __construct(
-        private readonly ElementRepository $elementRepository,
-        private readonly BlockRepository $blockRepository,
-        private readonly SectionRepository $sectionRepository,
+        private readonly ElementManager $elementManager,
     ) {
-    }
-
-    protected function getRepository(): AbstractRepository
-    {
-        return $this->elementRepository;
-    }
-
-    protected function getListAlias(): string
-    {
-        return 'e';
     }
 
     #[Route('/list', name: 'list', methods: ['POST'])]
     #[Access('can_read')]
     public function listAction(Request $request): JsonResponse
     {
-        return $this->list($request);
+        $req = array_merge([
+            't' => 'list',
+            'limit' => -1,
+            'offset' => 1,
+            'sortBy' => [
+                ['key' => 'sort', 'order' => 'ASC'],
+                ['key' => 'name', 'order' => 'ASC'],
+            ],
+            'filters' => [],
+        ], $request->toArray());
+        $limit = (int) $req['limit'];
+        $offset = (int) $req['offset'];
+        $filters = is_array($req['filters'] ?? null) ? $req['filters'] : [];
+        $sortBy = is_array($req['sortBy'] ?? null) ? $req['sortBy'] : [];
+
+        $totalItems = $this->elementManager->count($filters);
+        $items = $this->elementManager->getList($sortBy, $filters, $limit, $offset);
+
+        if ('select' === ($req['t'] ?? 'list')) {
+            $items = array_map(static fn (array $row): array => [
+                'value' => $row['id'] ?? null,
+                'label' => $row['name'] ?? '',
+            ], $items);
+        }
+
+        return $this->json($items, Response::HTTP_OK, ContentRangeHeaders::forLegacyPagination(
+            $limit,
+            $offset,
+            $totalItems,
+        ));
     }
 
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'], requirements: ['id' => '\d+'])]
     #[Access('can_read')]
     public function detailAction(int $id): JsonResponse
     {
-        return $this->detail($id);
+        $payload = $this->elementManager->getById($id);
+        if (null === $payload) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($payload);
     }
 
     #[Route('/', name: 'create', methods: ['POST'])]
     #[Access('can_create')]
-    public function createAction(Request $request, ValidatorInterface $validator): JsonResponse
+    public function createAction(Request $request): JsonResponse
     {
-        return $this->create($request, $validator);
+        try {
+            $id = $this->elementManager->add($request->toArray());
+        } catch (ValidationFailedException $e) {
+            return $this->violationResponse($e->getViolations());
+        }
+
+        return $this->json($id, Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
     #[Access('can_update')]
-    public function updateAction(int $id, Request $request, ValidatorInterface $validator): JsonResponse
+    public function updateAction(int $id, Request $request): JsonResponse
     {
-        return $this->update($id, $request, $validator);
+        try {
+            $this->elementManager->update($id, $request->toArray());
+        } catch (NotFoundHttpException) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        } catch (ValidationFailedException $e) {
+            return $this->violationResponse($e->getViolations());
+        }
+
+        return $this->json($id, Response::HTTP_OK);
     }
 
     #[Route('/{id}', name: 'remove', methods: ['DELETE'], requirements: ['id' => '\d+'])]
     #[Access('can_delete')]
     public function removeAction(int $id): JsonResponse
     {
-        return $this->remove($id);
+        $payload = $this->elementManager->getById($id);
+        if (null === $payload) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $this->elementManager->delete($id);
+        } catch (NotFoundHttpException) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json([
+            'id' => $payload['id'] ?? $id,
+            'code' => $payload['code'] ?? null,
+            'name' => $payload['name'] ?? null,
+        ], Response::HTTP_OK);
     }
 
-    protected function serializeListItem(object $entity): array
+    private function violationResponse(ConstraintViolationListInterface $violations): JsonResponse
     {
-        /** @var Element $entity */
-        return [
-            'id' => $entity->getId(),
-            'code' => $entity->getCode(),
-            'name' => $entity->getName(),
-            'sort' => $entity->getSort(),
-            'active' => $entity->isActive(),
-            'block_id' => $entity->getBlock()?->getId(),
-            'section_id' => $entity->getSection()?->getId(),
-        ];
-    }
+        $messages = [];
+        foreach ($violations as $violation) {
+            $messages[$violation->getPropertyPath()] = $violation->getMessage();
+        }
 
-    protected function serializeDetail(object $entity): array
-    {
-        /** @var Element $entity */
-        return [
-            'id' => $entity->getId(),
-            'code' => $entity->getCode(),
-            'name' => $entity->getName(),
-            'description' => $entity->getDescription(),
-            'preview_text' => $entity->getPreviewText(),
-            'detail_text' => $entity->getDetailText(),
-            'sort' => $entity->getSort(),
-            'active' => $entity->isActive(),
-            'active_from' => $entity->getActiveFrom('Y-m-d H:i:s'),
-            'active_to' => $entity->getActiveTo('Y-m-d H:i:s'),
-            'block_id' => $entity->getBlock()?->getId(),
-            'section_id' => $entity->getSection()?->getId(),
-            'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
-            'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
-        ];
-    }
-
-    protected function createEntity(array $data): object
-    {
-        $element = new Element();
-        $this->applyElementData($element, $data);
-
-        return $element;
-    }
-
-    protected function updateEntity(object $entity, array $data): void
-    {
-        /** @var Element $entity */
-        $this->applyElementData($entity, $data);
-    }
-
-    protected function serializeRemoved(object $entity): array
-    {
-        /** @var Element $entity */
-        return [
-            'id' => $entity->getId(),
-            'code' => $entity->getCode(),
-            'name' => $entity->getName(),
-        ];
-    }
-
-    private function applyElementData(Element $element, array $data): void
-    {
-        if (array_key_exists('code', $data)) {
-            $element->setCode((string) $data['code']);
-        }
-        if (array_key_exists('name', $data)) {
-            $element->setName((string) $data['name']);
-        }
-        if (array_key_exists('description', $data)) {
-            $element->setDescription($data['description']);
-        }
-        if (array_key_exists('preview_text', $data)) {
-            $element->setPreviewText($data['preview_text']);
-        }
-        if (array_key_exists('detail_text', $data)) {
-            $element->setDetailText($data['detail_text']);
-        }
-        if (array_key_exists('sort', $data)) {
-            $element->setSort((int) $data['sort']);
-        }
-        if (array_key_exists('active', $data)) {
-            $element->setActive((bool) $data['active']);
-        }
-        if (array_key_exists('active_from', $data)) {
-            $element->setActiveFrom($this->parseDate($data['active_from']));
-        }
-        if (array_key_exists('active_to', $data)) {
-            $element->setActiveTo($this->parseDate($data['active_to']));
-        }
-        if (array_key_exists('block_id', $data)) {
-            $block = null;
-            if (null !== $data['block_id'] && '' !== $data['block_id']) {
-                $block = $this->blockRepository->find((int) $data['block_id']);
-            }
-            $element->setBlock($block);
-        }
-        if (array_key_exists('section_id', $data)) {
-            $section = null;
-            if (null !== $data['section_id'] && '' !== $data['section_id']) {
-                $section = $this->sectionRepository->find((int) $data['section_id']);
-            }
-            $element->setSection($section);
-        }
+        return $this->json($messages, Response::HTTP_BAD_REQUEST);
     }
 }

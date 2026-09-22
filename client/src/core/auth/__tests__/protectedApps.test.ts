@@ -20,6 +20,7 @@ describe('protectedApps', () => {
 			'board',
 			'pkb',
 			'ts',
+			'iblock',
 		]);
 	});
 
@@ -47,6 +48,8 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('board')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_TS']);
 		expect(canUseAppModule('ts')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_IBLOCK']);
+		expect(canUseAppModule('iblock')).toBe(true);
 		resetUserRoles();
 	});
 });

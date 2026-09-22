@@ -54,6 +54,16 @@ class ElementRepository extends AbstractRepository
         }
         unset($filters['active']);
 
+        if (!empty($filters['active_now'])) {
+            $now = new \DateTimeImmutable();
+            $query
+                ->andWhere($n.'.active = true')
+                ->andWhere('('.$n.'.activeFrom IS NULL OR '.$n.'.activeFrom <= :active_now)')
+                ->andWhere('('.$n.'.activeTo IS NULL OR '.$n.'.activeTo >= :active_now)')
+                ->setParameter('active_now', $now);
+        }
+        unset($filters['active_now']);
+
         if (!empty($filters['code'])) {
             $query->andWhere($n.'.code LIKE :code')->setParameter('code', '%'.$filters['code'].'%');
         }
@@ -63,6 +73,12 @@ class ElementRepository extends AbstractRepository
             $query->andWhere($n.'.name LIKE :name')->setParameter('name', '%'.$filters['name'].'%');
         }
         unset($filters['name']);
+
+        foreach (array_keys($filters) as $field) {
+            if (str_starts_with((string) $field, 'PROPERTY_')) {
+                unset($filters[$field]);
+            }
+        }
 
         foreach ($filters as $field => $value) {
             $query->andWhere($this->fieldVal($n.'.'.$field, $value));

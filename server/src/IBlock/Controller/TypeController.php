@@ -91,7 +91,6 @@ class TypeController extends IBlockCrudController
             'active_from' => $entity->getActiveFrom('Y-m-d H:i:s'),
             'active_to' => $entity->getActiveTo('Y-m-d H:i:s'),
             'parent_id' => $entity->getParent()?->getId(),
-            'property_id' => $entity->getProperty()?->getId(),
             'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
         ];
     }

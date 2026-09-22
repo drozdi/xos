@@ -2,9 +2,10 @@ import { ActionIcon, Box, Group, Loader, Select, Stack, Text, Tooltip } from '@m
 import { IconFocusCentered, IconZoomIn, IconZoomOut } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import cytoscape from 'cytoscape';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 
+import { extractApiErrorMessage } from '@/core/api/apiError';
 import { pkbApi } from '@/core/api/endpoints/pkbApi';
 import { queryKeys } from '@/core/api/queryKeys';
 
@@ -19,9 +20,136 @@ function isBrokenNodeId(id: string): boolean {
 	return id.startsWith(BROKEN_NODE_PREFIX);
 }
 
+function readDocumentColorScheme(): 'light' | 'dark' {
+	if (typeof document === 'undefined') {
+		return 'dark';
+	}
+	const attr = document.documentElement.getAttribute('data-mantine-color-scheme');
+	if (attr === 'light' || attr === 'dark') {
+		return attr;
+	}
+	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function subscribeDocumentColorScheme(onStoreChange: () => void): () => void {
+	const observer = new MutationObserver(onStoreChange);
+	observer.observe(document.documentElement, {
+		attributes: true,
+		attributeFilter: ['data-mantine-color-scheme'],
+	});
+	const media = window.matchMedia('(prefers-color-scheme: dark)');
+	media.addEventListener('change', onStoreChange);
+	return () => {
+		observer.disconnect();
+		media.removeEventListener('change', onStoreChange);
+	};
+}
+
+function buildGraphStylesheet(isDark: boolean): cytoscape.StylesheetStyle[] {
+	if (isDark) {
+		return [
+			{
+				selector: 'node',
+				style: {
+					label: 'data(label)',
+					'font-size': 11,
+					color: '#f1f3f5',
+					'text-outline-width': 2,
+					'text-outline-color': '#1a1b1e',
+					'text-valign': 'bottom',
+					'text-margin-y': 6,
+					'background-color': '#74c0fc',
+					'border-width': 1,
+					'border-color': '#a5d8ff',
+					width: 'mapData(degree, 0, 10, 22, 52)',
+					height: 'mapData(degree, 0, 10, 22, 52)',
+				},
+			},
+			{
+				selector: 'node[?broken]',
+				style: {
+					'background-color': '#ced4da',
+					'border-style': 'dashed',
+					'border-width': 2,
+					'border-color': '#e9ecef',
+					color: '#dee2e6',
+				},
+			},
+			{
+				selector: 'edge',
+				style: {
+					width: 1.5,
+					'line-color': '#adb5bd',
+					'target-arrow-shape': 'triangle',
+					'target-arrow-color': '#adb5bd',
+					'curve-style': 'bezier',
+				},
+			},
+			{
+				selector: 'edge[?broken]',
+				style: {
+					'line-style': 'dashed',
+					'line-color': '#ff8787',
+					'target-arrow-color': '#ff8787',
+				},
+			},
+		];
+	}
+
+	return [
+		{
+			selector: 'node',
+			style: {
+				label: 'data(label)',
+				'font-size': 10,
+				color: '#212529',
+				'text-valign': 'bottom',
+				'text-margin-y': 4,
+				'background-color': '#228be6',
+				width: 'mapData(degree, 0, 10, 20, 50)',
+				height: 'mapData(degree, 0, 10, 20, 50)',
+			},
+		},
+		{
+			selector: 'node[?broken]',
+			style: {
+				'background-color': '#868e96',
+				'border-style': 'dashed',
+				'border-width': 2,
+				'border-color': '#adb5bd',
+			},
+		},
+		{
+			selector: 'edge',
+			style: {
+				width: 1.5,
+				'line-color': '#868e96',
+				'target-arrow-shape': 'triangle',
+				'target-arrow-color': '#868e96',
+				'curve-style': 'bezier',
+			},
+		},
+		{
+			selector: 'edge[?broken]',
+			style: {
+				'line-style': 'dashed',
+				'line-color': '#fa5252',
+				'target-arrow-color': '#fa5252',
+			},
+		},
+	];
+}
+
 export function GraphView({ vaultId, onNavigateNote }: GraphViewProps) {
 	const cyRef = useRef<cytoscape.Core | null>(null);
 	const [tagFilter, setTagFilter] = useState<string | null>(null);
+	const scheme = useSyncExternalStore(
+		subscribeDocumentColorScheme,
+		readDocumentColorScheme,
+		() => 'dark' as const,
+	);
+	const isDark = scheme === 'dark';
+	const stylesheet = useMemo(() => buildGraphStylesheet(isDark), [isDark]);
 
 	const filterParam = tagFilter ? `tag:${tagFilter}` : undefined;
 
@@ -107,6 +235,14 @@ export function GraphView({ vaultId, onNavigateNote }: GraphViewProps) {
 		layout.run();
 	}, [elements]);
 
+	useEffect(() => {
+		const cy = cyRef.current;
+		if (!cy) {
+			return;
+		}
+		cy.style().fromJson(stylesheet).update();
+	}, [stylesheet]);
+
 	const zoomBy = (factor: number) => {
 		const cy = cyRef.current;
 		if (!cy) {
@@ -131,7 +267,7 @@ export function GraphView({ vaultId, onNavigateNote }: GraphViewProps) {
 	if (graphQuery.isError) {
 		return (
 			<Text c="red" p="md" size="sm">
-				Не удалось загрузить граф
+				{extractApiErrorMessage(graphQuery.error, 'Не удалось загрузить граф')}
 			</Text>
 		);
 	}
@@ -167,57 +303,26 @@ export function GraphView({ vaultId, onNavigateNote }: GraphViewProps) {
 				</Group>
 			</Group>
 
-			<Box flex={1} style={{ minHeight: 0, border: '1px solid var(--mantine-color-default-border)', borderRadius: 4 }}>
+			<Box
+				flex={1}
+				style={{
+					minHeight: 0,
+					border: '1px solid var(--mantine-color-default-border)',
+					borderRadius: 4,
+					background: isDark ? 'var(--mantine-color-dark-7)' : 'var(--mantine-color-body)',
+				}}
+			>
 				{elements.length === 0 ? (
 					<Text c="dimmed" ta="center" py="xl" size="sm">
 						Нет заметок для отображения
 					</Text>
 				) : (
 					<CytoscapeComponent
+						key={scheme}
 						elements={elements}
 						cy={handleCyInit}
 						style={{ width: '100%', height: '100%' }}
-						stylesheet={[
-							{
-								selector: 'node',
-								style: {
-									label: 'data(label)',
-									'font-size': 10,
-									'text-valign': 'bottom',
-									'text-margin-y': 4,
-									'background-color': '#228be6',
-									width: 'mapData(degree, 0, 10, 20, 50)',
-									height: 'mapData(degree, 0, 10, 20, 50)',
-								},
-							},
-							{
-								selector: 'node[broken]',
-								style: {
-									'background-color': '#868e96',
-									'border-style': 'dashed',
-									'border-width': 2,
-									'border-color': '#adb5bd',
-								},
-							},
-							{
-								selector: 'edge',
-								style: {
-									width: 1.5,
-									'line-color': '#adb5bd',
-									'target-arrow-shape': 'triangle',
-									'target-arrow-color': '#adb5bd',
-									'curve-style': 'bezier',
-								},
-							},
-							{
-								selector: 'edge[broken]',
-								style: {
-									'line-style': 'dashed',
-									'line-color': '#fa5252',
-									'target-arrow-color': '#fa5252',
-								},
-							},
-						]}
+						stylesheet={stylesheet}
 						layout={{ name: 'preset' }}
 					/>
 				)}

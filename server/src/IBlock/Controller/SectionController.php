@@ -4,11 +4,16 @@ namespace IBlock\Controller;
 
 use App\Attribute\Access;
 use AbstractRepository;
+use App\Http\ContentRangeHeaders;
 use IBlock\Entity\Section;
 use IBlock\Repository\BlockRepository;
 use IBlock\Repository\SectionRepository;
+use IBlock\Service\ElementManager;
+use IBlock\Service\SectionElementManager;
+use IBlock\Service\SectionPropertyManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -19,6 +24,9 @@ class SectionController extends IBlockCrudController
     public function __construct(
         private readonly SectionRepository $sectionRepository,
         private readonly BlockRepository $blockRepository,
+        private readonly SectionPropertyManager $sectionPropertyManager,
+        private readonly SectionElementManager $sectionElementManager,
+        private readonly ElementManager $elementManager,
     ) {
     }
 
@@ -37,6 +45,50 @@ class SectionController extends IBlockCrudController
     public function listAction(Request $request): JsonResponse
     {
         return $this->list($request);
+    }
+
+    #[Route('/{id}/filter', name: 'filter', methods: ['GET', 'HEAD'], requirements: ['id' => '\d+'])]
+    #[Access('can_read')]
+    public function filterAction(int $id): JsonResponse
+    {
+        if (!$this->sectionRepository->find($id)) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($this->sectionPropertyManager->getFilterSettingsForSection($id));
+    }
+
+    #[Route('/{id}/elements', name: 'elements', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Access('can_read')]
+    public function elementsAction(int $id, Request $request): JsonResponse
+    {
+        if (!$this->sectionRepository->find($id)) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $req = array_merge([
+            'limit' => -1,
+            'offset' => 1,
+            'sortBy' => [
+                ['key' => 'sort', 'order' => 'ASC'],
+                ['key' => 'name', 'order' => 'ASC'],
+            ],
+            'filters' => [],
+        ], $request->toArray());
+        $limit = (int) $req['limit'];
+        $offset = (int) $req['offset'];
+        $filters = is_array($req['filters'] ?? null) ? $req['filters'] : [];
+        $filters['section_id'] = $id;
+        $sortBy = is_array($req['sortBy'] ?? null) ? $req['sortBy'] : [];
+
+        $totalItems = $this->elementManager->count($filters);
+        $items = $this->elementManager->getList($sortBy, $filters, $limit, $offset);
+
+        return $this->json($items, Response::HTTP_OK, ContentRangeHeaders::forLegacyPagination(
+            $limit,
+            $offset,
+            $totalItems,
+        ));
     }
 
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'], requirements: ['id' => '\d+'])]
@@ -95,6 +147,8 @@ class SectionController extends IBlockCrudController
             'active_to' => $entity->getActiveTo('Y-m-d H:i:s'),
             'block_id' => $entity->getBlock()?->getId(),
             'parent_id' => $entity->getParent()?->getId(),
+            'element_filter' => $entity->getElementFilter(),
+            'inherited_element_filter' => $this->sectionElementManager->resolveInheritedFilter($entity),
             'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
             'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
         ];
@@ -163,6 +217,14 @@ class SectionController extends IBlockCrudController
                 $parent = $this->sectionRepository->find((int) $data['parent_id']);
             }
             $section->setParent($parent);
+        }
+        if (array_key_exists('element_filter', $data)) {
+            $filter = $data['element_filter'];
+            if (null === $filter || '' === $filter) {
+                $section->setElementFilter(null);
+            } elseif (\is_array($filter)) {
+                $section->setElementFilter($filter);
+            }
         }
     }
 }

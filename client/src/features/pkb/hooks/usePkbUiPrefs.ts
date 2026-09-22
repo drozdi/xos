@@ -71,6 +71,14 @@ export async function saveLastVaultId(vaultId: number): Promise<void> {
 	await userDataApi.upsert({ code: PKB_PREFS.lastVaultId, value: vaultId });
 }
 
+export async function clearLastVaultId(): Promise<void> {
+	try {
+		await userDataApi.delete(PKB_PREFS.lastVaultId);
+	} catch {
+		// ignore missing prefs
+	}
+}
+
 export async function loadLastVaultId(): Promise<number | null> {
 	const dto = await userDataApi.getOptional(PKB_PREFS.lastVaultId);
 	if (!dto) {

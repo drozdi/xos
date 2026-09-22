@@ -3,189 +3,136 @@
 namespace IBlock\Controller;
 
 use App\Attribute\Access;
-use AbstractRepository;
-use IBlock\Entity\Property;
-use IBlock\Repository\PropertyRepository;
-use IBlock\Repository\TypeRepository;
+use App\Http\ContentRangeHeaders;
+use IBlock\Service\PropertyManager;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 #[Route('/api/iblock/property', name: 'api_iblock_property_')]
 #[Access('iblock.property')]
-class PropertyController extends IBlockCrudController
+class PropertyController extends AbstractController
 {
     public function __construct(
-        private readonly PropertyRepository $propertyRepository,
-        private readonly TypeRepository $typeRepository,
+        private readonly PropertyManager $propertyManager,
     ) {
-    }
-
-    protected function getRepository(): AbstractRepository
-    {
-        return $this->propertyRepository;
-    }
-
-    protected function getListAlias(): string
-    {
-        return 'p';
     }
 
     #[Route('/list', name: 'list', methods: ['POST'])]
     #[Access('can_read')]
     public function listAction(Request $request): JsonResponse
     {
-        return $this->list($request);
+        $req = array_merge([
+            't' => 'list',
+            'limit' => -1,
+            'offset' => 1,
+            'sortBy' => [
+                ['key' => 'sort', 'order' => 'ASC'],
+                ['key' => 'name', 'order' => 'ASC'],
+            ],
+            'filters' => [],
+        ], $request->toArray());
+        $limit = (int) $req['limit'];
+        $offset = (int) $req['offset'];
+        $filters = is_array($req['filters'] ?? null) ? $req['filters'] : [];
+        $sortBy = is_array($req['sortBy'] ?? null) ? $req['sortBy'] : [];
+
+        $totalItems = $this->propertyManager->count($filters);
+        $items = $this->propertyManager->getList($sortBy, $filters, $limit, $offset);
+
+        if ('select' === ($req['t'] ?? 'list')) {
+            $items = array_map(static fn (array $row): array => [
+                'value' => $row['id'] ?? null,
+                'label' => $row['name'] ?? '',
+            ], $items);
+        }
+
+        return $this->json($items, Response::HTTP_OK, ContentRangeHeaders::forLegacyPagination(
+            $limit,
+            $offset,
+            $totalItems,
+        ));
     }
 
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'], requirements: ['id' => '\d+'])]
     #[Access('can_read')]
     public function detailAction(int $id): JsonResponse
     {
-        return $this->detail($id);
+        $payload = $this->propertyManager->getById($id);
+        if (null === $payload) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json($payload);
     }
 
     #[Route('/', name: 'create', methods: ['POST'])]
     #[Access('can_create')]
-    public function createAction(Request $request, ValidatorInterface $validator): JsonResponse
+    public function createAction(Request $request): JsonResponse
     {
-        return $this->create($request, $validator);
+        try {
+            $id = $this->propertyManager->add($request->toArray());
+        } catch (BadRequestHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (ValidationFailedException $e) {
+            return $this->violationResponse($e->getViolations());
+        }
+
+        return $this->json($id, Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
     #[Access('can_update')]
-    public function updateAction(int $id, Request $request, ValidatorInterface $validator): JsonResponse
+    public function updateAction(int $id, Request $request): JsonResponse
     {
-        return $this->update($id, $request, $validator);
+        try {
+            $this->propertyManager->update($id, $request->toArray());
+        } catch (NotFoundHttpException) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        } catch (BadRequestHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        } catch (ValidationFailedException $e) {
+            return $this->violationResponse($e->getViolations());
+        }
+
+        return $this->json($id, Response::HTTP_OK);
     }
 
     #[Route('/{id}', name: 'remove', methods: ['DELETE'], requirements: ['id' => '\d+'])]
     #[Access('can_delete')]
     public function removeAction(int $id): JsonResponse
     {
-        return $this->remove($id);
+        $payload = $this->propertyManager->getById($id);
+        if (null === $payload) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        try {
+            $this->propertyManager->delete($id);
+        } catch (NotFoundHttpException) {
+            return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        return $this->json([
+            'id' => $payload['id'] ?? $id,
+            'code' => $payload['code'] ?? null,
+            'name' => $payload['name'] ?? null,
+        ], Response::HTTP_OK);
     }
 
-    protected function serializeListItem(object $entity): array
+    private function violationResponse(ConstraintViolationListInterface $violations): JsonResponse
     {
-        /** @var Property $entity */
-        return [
-            'id' => $entity->getId(),
-            'code' => $entity->getCode(),
-            'name' => $entity->getName(),
-            'sort' => $entity->getSort(),
-            'active' => $entity->isActive(),
-        ];
-    }
+        $messages = [];
+        foreach ($violations as $violation) {
+            $messages[$violation->getPropertyPath()] = $violation->getMessage();
+        }
 
-    protected function serializeDetail(object $entity): array
-    {
-        /** @var Property $entity */
-        return [
-            'id' => $entity->getId(),
-            'code' => $entity->getCode(),
-            'name' => $entity->getName(),
-            'description' => $entity->getDescription(),
-            'sort' => $entity->getSort(),
-            'active' => $entity->isActive(),
-            'required' => $entity->isRequired(),
-            'multiple' => $entity->isMultiple(),
-            'field_type' => $entity->getFieldType(),
-            'list_type' => $entity->getListType(),
-            'default_value' => $entity->getDefaultValue(),
-            'postfix' => $entity->getPostfix(),
-            'prefix' => $entity->getPrefix(),
-            'active_from' => $entity->getActiveFrom('Y-m-d H:i:s'),
-            'active_to' => $entity->getActiveTo('Y-m-d H:i:s'),
-            'type_id' => $entity->getType()?->getId(),
-            'parent_id' => $entity->getParent()?->getId(),
-            'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
-            'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
-        ];
-    }
-
-    protected function createEntity(array $data): object
-    {
-        $property = new Property();
-        $this->applyPropertyData($property, $data);
-
-        return $property;
-    }
-
-    protected function updateEntity(object $entity, array $data): void
-    {
-        /** @var Property $entity */
-        $this->applyPropertyData($entity, $data);
-    }
-
-    protected function serializeRemoved(object $entity): array
-    {
-        /** @var Property $entity */
-        return [
-            'id' => $entity->getId(),
-            'code' => $entity->getCode(),
-            'name' => $entity->getName(),
-        ];
-    }
-
-    private function applyPropertyData(Property $property, array $data): void
-    {
-        if (array_key_exists('code', $data)) {
-            $property->setCode((string) $data['code']);
-        }
-        if (array_key_exists('name', $data)) {
-            $property->setName((string) $data['name']);
-        }
-        if (array_key_exists('description', $data)) {
-            $property->setDescription($data['description']);
-        }
-        if (array_key_exists('sort', $data)) {
-            $property->setSort((int) $data['sort']);
-        }
-        if (array_key_exists('active', $data)) {
-            $property->setActive((bool) $data['active']);
-        }
-        if (array_key_exists('required', $data)) {
-            $property->setRequired((bool) $data['required']);
-        }
-        if (array_key_exists('multiple', $data)) {
-            $property->setMultiple((bool) $data['multiple']);
-        }
-        if (array_key_exists('field_type', $data)) {
-            $property->setFieldType($data['field_type']);
-        }
-        if (array_key_exists('list_type', $data)) {
-            $property->setListType($data['list_type']);
-        }
-        if (array_key_exists('default_value', $data)) {
-            $property->setDefaultValue($data['default_value']);
-        }
-        if (array_key_exists('postfix', $data)) {
-            $property->setPostfix($data['postfix']);
-        }
-        if (array_key_exists('prefix', $data)) {
-            $property->setPrefix($data['prefix']);
-        }
-        if (array_key_exists('active_from', $data)) {
-            $property->setActiveFrom($this->parseDate($data['active_from']));
-        }
-        if (array_key_exists('active_to', $data)) {
-            $property->setActiveTo($this->parseDate($data['active_to']));
-        }
-        if (array_key_exists('type_id', $data)) {
-            $type = null;
-            if (null !== $data['type_id'] && '' !== $data['type_id']) {
-                $type = $this->typeRepository->find((int) $data['type_id']);
-            }
-            $property->setType($type);
-        }
-        if (array_key_exists('parent_id', $data)) {
-            $parent = null;
-            if (null !== $data['parent_id'] && '' !== $data['parent_id']) {
-                $parent = $this->propertyRepository->find((int) $data['parent_id']);
-            }
-            $property->setParent($parent);
-        }
+        return $this->json($messages, Response::HTTP_BAD_REQUEST);
     }
 }

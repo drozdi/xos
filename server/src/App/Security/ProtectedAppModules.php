@@ -15,6 +15,7 @@ final class ProtectedAppModules
         'board',
         'pkb',
         'ts',
+        'iblock',
     ];
 
     public static function isProtected(string $module): bool

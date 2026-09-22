@@ -11,6 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: SectionRepository::class)]
 #[ORM\Table(name: 'iblock_section')]
+#[ORM\UniqueConstraint(name: 'UNIQ_IBLOCK_SECTION_BLOCK_CODE', columns: ['block_id', 'code'])]
 #[ORM\HasLifecycleCallbacks]
 class Section
 {
@@ -47,7 +48,7 @@ class Section
     #[ORM\JoinColumn(name: 'block_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
     private ?Block $block = null;
 
-    #[ORM\Column(name: 'code', length: 191, unique: true)]
+    #[ORM\Column(name: 'code', length: 191)]
     #[Assert\NotBlank]
     private ?string $code = null;
 
@@ -63,6 +64,10 @@ class Section
 
     #[ORM\Column(name: 'description', type: Types::TEXT, nullable: true)]
     private ?string $description = null;
+
+    /** @var array<string, mixed>|null Criteria for filter/bind_filter section modes. */
+    #[ORM\Column(name: 'element_filter', type: Types::JSON, nullable: true)]
+    private ?array $elementFilter = null;
 
     public function __construct()
     {
@@ -258,6 +263,20 @@ class Section
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+
+        return $this;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function getElementFilter(): ?array
+    {
+        return $this->elementFilter;
+    }
+
+    /** @param array<string, mixed>|null $elementFilter */
+    public function setElementFilter(?array $elementFilter): self
+    {
+        $this->elementFilter = $elementFilter;
 
         return $this;
     }

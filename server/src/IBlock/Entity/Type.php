@@ -31,16 +31,6 @@ class Type
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
     private Collection $children;
 
-    #[ORM\OneToOne(targetEntity: Property::class)]
-    #[ORM\JoinColumn(name: 'property_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
-    private ?Property $property = null;
-
-    /** @var Collection<int, Property> */
-    #[ORM\JoinTable(name: 'iblock_type_property')]
-    #[ORM\ManyToMany(targetEntity: Property::class, inversedBy: 'types')]
-    #[ORM\OrderBy(['sort' => 'ASC', 'name' => 'ASC'])]
-    private Collection $properties;
-
     #[ORM\Column(name: 'active', type: Types::BOOLEAN, options: ['default' => true])]
     private bool $active = true;
 
@@ -70,7 +60,6 @@ class Type
     public function __construct()
     {
         $this->children = new ArrayCollection();
-        $this->properties = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -241,73 +230,6 @@ class Type
         $this->description = $description;
 
         return $this;
-    }
-
-    public function getProperty(): ?Property
-    {
-        return $this->property;
-    }
-
-    public function setProperty(?Property $property = null): self
-    {
-        if ($this->property && $this->property !== $property) {
-            foreach ($this->property->getChildren() as $child) {
-                $this->removeProperty($child);
-            }
-            $this->property->setType(null);
-        }
-        $this->property = $property;
-
-        if (null !== $this->property) {
-            if ($name = $this->property->getName()) {
-                $this->name = $name;
-            }
-            if ($code = $this->property->getCode()) {
-                $this->code = $code;
-            }
-            $this->sort = $this->property->getSort();
-            $this->active = $this->property->isActive();
-            if ($activeFrom = $this->property->getActiveFrom()) {
-                $this->activeFrom = $activeFrom instanceof \DateTimeInterface ? $activeFrom : new \DateTime((string) $activeFrom);
-            }
-            if ($activeTo = $this->property->getActiveTo()) {
-                $this->activeTo = $activeTo instanceof \DateTimeInterface ? $activeTo : new \DateTime((string) $activeTo);
-            }
-            if ($this->property->getType() !== $this) {
-                $this->property->setType($this);
-            }
-
-            foreach ($this->property->getChildren() as $child) {
-                $this->addProperty($child);
-            }
-        }
-
-        return $this;
-    }
-
-    public function addProperty(Property $property): self
-    {
-        if (!$this->properties->contains($property)) {
-            $this->properties->add($property);
-            $property->addType($this);
-        }
-
-        return $this;
-    }
-
-    public function removeProperty(Property $property): self
-    {
-        if ($this->properties->removeElement($property)) {
-            $property->removeType($this);
-        }
-
-        return $this;
-    }
-
-    /** @return Collection<int, Property> */
-    public function getProperties(): Collection
-    {
-        return $this->properties;
     }
 
     #[ORM\PrePersist]

@@ -2,6 +2,8 @@
 
 namespace IBlock\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use IBlock\Repository\BlockRepository;
@@ -9,6 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: BlockRepository::class)]
 #[ORM\Table(name: 'iblock_block')]
+#[ORM\UniqueConstraint(name: 'UNIQ_IBLOCK_BLOCK_TYPE_CODE', columns: ['type_id', 'code'])]
 #[ORM\HasLifecycleCallbacks]
 class Block
 {
@@ -33,13 +36,17 @@ class Block
     #[ORM\Column(name: 'property', type: Types::BOOLEAN, options: ['default' => false])]
     private bool $property = false;
 
+    /** bind|tree|filter|bind_filter — how section_id filter resolves elements. */
+    #[ORM\Column(name: 'section_mode', length: 32, options: ['default' => 'tree'])]
+    private string $sectionMode = 'tree';
+
     #[ORM\Column(name: 'active_from', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $activeFrom = null;
 
     #[ORM\Column(name: 'active_to', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $activeTo = null;
 
-    #[ORM\Column(name: 'code', length: 191, unique: true)]
+    #[ORM\Column(name: 'code', length: 191)]
     #[Assert\NotBlank]
     private ?string $code = null;
 
@@ -56,6 +63,16 @@ class Block
     #[ORM\ManyToOne(targetEntity: Type::class)]
     #[ORM\JoinColumn(name: 'type_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
     private ?Type $type = null;
+
+    /** @var Collection<int, Property> */
+    #[ORM\OneToMany(mappedBy: 'block', targetEntity: Property::class)]
+    #[ORM\OrderBy(['sort' => 'ASC'])]
+    private Collection $properties;
+
+    public function __construct()
+    {
+        $this->properties = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -126,6 +143,22 @@ class Block
     public function setProperty(bool $property): self
     {
         $this->property = $property;
+
+        return $this;
+    }
+
+    public function getSectionMode(): string
+    {
+        return $this->sectionMode;
+    }
+
+    public function setSectionMode(string $sectionMode): self
+    {
+        $allowed = ['bind', 'tree', 'filter', 'bind_filter'];
+        if (!\in_array($sectionMode, $allowed, true)) {
+            throw new \InvalidArgumentException('Invalid section_mode: '.$sectionMode);
+        }
+        $this->sectionMode = $sectionMode;
 
         return $this;
     }
@@ -220,6 +253,33 @@ class Block
         $this->type = $type;
 
         return $this;
+    }
+
+    public function addProperty(Property $property): self
+    {
+        if (!$this->properties->contains($property)) {
+            $this->properties->add($property);
+            $property->setBlock($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProperty(Property $property): self
+    {
+        if ($this->properties->removeElement($property)) {
+            if ($property->getBlock() === $this) {
+                $property->setBlock(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, Property> */
+    public function getProperties(): Collection
+    {
+        return $this->properties;
     }
 
     #[ORM\PrePersist]

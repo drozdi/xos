@@ -2,6 +2,8 @@
 
 namespace IBlock\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use IBlock\Repository\ElementRepository;
@@ -9,6 +11,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ElementRepository::class)]
 #[ORM\Table(name: 'iblock_element')]
+#[ORM\UniqueConstraint(name: 'UNIQ_IBLOCK_ELEMENT_BLOCK_CODE', columns: ['block_id', 'code'])]
 #[ORM\HasLifecycleCallbacks]
 class Element
 {
@@ -41,7 +44,7 @@ class Element
     #[ORM\JoinColumn(name: 'section_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Section $section = null;
 
-    #[ORM\Column(name: 'code', length: 191, unique: true)]
+    #[ORM\Column(name: 'code', length: 191)]
     #[Assert\NotBlank]
     private ?string $code = null;
 
@@ -60,6 +63,20 @@ class Element
 
     #[ORM\Column(name: 'detail_text', type: Types::TEXT, nullable: true)]
     private ?string $detailText = null;
+
+    /** @var Collection<int, ElementPropertyValue> */
+    #[ORM\OneToMany(mappedBy: 'element', targetEntity: ElementPropertyValue::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $propertyValues;
+
+    /** @var Collection<int, SectionElement> */
+    #[ORM\OneToMany(mappedBy: 'element', targetEntity: SectionElement::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $sectionLinks;
+
+    public function __construct()
+    {
+        $this->propertyValues = new ArrayCollection();
+        $this->sectionLinks = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -240,6 +257,74 @@ class Element
         $this->section = $section;
 
         return $this;
+    }
+
+    public function addPropertyValue(ElementPropertyValue $propertyValue): self
+    {
+        if (!$this->propertyValues->contains($propertyValue)) {
+            $this->propertyValues->add($propertyValue);
+            $propertyValue->setElement($this);
+        }
+
+        return $this;
+    }
+
+    public function removePropertyValue(ElementPropertyValue $propertyValue): self
+    {
+        if ($this->propertyValues->removeElement($propertyValue)) {
+            if ($propertyValue->getElement() === $this) {
+                $propertyValue->setElement(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, ElementPropertyValue> */
+    public function getPropertyValues(): Collection
+    {
+        return $this->propertyValues;
+    }
+
+    public function addSectionLink(SectionElement $link): self
+    {
+        if (!$this->sectionLinks->contains($link)) {
+            $this->sectionLinks->add($link);
+            $link->setElement($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSectionLink(SectionElement $link): self
+    {
+        if ($this->sectionLinks->removeElement($link)) {
+            if ($link->getElement() === $this) {
+                $link->setElement(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /** @return Collection<int, SectionElement> */
+    public function getSectionLinks(): Collection
+    {
+        return $this->sectionLinks;
+    }
+
+    /** @return list<int> */
+    public function getSectionIds(): array
+    {
+        $ids = [];
+        foreach ($this->sectionLinks as $link) {
+            $sid = $link->getSection()?->getId();
+            if (null !== $sid) {
+                $ids[] = $sid;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     #[ORM\PrePersist]

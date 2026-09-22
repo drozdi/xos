@@ -92,6 +92,7 @@ class BlockController extends IBlockCrudController
             'active' => $entity->isActive(),
             'sections' => $entity->isSections(),
             'property' => $entity->isProperty(),
+            'section_mode' => $entity->getSectionMode(),
             'active_from' => $entity->getActiveFrom('Y-m-d H:i:s'),
             'active_to' => $entity->getActiveTo('Y-m-d H:i:s'),
             'type_id' => $entity->getType()?->getId(),
@@ -146,6 +147,9 @@ class BlockController extends IBlockCrudController
         }
         if (array_key_exists('property', $data)) {
             $block->setProperty((bool) $data['property']);
+        }
+        if (array_key_exists('section_mode', $data) && null !== $data['section_mode'] && '' !== $data['section_mode']) {
+            $block->setSectionMode((string) $data['section_mode']);
         }
         if (array_key_exists('active_from', $data)) {
             $block->setActiveFrom($this->parseDate($data['active_from']));

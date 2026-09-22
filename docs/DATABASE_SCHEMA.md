@@ -15,7 +15,7 @@
 | App | `App\Entity` | `refresh_tokens`, `user_settings`, **`user_app_data`** |
 | Main | `Main\Entity` | `main_user`, `main_user_access`, `main_user_group`, `main_group`, `main_group_access`, `main_role`, `main_claimant`, `main_ou`, `main_file`, `main_stored_auth` |
 | Device | `Device\Entity` | `d_device`, `d_type`, `d_type_property`, `d_property`, `d_property_enum`, `d_license`, `d_license_key`, `d_license_software`, `d_software`, `d_software_type`, `d_accounting`, `d_device_*` (вложенные) |
-| IBlock | `IBlock\Entity` | `iblock_block`, `iblock_type`, `iblock_element`, `iblock_section`, `iblock_property`, `iblock_property_enum` |
+| IBlock | `IBlock\Entity` | `iblock_block`, `iblock_type`, `iblock_element`, `iblock_section`, `iblock_section_element`, `iblock_property`, `iblock_property_enum`, `iblock_element_property`, `iblock_element_property_enum`, `iblock_section_property` |
 
 ---
 
@@ -230,25 +230,90 @@ Remember-me / stored sessions (связь с User, опционально для
 
 ## IBlock — Информационные блоки
 
-> Сущности в `server/src/IBlock/Entity/`. Часть файлов использует namespace `App\Entity\iBlock` — **требуется унификация** на `IBlock\Entity` при доработке. Контроллеры **отсутствуют**.
+> Сущности и контроллеры в `server/src/IBlock/` (`IBlock\Entity`). API: [iblock/API.md](iblock/API.md).
 
 ### Block (`iblock_block`)
 
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INT PK | |
-| code | VARCHAR(191) UNIQUE | |
+| code | VARCHAR(191) | unique вместе с `type_id` |
 | name | VARCHAR(255) | |
 | description | TEXT | ✓ |
 | sort | INT | |
 | active, sections, property | BOOLEAN | |
+| section_mode | VARCHAR(32) | `bind`/`tree`/`filter`/`bind_filter` (default `tree`) |
 | active_from, active_to | DATETIME | ✓ |
-| type_id | FK → iblock_type CASCADE | |
+| type_id | FK → iblock_type CASCADE | unique `(type_id, code)` |
 | x_timestamp, date_created | DATETIME | |
 
-### Type, Element, Section, Property, Property\Enum
+### Property (`iblock_property`)
 
-Стандартная модель инфоблока: тип → блок → секции/элементы → свойства (с enum для списков).
+Свойство принадлежит блоку (`block_id` NOT NULL). Unique `(block_id, code)`.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| block_id | FK → iblock_block CASCADE | владелец (обязательно) |
+| field_type | VARCHAR | `S`/`N`/`F`/`L`/`E`/`G` |
+| link_iblock_id | FK → iblock_block SET NULL | для E/G — допустимый блок привязки |
+
+Связи Property↔Type (`type_id`, `iblock_type_property`, `iblock_type.property_id`) удалены.
+
+### ElementPropertyValue (`iblock_element_property`)
+
+Device-style typed values (как `d_device_property`):
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INT PK | |
+| element_id | FK → iblock_element CASCADE | |
+| property_id | FK → iblock_property CASCADE | |
+| value | TEXT | ✓ display/raw |
+| value_s | VARCHAR(255) | ✓ строковое значение |
+| value_n | DOUBLE | ✓ числовое значение |
+| value_file_id | FK → main_file SET NULL | тип F |
+| value_element_id | FK → iblock_element SET NULL | тип E |
+| value_section_id | FK → iblock_section SET NULL | тип G |
+| description | VARCHAR(255) | ✓ |
+
+M2M `valueL` → `iblock_property_enum` через join-таблицу `iblock_element_property_enum` (`element_property_id`, `enum_id`). Для `field_type` L — одна строка значения на свойство, несколько enum в `valueL`. Для F/E/G при `multiple` — несколько строк.
+
+### SectionElement (`iblock_section_element`)
+
+Аналог Bitrix `b_iblock_section_element` — M:N разделы↔элементы. `Element.section_id` остаётся основным разделом.
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INT PK | |
+| section_id | FK → iblock_section CASCADE | |
+| element_id | FK → iblock_element CASCADE | |
+| additional_property_id | INT default 0 | Bitrix ADDITIONAL_PROPERTY_ID; 0 = обычная привязка |
+
+UNIQUE `(section_id, element_id, additional_property_id)`.
+
+`Section.element_filter` JSON — критерии списка в режимах `filter` / `bind_filter` (наследование root→leaf, child wins).
+
+### SectionProperty (`iblock_section_property`)
+
+Настройки свойств раздела (smart filter UI):
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | INT PK | |
+| section_id | FK → iblock_section CASCADE | |
+| property_id | FK → iblock_property CASCADE | |
+| block_id | FK → iblock_block CASCADE | ✓ (если пусто — из section.block) |
+| smart_filter | BOOLEAN | default false |
+| display_type | VARCHAR(32) | default `A` |
+| display_expanded | BOOLEAN | default false |
+| sort | INT | default 100 |
+| active | BOOLEAN | default true |
+
+Unique `(section_id, property_id)`.
+
+### Type, Element, Section, Property\Enum
+
+Модель: тип → блок (`section_mode`, unique `(type_id, code)`) → секции (`element_filter`, unique `(block_id, code)`) / элементы (`section_id` + M:N `iblock_section_element`, unique `(block_id, code)`) → свойства (unique `(block_id, code)`, enum для `field_type` L) → значения; smart-filter UI на секции.
 
 ---
 
@@ -439,5 +504,5 @@ erDiagram
 
 | Вопрос | Рекомендация |
 |--------|--------------|
-| IBlock namespace | Унифицировать на `IBlock\Entity`, добавить `#[ORM\Entity]` где отсутствует. |
+| IBlock desktop-app | Есть: `iblock-*` в Start Menu «Инфоблоки», `ROLE_IBLOCK`. |
 | Device routes без `/api` | Перенести под `/api/device/*` и единый JWT-firewall (см. ARCHITECTURE.md). |

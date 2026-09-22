@@ -15,6 +15,7 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	schooltask: 'Школа',
 	inccom: 'Финансы',
 	ts: 'TeamStorm',
+	iblock: 'Инфоблоки',
 	default: 'Приложения',
 };
 
@@ -27,6 +28,7 @@ export const START_MENU_GROUP_SORT: Record<string, number> = {
 	schooltask: 50,
 	inccom: 60,
 	ts: 65,
+	iblock: 70,
 	default: 100,
 };
 

@@ -55,3 +55,22 @@ export {
 	userListResponseSchema,
 } from './main';
 export { deviceEndpoints, deviceApi, subDeviceApi, deviceTypeApi, devicePropertyApi, deviceComponentApi, deviceSoftwareApi, deviceSoftwareTypeApi, deviceLicenseApi, deviceLicenseKeyApi } from './deviceApi';
+export {
+	iblockEndpoints,
+	iblockTypeApi,
+	iblockBlockApi,
+	iblockSectionApi,
+	iblockElementApi,
+	iblockPropertyApi,
+	iblockPropertyEnumApi,
+	iblockSectionPropertyApi,
+} from './iblockApi';
+export type {
+	IblockTypeDetail,
+	IblockBlockDetail,
+	IblockSectionDetail,
+	IblockElementDetail,
+	IblockPropertyDetail,
+	IblockPropertyEnumDetail,
+	IblockSectionPropertyDetail,
+} from './iblockApi';

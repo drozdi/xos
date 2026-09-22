@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 #[ORM\Table(name: 'iblock_property')]
+#[ORM\UniqueConstraint(name: 'UNIQ_IBLOCK_PROPERTY_BLOCK_CODE', columns: ['block_id', 'code'])]
 #[ORM\UniqueConstraint(columns: ['parent_id', 'code'])]
 #[ORM\HasLifecycleCallbacks]
 class Property
@@ -36,14 +37,14 @@ class Property
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
     private Collection $children;
 
-    #[ORM\OneToOne(targetEntity: Type::class)]
-    #[ORM\JoinColumn(name: 'type_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
-    private ?Type $type = null;
+    #[ORM\ManyToOne(targetEntity: Block::class, inversedBy: 'properties')]
+    #[ORM\JoinColumn(name: 'block_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
+    private ?Block $block = null;
 
-    /** @var Collection<int, Type> */
-    #[ORM\ManyToMany(targetEntity: Type::class, mappedBy: 'properties')]
-    #[ORM\OrderBy(['sort' => 'ASC'])]
-    private Collection $types;
+    /** Target iblock for E/G link properties (Bitrix LINK_IBLOCK_ID). */
+    #[ORM\ManyToOne(targetEntity: Block::class)]
+    #[ORM\JoinColumn(name: 'link_iblock_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Block $linkIblock = null;
 
     /** @var Collection<int, PropertyEnum> */
     #[ORM\OneToMany(mappedBy: 'property', targetEntity: PropertyEnum::class)]
@@ -54,7 +55,7 @@ class Property
     #[Assert\NotBlank]
     private ?string $name = null;
 
-    #[ORM\Column(name: 'code', length: 191, unique: true)]
+    #[ORM\Column(name: 'code', length: 191)]
     #[Assert\NotBlank]
     private ?string $code = null;
 
@@ -97,7 +98,6 @@ class Property
     public function __construct()
     {
         $this->children = new ArrayCollection();
-        $this->types = new ArrayCollection();
         $this->enums = new ArrayCollection();
     }
 
@@ -152,9 +152,6 @@ class Property
         if ($this->parent) {
             $this->parent->addChild($this);
         }
-        if (null !== $this->parent && null !== ($type = $this->parent->getType())) {
-            $this->addType($type);
-        }
 
         return $this;
     }
@@ -186,48 +183,34 @@ class Property
         return $this->children;
     }
 
-    public function getType(): ?Type
+    public function getBlock(): ?Block
     {
-        return $this->type;
+        return $this->block;
     }
 
-    public function setType(?Type $type = null): self
+    public function setBlock(?Block $block = null): self
     {
-        if ($this->type && $this->type !== $type) {
-            $oldType = $this->type;
-            $this->type = null;
-            if ($oldType->getProperty() === $this) {
-                $oldType->setProperty(null);
-            }
+        if ($this->block && $this->block !== $block) {
+            $this->block->removeProperty($this);
         }
-        $this->type = $type;
-
-        return $this;
-    }
-
-    public function addType(Type $type): self
-    {
-        if (!$this->types->contains($type)) {
-            $this->types->add($type);
-            $type->addProperty($this);
+        $this->block = $block;
+        if ($this->block) {
+            $this->block->addProperty($this);
         }
 
         return $this;
     }
 
-    public function removeType(Type $type): self
+    public function getLinkIblock(): ?Block
     {
-        if ($this->types->removeElement($type)) {
-            $type->removeProperty($this);
-        }
-
-        return $this;
+        return $this->linkIblock;
     }
 
-    /** @return Collection<int, Type> */
-    public function getTypes(): Collection
+    public function setLinkIblock(?Block $linkIblock = null): self
     {
-        return $this->types;
+        $this->linkIblock = $linkIblock;
+
+        return $this;
     }
 
     public function addEnum(PropertyEnum $propertyEnum): self
@@ -354,7 +337,8 @@ class Property
 
     public function setFieldType(?string $fieldType = null): self
     {
-        $this->fieldType = $fieldType ?? 's';
+        $normalized = null === $fieldType || '' === $fieldType ? 'S' : strtoupper($fieldType);
+        $this->fieldType = $normalized;
 
         return $this;
     }

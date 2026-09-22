@@ -536,7 +536,7 @@ Prefix: `/api/main/`
 #### GET `/api/main/claimant/app-access-modules`
 
 **Auth:** JWT  
-**Реализация:** `ClaimantManager::getAppAccessModules()` — только модули из `ProtectedAppModules` (Todo/IBlock не входят).  
+**Реализация:** `ClaimantManager::getAppAccessModules()` — только модули из `ProtectedAppModules` (Todo не входит; `iblock` входит).  
 **Источник options:** колонка `main_claimant.access_options` (после sync). При отсутствии sync → `{}` + warning в лог сервера (не 503).
 
 **Response 200:**
@@ -744,17 +744,18 @@ CRUD + `/list`, `/select`.
 
 ---
 
-## IBlock `[NEW]`
+## IBlock
 
-Контроллеры отсутствуют. Целевой prefix: `/api/iblock/`
+Реализовано: `server/src/IBlock/`. Prefix: `/api/iblock/`. Детали: [docs/iblock/API.md](iblock/API.md).
 
 | Resource | Endpoints |
 |----------|-----------|
+| `/api/iblock/type` | CRUD + POST `/list` |
 | `/api/iblock/block` | CRUD + POST `/list` |
-| `/api/iblock/element` | CRUD + POST `/list` |
-| `/api/iblock/section` | CRUD |
-| `/api/iblock/property` | CRUD |
-| `/api/iblock/type` | CRUD |
+| `/api/iblock/section` | CRUD + POST `/list` |
+| `/api/iblock/element` | CRUD + POST `/list`; `PROPERTY_VALUES` / фильтры `PROPERTY_*`, `active_now` |
+| `/api/iblock/property` | CRUD + POST `/list`; `block_id` |
+| `/api/iblock/property-enum` | CRUD + POST `/list` (claimant `iblock.property`) |
 
 ---
 

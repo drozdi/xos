@@ -56,6 +56,7 @@ interface VaultWorkspacePageProps {
 	vaultId: number;
 	initialNotePath?: string | null;
 	onBack: () => void;
+	onVaultMissing?: () => void;
 }
 
 type WorkspaceView = 'editor' | 'graph';
@@ -75,7 +76,12 @@ function expandFoldersForPath(path: string): string[] {
 	return folders;
 }
 
-export function VaultWorkspacePage({ vaultId, initialNotePath = null, onBack }: VaultWorkspacePageProps) {
+export function VaultWorkspacePage({
+	vaultId,
+	initialNotePath = null,
+	onBack,
+	onVaultMissing,
+}: VaultWorkspacePageProps) {
 	const [selectedPath, setSelectedPath] = useState<string | null>(initialNotePath);
 	const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['']));
 	const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('editor');
@@ -93,11 +99,22 @@ export function VaultWorkspacePage({ vaultId, initialNotePath = null, onBack }: 
 	const vaultQuery = useQuery({
 		queryKey: queryKeys.pkb.vault(vaultId),
 		queryFn: () => pkbApi.vault(vaultId),
+		retry: false,
 	});
+
+	useEffect(() => {
+		if (!vaultQuery.isError) {
+			return;
+		}
+		onVaultMissing?.();
+	}, [vaultQuery.isError, onVaultMissing]);
+
+	const vaultReady = vaultQuery.isSuccess;
 
 	const treeQuery = useQuery({
 		queryKey: queryKeys.pkb.fileTree(vaultId),
 		queryFn: () => pkbApi.fileTree(vaultId, undefined, 8),
+		enabled: vaultReady,
 	});
 
 	const treeNodes = useMemo(() => {
@@ -378,7 +395,17 @@ export function VaultWorkspacePage({ vaultId, initialNotePath = null, onBack }: 
 				<Box flex={1} h="100%" style={{ minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 					{workspaceView === 'graph' ? (
 						<Box flex={1} h="100%" mih={0} style={{ overflow: 'hidden' }}>
-							<GraphView vaultId={vaultId} onNavigateNote={handleNavigateNote} />
+							{vaultReady ? (
+								<GraphView vaultId={vaultId} onNavigateNote={handleNavigateNote} />
+							) : vaultQuery.isLoading ? (
+								<Stack align="center" justify="center" h="100%">
+									<Loader size="sm" />
+								</Stack>
+							) : (
+								<Alert color="red" title="Vault не найден" m="md">
+									Не удалось загрузить vault #{vaultId}. Вернитесь к списку vault.
+								</Alert>
+							)}
 						</Box>
 					) : selectedPath && !editorPath ? (
 						<Stack gap="xs" p="md">

@@ -120,6 +120,21 @@
 | schooltask-calendar-editor | Редактор расписания | sub-app |
 | schooltask-calendar-teacher | Мои уроки | regular |
 
+### IBlock
+
+| ID | Название | Тип |
+|----|----------|-----|
+| iblock-types | Типы инфоблоков | regular |
+| iblock-type | Тип инфоблока | sub-app |
+| iblock-blocks | Инфоблоки | regular |
+| iblock-block | Инфоблок | sub-app |
+| iblock-sections | Разделы | regular |
+| iblock-section | Раздел | sub-app |
+| iblock-elements | Элементы | regular |
+| iblock-element | Элемент | sub-app |
+| iblock-properties | Свойства инфоблоков | regular |
+| iblock-property | Свойство инфоблока | sub-app |
+
 ### Бизнес-приложения (tools)
 
 | ID | Название | API prefix | Особенности |
@@ -141,7 +156,7 @@
 | Main | `server/src/Main/` | main | ✓ |
 | Device | `server/src/Device/` | device | ✓ |
 | Explorer | `server/src/Explorer/` | explorer | ✓ |
-| IBlock | `server/src/IBlock/` | — | ✓ |
+| IBlock | `server/src/IBlock/` | iblock | ✓ |
 | IncCom | `server/src/IncCom/` | inccom | ✓ |
 | SchoolTask | `server/src/SchoolTask/` | schooltask | ✓ |
 | Calendar | `server/src/Calendar/` | calendar | ✓ |
@@ -150,7 +165,7 @@
 | Pkb | `server/src/Pkb/` | pkb | ✓ |
 | Ts | `server/src/Ts/` | ts | ✓ |
 
-IBlock — API инфоблоков, отдельного desktop-приложения нет.
+IBlock — API + desktop apps (`iblock-*`, Start Menu «Инфоблоки», `ROLE_IBLOCK`). См. [iblock/README.md](iblock/README.md), [iblock/DEVELOPER_GUIDE.md](iblock/DEVELOPER_GUIDE.md).
 
 ---
 

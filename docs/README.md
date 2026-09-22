@@ -24,6 +24,7 @@
 | Device | [device/TZ.md](device/TZ.md) | [device/README.md](device/README.md) | — |
 | Explorer | [explorer/TZ.md](explorer/TZ.md) | [explorer/README.md](explorer/README.md) | [explorer/PLAN.md](explorer/PLAN.md), [explorer/TODO.md](explorer/TODO.md) |
 | SchoolTask | [schooltask/TZ.md](schooltask/TZ.md) | [schooltask/README.md](schooltask/README.md) | [schooltask/REVIEW.md](schooltask/REVIEW.md) |
+| IBlock | [iblock/TZ.md](iblock/TZ.md) | [iblock/README.md](iblock/README.md) | [iblock/API.md](iblock/API.md), [iblock/DEVELOPER_GUIDE.md](iblock/DEVELOPER_GUIDE.md) |
 | IncCom | [inccom/TZ.md](inccom/TZ.md) | [inccom/README.md](inccom/README.md) | — |
 | TeamStorm | — | [ts/README.md](ts/README.md) | — |
 | Calendar | [calendar/TZ.md](calendar/TZ.md) | [calendar/README.md](calendar/README.md) | — |

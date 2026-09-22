@@ -1,4 +1,4 @@
-import { Alert } from '@mantine/core';
+import { Alert, Loader, Stack, Text } from '@mantine/core';
 import { useEffect, useState } from 'react';
 
 import { pkbApi } from '@/core/api/endpoints/pkbApi';
@@ -6,13 +6,30 @@ import { asNonEmptyString, asPositiveInt } from '@/core/appManager/appLaunchProp
 import { useAppContext } from '@/core/context/AppContext';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
+import {
+	clearLastVaultId,
+	loadLastVaultId,
+	saveLastVaultId,
+} from '@/features/pkb/hooks/usePkbUiPrefs';
 import { canUsePkb } from '@/features/pkb/pkbAccess';
-import { loadLastVaultId, saveLastVaultId } from '@/features/pkb/hooks/usePkbUiPrefs';
 import { VaultDashboardPage } from '@/features/pkb/VaultDashboardPage';
 
 import { VaultWorkspacePage } from './pages/VaultWorkspacePage';
 
 type PkbView = 'dashboard' | 'workspace';
+
+async function resolveAccessibleVaultId(candidate: number | null): Promise<number | null> {
+	if (candidate == null) {
+		return null;
+	}
+	try {
+		await pkbApi.vault(candidate);
+		return candidate;
+	} catch {
+		await clearLastVaultId();
+		return null;
+	}
+}
 
 export default function PkbApp() {
 	useWindowTitle('База знаний');
@@ -23,35 +40,37 @@ export default function PkbApp() {
 	const [view, setView] = useState<PkbView>('dashboard');
 	const [activeVaultId, setActiveVaultId] = useState<number | null>(null);
 	const [restoring, setRestoring] = useState(true);
+	const [staleVaultMessage, setStaleVaultMessage] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (propVaultId) {
-			setActiveVaultId(propVaultId);
-			setView('workspace');
-			setRestoring(false);
-			void saveLastVaultId(propVaultId);
-			return;
-		}
-
 		let cancelled = false;
 
 		void (async () => {
-			try {
-				const lastId = await loadLastVaultId();
-				if (lastId !== null) {
-					await pkbApi.vault(lastId);
-					if (!cancelled) {
-						setActiveVaultId(lastId);
-						setView('workspace');
-					}
-				}
-			} catch {
-				// vault removed or inaccessible
-			} finally {
-				if (!cancelled) {
-					setRestoring(false);
+			setRestoring(true);
+			setStaleVaultMessage(null);
+
+			const preferred = propVaultId ?? (await loadLastVaultId());
+			const resolved = await resolveAccessibleVaultId(preferred);
+
+			if (cancelled) {
+				return;
+			}
+
+			if (resolved != null) {
+				setActiveVaultId(resolved);
+				setView('workspace');
+				void saveLastVaultId(resolved);
+			} else {
+				setActiveVaultId(null);
+				setView('dashboard');
+				if (preferred != null) {
+					setStaleVaultMessage(
+						`Vault #${preferred} недоступен (удалён или нет доступа). Выберите vault из списка.`,
+					);
 				}
 			}
+
+			setRestoring(false);
 		})();
 
 		return () => {
@@ -68,6 +87,7 @@ export default function PkbApp() {
 	}
 
 	const handleOpenVault = (vaultId: number) => {
+		setStaleVaultMessage(null);
 		setActiveVaultId(vaultId);
 		setView('workspace');
 		void saveLastVaultId(vaultId);
@@ -78,8 +98,21 @@ export default function PkbApp() {
 		setActiveVaultId(null);
 	};
 
+	const handleVaultMissing = () => {
+		void clearLastVaultId();
+		setStaleVaultMessage('Vault больше не существует. Выберите другой из списка.');
+		handleBack();
+	};
+
 	if (restoring) {
-		return null;
+		return (
+			<Stack align="center" justify="center" h="100%" gap="sm">
+				<Loader size="sm" />
+				<Text size="sm" c="dimmed">
+					Загрузка…
+				</Text>
+			</Stack>
+		);
 	}
 
 	if (view === 'workspace' && activeVaultId !== null) {
@@ -88,9 +121,19 @@ export default function PkbApp() {
 				vaultId={activeVaultId}
 				initialNotePath={propVaultId === activeVaultId ? propNotePath : null}
 				onBack={handleBack}
+				onVaultMissing={handleVaultMissing}
 			/>
 		);
 	}
 
-	return <VaultDashboardPage onOpenVault={handleOpenVault} />;
+	return (
+		<>
+			{staleVaultMessage ? (
+				<Alert color="yellow" title="Vault не найден" m="md" withCloseButton onClose={() => setStaleVaultMessage(null)}>
+					{staleVaultMessage}
+				</Alert>
+			) : null}
+			<VaultDashboardPage onOpenVault={handleOpenVault} />
+		</>
+	);
 }

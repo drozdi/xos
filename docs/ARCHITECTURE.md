@@ -149,7 +149,7 @@ Sync при записи в БД **всегда** нормализует к obje
 ### Scope sync vs UI
 
 - Sync: **все** модули из glob `src/*/setting.json` (включая Todo, IBlock).
-- UI «Доступ к приложениям»: только `ProtectedAppModules` (Todo/IBlock **не** включать, пока явно не попросят).
+- UI «Доступ к приложениям»: только `ProtectedAppModules` (Todo **не** включать, пока явно не попросят; `iblock` — включён).
 
 ### API (см. `docs/API_SPEC.md`)
 
