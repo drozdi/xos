@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use IBlock\Repository\BlockRepository;
+use Main\Entity\File as MainFile;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: BlockRepository::class)]
@@ -59,6 +60,14 @@ class Block
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
+
+    #[ORM\ManyToOne(targetEntity: MainFile::class)]
+    #[ORM\JoinColumn(name: 'preview_image_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?MainFile $previewImage = null;
+
+    #[ORM\ManyToOne(targetEntity: MainFile::class)]
+    #[ORM\JoinColumn(name: 'detail_image_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?MainFile $detailImage = null;
 
     #[ORM\ManyToOne(targetEntity: Type::class)]
     #[ORM\JoinColumn(name: 'type_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
@@ -243,6 +252,30 @@ class Block
         return $this;
     }
 
+    public function getPreviewImage(): ?MainFile
+    {
+        return $this->previewImage;
+    }
+
+    public function setPreviewImage(?MainFile $previewImage): self
+    {
+        $this->previewImage = $previewImage;
+
+        return $this;
+    }
+
+    public function getDetailImage(): ?MainFile
+    {
+        return $this->detailImage;
+    }
+
+    public function setDetailImage(?MainFile $detailImage): self
+    {
+        $this->detailImage = $detailImage;
+
+        return $this;
+    }
+
     public function getType(): ?Type
     {
         return $this->type;
@@ -285,13 +318,7 @@ class Block
     #[ORM\PrePersist]
     public function prePersist(): void
     {
+        // x_timestamp managed by #[ORM\Version] — do not set in lifecycle callbacks
         $this->dateCreated = new \DateTime();
-        $this->xTimestamp = new \DateTime();
-    }
-
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->xTimestamp = new \DateTime();
     }
 }

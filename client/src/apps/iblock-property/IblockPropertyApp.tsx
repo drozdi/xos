@@ -45,6 +45,13 @@ const FIELD_TYPE_OPTIONS = [
 	{ value: 'G', label: 'Привязка к разделу' },
 ];
 
+const FILE_TYPE_PRESETS = [
+	{ value: '', label: 'Любой файл' },
+	{ value: 'image', label: 'Изображения' },
+	{ value: 'jpg,jpeg,png,gif,webp', label: 'jpg / png / gif / webp' },
+	{ value: 'pdf', label: 'PDF' },
+];
+
 const initialData: IblockPropertyDetail = {
 	id: 0,
 	code: '',
@@ -55,6 +62,7 @@ const initialData: IblockPropertyDetail = {
 	required: false,
 	multiple: false,
 	field_type: 'S',
+	file_type: '',
 	list_type: '',
 	default_value: '',
 	postfix: '',
@@ -374,6 +382,7 @@ export default function IblockPropertyApp() {
 			{({ data, setField, errors, readOnly, isNew: isNewRecord }) => {
 				const fieldType = (data.field_type ?? '').toUpperCase();
 				const isListType = fieldType === 'L';
+				const isFileType = fieldType === 'F';
 				const needsLinkIblock = fieldType === 'E' || fieldType === 'G';
 
 				return (
@@ -456,11 +465,44 @@ export default function IblockPropertyApp() {
 										if (value !== 'E' && value !== 'G') {
 											setField('link_iblock_id', null);
 										}
+										if (value !== 'F') {
+											setField('file_type', '');
+										}
 										if (value !== 'L' && activeTab === 'enums') {
 											setActiveTab('general');
 										}
 									}}
 								/>
+								{isFileType ? (
+									<>
+										<Select
+											label="Тип файла (пресет)"
+											data={FILE_TYPE_PRESETS}
+											value={
+												FILE_TYPE_PRESETS.some((o) => o.value === (data.file_type ?? ''))
+													? (data.file_type ?? '')
+													: null
+											}
+											placeholder={
+												data.file_type &&
+												!FILE_TYPE_PRESETS.some((o) => o.value === data.file_type)
+													? data.file_type
+													: 'Выберите или укажите ниже'
+											}
+											readOnly={readOnly}
+											onChange={(value) => setField('file_type', value ?? '')}
+											clearable
+											searchable
+										/>
+										<TextInput
+											label="Тип файла"
+											description="Пусто — любой; image — картинки; расширения jpg,png или mime image/*"
+											value={data.file_type ?? ''}
+											readOnly={readOnly}
+											onChange={(e) => setField('file_type', e.currentTarget.value)}
+										/>
+									</>
+								) : null}
 								{needsLinkIblock ? (
 									<Select
 										label="Инфоблок привязки"

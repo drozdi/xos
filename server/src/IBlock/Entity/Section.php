@@ -7,6 +7,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use IBlock\Repository\SectionRepository;
+use Main\Entity\File as MainFile;
+use Main\Entity\User;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: SectionRepository::class)]
@@ -48,6 +50,14 @@ class Section
     #[ORM\JoinColumn(name: 'block_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
     private ?Block $block = null;
 
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'created_by_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $createdBy = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'updated_by_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $updatedBy = null;
+
     #[ORM\Column(name: 'code', length: 191)]
     #[Assert\NotBlank]
     private ?string $code = null;
@@ -64,6 +74,14 @@ class Section
 
     #[ORM\Column(name: 'description', type: Types::TEXT, nullable: true)]
     private ?string $description = null;
+
+    #[ORM\ManyToOne(targetEntity: MainFile::class)]
+    #[ORM\JoinColumn(name: 'preview_image_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?MainFile $previewImage = null;
+
+    #[ORM\ManyToOne(targetEntity: MainFile::class)]
+    #[ORM\JoinColumn(name: 'detail_image_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?MainFile $detailImage = null;
 
     /** @var array<string, mixed>|null Criteria for filter/bind_filter section modes. */
     #[ORM\Column(name: 'element_filter', type: Types::JSON, nullable: true)]
@@ -267,6 +285,30 @@ class Section
         return $this;
     }
 
+    public function getPreviewImage(): ?MainFile
+    {
+        return $this->previewImage;
+    }
+
+    public function setPreviewImage(?MainFile $previewImage): self
+    {
+        $this->previewImage = $previewImage;
+
+        return $this;
+    }
+
+    public function getDetailImage(): ?MainFile
+    {
+        return $this->detailImage;
+    }
+
+    public function setDetailImage(?MainFile $detailImage): self
+    {
+        $this->detailImage = $detailImage;
+
+        return $this;
+    }
+
     /** @return array<string, mixed>|null */
     public function getElementFilter(): ?array
     {
@@ -293,16 +335,34 @@ class Section
         return $this;
     }
 
+    public function getCreatedBy(): ?User
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(?User $createdBy): self
+    {
+        $this->createdBy = $createdBy;
+
+        return $this;
+    }
+
+    public function getUpdatedBy(): ?User
+    {
+        return $this->updatedBy;
+    }
+
+    public function setUpdatedBy(?User $updatedBy): self
+    {
+        $this->updatedBy = $updatedBy;
+
+        return $this;
+    }
+
     #[ORM\PrePersist]
     public function prePersist(): void
     {
+        // x_timestamp managed by #[ORM\Version] — do not set in lifecycle callbacks
         $this->dateCreated = new \DateTime();
-        $this->xTimestamp = new \DateTime();
-    }
-
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->xTimestamp = new \DateTime();
     }
 }

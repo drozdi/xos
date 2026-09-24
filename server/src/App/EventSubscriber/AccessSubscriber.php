@@ -4,6 +4,7 @@ namespace App\EventSubscriber;
 
 use App\Attribute\Access;
 use App\Http\ApiResponse;
+use App\Security\RecipeIblockBridge;
 use App\Security\UserScopeResolver;
 use Main\Entity\User;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -15,6 +16,7 @@ final class AccessSubscriber implements EventSubscriberInterface
 {
     public function __construct(
         private readonly UserScopeResolver $userScopeResolver,
+        private readonly RecipeIblockBridge $recipeIblockBridge,
         private readonly TokenStorageInterface $tokenStorage,
     ) {
     }
@@ -67,21 +69,24 @@ final class AccessSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $checkRoles = $classAccess->checksRoles() || $methodAccess->checksRoles();
+        $checkScopes = $methodAccess->checksScopes();
         $module = explode('.', $classScope)[0];
 
-        if ($classAccess->checksRoles() || $methodAccess->checksRoles()) {
-            if (!$this->userScopeResolver->canAccessModule($user, $module)) {
-                $event->setController(fn () => ApiResponse::forbidden('Недостаточно прав'));
-
-                return;
-            }
-        }
-
-        // Method-level checkScopes:false opts out even if class enables scopes (tutor bypass).
-        if ($methodAccess->checksScopes()) {
-            if (!$this->userScopeResolver->checkHasScope($user, $fullScope)) {
+        $hasModule = !$checkRoles || $this->userScopeResolver->canAccessModule($user, $module);
+        if ($hasModule) {
+            if ($checkScopes && !$this->userScopeResolver->checkHasScope($user, $fullScope)) {
                 $event->setController(fn () => ApiResponse::forbidden('Недостаточно прав'));
             }
+
+            return;
         }
+
+        // ROLE_RECIPE → IBlock controllers for recipes catalog (scopes mapped in bridge)
+        if ($this->recipeIblockBridge->allowsIblockAccess($user, $classScope, $fullScope, $checkScopes)) {
+            return;
+        }
+
+        $event->setController(fn () => ApiResponse::forbidden('Недостаточно прав'));
     }
 }

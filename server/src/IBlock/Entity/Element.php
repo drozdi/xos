@@ -7,6 +7,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use IBlock\Repository\ElementRepository;
+use Main\Entity\File as MainFile;
+use Main\Entity\User;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ElementRepository::class)]
@@ -64,6 +66,22 @@ class Element
     #[ORM\Column(name: 'detail_text', type: Types::TEXT, nullable: true)]
     private ?string $detailText = null;
 
+    #[ORM\ManyToOne(targetEntity: MainFile::class)]
+    #[ORM\JoinColumn(name: 'preview_image_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?MainFile $previewImage = null;
+
+    #[ORM\ManyToOne(targetEntity: MainFile::class)]
+    #[ORM\JoinColumn(name: 'detail_image_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?MainFile $detailImage = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'created_by_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $createdBy = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'updated_by_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $updatedBy = null;
+
     /** @var Collection<int, ElementPropertyValue> */
     #[ORM\OneToMany(mappedBy: 'element', targetEntity: ElementPropertyValue::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $propertyValues;
@@ -72,10 +90,15 @@ class Element
     #[ORM\OneToMany(mappedBy: 'element', targetEntity: SectionElement::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $sectionLinks;
 
+    /** @var Collection<int, ElementShare> */
+    #[ORM\OneToMany(mappedBy: 'element', targetEntity: ElementShare::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $shares;
+
     public function __construct()
     {
         $this->propertyValues = new ArrayCollection();
         $this->sectionLinks = new ArrayCollection();
+        $this->shares = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -235,6 +258,30 @@ class Element
         return $this;
     }
 
+    public function getPreviewImage(): ?MainFile
+    {
+        return $this->previewImage;
+    }
+
+    public function setPreviewImage(?MainFile $previewImage): self
+    {
+        $this->previewImage = $previewImage;
+
+        return $this;
+    }
+
+    public function getDetailImage(): ?MainFile
+    {
+        return $this->detailImage;
+    }
+
+    public function setDetailImage(?MainFile $detailImage): self
+    {
+        $this->detailImage = $detailImage;
+
+        return $this;
+    }
+
     public function getBlock(): ?Block
     {
         return $this->block;
@@ -327,16 +374,61 @@ class Element
         return array_values(array_unique($ids));
     }
 
+    public function getCreatedBy(): ?User
+    {
+        return $this->createdBy;
+    }
+
+    public function setCreatedBy(?User $createdBy): self
+    {
+        $this->createdBy = $createdBy;
+
+        return $this;
+    }
+
+    public function getUpdatedBy(): ?User
+    {
+        return $this->updatedBy;
+    }
+
+    public function setUpdatedBy(?User $updatedBy): self
+    {
+        $this->updatedBy = $updatedBy;
+
+        return $this;
+    }
+
+    /** @return Collection<int, ElementShare> */
+    public function getShares(): Collection
+    {
+        return $this->shares;
+    }
+
+    public function addShare(ElementShare $share): self
+    {
+        if (!$this->shares->contains($share)) {
+            $this->shares->add($share);
+            $share->setElement($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShare(ElementShare $share): self
+    {
+        if ($this->shares->removeElement($share)) {
+            if ($share->getElement() === $this) {
+                $share->setElement(null);
+            }
+        }
+
+        return $this;
+    }
+
     #[ORM\PrePersist]
     public function prePersist(): void
     {
+        // x_timestamp managed by #[ORM\Version] — do not set in lifecycle callbacks
         $this->dateCreated = new \DateTime();
-        $this->xTimestamp = new \DateTime();
-    }
-
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->xTimestamp = new \DateTime();
     }
 }

@@ -5,12 +5,15 @@ namespace IBlock\Controller;
 use App\Attribute\Access;
 use AbstractRepository;
 use App\Http\ContentRangeHeaders;
+use Doctrine\ORM\EntityManagerInterface;
 use IBlock\Entity\Section;
 use IBlock\Repository\BlockRepository;
 use IBlock\Repository\SectionRepository;
 use IBlock\Service\ElementManager;
+use IBlock\Service\IblockImageRef;
 use IBlock\Service\SectionElementManager;
 use IBlock\Service\SectionPropertyManager;
+use Main\Entity\User;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,6 +30,7 @@ class SectionController extends IBlockCrudController
         private readonly SectionPropertyManager $sectionPropertyManager,
         private readonly SectionElementManager $sectionElementManager,
         private readonly ElementManager $elementManager,
+        private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -129,6 +133,10 @@ class SectionController extends IBlockCrudController
             'sort' => $entity->getSort(),
             'level' => $entity->getLevel(),
             'block_id' => $entity->getBlock()?->getId(),
+            'preview_image' => IblockImageRef::serialize($entity->getPreviewImage()),
+            'detail_image' => IblockImageRef::serialize($entity->getDetailImage()),
+            'preview_image_id' => $entity->getPreviewImage()?->getId(),
+            'detail_image_id' => $entity->getDetailImage()?->getId(),
         ];
     }
 
@@ -147,10 +155,18 @@ class SectionController extends IBlockCrudController
             'active_to' => $entity->getActiveTo('Y-m-d H:i:s'),
             'block_id' => $entity->getBlock()?->getId(),
             'parent_id' => $entity->getParent()?->getId(),
-            'element_filter' => $entity->getElementFilter(),
-            'inherited_element_filter' => $this->sectionElementManager->resolveInheritedFilter($entity),
+            'element_filter' => $this->serializeFilterMap($entity->getElementFilter()),
+            'inherited_element_filter' => $this->serializeFilterMap(
+                $this->sectionElementManager->resolveInheritedFilter($entity),
+            ),
             'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
             'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
+            'created_by' => $this->serializeUserRef($entity->getCreatedBy()),
+            'updated_by' => $this->serializeUserRef($entity->getUpdatedBy()),
+            'preview_image' => IblockImageRef::serialize($entity->getPreviewImage()),
+            'detail_image' => IblockImageRef::serialize($entity->getDetailImage()),
+            'preview_image_id' => $entity->getPreviewImage()?->getId(),
+            'detail_image_id' => $entity->getDetailImage()?->getId(),
         ];
     }
 
@@ -226,5 +242,39 @@ class SectionController extends IBlockCrudController
                 $section->setElementFilter($filter);
             }
         }
+        IblockImageRef::applyTo($section, $data, $this->entityManager);
+    }
+
+    /**
+     * @return array{id: int|null, email: string|null, alias: string|null}|null
+     */
+    private function serializeUserRef(?User $user): ?array
+    {
+        if (!$user instanceof User) {
+            return null;
+        }
+
+        return [
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'alias' => $user->getAlias(),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed>|null $filter
+     *
+     * @return array<string, mixed>|\stdClass|null
+     */
+    private function serializeFilterMap(?array $filter): array|\stdClass|null
+    {
+        if (null === $filter) {
+            return null;
+        }
+        if ([] === $filter) {
+            return new \stdClass();
+        }
+
+        return $filter;
     }
 }

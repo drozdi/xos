@@ -77,6 +77,12 @@ class Property
     #[ORM\Column(name: 'field_type', length: 255, options: ['default' => 's'])]
     private string $fieldType = 's';
 
+    /**
+     * Restriction for field_type=F: empty=any, `image`, extensions `jpg,png`, or mime `image/*`.
+     */
+    #[ORM\Column(name: 'file_type', length: 255, nullable: true)]
+    private ?string $fileType = null;
+
     #[ORM\Column(name: 'list_type', length: 255, options: ['default' => 's'])]
     private string $listType = 's';
 
@@ -343,6 +349,19 @@ class Property
         return $this;
     }
 
+    public function getFileType(): ?string
+    {
+        return $this->fileType;
+    }
+
+    public function setFileType(?string $fileType = null): self
+    {
+        $trimmed = null === $fileType ? null : trim($fileType);
+        $this->fileType = (null === $trimmed || '' === $trimmed) ? null : $trimmed;
+
+        return $this;
+    }
+
     public function getListType(): string
     {
         return $this->listType;
@@ -418,13 +437,7 @@ class Property
     #[ORM\PrePersist]
     public function prePersist(): void
     {
+        // x_timestamp managed by #[ORM\Version] — do not set in lifecycle callbacks
         $this->dateCreated = new \DateTime();
-        $this->xTimestamp = new \DateTime();
-    }
-
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->xTimestamp = new \DateTime();
     }
 }

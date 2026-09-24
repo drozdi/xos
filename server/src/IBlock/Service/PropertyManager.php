@@ -7,8 +7,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use IBlock\Entity\Property;
 use IBlock\Repository\BlockRepository;
 use IBlock\Repository\PropertyRepository;
+use IBlock\Security\RecipesBlockGuard;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Main\Entity\User;
 
 class PropertyManager extends AbstractIBlockManager
 {
@@ -19,6 +22,8 @@ class PropertyManager extends AbstractIBlockManager
         EntityManagerInterface $entityManager,
         private readonly PropertyRepository $propertyRepository,
         private readonly BlockRepository $blockRepository,
+        private readonly RecipesBlockGuard $recipesBlockGuard,
+        private readonly Security $security,
     ) {
         parent::__construct($validator, $entityManager);
     }
@@ -44,6 +49,7 @@ class PropertyManager extends AbstractIBlockManager
             'active' => $entity->isActive(),
             'block_id' => $entity->getBlock()?->getId(),
             'field_type' => strtoupper($entity->getFieldType()),
+            'file_type' => $entity->getFileType(),
             'link_iblock_id' => $entity->getLinkIblock()?->getId(),
         ];
     }
@@ -61,6 +67,7 @@ class PropertyManager extends AbstractIBlockManager
             'required' => $entity->isRequired(),
             'multiple' => $entity->isMultiple(),
             'field_type' => strtoupper($entity->getFieldType()),
+            'file_type' => $entity->getFileType(),
             'list_type' => $entity->getListType(),
             'default_value' => $entity->getDefaultValue(),
             'postfix' => $entity->getPostfix(),
@@ -73,6 +80,77 @@ class PropertyManager extends AbstractIBlockManager
             'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
             'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
         ];
+    }
+
+    public function getById(int $id): ?array
+    {
+        $entity = $this->propertyRepository->find($id);
+        if (!$entity instanceof Property) {
+            return null;
+        }
+        $this->recipesBlockGuard->assertPropertyAllowed($this->currentUser(), $entity);
+
+        return $this->serializeDetail($entity);
+    }
+
+    public function getList(array $order, array $filter, ?int $limit = null, ?int $offset = null): array
+    {
+        $filter = $this->recipesBlockGuard->constrainListFilter($filter, $this->currentUser());
+
+        return parent::getList($order, $filter, $limit, $offset);
+    }
+
+    public function count(array $filter): int
+    {
+        $filter = $this->recipesBlockGuard->constrainListFilter($filter, $this->currentUser());
+
+        return parent::count($filter);
+    }
+
+    public function add(array $fields): int
+    {
+        $user = $this->currentUser();
+        if (isset($fields['block_id'])) {
+            $this->recipesBlockGuard->assertBlockIdAllowed($user, (int) $fields['block_id']);
+        } elseif ($this->recipesBlockGuard->isRecipeOnlyUser($user)) {
+            $blockId = $this->recipesBlockGuard->recipesBlockId();
+            if (null === $blockId) {
+                throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException('Блок recipes не найден');
+            }
+            $fields['block_id'] = $blockId;
+        }
+
+        $entity = $this->createEntity($fields);
+        $this->validateEntity($entity);
+        $this->persistEntity($entity, true);
+
+        return (int) $entity->getId();
+    }
+
+    public function update(int $id, array $fields): void
+    {
+        /** @var Property $property */
+        $property = $this->requireEntity($id);
+        $this->recipesBlockGuard->assertPropertyAllowed($this->currentUser(), $property);
+        $this->applyFields($property, $fields);
+        $this->assertPropertyConfig($property);
+        $this->validateEntity($property);
+        $this->persistEntity($property, true);
+    }
+
+    public function delete(int $id): void
+    {
+        /** @var Property $property */
+        $property = $this->requireEntity($id);
+        $this->recipesBlockGuard->assertPropertyAllowed($this->currentUser(), $property);
+        parent::delete($id);
+    }
+
+    private function currentUser(): ?User
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof User ? $user : null;
     }
 
     protected function createEntity(array $fields): object
@@ -110,6 +188,10 @@ class PropertyManager extends AbstractIBlockManager
         }
         if (array_key_exists('field_type', $fields)) {
             $entity->setFieldType($fields['field_type']);
+        }
+        if (array_key_exists('file_type', $fields)) {
+            $raw = $fields['file_type'];
+            $entity->setFileType(null === $raw || '' === $raw ? null : (string) $raw);
         }
         if (array_key_exists('list_type', $fields)) {
             $entity->setListType($fields['list_type']);
@@ -156,25 +238,6 @@ class PropertyManager extends AbstractIBlockManager
             }
             $entity->setParent($parent);
         }
-    }
-
-    public function add(array $fields): int
-    {
-        $entity = $this->createEntity($fields);
-        $this->validateEntity($entity);
-        $this->persistEntity($entity, true);
-
-        return (int) $entity->getId();
-    }
-
-    public function update(int $id, array $fields): void
-    {
-        /** @var Property $entity */
-        $entity = $this->requireEntity($id);
-        $this->applyFields($entity, $fields);
-        $this->assertPropertyConfig($entity);
-        $this->validateEntity($entity);
-        $this->persistEntity($entity, true);
     }
 
     private function assertPropertyConfig(Property $property): void

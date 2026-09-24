@@ -11,7 +11,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: PropertyEnumRepository::class)]
 #[ORM\Table(name: 'iblock_property_enum')]
 #[ORM\UniqueConstraint(columns: ['property_id', 'code'])]
-#[ORM\HasLifecycleCallbacks]
 class Enum
 {
     #[ORM\Id]
@@ -126,17 +125,5 @@ class Enum
         $this->sort = $sort;
 
         return $this;
-    }
-
-    #[ORM\PrePersist]
-    public function prePersist(): void
-    {
-        $this->xTimestamp = new \DateTime();
-    }
-
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->xTimestamp = new \DateTime();
     }
 }

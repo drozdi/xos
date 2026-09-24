@@ -9,6 +9,24 @@ use Board\Entity\Label;
 use Board\Entity\Workspace;
 use Board\Repository\WorkspaceRepository;
 use Board\Service\BoardManager;
+use IBlock\Entity\Block;
+use IBlock\Entity\Element;
+use IBlock\Entity\Property;
+use IBlock\Entity\Property\Enum as PropertyEnum;
+use IBlock\Entity\Section;
+use IBlock\Entity\Type;
+use IBlock\Repository\BlockRepository;
+use IBlock\Repository\ElementRepository;
+use IBlock\Repository\PropertyEnumRepository;
+use IBlock\Repository\PropertyRepository;
+use IBlock\Repository\SectionRepository;
+use IBlock\Repository\TypeRepository;
+use IBlock\Service\BlockManager;
+use IBlock\Service\ElementManager;
+use IBlock\Service\PropertyEnumManager;
+use IBlock\Service\PropertyManager;
+use IBlock\Service\SectionManager;
+use IBlock\Service\TypeManager;
 use Main\Entity\User;
 use Main\Repository\UserRepository;
 use Pkb\Entity\Vault;
@@ -39,6 +57,18 @@ final class SeedXosProjectCommand extends Command
         private readonly BoardManager $boardManager,
         private readonly PkbManager $pkbManager,
         private readonly VaultFileService $vaultFiles,
+        private readonly TypeRepository $iblockTypes,
+        private readonly BlockRepository $iblockBlocks,
+        private readonly SectionRepository $iblockSections,
+        private readonly PropertyRepository $iblockProperties,
+        private readonly PropertyEnumRepository $iblockPropertyEnums,
+        private readonly ElementRepository $iblockElements,
+        private readonly TypeManager $typeManager,
+        private readonly BlockManager $blockManager,
+        private readonly SectionManager $sectionManager,
+        private readonly PropertyManager $propertyManager,
+        private readonly PropertyEnumManager $propertyEnumManager,
+        private readonly ElementManager $elementManager,
     ) {
         parent::__construct();
     }
@@ -61,13 +91,258 @@ final class SeedXosProjectCommand extends Command
 
         $vault = $this->seedVault($io, $user, $force);
         $board = $this->seedBoard($io, $user, $force, $vault);
+        $content = $this->seedContentCatalog($io);
 
         $io->success([
             $vault ? sprintf('Vault «XOS» slug=%s id=%d', self::VAULT_SLUG, $vault->getId()) : 'Vault пропущен',
             $board ? sprintf('Доска «%s» id=%d', self::BOARD_TITLE, $board->getId()) : 'Доска пропущена',
+            $content
+                ? sprintf('IBlock content: type=#%d notes=#%d recipes=#%d', $content['type_id'], $content['notes_id'], $content['recipes_id'])
+                : 'IBlock content пропущен',
         ]);
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Идемпотентный seed type=content + blocks notes/recipes для apps Notes/Recipes.
+     *
+     * @return array{type_id: int, notes_id: int, recipes_id: int}|null
+     */
+    private function seedContentCatalog(SymfonyStyle $io): ?array
+    {
+        $type = $this->iblockTypes->findOneBy(['code' => 'content']);
+        if (!$type instanceof Type) {
+            $typeId = $this->typeManager->add([
+                'code' => 'content',
+                'name' => 'Контент',
+                'description' => 'Заметки и рецепты (consumer apps)',
+                'sort' => 50,
+                'active' => true,
+                'sections' => true,
+            ]);
+            $type = $this->iblockTypes->find($typeId);
+        }
+        if (!$type instanceof Type) {
+            $io->error('Не удалось создать iblock_type content');
+
+            return null;
+        }
+
+        $notesBlock = $this->ensureBlock($type, 'notes', 'Заметки', 10);
+        $recipesBlock = $this->ensureBlock($type, 'recipes', 'Рецепты', 20);
+
+        $this->ensureProperty($notesBlock, 'COVER', 'Обложка', 'F', false, 10, 'image');
+        $this->ensureProperty($notesBlock, 'TAGS', 'Теги', 'S', true, 20);
+
+        $this->ensureProperty($recipesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
+        $this->ensureProperty($recipesBlock, 'PREP_MIN', 'Подготовка (мин)', 'N', false, 20);
+        $this->ensureProperty($recipesBlock, 'COOK_MIN', 'Готовка (мин)', 'N', false, 30);
+        $this->ensureProperty($recipesBlock, 'SERVINGS', 'Порции', 'N', false, 40);
+        $difficulty = $this->ensureProperty($recipesBlock, 'DIFFICULTY', 'Сложность', 'L', false, 50);
+        $this->ensureEnum($difficulty, 'easy', 'Легко', 10, true);
+        $this->ensureEnum($difficulty, 'medium', 'Средне', 20, false);
+        $this->ensureEnum($difficulty, 'hard', 'Сложно', 30, false);
+        $this->ensureProperty($recipesBlock, 'INGREDIENTS', 'Ингредиенты', 'S', true, 60);
+
+        $personal = $this->ensureSection($notesBlock, 'personal', 'Личное', 10);
+        $work = $this->ensureSection($notesBlock, 'work', 'Работа', 20);
+        $soups = $this->ensureSection($recipesBlock, 'soups', 'Супы', 10);
+        $mains = $this->ensureSection($recipesBlock, 'mains', 'Основные блюда', 20);
+        $desserts = $this->ensureSection($recipesBlock, 'desserts', 'Десерты', 30);
+
+        $this->ensureElement($notesBlock, 'welcome-note', 'Добро пожаловать', [
+            'preview_text' => 'Первая заметка в каталоге',
+            'detail_text' => "# Добро пожаловать\n\nЭто **заметка** на IBlock. Редактируйте как markdown и вставляйте картинки.\n",
+            'section_ids' => [$personal->getId()],
+            'PROPERTY_VALUES' => ['TAGS' => ['intro', 'xos']],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($notesBlock, 'meeting-notes', 'Заметки со встречи', [
+            'preview_text' => 'Черновик протокола',
+            'detail_text' => "## Повестка\n\n- Статус IBlock\n- Notes + Recipes apps\n\n## Решения\n\n1. Хранить на IBlock\n2. Markdown + upload картинок\n",
+            'section_ids' => [$work->getId()],
+            'PROPERTY_VALUES' => ['TAGS' => ['meeting']],
+            'sort' => 20,
+        ]);
+
+        $this->ensureElement($recipesBlock, 'tomato-soup', 'Томатный суп', [
+            'preview_text' => 'Простой суп за 30 минут',
+            'detail_text' => "## Приготовление\n\n1. Обжарьте лук и чеснок.\n2. Добавьте томаты и бульон.\n3. Проварите 15 минут, взбейте блендером.\n\nПодавайте с зеленью.\n",
+            'section_ids' => [$soups->getId()],
+            'PROPERTY_VALUES' => [
+                'PREP_MIN' => 10,
+                'COOK_MIN' => 20,
+                'SERVINGS' => 4,
+                'DIFFICULTY' => 'easy',
+                'INGREDIENTS' => [
+                    'лук — 1 шт.',
+                    'чеснок — 2 зубчика',
+                    'томаты — 800 г',
+                    'бульон — 500 мл',
+                ],
+            ],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($recipesBlock, 'pancakes', 'Блины', [
+            'preview_text' => 'Классические блины',
+            'detail_text' => "## Приготовление\n\n1. Смешайте муку, яйца и молоко.\n2. Жарьте на смазанной сковороде с двух сторон.\n",
+            'section_ids' => [$desserts->getId(), $mains->getId()],
+            'PROPERTY_VALUES' => [
+                'PREP_MIN' => 15,
+                'COOK_MIN' => 25,
+                'SERVINGS' => 6,
+                'DIFFICULTY' => 'medium',
+                'INGREDIENTS' => [
+                    'мука — 300 г',
+                    'молоко — 500 мл',
+                    'яйца — 2 шт.',
+                    'соль — щепотка',
+                ],
+            ],
+            'sort' => 20,
+        ]);
+
+        $io->text(sprintf(
+            'IBlock content: type=#%d notes=#%d recipes=#%d',
+            $type->getId(),
+            $notesBlock->getId(),
+            $recipesBlock->getId(),
+        ));
+
+        return [
+            'type_id' => (int) $type->getId(),
+            'notes_id' => (int) $notesBlock->getId(),
+            'recipes_id' => (int) $recipesBlock->getId(),
+        ];
+    }
+
+    private function ensureBlock(Type $type, string $code, string $name, int $sort): Block
+    {
+        $block = $this->iblockBlocks->findOneBy(['code' => $code, 'type' => $type]);
+        if ($block instanceof Block) {
+            return $block;
+        }
+        $id = $this->blockManager->add([
+            'code' => $code,
+            'name' => $name,
+            'type_id' => $type->getId(),
+            'sort' => $sort,
+            'active' => true,
+            'sections' => true,
+            'property' => true,
+            'section_mode' => 'bind',
+        ]);
+        $block = $this->iblockBlocks->find($id);
+        if (!$block instanceof Block) {
+            throw new \RuntimeException(sprintf('Failed to create block %s', $code));
+        }
+
+        return $block;
+    }
+
+    private function ensureProperty(
+        Block $block,
+        string $code,
+        string $name,
+        string $fieldType,
+        bool $multiple,
+        int $sort,
+        ?string $fileType = null,
+    ): Property {
+        $property = $this->iblockProperties->findOneBy(['code' => $code, 'block' => $block]);
+        if ($property instanceof Property) {
+            $payload = [];
+            if (strtoupper((string) $property->getFieldType()) !== strtoupper($fieldType)) {
+                $payload['field_type'] = $fieldType;
+            }
+            if ($property->isMultiple() !== $multiple) {
+                $payload['multiple'] = $multiple;
+            }
+            if (null !== $fileType) {
+                $current = $property->getFileType();
+                $wanted = '' === trim($fileType) ? null : $fileType;
+                if ($current !== $wanted) {
+                    $payload['file_type'] = $wanted;
+                }
+            }
+            if ($payload !== []) {
+                $this->propertyManager->update((int) $property->getId(), $payload);
+                $property = $this->iblockProperties->find($property->getId()) ?? $property;
+            }
+
+            return $property;
+        }
+        $id = $this->propertyManager->add([
+            'code' => $code,
+            'name' => $name,
+            'block_id' => $block->getId(),
+            'field_type' => $fieldType,
+            'multiple' => $multiple,
+            'file_type' => $fileType,
+            'sort' => $sort,
+            'active' => true,
+            'list_type' => 'L' === $fieldType ? 'L' : 's',
+        ]);
+        $property = $this->iblockProperties->find($id);
+        if (!$property instanceof Property) {
+            throw new \RuntimeException(sprintf('Failed to create property %s', $code));
+        }
+
+        return $property;
+    }
+
+    private function ensureEnum(Property $property, string $code, string $name, int $sort, bool $default): void
+    {
+        $existing = $this->iblockPropertyEnums->findOneBy(['code' => $code, 'property' => $property]);
+        if ($existing instanceof PropertyEnum) {
+            return;
+        }
+        $this->propertyEnumManager->add([
+            'code' => $code,
+            'name' => $name,
+            'property_id' => $property->getId(),
+            'sort' => $sort,
+            'default' => $default,
+        ]);
+    }
+
+    private function ensureSection(Block $block, string $code, string $name, int $sort): Section
+    {
+        $section = $this->iblockSections->findOneBy(['code' => $code, 'block' => $block]);
+        if ($section instanceof Section) {
+            return $section;
+        }
+        $id = $this->sectionManager->add([
+            'code' => $code,
+            'name' => $name,
+            'block_id' => $block->getId(),
+            'sort' => $sort,
+            'active' => true,
+        ]);
+        $section = $this->iblockSections->find($id);
+        if (!$section instanceof Section) {
+            throw new \RuntimeException(sprintf('Failed to create section %s', $code));
+        }
+
+        return $section;
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    private function ensureElement(Block $block, string $code, string $name, array $fields): void
+    {
+        $existing = $this->iblockElements->findOneBy(['code' => $code, 'block' => $block]);
+        if ($existing instanceof Element) {
+            return;
+        }
+        $this->elementManager->add(array_merge([
+            'code' => $code,
+            'name' => $name,
+            'block_id' => $block->getId(),
+            'active' => true,
+        ], $fields));
     }
 
     private function resolveUser(?string $login): User

@@ -9,6 +9,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
@@ -59,11 +61,45 @@ class ElementController extends AbstractController
         ));
     }
 
+    #[Route('/{id}/share', name: 'share', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Access('can_update')]
+    public function shareAction(int $id, Request $request): JsonResponse
+    {
+        $body = $request->toArray();
+        $email = (string) ($body['email'] ?? '');
+        try {
+            return $this->json($this->elementManager->shareElement($id, $email));
+        } catch (AccessDeniedHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+        } catch (NotFoundHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        } catch (BadRequestHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    #[Route('/{id}/share/{userId}', name: 'unshare', methods: ['DELETE'], requirements: ['id' => '\d+', 'userId' => '\d+'])]
+    #[Access('can_update')]
+    public function unshareAction(int $id, int $userId): JsonResponse
+    {
+        try {
+            return $this->json($this->elementManager->unshareElement($id, $userId));
+        } catch (AccessDeniedHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+        } catch (NotFoundHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+        }
+    }
+
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'], requirements: ['id' => '\d+'])]
     #[Access('can_read')]
     public function detailAction(int $id): JsonResponse
     {
-        $payload = $this->elementManager->getById($id);
+        try {
+            $payload = $this->elementManager->getById($id);
+        } catch (AccessDeniedHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+        }
         if (null === $payload) {
             return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
         }
@@ -90,6 +126,8 @@ class ElementController extends AbstractController
     {
         try {
             $this->elementManager->update($id, $request->toArray());
+        } catch (AccessDeniedHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         } catch (NotFoundHttpException) {
             return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
         } catch (ValidationFailedException $e) {
@@ -103,13 +141,19 @@ class ElementController extends AbstractController
     #[Access('can_delete')]
     public function removeAction(int $id): JsonResponse
     {
-        $payload = $this->elementManager->getById($id);
+        try {
+            $payload = $this->elementManager->getById($id);
+        } catch (AccessDeniedHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
+        }
         if (null === $payload) {
             return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
         }
 
         try {
             $this->elementManager->delete($id);
+        } catch (AccessDeniedHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], Response::HTTP_FORBIDDEN);
         } catch (NotFoundHttpException) {
             return $this->json(['error' => 'Not found'], Response::HTTP_NOT_FOUND);
         }

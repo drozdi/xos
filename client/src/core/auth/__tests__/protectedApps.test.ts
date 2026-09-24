@@ -21,6 +21,7 @@ describe('protectedApps', () => {
 			'pkb',
 			'ts',
 			'iblock',
+			'recipe',
 		]);
 	});
 
@@ -50,6 +51,8 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('ts')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_IBLOCK']);
 		expect(canUseAppModule('iblock')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_RECIPE']);
+		expect(canUseAppModule('recipe')).toBe(true);
 		resetUserRoles();
 	});
 });

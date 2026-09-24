@@ -4,9 +4,11 @@ namespace IBlock\Controller;
 
 use App\Attribute\Access;
 use AbstractRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use IBlock\Entity\Block;
 use IBlock\Repository\BlockRepository;
 use IBlock\Repository\TypeRepository;
+use IBlock\Service\IblockImageRef;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -19,6 +21,7 @@ class BlockController extends IBlockCrudController
     public function __construct(
         private readonly BlockRepository $blockRepository,
         private readonly TypeRepository $typeRepository,
+        private readonly EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -77,6 +80,10 @@ class BlockController extends IBlockCrudController
             'sort' => $entity->getSort(),
             'active' => $entity->isActive(),
             'type_id' => $entity->getType()?->getId(),
+            'preview_image' => IblockImageRef::serialize($entity->getPreviewImage()),
+            'detail_image' => IblockImageRef::serialize($entity->getDetailImage()),
+            'preview_image_id' => $entity->getPreviewImage()?->getId(),
+            'detail_image_id' => $entity->getDetailImage()?->getId(),
         ];
     }
 
@@ -98,6 +105,10 @@ class BlockController extends IBlockCrudController
             'type_id' => $entity->getType()?->getId(),
             'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
             'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
+            'preview_image' => IblockImageRef::serialize($entity->getPreviewImage()),
+            'detail_image' => IblockImageRef::serialize($entity->getDetailImage()),
+            'preview_image_id' => $entity->getPreviewImage()?->getId(),
+            'detail_image_id' => $entity->getDetailImage()?->getId(),
         ];
     }
 
@@ -164,5 +175,6 @@ class BlockController extends IBlockCrudController
             }
             $block->setType($type);
         }
+        IblockImageRef::applyTo($block, $data, $this->entityManager);
     }
 }

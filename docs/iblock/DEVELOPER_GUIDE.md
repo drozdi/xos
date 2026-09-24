@@ -265,7 +265,35 @@ C:\OSPanel\modules\PHP-8.3\php.exe vendor\bin\phpunit tests\IBlock\SectionElemen
 
 1. **Новый тип свойства** — `Property.field_type` + колонка/FK в `ElementPropertyValue` + ветки в `ElementManager` (sync/serialize/filter) + Zod на FE.
 2. **Task-specific UI** — отдельное app id; переиспользовать `iblockApi` и managers; не раздувать общие list/detail.
-3. **Seed данных** — отдельные команды/планы (Device→IBlock); не смешивать с `xos:seed-project` без нужды.
+3. **Seed данных** — `xos:seed-project` создаёт type `content` + blocks `notes` / `recipes` (consumer apps Заметки/Рецепты). Device→IBlock — отдельный план.
+
+### 10.1 Content apps (Notes / Recipes)
+
+Consumer UI поверх IBlock (без нового Symfony-модуля):
+
+| App | Block code | Особенности |
+|-----|------------|-------------|
+| `notes` / `note` | `notes` | разделы=блокноты; `COVER` F `file_type=image`; `TAGS` S multiple; `detail_text` markdown |
+| `recipes` / `recipe` | `recipes` | view-first + share; `COVER` F multiple + `file_type=image`; `ROLE_RECIPE` = свои рецепты (CRUD) + просмотр каталога; `can_category` = правка категорий |
+
+Shared FE: `client/src/features/iblock-content/` (`IblockMarkdownEditor`, upload → `![alt](src)` через `module=iblock`, `RecipeView`, `RecipeShareModal`).
+
+**Владение и share (элементы):**
+
+- `created_by` / `updated_by` на Element и Section
+- `iblock_element_share` — только `permission=read`
+- List filter `accessible_for=<userId>`: свои + расшаренные
+- API: `POST /api/iblock/element/{id}/share` `{ email }`, `DELETE .../share/{userId}`
+- Detail/list: `is_owner`, `can_write`, `is_shared`; у владельца в detail — `shares[]`
+- Рецепт открывается в просмотре; кнопка правки и «Поделиться» — только владельцу
+
+Список элементов отдаёт `preview_text` + `cover` (свойство `COVER`) для каталогов.
+
+**Картинки сущностей:** у Block / Element / Section поля `preview_image` и `detail_image` (FK → `main_file`; API: `*_id` + объект `{id,name,src}`).
+
+```bash
+php bin/console xos:seed-project
+```
 
 ---
 

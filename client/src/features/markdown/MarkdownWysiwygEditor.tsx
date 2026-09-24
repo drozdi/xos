@@ -3,6 +3,7 @@ import { Markdown } from '@tiptap/markdown';
 import type { AnyExtension } from '@tiptap/core';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
 import Underline from '@tiptap/extension-underline';
 import { useEffect, useMemo, useRef } from 'react';
 
@@ -19,6 +20,9 @@ interface MarkdownWysiwygEditorProps {
 	onFormatHandled: () => void;
 	extraExtensions?: AnyExtension[];
 	onEditorReady?: (editor: NonNullable<ReturnType<typeof useEditor>>) => void;
+	/** Form embed: fixed min-height instead of filling a flex parent. */
+	embedded?: boolean;
+	minHeight?: number;
 }
 
 function applyFormatCommand(editor: NonNullable<ReturnType<typeof useEditor>>, command: MarkdownFormatCommand) {
@@ -78,6 +82,8 @@ export function MarkdownWysiwygEditor({
 	onFormatHandled,
 	extraExtensions = [],
 	onEditorReady,
+	embedded = false,
+	minHeight = 280,
 }: MarkdownWysiwygEditorProps) {
 	const syncedMarkdownRef = useRef(content);
 
@@ -88,6 +94,7 @@ export function MarkdownWysiwygEditor({
 			}),
 			Underline,
 			Link.configure({ openOnClick: false }),
+			Image.configure({ inline: false, allowBase64: false }),
 			...extraExtensions,
 			Markdown,
 		],
@@ -151,9 +158,44 @@ export function MarkdownWysiwygEditor({
 	return (
 		<RichTextEditor
 			editor={editor}
-			className={classes.markdownWysiwyg}
+			className={embedded ? `${classes.markdownWysiwyg} ${classes.markdownWysiwygEmbedded}` : classes.markdownWysiwyg}
 			classNames={{ content: classes.markdownWysiwygContent }}
+			style={embedded ? { minHeight, height: '100%' } : undefined}
 		>
+			{embedded ? (
+				<RichTextEditor.Toolbar sticky stickyOffset={0}>
+					<RichTextEditor.ControlsGroup>
+						<RichTextEditor.Bold />
+						<RichTextEditor.Italic />
+						<RichTextEditor.Underline />
+						<RichTextEditor.Strikethrough />
+						<RichTextEditor.ClearFormatting />
+					</RichTextEditor.ControlsGroup>
+					<RichTextEditor.ControlsGroup>
+						<RichTextEditor.H1 />
+						<RichTextEditor.H2 />
+						<RichTextEditor.H3 />
+					</RichTextEditor.ControlsGroup>
+					<RichTextEditor.ControlsGroup>
+						<RichTextEditor.BulletList />
+						<RichTextEditor.OrderedList />
+						<RichTextEditor.Blockquote />
+						<RichTextEditor.Hr />
+					</RichTextEditor.ControlsGroup>
+					<RichTextEditor.ControlsGroup>
+						<RichTextEditor.Code />
+						<RichTextEditor.CodeBlock />
+					</RichTextEditor.ControlsGroup>
+					<RichTextEditor.ControlsGroup>
+						<RichTextEditor.Link />
+						<RichTextEditor.Unlink />
+					</RichTextEditor.ControlsGroup>
+					<RichTextEditor.ControlsGroup>
+						<RichTextEditor.Undo />
+						<RichTextEditor.Redo />
+					</RichTextEditor.ControlsGroup>
+				</RichTextEditor.Toolbar>
+			) : null}
 			<RichTextEditor.Content className={classes.markdownViewer} />
 		</RichTextEditor>
 	);

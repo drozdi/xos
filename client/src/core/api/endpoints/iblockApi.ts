@@ -22,6 +22,46 @@ const nullableBool = z
 	.union([z.boolean(), z.null(), z.undefined()])
 	.transform((v) => Boolean(v));
 
+/** PHP empty array encodes as []; treat as null / object map. */
+const filterRecordSchema = z.preprocess((value) => {
+	if (value == null) return null;
+	if (Array.isArray(value)) {
+		if (value.length === 0) return null;
+		return Object.assign({}, value);
+	}
+	if (typeof value === 'object') return value;
+	return null;
+}, z.record(z.string(), z.unknown()).nullable())
+	.optional()
+	.transform((v) => v ?? null);
+
+const iblockUserRefSchema = z
+	.object({
+		id: z.number().nullable().optional(),
+		email: z.string().nullable().optional(),
+		alias: z.string().nullable().optional(),
+	})
+	.nullable()
+	.optional()
+	.default(null);
+
+const iblockFileRefSchema = z
+	.object({
+		id: z.number(),
+		name: z.string(),
+		src: z.string(),
+	})
+	.nullable()
+	.optional()
+	.default(null);
+
+const iblockImageFieldsSchema = {
+	preview_image: iblockFileRefSchema,
+	detail_image: iblockFileRefSchema,
+	preview_image_id: nullableNumber.optional().default(null),
+	detail_image_id: nullableNumber.optional().default(null),
+};
+
 export const iblockTypeListItemSchema = z.object({
 	id: z.number(),
 	code: nullableString,
@@ -51,6 +91,7 @@ export const iblockBlockListItemSchema = z.object({
 	sort: z.number().nullable().optional().transform((v) => v ?? 0),
 	active: nullableBool,
 	type_id: nullableNumber,
+	...iblockImageFieldsSchema,
 });
 
 export const iblockBlockDetailSchema = z.object({
@@ -68,6 +109,7 @@ export const iblockBlockDetailSchema = z.object({
 	type_id: nullableNumber,
 	x_timestamp: nullableString,
 	date_created: nullableString,
+	...iblockImageFieldsSchema,
 });
 
 export const iblockSectionListItemSchema = z.object({
@@ -77,6 +119,7 @@ export const iblockSectionListItemSchema = z.object({
 	sort: z.number().nullable().optional().transform((v) => v ?? 0),
 	level: z.number().nullable().optional().transform((v) => v ?? 0),
 	block_id: nullableNumber,
+	...iblockImageFieldsSchema,
 });
 
 export const iblockSectionDetailSchema = z.object({
@@ -91,10 +134,20 @@ export const iblockSectionDetailSchema = z.object({
 	active_to: nullableString,
 	block_id: nullableNumber,
 	parent_id: nullableNumber,
-	element_filter: z.record(z.string(), z.unknown()).nullable().optional().transform((v) => v ?? null),
-	inherited_element_filter: z.record(z.string(), z.unknown()).nullable().optional().transform((v) => v ?? null),
+	element_filter: filterRecordSchema,
+	inherited_element_filter: filterRecordSchema,
 	x_timestamp: nullableString,
 	date_created: nullableString,
+	created_by: iblockUserRefSchema,
+	updated_by: iblockUserRefSchema,
+	...iblockImageFieldsSchema,
+});
+
+const iblockElementShareSchema = z.object({
+	user_id: z.number().nullable().optional(),
+	email: z.string().nullable().optional(),
+	alias: z.string().nullable().optional(),
+	permission: z.string().optional().default('read'),
 });
 
 export const iblockElementListItemSchema = z.object({
@@ -106,6 +159,22 @@ export const iblockElementListItemSchema = z.object({
 	block_id: nullableNumber,
 	section_id: nullableNumber,
 	section_ids: z.array(z.number()).optional().default([]),
+	preview_text: nullableString.optional().default(''),
+	cover: z
+		.object({
+			id: z.number(),
+			name: z.string(),
+			src: z.string(),
+		})
+		.nullable()
+		.optional()
+		.default(null),
+	created_by: iblockUserRefSchema,
+	updated_by: iblockUserRefSchema,
+	is_owner: z.boolean().optional().default(false),
+	can_write: z.boolean().optional().default(true),
+	is_shared: z.boolean().optional().default(false),
+	...iblockImageFieldsSchema,
 });
 
 const propertyValueItemSchema = z.union([
@@ -139,6 +208,13 @@ export const iblockElementDetailSchema = z.object({
 	PROPERTY_VALUES: z.record(z.string(), propertyValueSchema).optional().default({}),
 	x_timestamp: nullableString,
 	date_created: nullableString,
+	created_by: iblockUserRefSchema,
+	updated_by: iblockUserRefSchema,
+	is_owner: z.boolean().optional().default(false),
+	can_write: z.boolean().optional().default(true),
+	is_shared: z.boolean().optional().default(false),
+	shares: z.array(iblockElementShareSchema).optional().default([]),
+	...iblockImageFieldsSchema,
 });
 
 export const iblockPropertyListItemSchema = z.object({
@@ -149,6 +225,7 @@ export const iblockPropertyListItemSchema = z.object({
 	active: nullableBool,
 	block_id: nullableNumber,
 	field_type: nullableString,
+	file_type: nullableString,
 	link_iblock_id: nullableNumber,
 });
 
@@ -162,6 +239,7 @@ export const iblockPropertyDetailSchema = z.object({
 	required: nullableBool,
 	multiple: nullableBool,
 	field_type: nullableString,
+	file_type: nullableString,
 	list_type: nullableString,
 	default_value: nullableString,
 	postfix: nullableString,
@@ -277,11 +355,21 @@ export const iblockSectionApi = {
 		postList(`/api/iblock/section/${id}/elements`, request, z.array(iblockElementListItemSchema)),
 };
 
-export const iblockElementApi = makeCrudApi(
-	'/api/iblock/element',
-	z.array(iblockElementListItemSchema),
-	iblockElementDetailSchema,
-);
+export const iblockElementApi = {
+	...makeCrudApi(
+		'/api/iblock/element',
+		z.array(iblockElementListItemSchema),
+		iblockElementDetailSchema,
+	),
+	share: async (id: number, email: string): Promise<IblockElementDetail> => {
+		const { data } = await apiClient.post<unknown>(`/api/iblock/element/${id}/share`, { email });
+		return iblockElementDetailSchema.parse(data);
+	},
+	unshare: async (id: number, userId: number): Promise<IblockElementDetail> => {
+		const { data } = await apiClient.delete<unknown>(`/api/iblock/element/${id}/share/${userId}`);
+		return iblockElementDetailSchema.parse(data);
+	},
+};
 
 export const iblockPropertyApi = makeCrudApi(
 	'/api/iblock/property',

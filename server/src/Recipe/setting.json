@@ -1,0 +1,9 @@
+{
+  "name": "Recipe",
+  "claimant": {
+    "recipe": "Рецепты"
+  },
+  "map-access": {
+    "can_category": { "bit": 1, "title": "Категории" }
+  }
+}

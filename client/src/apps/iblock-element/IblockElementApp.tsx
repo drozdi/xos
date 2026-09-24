@@ -34,6 +34,7 @@ import {
 	useCanUpdateIblockElement,
 } from '@/features/iblock/iblockAccess';
 import { useEntityId, useIblockLaunchProps } from '@/features/iblock/iblockAppUtils';
+import { IblockMarkdownEditor, IblockImageField, fileAcceptFromFileType } from '@/features/iblock-content';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { validateIblockElementForm } from './iblockElementValidation';
@@ -45,6 +46,10 @@ const initialData: IblockElementDetail = {
 	description: '',
 	preview_text: '',
 	detail_text: '',
+	preview_image: null,
+	detail_image: null,
+	preview_image_id: null,
+	detail_image_id: null,
 	sort: 0,
 	active: true,
 	active_from: '',
@@ -55,6 +60,12 @@ const initialData: IblockElementDetail = {
 	PROPERTY_VALUES: {},
 	x_timestamp: '',
 	date_created: '',
+	created_by: null,
+	updated_by: null,
+	is_owner: false,
+	can_write: true,
+	is_shared: false,
+	shares: [],
 };
 
 type PropertyValueObject = {
@@ -272,6 +283,7 @@ function PropertyValueField({
 
 	if (fieldType === 'F') {
 		const displayName = fileDisplayName(value);
+		const accept = fileAcceptFromFileType(property.file_type);
 		return (
 			<Stack gap={4}>
 				<Text size="sm" fw={500}>
@@ -290,6 +302,7 @@ function PropertyValueField({
 					<Group gap="xs">
 						<FileButton
 							multiple={Boolean(property.multiple)}
+							accept={accept}
 							onChange={(payload) => {
 								const files = Array.isArray(payload)
 									? payload
@@ -664,12 +677,29 @@ function ElementFormFields({
 				onChange={(e) => setField('preview_text', e.currentTarget.value)}
 				minRows={2}
 			/>
-			<Textarea
-				label="Детальный текст"
+			<IblockImageField
+				label="Картинка анонса"
+				value={data.preview_image}
+				readOnly={readOnly}
+				onChange={(next) => {
+					setField('preview_image', next);
+					setField('preview_image_id', next?.id ?? null);
+				}}
+			/>
+			<IblockImageField
+				label="Детальная картинка"
+				value={data.detail_image}
+				readOnly={readOnly}
+				onChange={(next) => {
+					setField('detail_image', next);
+					setField('detail_image_id', next?.id ?? null);
+				}}
+			/>
+			<IblockMarkdownEditor
+				label="Детальный текст (Markdown)"
 				value={data.detail_text ?? ''}
 				readOnly={readOnly}
-				onChange={(e) => setField('detail_text', e.currentTarget.value)}
-				minRows={3}
+				onChange={(next) => setField('detail_text', next)}
 			/>
 			<NumberInput
 				label="Сортировка"

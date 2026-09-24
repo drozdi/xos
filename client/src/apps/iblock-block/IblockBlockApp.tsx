@@ -10,6 +10,7 @@ import {
 	useCanUpdateIblockBlock,
 } from '@/features/iblock/iblockAccess';
 import { useEntityId, useLaunchIblockApp } from '@/features/iblock/iblockAppUtils';
+import { IblockImageField } from '@/features/iblock-content';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { validateIblockBlockForm } from './iblockBlockValidation';
@@ -27,6 +28,10 @@ const initialData: IblockBlockDetail = {
 	active_from: '',
 	active_to: '',
 	type_id: null,
+	preview_image: null,
+	detail_image: null,
+	preview_image_id: null,
+	detail_image_id: null,
 	x_timestamp: '',
 	date_created: '',
 };
@@ -132,6 +137,24 @@ export default function IblockBlockApp() {
 						value={data.description ?? ''}
 						readOnly={readOnly}
 						onChange={(e) => setField('description', e.currentTarget.value)}
+					/>
+					<IblockImageField
+						label="Картинка анонса"
+						value={data.preview_image}
+						readOnly={readOnly}
+						onChange={(next) => {
+							setField('preview_image', next);
+							setField('preview_image_id', next?.id ?? null);
+						}}
+					/>
+					<IblockImageField
+						label="Детальная картинка"
+						value={data.detail_image}
+						readOnly={readOnly}
+						onChange={(next) => {
+							setField('detail_image', next);
+							setField('detail_image_id', next?.id ?? null);
+						}}
 					/>
 					<NumberInput
 						label="Сортировка"

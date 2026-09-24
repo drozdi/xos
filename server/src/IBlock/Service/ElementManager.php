@@ -7,6 +7,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use IBlock\Entity\Element;
 use IBlock\Entity\ElementPropertyValue;
+use IBlock\Entity\ElementShare;
 use IBlock\Entity\Property;
 use IBlock\Entity\Property\Enum as PropertyEnum;
 use IBlock\Entity\Section;
@@ -16,8 +17,15 @@ use IBlock\Repository\ElementRepository;
 use IBlock\Repository\PropertyEnumRepository;
 use IBlock\Repository\PropertyRepository;
 use IBlock\Repository\SectionRepository;
+use IBlock\Security\RecipesBlockGuard;
 use Main\Entity\File as MainFile;
+use Main\Entity\User;
+use Main\Repository\UserRepository;
+use App\Security\RecipeIblockBridge;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ElementManager extends AbstractIBlockManager
@@ -31,6 +39,10 @@ class ElementManager extends AbstractIBlockManager
         private readonly PropertyRepository $propertyRepository,
         private readonly PropertyEnumRepository $propertyEnumRepository,
         private readonly SectionElementManager $sectionElementManager,
+        private readonly Security $security,
+        private readonly UserRepository $userRepository,
+        private readonly RecipesBlockGuard $recipesBlockGuard,
+        private readonly RecipeIblockBridge $recipeIblockBridge,
     ) {
         parent::__construct($validator, $entityManager);
     }
@@ -51,8 +63,13 @@ class ElementManager extends AbstractIBlockManager
         if (!$entity instanceof Element) {
             return null;
         }
+        $viewer = $this->currentUser();
+        $this->recipesBlockGuard->assertElementAllowed($viewer, $entity);
+        if ($viewer instanceof User && !$this->canRead($entity, $viewer)) {
+            throw new AccessDeniedHttpException('Нет доступа к элементу');
+        }
 
-        return $this->serializeDetail($entity);
+        return $this->serializeDetail($entity, $viewer);
     }
 
     /**
@@ -63,11 +80,13 @@ class ElementManager extends AbstractIBlockManager
      */
     public function getList(array $order, array $filter, ?int $limit = null, ?int $offset = null): array
     {
+        $viewer = $this->currentUser();
+        $filter = $this->recipesBlockGuard->constrainListFilter($filter, $viewer);
         $qb = $this->buildFilteredQuery($filter, $order, $limit, $offset);
 
         $items = [];
         foreach ($qb->getQuery()->execute() as $entity) {
-            $items[] = $this->serializeListItem($entity);
+            $items[] = $this->serializeListItem($entity, $viewer);
         }
 
         return $items;
@@ -76,6 +95,8 @@ class ElementManager extends AbstractIBlockManager
     /** @param array<string, mixed> $filter */
     public function count(array $filter): int
     {
+        $viewer = $this->currentUser();
+        $filter = $this->recipesBlockGuard->constrainListFilter($filter, $viewer);
         $qb = $this->buildFilteredQuery($filter);
         $qb->select($qb->expr()->countDistinct('e.id'));
 
@@ -85,10 +106,25 @@ class ElementManager extends AbstractIBlockManager
     /** @param array<string, mixed> $fields */
     public function add(array $fields): int
     {
+        $viewer = $this->currentUser();
+        if (isset($fields['block_id'])) {
+            $this->recipesBlockGuard->assertBlockIdAllowed($viewer, (int) $fields['block_id']);
+        } elseif ($this->recipesBlockGuard->isRecipeOnlyUser($viewer)) {
+            $blockId = $this->recipesBlockGuard->recipesBlockId();
+            if (null === $blockId) {
+                throw new AccessDeniedHttpException('Блок recipes не найден');
+            }
+            $fields['block_id'] = $blockId;
+        }
         $propertyValues = $this->extractPropertyValuesInput($fields);
         $sectionIds = $this->extractSectionIdsInput($fields);
         $element = new Element();
         $this->applyFields($element, $fields);
+        $user = $viewer;
+        if ($user instanceof User) {
+            $element->setCreatedBy($user);
+            $element->setUpdatedBy($user);
+        }
         if (null !== $propertyValues) {
             $this->syncPropertyValues($element, $propertyValues);
         }
@@ -104,9 +140,17 @@ class ElementManager extends AbstractIBlockManager
     {
         /** @var Element $element */
         $element = $this->requireEntity($id);
+        $viewer = $this->currentUser();
+        $this->recipesBlockGuard->assertElementAllowed($viewer, $element);
+        if ($viewer instanceof User && !$this->canWrite($element, $viewer)) {
+            throw new AccessDeniedHttpException('Редактировать может только владелец');
+        }
         $propertyValues = $this->extractPropertyValuesInput($fields);
         $sectionIds = $this->extractSectionIdsInput($fields);
         $this->applyFields($element, $fields);
+        if ($viewer instanceof User) {
+            $element->setUpdatedBy($viewer);
+        }
         if (null !== $propertyValues) {
             $this->syncPropertyValues($element, $propertyValues);
         }
@@ -115,7 +159,75 @@ class ElementManager extends AbstractIBlockManager
         $this->elementRepository->save($element, true);
     }
 
-    protected function serializeListItem(object $entity): array
+    public function delete(int $id): void
+    {
+        /** @var Element $element */
+        $element = $this->requireEntity($id);
+        $viewer = $this->currentUser();
+        $this->recipesBlockGuard->assertElementAllowed($viewer, $element);
+        if ($viewer instanceof User && !$this->canWrite($element, $viewer)) {
+            throw new AccessDeniedHttpException('Удалить может только владелец');
+        }
+        $this->elementRepository->remove($element, true);
+    }
+
+    public function shareElement(int $elementId, string $email): array
+    {
+        /** @var Element $element */
+        $element = $this->requireEntity($elementId);
+        $owner = $this->currentUser();
+        $this->recipesBlockGuard->assertElementAllowed($owner, $element);
+        if (!$owner instanceof User || !$this->isOwner($element, $owner)) {
+            throw new AccessDeniedHttpException('Делиться может только владелец');
+        }
+        $email = trim($email);
+        if ('' === $email) {
+            throw new BadRequestHttpException('Укажите email');
+        }
+        $target = $this->userRepository->findOneBy(['email' => $email]);
+        if (!$target instanceof User) {
+            throw new NotFoundHttpException('Пользователь с таким email не найден');
+        }
+        if ($target->getId() === $owner->getId()) {
+            throw new BadRequestHttpException('Нельзя поделиться с самим собой');
+        }
+        foreach ($element->getShares() as $existing) {
+            if ($existing->getUser()?->getId() === $target->getId()) {
+                return $this->serializeDetail($element, $owner);
+            }
+        }
+        $share = new ElementShare();
+        $share->setUser($target);
+        $element->addShare($share);
+        $this->entityManager->persist($share);
+        $this->entityManager->flush();
+
+        return $this->serializeDetail($element, $owner);
+    }
+
+    public function unshareElement(int $elementId, int $userId): array
+    {
+        /** @var Element $element */
+        $element = $this->requireEntity($elementId);
+        $owner = $this->currentUser();
+        $this->recipesBlockGuard->assertElementAllowed($owner, $element);
+        if (!$owner instanceof User || !$this->isOwner($element, $owner)) {
+            throw new AccessDeniedHttpException('Управлять доступом может только владелец');
+        }
+        foreach ($element->getShares() as $share) {
+            if ($share->getUser()?->getId() === $userId) {
+                $element->removeShare($share);
+                $this->entityManager->remove($share);
+                $this->entityManager->flush();
+
+                return $this->serializeDetail($element, $owner);
+            }
+        }
+
+        throw new NotFoundHttpException('Доступ не найден');
+    }
+
+    protected function serializeListItem(object $entity, ?User $viewer = null): array
     {
         /** @var Element $entity */
         return [
@@ -127,12 +239,25 @@ class ElementManager extends AbstractIBlockManager
             'block_id' => $entity->getBlock()?->getId(),
             'section_id' => $entity->getSection()?->getId(),
             'section_ids' => $entity->getSectionIds(),
+            'preview_text' => $entity->getPreviewText(),
+            'preview_image' => IblockImageRef::serialize($entity->getPreviewImage()),
+            'detail_image' => IblockImageRef::serialize($entity->getDetailImage()),
+            'preview_image_id' => $entity->getPreviewImage()?->getId(),
+            'detail_image_id' => $entity->getDetailImage()?->getId(),
+            'cover' => $this->serializeCoverFile($entity),
+            'created_by' => $this->serializeUserRef($entity->getCreatedBy()),
+            'updated_by' => $this->serializeUserRef($entity->getUpdatedBy()),
+            'is_owner' => $viewer instanceof User ? $this->isOwner($entity, $viewer) : false,
+            'can_write' => $viewer instanceof User ? $this->canWrite($entity, $viewer) : true,
+            'is_shared' => $viewer instanceof User ? $this->isSharedWith($entity, $viewer) : false,
         ];
     }
 
-    protected function serializeDetail(object $entity): array
+    protected function serializeDetail(object $entity, ?User $viewer = null): array
     {
         /** @var Element $entity */
+        $isOwner = $viewer instanceof User ? $this->isOwner($entity, $viewer) : false;
+
         return [
             'id' => $entity->getId(),
             'code' => $entity->getCode(),
@@ -140,6 +265,10 @@ class ElementManager extends AbstractIBlockManager
             'description' => $entity->getDescription(),
             'preview_text' => $entity->getPreviewText(),
             'detail_text' => $entity->getDetailText(),
+            'preview_image' => IblockImageRef::serialize($entity->getPreviewImage()),
+            'detail_image' => IblockImageRef::serialize($entity->getDetailImage()),
+            'preview_image_id' => $entity->getPreviewImage()?->getId(),
+            'detail_image_id' => $entity->getDetailImage()?->getId(),
             'sort' => $entity->getSort(),
             'active' => $entity->isActive(),
             'active_from' => $entity->getActiveFrom('Y-m-d H:i:s'),
@@ -150,6 +279,12 @@ class ElementManager extends AbstractIBlockManager
             'PROPERTY_VALUES' => $this->serializePropertyValues($entity),
             'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
             'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
+            'created_by' => $this->serializeUserRef($entity->getCreatedBy()),
+            'updated_by' => $this->serializeUserRef($entity->getUpdatedBy()),
+            'is_owner' => $isOwner,
+            'can_write' => $viewer instanceof User ? $this->canWrite($entity, $viewer) : true,
+            'is_shared' => $viewer instanceof User ? $this->isSharedWith($entity, $viewer) : false,
+            'shares' => $isOwner ? $this->serializeShares($entity) : [],
         ];
     }
 
@@ -179,6 +314,7 @@ class ElementManager extends AbstractIBlockManager
         if (array_key_exists('detail_text', $fields)) {
             $entity->setDetailText($fields['detail_text']);
         }
+        IblockImageRef::applyTo($entity, $fields, $this->entityManager);
         if (array_key_exists('sort', $fields)) {
             $entity->setSort((int) $fields['sort']);
         }
@@ -274,6 +410,12 @@ class ElementManager extends AbstractIBlockManager
             unset($baseFilter['section_id']);
         }
 
+        $accessibleFor = null;
+        if (isset($baseFilter['accessible_for']) && '' !== $baseFilter['accessible_for'] && null !== $baseFilter['accessible_for']) {
+            $accessibleFor = (int) $baseFilter['accessible_for'];
+            unset($baseFilter['accessible_for']);
+        }
+
         $qb = $this->elementRepository->getQueryBuilder(
             $baseFilter,
             $this->normalizeOrder($order),
@@ -281,6 +423,13 @@ class ElementManager extends AbstractIBlockManager
             null === $offset ? 1 : (int) $offset,
             'e',
         );
+
+        if (null !== $accessibleFor && $accessibleFor > 0) {
+            $qb->leftJoin('e.shares', 'esh_acc')
+                ->andWhere('(e.createdBy IS NULL OR e.createdBy = :acc_user OR esh_acc.user = :acc_user)')
+                ->setParameter('acc_user', $accessibleFor)
+                ->distinct();
+        }
 
         if (null !== $sectionId) {
             $this->applySectionModeConstraint($qb, $sectionId, $propertyFilters);
@@ -492,6 +641,7 @@ class ElementManager extends AbstractIBlockManager
             if (!$file instanceof MainFile) {
                 throw new BadRequestHttpException(sprintf('File #%d not found', $fileId));
             }
+            PropertyFileType::assertAllowed($property->getFileType(), $file);
 
             return $file;
         }
@@ -599,6 +749,32 @@ class ElementManager extends AbstractIBlockManager
         $enum = $this->propertyEnumRepository->findOneBy(['property' => $property, 'code' => $code]);
 
         return $enum instanceof PropertyEnum ? $enum : null;
+    }
+
+    /** @return array{id: int, name: string, src: string}|null */
+    private function serializeCoverFile(Element $element): ?array
+    {
+        foreach ($element->getPropertyValues() as $row) {
+            $property = $row->getProperty();
+            if (!$property || 'COVER' !== strtoupper((string) $property->getCode())) {
+                continue;
+            }
+            if ('F' !== strtoupper($property->getFieldType())) {
+                continue;
+            }
+            $file = $row->getValueFile();
+            if (!$file) {
+                continue;
+            }
+
+            return [
+                'id' => (int) $file->getId(),
+                'name' => (string) $file->getOriginalName(),
+                'src' => (string) $file->getFileSRC(),
+            ];
+        }
+
+        return null;
     }
 
     /** @return array<string, mixed> */
@@ -793,5 +969,99 @@ class ElementManager extends AbstractIBlockManager
             $enAlias,
             $valParam,
         );
+    }
+
+    private function currentUser(): ?User
+    {
+        $user = $this->security->getUser();
+
+        return $user instanceof User ? $user : null;
+    }
+
+    private function isElevated(?User $user): bool
+    {
+        if (!$user instanceof User) {
+            return false;
+        }
+
+        if ($this->security->isGranted('ROLE_ROOT')
+            || $this->security->isGranted('ROLE_IBLOCK_ROOT')
+            || $this->security->isGranted('ROLE_IBLOCK_ADMIN')) {
+            return true;
+        }
+
+        return $this->recipeIblockBridge->isRecipeElevated($user);
+    }
+
+    private function isOwner(Element $element, User $user): bool
+    {
+        $ownerId = $element->getCreatedBy()?->getId();
+        if (null === $ownerId) {
+            return false;
+        }
+
+        return $ownerId === $user->getId();
+    }
+
+    private function isSharedWith(Element $element, User $user): bool
+    {
+        foreach ($element->getShares() as $share) {
+            if ($share->getUser()?->getId() === $user->getId()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function canRead(Element $element, User $user): bool
+    {
+        if ($this->isElevated($user)) {
+            return true;
+        }
+        if (null === $element->getCreatedBy()) {
+            return true;
+        }
+
+        return $this->isOwner($element, $user) || $this->isSharedWith($element, $user);
+    }
+
+    private function canWrite(Element $element, User $user): bool
+    {
+        if ($this->isElevated($user)) {
+            return true;
+        }
+        if (null === $element->getCreatedBy()) {
+            return true;
+        }
+
+        return $this->isOwner($element, $user);
+    }
+
+    /** @return array{id: ?int, email: ?string, alias: ?string} */
+    private function serializeUserRef(?User $user): array
+    {
+        return [
+            'id' => $user?->getId(),
+            'email' => $user?->getEmail(),
+            'alias' => $user?->getAlias(),
+        ];
+    }
+
+    /** @return list<array{user_id: ?int, email: ?string, alias: ?string, permission: string}> */
+    private function serializeShares(Element $element): array
+    {
+        $shares = [];
+        foreach ($element->getShares() as $share) {
+            $user = $share->getUser();
+            $shares[] = [
+                'user_id' => $user?->getId(),
+                'email' => $user?->getEmail(),
+                'alias' => $user?->getAlias(),
+                'permission' => 'read',
+            ];
+        }
+
+        return $shares;
     }
 }

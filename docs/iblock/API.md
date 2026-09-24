@@ -62,7 +62,7 @@ Type — глобальный `code` UNIQUE (без изменений).
 |-----|-----|-------------------|-----------|
 | `S` | строка | `value` / `value_s` | — |
 | `N` | число | `value_n` | — |
-| `F` | файл | FK `value_file_id` → `main_file` | upload `POST /api/main/file/upload` `module=iblock` |
+| `F` | файл | FK `value_file_id` → `main_file` | upload `POST /api/main/file/upload` `module=iblock`; **`file_type`**: пусто=любой, `image`=картинки, иначе расширения `jpg,png` или mime `image/*` |
 | `L` | список | M2M `valueL` → enum | enums через `/property-enum` |
 | `E` | привязка к элементу | FK `value_element_id` | **`link_iblock_id` required** — только элементы этого блока |
 | `G` | привязка к разделу | FK `value_section_id` | **`link_iblock_id` required** — только разделы этого блока |
@@ -108,6 +108,14 @@ Type — глобальный `code` UNIQUE (без изменений).
 - `S`/`N`: одна строка; при `multiple` — по строке на значение
 - `F`/`E`/`G`: при `multiple` — по строке на значение; E/G валидируются по `property.link_iblock_id`
 
+### Ownership / share
+
+- Element и Section: `created_by`, `updated_by` (user ref)
+- List/detail element: `is_owner`, `can_write`, `is_shared`; detail владельца — `shares[]`
+- Filter list: `accessible_for=<userId>` → свои (`created_by`) + shared + legacy без владельца
+- `POST /api/iblock/element/{id}/share` `{ "email": "..." }` — view-only
+- `DELETE /api/iblock/element/{id}/share/{userId}`
+
 ### Create / update
 
 ```json
@@ -149,6 +157,20 @@ Type — глобальный `code` UNIQUE (без изменений).
 
 Поля section detail: `element_filter`, `inherited_element_filter`.
 Block detail: `section_mode`.
+
+### Images (`preview_image` / `detail_image`)
+
+На **Block**, **Element**, **Section** — FK на `main_file`:
+
+| Поле API | Колонка | Описание |
+|----------|---------|----------|
+| `preview_image_id` / `preview_image` | `preview_image_id` | картинка анонса |
+| `detail_image_id` / `detail_image` | `detail_image_id` | детальная картинка |
+
+Write: id или `{ "id": N }` (или `null` чтобы сбросить).  
+Read: `preview_image` / `detail_image` = `{ id, name, src } | null`, плюс `*_id`.
+
+Upload: `POST /api/main/file/upload` `module=iblock`.
 
 При update для переданных кодов свойства — clear + rewrite строк `iblock_element_property`.
 

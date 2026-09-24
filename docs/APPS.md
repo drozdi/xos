@@ -1,6 +1,6 @@
 # Каталог приложений XOS
 
-> Обновлено: 2026-08-18 · 55 зарегистрированных приложений в `client/src/apps/*/index.ts`
+> Обновлено: 2026-09-22 · 59+ зарегистрированных приложений в `client/src/apps/*/index.ts`
 
 ## Как устроены приложения
 
@@ -40,6 +40,7 @@
 | Board | `board` | 1 | [board/README.md](board/README.md) | [board/TZ.md](board/TZ.md) |
 | PKB | `pkb` | 1 | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) |
 | TeamStorm | `ts` | 1 | [ts/README.md](ts/README.md) | — |
+| IBlock + Content | `iblock` | 14 | [iblock/README.md](iblock/README.md) | [iblock/TZ.md](iblock/TZ.md) |
 
 Полный индекс документации: [README.md](README.md)
 
@@ -134,6 +135,18 @@
 | iblock-element | Элемент | sub-app |
 | iblock-properties | Свойства инфоблоков | regular |
 | iblock-property | Свойство инфоблока | sub-app |
+
+### Контент (IBlock consumer)
+
+| ID | Название | Тип | Доступ |
+|----|----------|-----|--------|
+| notes | Заметки | regular | `requiredRole: iblock` |
+| note | Заметка | sub-app | iblock |
+| recipes | Рецепты | regular | `requiredRole: recipe` (`ROLE_RECIPE`) |
+| recipe | Рецепт | sub-app | recipe |
+| recipe-categories | Категории | regular | `can_category` |
+
+Каталоги поверх type `content` / blocks `notes` + `recipes` (seed `xos:seed-project`). Markdown + картинки: `features/iblock-content`. Рецепты: view-first, share только просмотр. `ROLE_RECIPE` — свои CRUD; бит `can_category` — админ категорий.
 
 ### Бизнес-приложения (tools)
 

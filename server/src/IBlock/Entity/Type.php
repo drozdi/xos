@@ -11,7 +11,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TypeRepository::class)]
 #[ORM\Table(name: 'iblock_type')]
-#[ORM\HasLifecycleCallbacks]
 class Type
 {
     #[ORM\Id]
@@ -230,17 +229,5 @@ class Type
         $this->description = $description;
 
         return $this;
-    }
-
-    #[ORM\PrePersist]
-    public function prePersist(): void
-    {
-        $this->xTimestamp = new \DateTime();
-    }
-
-    #[ORM\PreUpdate]
-    public function preUpdate(): void
-    {
-        $this->xTimestamp = new \DateTime();
     }
 }

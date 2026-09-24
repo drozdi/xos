@@ -26,12 +26,13 @@ import {
 } from '@/core/api/endpoints/iblockApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import {
-	canCreateIblockSection,
-	useCanDeleteIblockSection,
-	useCanReadIblockSection,
-	useCanUpdateIblockSection,
-} from '@/features/iblock/iblockAccess';
+	canCreateCatalogSection,
+	useCanDeleteCatalogSection,
+	useCanReadCatalogSection,
+	useCanUpdateCatalogSection,
+} from '@/features/iblock-content/catalogAccess';
 import { useEntityId, useIblockLaunchProps } from '@/features/iblock/iblockAppUtils';
+import { IblockImageField } from '@/features/iblock-content';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { validateIblockSectionForm } from './iblockSectionValidation';
@@ -50,8 +51,14 @@ const initialData: IblockSectionDetail = {
 	parent_id: null,
 	element_filter: null,
 	inherited_element_filter: null,
+	preview_image: null,
+	detail_image: null,
+	preview_image_id: null,
+	detail_image_id: null,
 	x_timestamp: '',
 	date_created: '',
+	created_by: null,
+	updated_by: null,
 };
 
 type SectionPropertyDraft = {
@@ -402,10 +409,10 @@ function SectionPropertiesEditor({
 export default function IblockSectionApp() {
 	const entityId = useEntityId();
 	const launchProps = useIblockLaunchProps();
-	const canRead = useCanReadIblockSection();
-	const canUpdate = useCanUpdateIblockSection();
-	const canDelete = useCanDeleteIblockSection();
-	const canCreate = canCreateIblockSection();
+	const canRead = useCanReadCatalogSection();
+	const canUpdate = useCanUpdateCatalogSection();
+	const canDelete = useCanDeleteCatalogSection();
+	const canCreate = canCreateCatalogSection();
 	const isNew = entityId === 0;
 	const canSave = isNew ? canCreate : canUpdate;
 	const [activeTab, setActiveTab] = useState<string | null>('general');
@@ -516,6 +523,24 @@ export default function IblockSectionApp() {
 								value={data.description ?? ''}
 								readOnly={readOnly}
 								onChange={(e) => setField('description', e.currentTarget.value)}
+							/>
+							<IblockImageField
+								label="Картинка анонса"
+								value={data.preview_image}
+								readOnly={readOnly}
+								onChange={(next) => {
+									setField('preview_image', next);
+									setField('preview_image_id', next?.id ?? null);
+								}}
+							/>
+							<IblockImageField
+								label="Детальная картинка"
+								value={data.detail_image}
+								readOnly={readOnly}
+								onChange={(next) => {
+									setField('detail_image', next);
+									setField('detail_image_id', next?.id ?? null);
+								}}
 							/>
 							<NumberInput
 								label="Сортировка"
