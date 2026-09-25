@@ -13,14 +13,16 @@ import {
 	Tooltip,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
+import { IconCalendar, IconCalendarPlus, IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { calendarApi } from '@/core/api/endpoints/calendarApi';
 import { todoApi, type TodoListDetail } from '@/core/api/endpoints/todoApi';
+import { useAppManager } from '@/core/appManager/useAppManager';
 import { queryKeys } from '@/core/api/queryKeys';
 import { confirmAction } from '@/core/confirm';
 import { DateTimeField } from '@/core/dates/DateTimeField';
@@ -36,6 +38,7 @@ interface TodoListEditorModalProps {
 
 export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorModalProps) {
 	const queryClient = useQueryClient();
+	const launchApp = useAppManager((s) => s.launchApp);
 	const [title, setTitle] = useState('');
 	const [color, setColor] = useState<string>(TODO_COLORS[0]);
 	const [items, setItems] = useState<TodoDraftItem[]>([]);
@@ -44,6 +47,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 	const [markdown, setMarkdown] = useState('');
 	const [shareOpened, setShareOpened] = useState(false);
 	const [detail, setDetail] = useState<TodoListDetail | null>(null);
+	const [linkingIndex, setLinkingIndex] = useState<number | null>(null);
 
 	const detailQuery = useQuery({
 		queryKey: queryKeys.todo.list(listId ?? 0),
@@ -61,9 +65,11 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 		setColor(data.color);
 		setItems(
 			data.items.map((item) => ({
+				id: item.id ?? null,
 				text: item.text,
 				done: item.done,
 				due_at: item.due_at ?? null,
+				calendar_event_id: item.calendar_event_id ?? null,
 			})),
 		);
 		setNotesMd(data.notes_md ?? '');
@@ -75,30 +81,42 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 			if (!listId) {
 				throw new Error('no list');
 			}
-			const payload =
-				mode === 'markdown'
-					? { title, color, markdown }
-					: {
-							title,
-							color,
-							markdown: itemsToMarkdown(items, notesMd),
-						};
-			return todoApi.update(listId, payload);
+			if (mode === 'markdown') {
+				return todoApi.update(listId, { title, color, markdown });
+			}
+			return todoApi.update(listId, {
+				title,
+				color,
+				notes_md: notesMd || null,
+				items: items
+					.filter((item) => item.text.trim() !== '')
+					.map((item, position) => ({
+						id: item.id ?? null,
+						text: item.text.trim(),
+						done: item.done,
+						due_at: item.due_at,
+						calendar_event_id: item.calendar_event_id ?? null,
+						position,
+					})),
+			});
 		},
 		onSuccess: (data) => {
 			setDetail(data);
 			setMarkdown(data.markdown);
 			setItems(
 				data.items.map((item) => ({
+					id: item.id ?? null,
 					text: item.text,
 					done: item.done,
 					due_at: item.due_at ?? null,
+					calendar_event_id: item.calendar_event_id ?? null,
 				})),
 			);
 			setNotesMd(data.notes_md ?? '');
 			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.lists });
 			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.list(listId!) });
 			void queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] });
+			void queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
 			notifications.show({ color: 'green', message: 'Сохранено' });
 		},
 		onError: () => {
@@ -136,6 +154,72 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 
 	const updateItem = (index: number, patch: Partial<TodoDraftItem>) => {
 		setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+	};
+
+	const linkToCalendar = async (index: number) => {
+		const item = items[index];
+		if (!item?.due_at || !listId || !canWrite) {
+			return;
+		}
+		setLinkingIndex(index);
+		try {
+			const calendars = await calendarApi.calendars();
+			const writable = calendars.find((c) => c.can_write || c.is_owner);
+			if (!writable) {
+				notifications.show({ color: 'yellow', message: 'Нет календаря с правом записи' });
+				return;
+			}
+			const due = dayjs(item.due_at);
+			const allDay = due.hour() === 0 && due.minute() === 0 && due.second() === 0;
+			const start = due.format('YYYY-MM-DD HH:mm:ss');
+			const end = allDay
+				? start
+				: due.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss');
+			const event = await calendarApi.createEvent({
+				calendar_id: writable.id,
+				title: item.text.trim() || 'Дело',
+				description: `Из списка «${title}»`,
+				start_at: start,
+				end_at: end,
+				all_day: allDay,
+			});
+			const nextItems = items.map((row, i) =>
+				i === index ? { ...row, calendar_event_id: event.id } : row,
+			);
+			setItems(nextItems);
+			await todoApi.update(listId, {
+				title,
+				color,
+				notes_md: notesMd || null,
+				items: nextItems
+					.filter((row) => row.text.trim() !== '')
+					.map((row, position) => ({
+						id: row.id ?? null,
+						text: row.text.trim(),
+						done: row.done,
+						due_at: row.due_at,
+						calendar_event_id: row.calendar_event_id ?? null,
+						position,
+					})),
+			});
+			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.list(listId) });
+			void queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] });
+			void queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
+			notifications.show({ color: 'green', message: 'Событие создано в календаре' });
+		} catch {
+			notifications.show({ color: 'red', message: 'Не удалось создать событие' });
+		} finally {
+			setLinkingIndex(null);
+		}
+	};
+
+	const openInCalendar = (item: TodoDraftItem) => {
+		if (!item.due_at) {
+			return;
+		}
+		void launchApp('calendar', {
+			props: { focusDate: dayjs(item.due_at).format('YYYY-MM-DD') },
+		});
 	};
 
 	return (
@@ -218,9 +302,40 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 														due_at: value
 															? dayjs(value).format('YYYY-MM-DD HH:mm:ss')
 															: null,
+														...(value ? {} : { calendar_event_id: null }),
 													});
 												}}
 											/>
+											{item.due_at ? (
+												<Group gap={4}>
+													{item.calendar_event_id ? (
+														<Text size="xs" c="dimmed">
+															Связано с событием #{item.calendar_event_id}
+														</Text>
+													) : null}
+													{canWrite && !item.calendar_event_id ? (
+														<Tooltip label="Создать событие в календаре">
+															<ActionIcon
+																variant="subtle"
+																aria-label="В календарь"
+																loading={linkingIndex === index}
+																onClick={() => void linkToCalendar(index)}
+															>
+																<IconCalendarPlus size={16} />
+															</ActionIcon>
+														</Tooltip>
+													) : null}
+													<Tooltip label="Открыть календарь">
+														<ActionIcon
+															variant="subtle"
+															aria-label="Календарь"
+															onClick={() => openInCalendar(item)}
+														>
+															<IconCalendar size={16} />
+														</ActionIcon>
+													</Tooltip>
+												</Group>
+											) : null}
 										</Stack>
 										{canWrite ? (
 											<ActionIcon

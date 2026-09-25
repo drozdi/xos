@@ -7,8 +7,22 @@
 | **1** | **DONE** | IncCom: чек → `TransactionItem` (`fill_items` / `apply-items`); FNS `master_token` encrypt; Board↔PKB DX; seed Changelog |
 | **2** | **DONE** | SchoolTask Critical B1–B3 / F1–F3; Explorer dirty-close (notepad/markdown + taskbar) |
 | **3** | **partial** | Board polling + global search (DONE); Mercure/SSE + PKB encryption/plugins → **W3b** |
-| **4** | backlog | Todo→Board; Device↔IncCom; due notify; новые apps по ТЗ |
+| **4** | backlog | Todo→Board; Device↔IncCom; due notify; **новые apps** — см. [APP_IDEAS.md](APP_IDEAS.md) |
 | **5** | backlog | PWA/offline; mobile layout; audit UI; multi-OU |
+
+## Идеи приложений (бэклог)
+
+Каталог идей «по аналогии с уже существующими» (не ТЗ): **[APP_IDEAS.md](APP_IDEAS.md)**.
+
+Кратко — приоритет:
+
+1. IBlock consumer: статьи / FAQ / события / галерея (шаблон Notes/Recipes)
+2. `notebooks` — разделы notes (как `recipe-categories`)
+3. Explorer PDF-viewer
+4. CRUD-справочники (склад, автопарк, договоры)
+5. Игры/утилиты и интеграции (IncCom+/TeamStorm-like)
+
+Демо: vault `Notes/AppIdeas.md`, доска XOS → Roadmap «Идеи приложений» (`php bin/console xos:seed-project` синхронизирует без `--force`).
 
 ## Волна 2 — детали
 

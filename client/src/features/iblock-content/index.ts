@@ -7,6 +7,7 @@ export { slugifyCode } from './slugifyCode';
 export { allocateUniqueElementCode } from './allocateUniqueElementCode';
 export { RecipeShareModal } from './RecipeShareModal';
 export { RecipeView } from './RecipeView';
+export { NoteView } from './NoteView';
 export { useContentBlock } from './useContentBlock';
 export {
 	canAccessRecipeApp,

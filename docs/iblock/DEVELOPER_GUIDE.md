@@ -273,10 +273,12 @@ Consumer UI поверх IBlock (без нового Symfony-модуля):
 
 | App | Block code | Особенности |
 |-----|------------|-------------|
-| `notes` / `note` | `notes` | разделы=блокноты; `COVER` F `file_type=image`; `TAGS` S multiple; `detail_text` markdown |
+| `notes` / `note` | `notes` | view-first + share; `COVER` F multiple + `file_type=image`; `TAGS` S multiple; `detail_text` markdown |
 | `recipes` / `recipe` | `recipes` | view-first + share; `COVER` F multiple + `file_type=image`; `ROLE_RECIPE` = свои рецепты (CRUD) + просмотр каталога; `can_category` = правка категорий |
 
-Shared FE: `client/src/features/iblock-content/` (`IblockMarkdownEditor`, upload → `![alt](src)` через `module=iblock`, `RecipeView`, `RecipeShareModal`).
+Shared FE: `client/src/features/iblock-content/` (`IblockMarkdownEditor`, upload → `![alt](src)` через `module=iblock`, `NoteView` / `RecipeView`, share modal).
+
+**Идеи следующих content-apps:** [APP_IDEAS.md](../APP_IDEAS.md) (§1 IBlock consumer).
 
 **Владение и share (элементы):**
 

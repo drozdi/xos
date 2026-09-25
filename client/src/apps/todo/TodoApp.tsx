@@ -12,10 +12,11 @@ import {
 import { notifications } from '@mantine/notifications';
 import { IconPlus } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { todoApi } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { useAppContext } from '@/core/context/AppContext';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { TodoListEditorModal } from '@/features/todo/TodoListEditorModal';
 import { canUseTodo } from '@/features/todo/todoAccess';
@@ -23,15 +24,22 @@ import { TODO_COLORS } from '@/features/todo/todoMarkdown';
 
 export default function TodoApp() {
 	useWindowTitle('Заметки');
+	const { props } = useAppContext();
 	const queryClient = useQueryClient();
 	const [selectedId, setSelectedId] = useState<number | null>(null);
+
+	useEffect(() => {
+		const listId = Number(props?.listId);
+		if (Number.isFinite(listId) && listId > 0) {
+			setSelectedId(listId);
+		}
+	}, [props?.listId]);
 
 	const listsQuery = useQuery({
 		queryKey: queryKeys.todo.lists,
 		queryFn: () => todoApi.lists(),
 		enabled: canUseTodo(),
 	});
-
 	const createMutation = useMutation({
 		mutationFn: () =>
 			todoApi.create({

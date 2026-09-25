@@ -12,9 +12,11 @@ export const TODO_COLORS = [
 ] as const;
 
 export type TodoDraftItem = {
+	id?: number | null;
 	text: string;
 	done: boolean;
 	due_at: string | null;
+	calendar_event_id?: number | null;
 };
 
 /** Собирает markdown чеклиста из items (+ notes после ---). */

@@ -30,6 +30,10 @@ class TodoItem
     #[ORM\Column(name: 'due_at', type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $dueAt = null;
 
+    /** Linked Calendar\Entity\CalendarEvent id (no Doctrine relation across modules). */
+    #[ORM\Column(name: 'calendar_event_id', type: Types::INTEGER, nullable: true)]
+    private ?int $calendarEventId = null;
+
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $position = 0;
 
@@ -97,6 +101,18 @@ class TodoItem
     public function setDueAt(?\DateTimeInterface $dueAt): self
     {
         $this->dueAt = $dueAt;
+
+        return $this;
+    }
+
+    public function getCalendarEventId(): ?int
+    {
+        return $this->calendarEventId;
+    }
+
+    public function setCalendarEventId(?int $calendarEventId): self
+    {
+        $this->calendarEventId = $calendarEventId;
 
         return $this;
     }

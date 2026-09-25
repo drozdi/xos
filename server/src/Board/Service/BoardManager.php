@@ -1060,13 +1060,13 @@ class BoardManager extends AbstractManager
         $attachment->setCard($card);
         $attachment->setFileName($file->getOriginalName());
         $attachment->setFileUrl($file->getSubDir().'/'.$file->getFileName());
+        $attachment->setFileId($file->getId());
         $attachment->setMimeType($file->getContentType());
         $attachment->setSizeBytes($file->getFileSize());
         $attachment->setUploadedBy($user);
 
         $em = $this->getEntityManager();
         $em->persist($attachment);
-        $em->remove($file);
         $em->flush();
 
         return $attachment;
@@ -1543,6 +1543,7 @@ class BoardManager extends AbstractManager
             'id' => $attachment->getId(),
             'file_name' => $attachment->getFileName(),
             'file_url' => $attachment->getFileUrl(),
+            'file_id' => $attachment->getFileId(),
             'mime_type' => $attachment->getMimeType(),
             'size_bytes' => $attachment->getSizeBytes(),
             'uploaded_by' => $this->serializeUserRef($attachment->getUploadedBy()),
@@ -1968,6 +1969,16 @@ class BoardManager extends AbstractManager
 
     private function removeAttachmentFile(Attachment $attachment): void
     {
+        $fileId = $attachment->getFileId();
+        if (null !== $fileId && $fileId > 0) {
+            $mainFile = $this->fileManager->getFileRepository()?->find($fileId);
+            if ($mainFile instanceof MainFile) {
+                $this->fileManager->remove($mainFile);
+
+                return;
+            }
+        }
+
         try {
             $path = $this->resolveAttachmentAbsolutePath($attachment);
         } catch (NotFoundHttpException) {

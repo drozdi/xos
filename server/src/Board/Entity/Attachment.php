@@ -28,6 +28,10 @@ class Attachment
     #[ORM\Column(name: 'file_url', length: 512)]
     private string $fileUrl = '';
 
+    /** Main\Entity\File id for AuthFileImage / GET /api/main/file/{id}. */
+    #[ORM\Column(name: 'file_id', type: Types::INTEGER, nullable: true)]
+    private ?int $fileId = null;
+
     #[ORM\Column(name: 'mime_type', length: 128, nullable: true)]
     private ?string $mimeType = null;
 
@@ -86,6 +90,18 @@ class Attachment
     public function setFileUrl(string $fileUrl): self
     {
         $this->fileUrl = $fileUrl;
+
+        return $this;
+    }
+
+    public function getFileId(): ?int
+    {
+        return $this->fileId;
+    }
+
+    public function setFileId(?int $fileId): self
+    {
+        $this->fileId = $fileId;
 
         return $this;
     }

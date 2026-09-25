@@ -65,8 +65,12 @@ class TodoManager extends AbstractManager
                 'text' => $item->getText(),
                 'done' => $item->isDone(),
                 'due_at' => $item->getDueAt('Y-m-d\TH:i:s'),
+                'calendar_event_id' => $item->getCalendarEventId(),
             ];
-        }, $items);
+        }, array_values(array_filter(
+            $items,
+            static fn (TodoItem $item): bool => null === $item->getCalendarEventId(),
+        )));
     }
 
     /** @return list<array<string, mixed>> */
@@ -355,6 +359,7 @@ class TodoManager extends AbstractManager
             'text' => $item->getText(),
             'done' => $item->isDone(),
             'due_at' => $item->getDueAt('Y-m-d H:i:s'),
+            'calendar_event_id' => $item->getCalendarEventId(),
             'position' => $item->getPosition(),
         ];
     }
@@ -395,6 +400,14 @@ class TodoManager extends AbstractManager
                 } catch (\Exception) {
                     $item->setDueAt(null);
                 }
+            }
+            if (array_key_exists('calendar_event_id', $row)) {
+                $eventId = $row['calendar_event_id'];
+                $item->setCalendarEventId(
+                    null !== $eventId && '' !== $eventId && (int) $eventId > 0
+                        ? (int) $eventId
+                        : null,
+                );
             }
             $list->addItem($item);
             ++$position;

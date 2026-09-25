@@ -8,11 +8,21 @@ import {
 	parseWikilinkMarkdown,
 	splitMarkdownByWikilinks,
 } from '@/features/pkb/editor/wikilinkHelpers';
+import { parseIblockWikilink } from '@/features/pkb/editor/useWikilinkNavigate';
 
 describe('wikilinkHelpers', () => {
 	describe('normalizeWikilinkTitle', () => {
 		it('trims and collapses whitespace', () => {
 			expect(normalizeWikilinkTitle('  Target   Note  ')).toBe('Target Note');
+		});
+	});
+
+	describe('parseIblockWikilink', () => {
+		it('parses note and recipe deep-links', () => {
+			expect(parseIblockWikilink('note:12')).toEqual({ appId: 'note', id: 12 });
+			expect(parseIblockWikilink('recipe:5')).toEqual({ appId: 'recipe', id: 5 });
+			expect(parseIblockWikilink('Notes:3')).toEqual({ appId: 'note', id: 3 });
+			expect(parseIblockWikilink('Target Note')).toBeNull();
 		});
 	});
 

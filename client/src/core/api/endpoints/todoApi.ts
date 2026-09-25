@@ -16,6 +16,7 @@ const itemSchema = z.object({
 	text: z.string(),
 	done: z.boolean(),
 	due_at: z.string().nullable().optional(),
+	calendar_event_id: z.number().nullable().optional(),
 	position: z.number().optional(),
 });
 
@@ -68,6 +69,7 @@ export const todoDueItemSchema = z.object({
 	text: z.string(),
 	done: z.boolean(),
 	due_at: z.string().nullable().optional(),
+	calendar_event_id: z.number().nullable().optional(),
 });
 
 export type TodoListSummary = z.infer<typeof todoListSummarySchema>;
@@ -82,9 +84,11 @@ export type TodoListWritePayload = {
 	markdown?: string;
 	notes_md?: string | null;
 	items?: Array<{
+		id?: number | null;
 		text: string;
 		done?: boolean;
 		due_at?: string | null;
+		calendar_event_id?: number | null;
 		position?: number;
 	}>;
 };

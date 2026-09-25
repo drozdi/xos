@@ -92,6 +92,7 @@ final class SeedXosProjectCommand extends Command
         $vault = $this->seedVault($io, $user, $force);
         $board = $this->seedBoard($io, $user, $force, $vault);
         $content = $this->seedContentCatalog($io);
+        $this->syncAppIdeas($io, $user);
 
         $io->success([
             $vault ? sprintf('Vault «XOS» slug=%s id=%d', self::VAULT_SLUG, $vault->getId()) : 'Vault пропущен',
@@ -102,6 +103,126 @@ final class SeedXosProjectCommand extends Command
         ]);
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Идемпотентно кладёт App Ideas в существующие vault/доску (без --force).
+     */
+    private function syncAppIdeas(SymfonyStyle $io, User $user): void
+    {
+        $io->section('Sync App Ideas → PKB + Board');
+
+        $vault = $this->vaults->findOneByOwnerAndSlug($user, self::VAULT_SLUG);
+        $noteBody = $this->appIdeasNoteContent();
+        if ($vault instanceof Vault) {
+            $this->vaultFiles->putContent($vault, $user, 'Notes/AppIdeas.md', $noteBody);
+            $notes = $this->vaultNotes();
+            foreach (['Notes/Home.md', 'Notes/AppsCatalog.md', 'Notes/Changelog.md'] as $path) {
+                if (isset($notes[$path])) {
+                    $this->vaultFiles->putContent($vault, $user, $path, $notes[$path]);
+                }
+            }
+            $io->text(sprintf('PKB vault id=%d: Notes/AppIdeas.md (+ Home/AppsCatalog/Changelog)', $vault->getId()));
+        } else {
+            $io->warning('Vault slug=xos не найден — PKB sync пропущен.');
+        }
+
+        $workspace = $this->findWorkspace($user);
+        if (!$workspace instanceof Workspace) {
+            $io->warning('Workspace «XOS» не найден — Board sync пропущен.');
+
+            return;
+        }
+
+        $board = null;
+        foreach ($workspace->getBoards() as $candidate) {
+            if ($candidate->getTitle() === self::BOARD_TITLE) {
+                $board = $candidate;
+                break;
+            }
+        }
+        if (!$board instanceof Board) {
+            $io->warning(sprintf('Доска «%s» не найдена — Board sync пропущен.', self::BOARD_TITLE));
+
+            return;
+        }
+
+        $lists = [];
+        foreach ($this->boardManager->getBoardListRepository()->findByBoardOrdered($board) as $list) {
+            $lists[$list->getTitle()] = $list;
+        }
+
+        if (isset($lists['Обзор'])) {
+            $this->upsertLinkedCard(
+                $lists['Обзор'],
+                $user,
+                $vault,
+                'App Ideas',
+                "Бэклог идей apps по аналогии с существующими.\n\n[[AppIdeas]] · `docs/APP_IDEAS.md` · Roadmap «Идеи приложений».",
+                'Notes/AppIdeas.md',
+            );
+            $io->text('Board «Обзор»: карточка App Ideas');
+        }
+
+        if (isset($lists['Roadmap'])) {
+            $this->upsertLinkedCard(
+                $lists['Roadmap'],
+                $user,
+                $vault,
+                'Идеи приложений',
+                <<<'MD'
+Бэклог идей «как Notes/Recipes, Device, Explorer, Todo…».
+
+Приоритет: IBlock content (статьи/FAQ/события) → notebooks → PDF-viewer → CRUD-справочники.
+
+[[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md` (волна 4).
+MD,
+                'Notes/AppIdeas.md',
+            );
+            $io->text('Board «Roadmap»: карточка Идеи приложений');
+        }
+    }
+
+    private function upsertLinkedCard(
+        BoardList $list,
+        User $user,
+        ?Vault $vault,
+        string $title,
+        string $descriptionMd,
+        string $notePath,
+    ): void {
+        $card = null;
+        foreach ($this->boardManager->getCardRepository()->findByListOrdered($list) as $existing) {
+            if ($existing->getTitle() === $title) {
+                $card = $existing;
+                break;
+            }
+        }
+        if (!$card instanceof Card) {
+            $card = $this->boardManager->createCard($list, $user, ['title' => $title]);
+        }
+
+        $payload = ['description_md' => $descriptionMd];
+        if ($vault instanceof Vault) {
+            $payload['pkb_vault_id'] = $vault->getId();
+            $payload['pkb_note_path'] = $notePath;
+        }
+        $this->boardManager->updateCard($card, $user, $payload);
+    }
+
+    private function appIdeasNoteContent(): string
+    {
+        $docsPath = dirname(__DIR__, 4).DIRECTORY_SEPARATOR.'docs'.DIRECTORY_SEPARATOR.'APP_IDEAS.md';
+        if (is_file($docsPath)) {
+            $raw = file_get_contents($docsPath);
+            if (false !== $raw && '' !== trim($raw)) {
+                return trim($raw)."\n\n← [[Home]] · [[AppsCatalog]] · [[IBlock]] · [[Changelog]]\n";
+            }
+        }
+
+        $notes = $this->vaultNotes();
+
+        return $notes['Notes/AppIdeas.md'] ?? "# App Ideas\n\nСм. `docs/APP_IDEAS.md`.\n";
     }
 
     /**
@@ -132,7 +253,7 @@ final class SeedXosProjectCommand extends Command
         $notesBlock = $this->ensureBlock($type, 'notes', 'Заметки', 10);
         $recipesBlock = $this->ensureBlock($type, 'recipes', 'Рецепты', 20);
 
-        $this->ensureProperty($notesBlock, 'COVER', 'Обложка', 'F', false, 10, 'image');
+        $this->ensureProperty($notesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
         $this->ensureProperty($notesBlock, 'TAGS', 'Теги', 'S', true, 20);
 
         $this->ensureProperty($recipesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
@@ -594,6 +715,27 @@ MD, ['docs', 'mvp'], [
                 'Сверять seed Board/PKB с `docs/` после крупных фич',
             ],
         ]);
+
+        $card(
+            'Идеи приложений',
+            <<<'MD'
+Бэклог идей «как Notes/Recipes, Device, Explorer, Todo…».
+
+Приоритет: IBlock content (статьи/FAQ/события) → notebooks → PDF-viewer → CRUD-справочники.
+
+[[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md` (волна 4).
+MD,
+            ['docs', 'iblock', 'v2'],
+            [
+                'title' => 'Быстрый старт',
+                'items' => [
+                    'articles / faq / events на IBlock consumer',
+                    'notebooks для notes (как recipe-categories)',
+                    'Explorer PDF-viewer',
+                ],
+            ],
+            'Notes/AppIdeas.md',
+        );
     }
 
     /**
@@ -641,6 +783,13 @@ MD, ['docs', 'mvp'], [
                 'boardList' => 'Обзор',
                 'labels' => ['docs'],
                 'description' => "Реестр ~55 приложений и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/APPS.md`.",
+            ],
+            [
+                'title' => 'App Ideas',
+                'notePath' => 'Notes/AppIdeas.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs', 'v2'],
+                'description' => "Бэклог идей apps по аналогии с существующими.\n\n[[AppIdeas]] · `docs/APP_IDEAS.md` · Roadmap «Идеи приложений».",
             ],
             [
                 'title' => 'Changelog',
@@ -1083,11 +1232,12 @@ MD,
 
 - [[Architecture]] — слои monorepo
 - [[AppsCatalog]] — реестр приложений
+- [[AppIdeas]] — идеи следующих apps
 - [[Changelog]] — недавние сдачи (Волна 1 и др.)
 
 ## Документы в репозитории
 
-Индекс: `docs/README.md` · каталог: `docs/APPS.md` · архитектура: `docs/ARCHITECTURE.md`
+Индекс: `docs/README.md` · каталог: `docs/APPS.md` · идеи: `docs/APP_IDEAS.md` · архитектура: `docs/ARCHITECTURE.md`
 
 Seed: `php bin/console xos:seed-project [--login=] [--force]`
 MD,
@@ -1159,8 +1309,38 @@ MD,
 - **W3b**: Mercure/SSE; PKB templates/graph/encryption/plugins — `docs/ROADMAP_WAVES.md`
 - SchoolTask High/Medium — [[SchoolTask]]
 - Волна 4–5: bridges, PWA/offline — backlog
+- **Идеи apps**: [[AppIdeas]] · `docs/APP_IDEAS.md`
 
 ← [[Home]] · [[IncCom]] · [[Board]] · [[PKB]]
+MD,
+            'Notes/AppIdeas.md' => <<<'MD'
+# App Ideas
+
+Бэклог идей приложений «по аналогии» с уже существующими в XOS (2026-09-25).
+
+Полный текст в репо: `docs/APP_IDEAS.md`.
+
+## Приоритет
+
+1. IBlock consumer: статьи / FAQ / события / галерея (шаблон [[IBlock]] + Notes/Recipes)
+2. notebooks — разделы notes (как recipe-categories)
+3. Explorer PDF-viewer
+4. CRUD: склад, автопарк, договоры
+5. Игры/утилиты; IncCom+/TeamStorm-like интеграции
+
+## Группы идей
+
+| Группа | Примеры |
+|--------|---------|
+| IBlock content | articles, faq, gallery, events, contacts, services |
+| CRUD admin | склад, автопарк, контрагенты |
+| Explorer | PDF, код, diff, карта |
+| Productivity | привычки, inbox, уведомления |
+| SchoolTask | дневник, ДЗ, родительский share |
+| Games/utils | 2048, sticky notes, виджеты |
+| Integrations | банк/счета, CRM-мини |
+
+← [[Home]] · [[AppsCatalog]] · [[IBlock]] · [[Changelog]]
 MD,
             'Notes/Architecture.md' => <<<'MD'
 # Architecture
@@ -1236,8 +1416,11 @@ MD,
 | Board | board | 1 |
 | PKB | pkb | 1 |
 | IBlock | iblock | 10 (types/blocks/sections/elements/properties + details) |
+| Content | iblock / recipe | notes, note, recipes, recipe, recipe-categories |
 
 Детали по модулям: [[Main]], [[Device]], [[Explorer]], [[SchoolTask]], [[IncCom]], [[Calendar]], [[Todo]], [[Board]], [[PKB]], [[System]], [[IBlock]]
+
+Идеи следующих apps: [[AppIdeas]] · `docs/APP_IDEAS.md`
 
 ← [[Home]] · [[Architecture]]
 MD,

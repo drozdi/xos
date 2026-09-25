@@ -1,4 +1,4 @@
-import { Alert, Select, Stack, Text } from '@mantine/core';
+import { Alert, Badge, Select, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -14,7 +14,6 @@ import {
 	useCanCreateIblockElement,
 	useCanDeleteIblockElement,
 	useCanReadIblockElement,
-	useCanUpdateIblockElement,
 } from '@/features/iblock/iblockAccess';
 import { useLaunchIblockApp } from '@/features/iblock/iblockAppUtils';
 import { NOTES_BLOCK_CODE, useContentBlock } from '@/features/iblock-content';
@@ -27,7 +26,6 @@ export default function NotesApp() {
 	const userQuery = useUser();
 	const canRead = useCanReadIblockElement();
 	const canCreate = useCanCreateIblockElement();
-	const canUpdate = useCanUpdateIblockElement();
 	const canDelete = useCanDeleteIblockElement();
 	const { blockId, sectionOptions, isLoading: blockLoading, error: blockError, isReady } =
 		useContentBlock(NOTES_BLOCK_CODE);
@@ -81,8 +79,27 @@ export default function NotesApp() {
 					),
 			},
 			{ field: 'name' as const, header: 'Название' },
+			{
+				field: 'access' as const,
+				header: 'Доступ',
+				width: 110,
+				render: (row: { is_owner?: boolean; is_shared?: boolean }) =>
+					row.is_owner ? (
+						<Badge size="sm" variant="light">
+							Мой
+						</Badge>
+					) : row.is_shared ? (
+						<Badge size="sm" variant="light" color="blue">
+							Общий
+						</Badge>
+					) : (
+						<Text size="xs" c="dimmed">
+							—
+						</Text>
+					),
+			},
 			{ field: 'preview_text' as const, header: 'Анонс' },
-			{ field: 'section_id' as const, header: 'Раздел', width: 90 },
+			{ field: 'section_id' as const, header: 'Блокнот', width: 90 },
 			{ field: 'sort' as const, header: 'Сорт.', width: 70 },
 		],
 		[],
@@ -148,8 +165,20 @@ export default function NotesApp() {
 				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
 				onRowClick={(row) => openNote(row.id)}
-				onEdit={canUpdate ? (row) => openNote(row.id) : undefined}
-				onDelete={canDelete ? (row) => deleteMutation.mutateAsync(row.id) : undefined}
+				onDelete={
+					canDelete
+						? async (row) => {
+								if (!row.is_owner) {
+									notifications.show({
+										color: 'yellow',
+										message: 'Удалить может только владелец заметки',
+									});
+									return;
+								}
+								await deleteMutation.mutateAsync(row.id);
+							}
+						: undefined
+				}
 				getRowLabel={(row) => row.name || row.code}
 			/>
 		</MainListLayout>

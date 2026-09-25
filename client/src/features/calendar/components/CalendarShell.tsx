@@ -1,7 +1,7 @@
 import { Alert, Group, Loader, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
 
 import { calendarApi, type CalendarDto, type CalendarEventDto } from '@/core/api/endpoints/calendarApi';
@@ -39,16 +39,22 @@ const EventTeacherModal = lazy(() =>
 	})),
 );
 
-export function CalendarShell() {
+export function CalendarShell({ initialDate }: { initialDate?: string }) {
 	const queryClient = useQueryClient();
 	const canReadSt = useCanReadSchooltaskEvent();
 	const canUpdateSt = useCanUpdateSchooltaskEvent();
 	const showSchooltaskByRights = canReadSt || canUpdateSt;
 
 	const [view, setView] = useState<CalendarViewMode>('week');
-	const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+	const [date, setDate] = useState(() => initialDate ?? new Date().toISOString().slice(0, 10));
 	const [range, setRange] = useState<{ start: string; end: string } | null>(null);
 	const [schooltaskForbidden, setSchooltaskForbidden] = useState(false);
+
+	useEffect(() => {
+		if (initialDate) {
+			setDate(initialDate);
+		}
+	}, [initialDate]);
 
 	const [shareCalendar, setShareCalendar] = useState<CalendarDto | null>(null);
 	const [deletingCalendarId, setDeletingCalendarId] = useState<number | null>(null);

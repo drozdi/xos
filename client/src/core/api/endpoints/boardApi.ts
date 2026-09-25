@@ -442,21 +442,14 @@ export const commentSchema = z.object({
 
 
 export const attachmentSchema = z.object({
-
 	id: z.number(),
-
 	file_name: z.string(),
-
 	file_url: z.string(),
-
+	file_id: z.number().nullable().optional(),
 	mime_type: z.string().nullable().optional(),
-
 	size_bytes: z.number().nullable().optional(),
-
 	uploaded_by: userRefSchema.optional(),
-
 	created_at: z.string().nullable().optional(),
-
 });
 
 

@@ -35,6 +35,7 @@ import {
 	type CardDetail,
 	boardApi,
 } from '@/core/api/endpoints/boardApi';
+import { AuthFileImage } from '@/core/api/AuthFileImage';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useAuthStore } from '@/core/auth/authStore';
 import { confirmAction } from '@/core/confirm/confirmAction';
@@ -701,56 +702,81 @@ export function CardModal({
 							<Divider label="Вложения" labelPosition="left" />
 
 							<Stack gap="xs">
-								{card.attachments.map((attachment) => (
-									<Group key={attachment.id} justify="space-between" wrap="nowrap">
-										<Anchor
-											component="button"
-											type="button"
-											size="sm"
-											lineClamp={1}
-											style={{ flex: 1, textAlign: 'left' }}
-											onClick={() =>
-												void openBoardAttachment(attachment.id, attachment.file_name)
-											}
-										>
-											{attachment.file_name}
-										</Anchor>
-										<Group gap={4} wrap="nowrap">
-											<ActionIcon
-												variant="subtle"
-												size="sm"
-												aria-label="Скачать"
-												onClick={() =>
-													void downloadBoardAttachment(
-														attachment.id,
-														attachment.file_name,
-													)
-												}
-											>
-												<IconDownload size={14} />
-											</ActionIcon>
-											{canEdit ? (
-												<ActionIcon
-													variant="subtle"
-													color="red"
+								{card.attachments.map((attachment) => {
+									const isImage = (attachment.mime_type ?? '').startsWith('image/');
+									return (
+										<Group key={attachment.id} justify="space-between" wrap="nowrap" align="flex-start">
+											<Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+												{isImage && attachment.file_id ? (
+													<AuthFileImage
+														fileId={attachment.file_id}
+														alt={attachment.file_name}
+														w={48}
+														h={48}
+														radius="sm"
+														fit="cover"
+														style={{ flexShrink: 0, cursor: 'pointer' }}
+														onClick={() =>
+															void openBoardAttachment(
+																attachment.id,
+																attachment.file_name,
+															)
+														}
+													/>
+												) : null}
+												<Anchor
+													component="button"
+													type="button"
 													size="sm"
-													aria-label="Удалить"
+													lineClamp={1}
+													style={{ flex: 1, textAlign: 'left' }}
 													onClick={() =>
-														confirmAction({
-															title: 'Удалить вложение',
-															message: `Удалить «${attachment.file_name}»?`,
-															confirmColor: 'red',
-															onConfirm: () =>
-																deleteAttachmentMutation.mutate(attachment.id),
-														})
+														void openBoardAttachment(
+															attachment.id,
+															attachment.file_name,
+														)
 													}
 												>
-													<IconTrash size={14} />
+													{attachment.file_name}
+												</Anchor>
+											</Group>
+											<Group gap={4} wrap="nowrap">
+												<ActionIcon
+													variant="subtle"
+													size="sm"
+													aria-label="Скачать"
+													onClick={() =>
+														void downloadBoardAttachment(
+															attachment.id,
+															attachment.file_name,
+														)
+													}
+												>
+													<IconDownload size={14} />
 												</ActionIcon>
-											) : null}
+												{canEdit ? (
+													<ActionIcon
+														variant="subtle"
+														color="red"
+														size="sm"
+														aria-label="Удалить"
+														onClick={() =>
+															confirmAction({
+																title: 'Удалить вложение',
+																message: `Удалить «${attachment.file_name}»?`,
+																confirmColor: 'red',
+																onConfirm: () =>
+																	deleteAttachmentMutation.mutate(attachment.id),
+															})
+														}
+													>
+														<IconTrash size={14} />
+													</ActionIcon>
+												) : null}
+											</Group>
 										</Group>
-									</Group>
-								))}
+									);
+								})}
 								{canEdit ? (
 									<Group gap="xs">
 										<Button

@@ -83,7 +83,12 @@ final class TodoMarkdownSync
 
     public function applyParsedItems(TodoList $list, array $parsedItems): void
     {
-        foreach ($list->getItems()->toArray() as $existing) {
+        $previousLinks = [];
+        foreach ($list->getItems() as $existing) {
+            $key = mb_strtolower(trim($existing->getText())).'|'.($existing->getDueAt('Y-m-d H:i') ?? '');
+            if (null !== $existing->getCalendarEventId()) {
+                $previousLinks[$key] = $existing->getCalendarEventId();
+            }
             $list->removeItem($existing);
         }
 
@@ -93,6 +98,14 @@ final class TodoMarkdownSync
             $item->setDone((bool) $row['done']);
             $item->setDueAt($row['due_at'] instanceof \DateTimeInterface ? $row['due_at'] : null);
             $item->setPosition((int) $row['position']);
+            $key = mb_strtolower(trim((string) $row['text'])).'|'.(
+                $row['due_at'] instanceof \DateTimeInterface
+                    ? $row['due_at']->format('Y-m-d H:i')
+                    : ''
+            );
+            if (isset($previousLinks[$key])) {
+                $item->setCalendarEventId($previousLinks[$key]);
+            }
             $list->addItem($item);
         }
     }

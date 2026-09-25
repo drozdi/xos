@@ -8,6 +8,7 @@
 |----------|------------|
 | [TZ.md](TZ.md) | Общее ТЗ на систему (shell + legacy-модули) |
 | [APPS.md](APPS.md) | Каталог всех 55 desktop-приложений |
+| [APP_IDEAS.md](APP_IDEAS.md) | Бэклог идей новых приложений (по аналогии с существующими) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Архитектура backend/frontend |
 | [API_SPEC.md](API_SPEC.md) | REST API (сводная спецификация) |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Как добавить приложение |

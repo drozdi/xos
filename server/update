@@ -3,6 +3,7 @@ php bin/console doctrine:database:create
 php bin/console make:migration
 php bin/console doctrine:migrations:migrate
 php bin/console main:claimant:sync
-# Локаль: php bin/console xos:seed-project --force
+# Локаль: php bin/console xos:seed-project  (App Ideas sync без --force)
+# Полный recreate Board+PKB: --force
 # На prod seed не гонять (демо Board+PKB «XOS»).
-php bin/console xos:seed-project --force
+php bin/console xos:seed-project

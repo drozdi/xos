@@ -38,7 +38,7 @@ import {
 	type MarkdownViewMode,
 } from '@/features/markdown';
 import { WikilinkAutocompleteMenu } from '@/features/pkb/editor/WikilinkAutocompleteMenu';
-import { useWikilinkNavigate } from '@/features/pkb/editor/useWikilinkNavigate';
+import { useWikilinkNavigate, parseIblockWikilink } from '@/features/pkb/editor/useWikilinkNavigate';
 import {
 	createWikilinkExtension,
 	type WikilinkAutocompleteState,
@@ -162,7 +162,13 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 	noteSuggestionsRef.current = noteSuggestions;
 
 	const isBrokenWikilink = useCallback(
-		(title: string) => !noteTitleSet.has(normalizeWikilinkTitle(title).toLowerCase()),
+	const isBrokenWikilink = useCallback(
+		(title: string) => {
+			if (parseIblockWikilink(title)) {
+				return false;
+			}
+			return !noteTitleSet.has(normalizeWikilinkTitle(title).toLowerCase());
+		},
 		[noteTitleSet],
 	);
 

@@ -1,9 +1,10 @@
-import { Modal, Stack, Text } from '@mantine/core';
+import { Button, Modal, Stack, Text } from '@mantine/core';
 import dayjs from 'dayjs';
 
 import type { BoardDueCard } from '@/core/api/endpoints/boardApi';
 import type { CalendarEvent as SchooltaskCalendarEvent } from '@/core/api/endpoints/schooltaskApi';
 import type { TodoDueItem } from '@/core/api/endpoints/todoApi';
+import { useAppManager } from '@/core/appManager/useAppManager';
 
 import type { CalendarEventViewModel } from '../types';
 
@@ -40,6 +41,8 @@ function formatTodoDue(dueAt: string | null | undefined): string {
 }
 
 export function OverlayDetailModal({ event, opened, onClose }: OverlayDetailModalProps) {
+	const launchApp = useAppManager((s) => s.launchApp);
+
 	if (!event) {
 		return null;
 	}
@@ -53,36 +56,61 @@ export function OverlayDetailModal({ event, opened, onClose }: OverlayDetailModa
 					? 'Урок'
 					: 'Событие';
 
+	const todoPayload = event.source === 'todo' ? (event.payload as TodoDueItem) : null;
+	const boardPayload = event.source === 'board' ? (event.payload as BoardDueCard) : null;
+
 	return (
 		<Modal opened={opened} onClose={onClose} title={title} centered>
 			<Stack gap="sm">
 				<Text fw={600}>{event.title}</Text>
 				<Text size="sm" c="dimmed">
 					{event.source === 'todo'
-						? `Срок: ${formatTodoDue((event.payload as TodoDueItem).due_at)}`
+						? `Срок: ${formatTodoDue(todoPayload?.due_at)}`
 						: event.source === 'board'
-							? `Срок: ${formatTodoDue((event.payload as BoardDueCard).due_date)}`
+							? `Срок: ${formatTodoDue(boardPayload?.due_date)}`
 							: formatRange(event.start, event.end, event.allDay)}
 				</Text>
-				{event.source === 'todo' ? (
+				{todoPayload ? (
 					<>
-						<Text size="sm">
-							Список:{' '}
-							{(event.payload as TodoDueItem).list_title ?? '—'}
-						</Text>
-						<Text size="sm">
-							Статус: {(event.payload as TodoDueItem).done ? 'выполнено' : 'не выполнено'}
-						</Text>
+						<Text size="sm">Список: {todoPayload.list_title ?? '—'}</Text>
+						<Text size="sm">Статус: {todoPayload.done ? 'выполнено' : 'не выполнено'}</Text>
+						{todoPayload.list_id ? (
+							<Button
+								size="xs"
+								variant="light"
+								onClick={() => {
+									onClose();
+									void launchApp('todo', {
+										props: { listId: todoPayload.list_id },
+									});
+								}}
+							>
+								Открыть список
+							</Button>
+						) : null}
 					</>
 				) : null}
-				{event.source === 'board' ? (
+				{boardPayload ? (
 					<>
-						<Text size="sm">
-							Доска: {(event.payload as BoardDueCard).board_title ?? '—'}
-						</Text>
-						<Text size="sm">
-							Список: {(event.payload as BoardDueCard).list_title ?? '—'}
-						</Text>
+						<Text size="sm">Доска: {boardPayload.board_title ?? '—'}</Text>
+						<Text size="sm">Список: {boardPayload.list_title ?? '—'}</Text>
+						{boardPayload.board_id ? (
+							<Button
+								size="xs"
+								variant="light"
+								onClick={() => {
+									onClose();
+									void launchApp('board', {
+										props: {
+											boardId: boardPayload.board_id,
+											cardId: boardPayload.id,
+										},
+									});
+								}}
+							>
+								Открыть карточку
+							</Button>
+						) : null}
 					</>
 				) : null}
 				{event.source === 'schooltask' ? (

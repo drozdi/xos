@@ -20,9 +20,16 @@ interface RecipeShareModalProps {
 	opened: boolean;
 	onClose: () => void;
 	onUpdated: (recipe: IblockElementDetail) => void;
+	title?: string;
 }
 
-export function RecipeShareModal({ recipe, opened, onClose, onUpdated }: RecipeShareModalProps) {
+export function RecipeShareModal({
+	recipe,
+	opened,
+	onClose,
+	onUpdated,
+	title = 'Поделиться рецептом',
+}: RecipeShareModalProps) {
 	const queryClient = useQueryClient();
 	const [email, setEmail] = useState('');
 	const [lookupError, setLookupError] = useState<string | null>(null);
@@ -50,7 +57,7 @@ export function RecipeShareModal({ recipe, opened, onClose, onUpdated }: RecipeS
 	});
 
 	return (
-		<Modal opened={opened} onClose={onClose} title="Поделиться рецептом" centered>
+		<Modal opened={opened} onClose={onClose} title={title} centered>
 			<Stack gap="sm">
 				<Text size="sm" c="dimmed">
 					Доступ только для просмотра. Укажите email пользователя XOS.
