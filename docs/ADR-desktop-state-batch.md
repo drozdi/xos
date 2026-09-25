@@ -200,7 +200,6 @@ Desktop UX sync (hydrate, debounce 2500 ms, Explorer path) — **DONE**. As-is �
 
 ## Связанные документы
 
-- План: `docs/PLAN.md` (новая задача desktop-state batch)
 - Предыдущий sync: `docs/ADR-desktop-ux-sync.md` (**DONE**, SoT/LWW наследуют)
 - KV: `docs/ADR-user-app-data.md`
 - API: `docs/API_SPEC.md` § Desktop state

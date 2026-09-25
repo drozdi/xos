@@ -1,7 +1,7 @@
 # ADR: Per-user app data KV (`user_app_data`)
 
 > Статус: **Accepted** (итерация 0, 2026-08-06)  
-> Источник: `docs/PLAN.md` · Open questions закрыты оркестратором (defaults ниже)
+> Источник: desktop-state / UX sync ADR · Open questions закрыты оркестратором (defaults ниже)
 
 ## Контекст
 
@@ -145,5 +145,4 @@
 
 - Схема: `docs/DATABASE_SCHEMA.md` (§ UserAppData)
 - API: `docs/API_SPEC.md` (§ User App Data)
-- План: `docs/PLAN.md` (итерации 1+)
-- Обзор: `docs/ARCHITECTURE.md` (ссылка)
+- Обзор: `docs/ARCHITECTURE.md`, `docs/platform/README.md`

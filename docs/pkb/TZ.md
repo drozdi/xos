@@ -55,9 +55,9 @@ Obsidian-like база знаний: vaults с markdown-заметками, wiki
 
 Детали: [API_SPEC.md](API_SPEC.md)
 
-## 7. Out of scope
+## 7. Out of scope / backlog
 
-Plugin API, encryption, mobile, real-time co-editing — см. [PLAN.md](PLAN.md) v3.
+Plugin API, encryption, mobile, real-time co-editing — [APP_IDEAS.md](../APP_IDEAS.md), [ROADMAP_WAVES.md](../ROADMAP_WAVES.md) (W3b).
 
 ## 8. Критерии приёмки (MVP)
 
@@ -70,5 +70,5 @@ Plugin API, encryption, mobile, real-time co-editing — см. [PLAN.md](PLAN.md
 ## 9. Связанные документы
 
 - [README.md](README.md)
-- [PLAN.md](PLAN.md) · [TODO.md](TODO.md)
 - [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) · [API_SPEC.md](API_SPEC.md)
+- [APP_IDEAS.md](../APP_IDEAS.md)

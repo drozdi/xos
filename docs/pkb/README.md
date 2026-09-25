@@ -58,9 +58,7 @@ client/src/features/pkb/
 | [TZ.md](TZ.md) | Техническое задание |
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Структура, checklist фич |
 | [API_SPEC.md](API_SPEC.md) | REST endpoints PKB |
-| [PLAN.md](PLAN.md) | План фаз 0–6 |
-| [BENCHMARK.md](BENCHMARK.md) | Сравнение с аналогами |
-| [TODO.md](TODO.md) | Трекинг |
+| [APP_IDEAS.md](../APP_IDEAS.md) | Бэклог (encryption, plugins) |
 
 ## Доступ
 

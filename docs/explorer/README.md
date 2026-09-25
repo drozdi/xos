@@ -60,5 +60,3 @@ client/src/features/media-player/    # плейлисты audio/video
 | Файл | Содержание |
 |------|------------|
 | [TZ.md](TZ.md) | Техническое задание |
-| [PLAN.md](PLAN.md) | План pickers / multi-instance |
-| [TODO.md](TODO.md) | Трекинг |

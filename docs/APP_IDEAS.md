@@ -1,18 +1,16 @@
-# Идеи приложений XOS
+# Идеи приложений и улучшений XOS
 
-> Бэклог продуктовых идей (2026-09-25). Не ТЗ: ориентиры для следующих consumer/CRUD apps.  
+> Бэклог (2026-09-25). Не ТЗ — ориентиры для следующих apps и polish.  
 > Связано: [APPS.md](APPS.md) · [ROADMAP_WAVES.md](ROADMAP_WAVES.md) · PKB `Notes/AppIdeas.md`
 
-Уже есть каркас: **Notes / Recipes** (IBlock consumer, view-first, share), CRUD list+detail (Device/Main/IBlock), Explorer viewers, Todo/Calendar/Board/PKB, SchoolTask, игры.
+Уже есть: Notes/Recipes, CRUD Device/Main/IBlock, Explorer viewers, Todo/Calendar/Board/PKB, SchoolTask, игры, sticky/widgets.
 
 ---
 
-## 1. Как Notes / Recipes (IBlock consumer)
+## 1. Новые apps — IBlock consumer (как Notes/Recipes)
 
-Быстрый путь: type `content` + новый block + apps `list`/`detail` по шаблону `notes`/`note`.
-
-| App (идея) | Block code | Суть |
-|------------|------------|------|
+| App | Block code | Суть |
+|-----|------------|------|
 | Статьи / блог / новости | `articles` | рубрики, COVER, TAGS, markdown |
 | FAQ / база ответов | `faq` | вопрос/ответ, категории |
 | Галерея / альбомы | `gallery` | multiple images + подпись |
@@ -20,13 +18,13 @@
 | Контакты / сотрудники | `contacts` | фото, должность, телефон |
 | Прайс / услуги | `services` | цена, COVER, категории |
 | Идеи / wishlist | `ideas` | статус, приоритет |
-| notebooks | — | управление разделами notes (как `recipe-categories`) |
+| notebooks | — | разделы notes (как `recipe-categories`) |
 
-Дополнения к контенту: поиск по тегам, избранное, deep-link из PKB.
+Дополнения: поиск по тегам, избранное.
 
 ---
 
-## 2. Как Device / Main / IBlock admin (list + detail CRUD)
+## 2. Новые apps — CRUD list+detail (как Device/Main)
 
 | Идея | Аналог |
 |------|--------|
@@ -38,44 +36,52 @@
 
 ---
 
-## 4. Как Todo / Calendar / Board / PKB
-
-| Идея | Паттерн |
-|------|---------|
-| Привычки / трекер | todo + due |
-| Inbox / почта (мини) | list + detail |
-| Центр уведомлений | shell utility |
-| Чеклисты встреч / связка задача↔событие | todo ↔ calendar (готово: share списка, `calendar_event_id`, deep-link) |
-| Board вложения через AuthFileImage | board attachments + `file_id` |
-| Deep-link IBlock из PKB | `[[note:12]]` / `[[recipe:5]]` |
-
----
-
-## 5. Как SchoolTask
+## 3. Новые apps — SchoolTask / IncCom / TeamStorm
 
 | Идея |
 |------|
 | Дневник оценок |
 | Домашние задания |
 | Родительский read-only share |
-
----
-
-## 6. Как IncCom / TeamStorm
-
-| Идея |
-|------|
 | Банк / счета (рядом с IncCom) |
 | CRM-мини (лиды → IBlock) |
 | Ещё один внешний API-клиент (как TeamStorm) |
 
 ---
 
-## Приоритет (практика)
+## 4. Улучшения существующих модулей
 
-1. **Ещё 1–2 IBlock content-app** (статьи / FAQ / события) — максимум переиспользования `iblock-content`.  
-2. **notebooks** для notes (категории блокнотов).  
-3. Остальное — по ТЗ / волне 4 (`ROADMAP_WAVES.md`).
+| Область | Идея |
+|---------|------|
+| Todo ↔ Board | конвертация задачи в карточку / deep-link |
+| Device ↔ IncCom | связь устройств с расходами |
+| Todo | уведомления о due |
+| Board | Mercure/SSE вместо polling; conflict UI |
+| PKB | encryption at rest; plugin API; sync/publish |
+| PKB | FULLTEXT search; ambiguous wikilink UX |
+| Shell | центр уведомлений |
+| Привычки / трекер | на базе todo + due |
+| Inbox / почта (мини) | list + detail |
+
+---
+
+## 5. Платформа (волны 4–5)
+
+| Идея |
+|------|
+| PWA / offline |
+| Mobile layout |
+| Audit UI |
+| Multi-OU |
+
+---
+
+## Приоритет
+
+1. **1–2 IBlock content-app** (статьи / FAQ / события) — максимум reuse `iblock-content`.
+2. **notebooks** для notes.
+3. Связки Todo↔Board, due notify, Device↔IncCom.
+4. W3b (Mercure, PKB encryption/plugins) и платформа (PWA/mobile) — по отдельным планам.
 
 ```bash
 # обновить App Ideas в Board+PKB (без пересоздания):

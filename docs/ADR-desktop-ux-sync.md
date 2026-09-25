@@ -1,7 +1,7 @@
 # ADR: Desktop UX sync (cross-browser)
 
 > Статус: **Accepted** (итерация 0, 2026-08-06)  
-> Источник: `docs/PLAN.md` · OQ закрыты defaults оркестратора + решения ниже  
+> Источник: desktop UX sync · OQ закрыты defaults оркестратора + решения ниже  
 > Связано: `docs/ADR-user-app-data.md` (границы KV **не** менять)
 
 ## Контекст
@@ -166,7 +166,7 @@ Explorer path save: тот же порядок **2500 ms** (отдельный t
 
 ## Связанные документы
 
-- План UX sync: **DONE** (этот ADR). Текущий план: `docs/PLAN.md` → **desktop-state batch**.  
+- План UX sync: **DONE** (этот ADR).
 - Следующий wire: **`docs/ADR-desktop-state-batch.md`** (aggregate `GET`/`PUT /api/desktop-state`) — SoT/LWW/границы хранилищ отсюда наследуются.  
 - KV: `docs/ADR-user-app-data.md`  
 - Обзор: `docs/ARCHITECTURE.md`  

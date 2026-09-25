@@ -59,9 +59,11 @@ Trello-like планирование: workspaces → boards → lists → cards 
 
 Upload: module `board` в UploadPathResolver.
 
-## 6. Out of scope (v2)
+## 6. Out of scope / backlog
 
-Real-time, global search, Trello import, email notifications — см. [PLAN.md](PLAN.md).
+Mercure/SSE, conflict UI, Trello import, email — [APP_IDEAS.md](../APP_IDEAS.md), [ROADMAP_WAVES.md](../ROADMAP_WAVES.md) (W3b).
+
+Global search и polling — **DONE**.
 
 ## 7. Критерии приёмки (MVP)
 
@@ -74,5 +76,5 @@ Real-time, global search, Trello import, email notifications — см. [PLAN.md]
 ## 8. Связанные документы
 
 - [README.md](README.md)
-- [PLAN.md](PLAN.md) · [TODO.md](TODO.md)
 - [calendar/TZ.md](../calendar/TZ.md)
+- [APP_IDEAS.md](../APP_IDEAS.md)

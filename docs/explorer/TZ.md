@@ -78,5 +78,4 @@ server/src/Explorer/
 ## 8. Связанные документы
 
 - [README.md](README.md)
-- [PLAN.md](PLAN.md) · [TODO.md](TODO.md)
 - [TZ.md](../TZ.md)

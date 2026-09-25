@@ -32,6 +32,5 @@
 ## Связанные документы
 
 - [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) — регистрация приложений
-- [explorer/PLAN.md](../explorer/PLAN.md) — pickers (частично WM/documentPath)
-
-> Исторические ссылки на `docs/PLAN.md` (desktop-state batch) перенесены сюда.
+- [explorer/TZ.md](../explorer/TZ.md) — VFS / viewers
+- ADR в `docs/ADR-*.md` (desktop-state, UX sync, user_app_data)

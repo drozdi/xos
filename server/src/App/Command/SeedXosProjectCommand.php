@@ -679,7 +679,7 @@ MD,
             <<<'MD'
 Сдано: SchoolTask Critical B1–B3 / F1–F3; Explorer dirty-close.
 
-Детали: [[Changelog]] · [[SchoolTask]] · [[Explorer]] · `docs/ROADMAP_WAVES.md` · `docs/schooltask/REVIEW.md`.
+Детали: [[Changelog]] · [[SchoolTask]] · [[Explorer]] · `docs/ROADMAP_WAVES.md`.
 MD,
             ['schooltask', 'explorer', 'docs', 'mvp'],
             [
@@ -697,13 +697,13 @@ MD,
 
 **W3b** backlog: Mercure/SSE; Trello import; email-уведомления.
 
-См. `docs/ROADMAP_WAVES.md`, `docs/board/PLAN.md`, [[Board]], [[Changelog]].
+См. `docs/ROADMAP_WAVES.md`, `docs/APP_IDEAS.md`, [[Board]], [[Changelog]].
 MD, ['board', 'docs', 'mvp']);
 
         $card('W3b PKB: templates/graph, encryption, plugins', <<<'MD'
 Backlog **W3b**: PKB templates/graph; encryption at-rest; plugins / co-editing.
 
-См. [[PKB]], `docs/pkb/PLAN.md`, `docs/ROADMAP_WAVES.md`.
+См. [[PKB]], `docs/APP_IDEAS.md`, `docs/ROADMAP_WAVES.md`.
 MD, ['pkb', 'v2']);
 
         $card('Документация приложений', <<<'MD'
@@ -969,8 +969,7 @@ Claimant `schooltask` · `server/src/SchoolTask/` · `client/src/features/school
 
 ## Ключевое
 
-- Backlog прав: `docs/schooltask/REVIEW.md`
-- Документы: `docs/schooltask/README.md`, `TZ.md`
+- Документы: `docs/schooltask/README.md`, `TZ.md`; идеи — `docs/APP_IDEAS.md`
 
 ← [[Home]] · [[Calendar]]
 MD,
@@ -1288,14 +1287,14 @@ MD,
 - F1/F2: `user_ids` + FormData без forced Content-Type
 - F3: launch `schooltask-calendar-editor` из классов/календарей
 
-См. [[SchoolTask]], `docs/schooltask/REVIEW.md`, `docs/ROADMAP_WAVES.md`.
+См. [[SchoolTask]], `docs/ROADMAP_WAVES.md`, `docs/APP_IDEAS.md`.
 
 ### Explorer
 
 - Dirty-close notepad/markdown: save / discard / cancel
 - Taskbar close → `getWindowApi().close()` (не обход confirm)
 
-См. [[Explorer]], `docs/explorer/TODO.md`.
+См. [[Explorer]], `docs/explorer/TZ.md`.
 
 ## Волна 3 — Board polling + search (partial)
 

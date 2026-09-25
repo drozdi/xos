@@ -8,7 +8,7 @@
 - **Ant Design** (`antd`, `@ant-design/icons`) — компоненты, формы, модалки, таблицы.
 - Списки сущностей: `@/ui/data-table` / `@/components/table` (`DataTable` на antd `Table`).
 - Тосты: `@/ui/toast` (`notifications.show`).
-- Тема: `ThemeProvider` + `AntdProvider` (`docs/MANTINE_TO_ANTD.md`, отчёты в `docs/migration-reports/`).
+- Тема: `ThemeProvider` + `AntdProvider`.
 - **Не** добавлять `@mantine/*` (eslint `no-restricted-imports`).
 
 ## Обзор

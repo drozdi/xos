@@ -65,19 +65,19 @@ server/src/SchoolTask/
 └── setting.json
 ```
 
-## 7. Известные пробелы
+## 7. Известные пробелы / backlog
 
-См. [REVIEW.md](REVIEW.md): права тьютор/scope, публичные uploads, IDOR, серии событий.
+Critical/High закрыты (волна 2). Дальнейшие идеи — [APP_IDEAS.md](../APP_IDEAS.md).
 
 ## 8. Критерии приёмки (целевые)
 
 - [x] CRUD предметов, классов, событий
 - [x] Teacher calendar + modal редактирования
 - [x] Файлы урока через Explorer
-- [ ] Исправления из REVIEW (backlog)
+- [x] Critical B1–B3 / F1–F3 (волна 2)
 
 ## 9. Связанные документы
 
 - [README.md](README.md)
-- [REVIEW.md](REVIEW.md)
 - [calendar/TZ.md](../calendar/TZ.md) — overlay
+- [APP_IDEAS.md](../APP_IDEAS.md)
