@@ -1,21 +1,29 @@
 {
 	"types": {
 		"folder": { "label": "Папка", "extensions": [] },
-		"text": { "label": "Текст", "extensions": ["txt", "log", "json", "xml", "csv", "yml", "yaml", "ini", "php", "js", "ts", "tsx", "jsx", "css", "scss", "html", "htm"] },
+		"text": { "label": "Текст", "extensions": ["txt", "log", "json", "xml", "csv", "yml", "yaml", "ini"] },
+		"code": {
+			"label": "Код",
+			"extensions": ["php", "js", "ts", "tsx", "jsx", "css", "scss", "html", "htm", "py", "rs", "go", "java", "c", "cpp", "h", "hpp", "cs", "rb", "sql", "sh", "bash", "zsh", "ps1", "kt", "swift", "vue", "svelte"]
+		},
 		"markdown": { "label": "Markdown", "extensions": ["md", "markdown", "mdown"] },
 		"image": { "label": "Изображение", "extensions": ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"] },
 		"video": { "label": "Видео", "extensions": ["mp4", "webm", "ogg", "avi", "mkv", "mov"] },
 		"audio": { "label": "Аудио", "extensions": ["mp3", "wav", "ogg", "flac", "aac", "m4a"] },
 		"archive": { "label": "Архив", "extensions": ["zip", "rar", "7z", "tar", "gz", "bz2"] },
 		"document": { "label": "Документ", "extensions": ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods"] },
+		"geo": { "label": "Геоданные", "extensions": ["gpx", "kml"] },
 		"binary": { "label": "Файл", "extensions": [] }
 	},
 	"openWith": {
 		"text": ["explorer-notepad"],
+		"code": ["explorer-code-viewer", "explorer-notepad"],
 		"markdown": ["explorer-markdown-viewer"],
 		"image": ["explorer-image-viewer"],
 		"video": ["explorer-video-player"],
 		"audio": ["explorer-audio-player"],
-		"archive": ["explorer-archiver"]
+		"archive": ["explorer-archiver"],
+		"document": ["explorer-pdf-viewer", "explorer-office-viewer"],
+		"geo": ["explorer-map-viewer"]
 	}
 }

@@ -38,18 +38,6 @@
 
 ---
 
-## 3. Как Explorer viewers
-
-| Идея | Рядом с |
-|------|---------|
-| PDF-viewer | image/markdown viewers |
-| Office / Docs preview | notepad |
-| Код-viewer (syntax) | markdown-viewer |
-| Diff / сравнение файлов | archiver |
-| Карта / GPX·KML | — |
-
----
-
 ## 4. Как Todo / Calendar / Board / PKB
 
 | Идея | Паттерн |
@@ -73,17 +61,7 @@
 
 ---
 
-## 6. Как игры / утилиты
-
-| Идея | Рядом с |
-|------|---------|
-| 2048, memory, snake | chess / sudoku / minesweeper / solitaire |
-| Sticky notes на рабочем столе | notes |
-| Виджеты: погода, часы | settings / demo-calculator |
-
----
-
-## 7. Как IncCom / TeamStorm
+## 6. Как IncCom / TeamStorm
 
 | Идея |
 |------|
@@ -97,8 +75,7 @@
 
 1. **Ещё 1–2 IBlock content-app** (статьи / FAQ / события) — максимум переиспользования `iblock-content`.  
 2. **notebooks** для notes (категории блокнотов).  
-3. Explorer PDF-viewer.  
-4. Остальное — по ТЗ / волне 4 (`ROADMAP_WAVES.md`).
+3. Остальное — по ТЗ / волне 4 (`ROADMAP_WAVES.md`).
 
 ```bash
 # обновить App Ideas в Board+PKB (без пересоздания):

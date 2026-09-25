@@ -1,6 +1,6 @@
 # Каталог приложений XOS
 
-> Обновлено: 2026-09-25 · 59+ зарегистрированных приложений в `client/src/apps/*/index.ts`
+> Обновлено: 2026-09-25 · 70+ зарегистрированных приложений в `client/src/apps/*/index.ts`
 
 Идеи следующих apps: [APP_IDEAS.md](APP_IDEAS.md) · PKB `Notes/AppIdeas.md` · карточка Board «Идеи приложений».
 
@@ -34,7 +34,7 @@
 | Система | — | 6 | [system/README.md](system/README.md) | [system/TZ.md](system/TZ.md) |
 | Main | `main` | 8 | [main/README.md](main/README.md) | [main/TZ.md](main/TZ.md) |
 | Device | `device` | 17 | [device/README.md](device/README.md) | [device/TZ.md](device/TZ.md) |
-| Explorer | `explorer` | 9 | [explorer/README.md](explorer/README.md) | [explorer/TZ.md](explorer/TZ.md) |
+| Explorer | `explorer` | 14 | [explorer/README.md](explorer/README.md) | [explorer/TZ.md](explorer/TZ.md) |
 | SchoolTask | `schooltask` | 8 | [schooltask/README.md](schooltask/README.md) | [schooltask/TZ.md](schooltask/TZ.md) |
 | IncCom | `inccom` | 1 | [inccom/README.md](inccom/README.md) | [inccom/TZ.md](inccom/TZ.md) |
 | Calendar | `calendar` | 1 | [calendar/README.md](calendar/README.md) | [calendar/TZ.md](calendar/TZ.md) |
@@ -59,6 +59,14 @@
 | chess | Шахматы | games | ✓ | все |
 | tic-tac-toe | Крестики-нолики | games | ✓ | все |
 | sudoku | Судоку | games | ✓ | все |
+| minesweeper | Сапёр | games | ✓ | все |
+| solitaire | Косынка | games | ✓ | все |
+| game-2048 | 2048 | games | ✓ | все |
+| memory | Memory | games | ✓ | все |
+| snake | Змейка | games | ✓ | все |
+| sticky-note | Стикер | tools | — (multi) | все |
+| widget-clock | Часы | tools | ✓ | все |
+| widget-weather | Погода | tools | ✓ | все |
 | demo-calculator | Calculator | tools | ✓ | все (демо) |
 
 ### Main
@@ -105,6 +113,11 @@
 | explorer-save-picker | Сохранить файл | picker |
 | explorer-notepad | Блокнот | regular |
 | explorer-markdown-viewer | Markdown | regular |
+| explorer-code-viewer | Код | regular |
+| explorer-pdf-viewer | PDF | regular |
+| explorer-office-viewer | Документы (DOCX) | regular |
+| explorer-diff | Сравнение | regular |
+| explorer-map-viewer | Карта (GPX/KML) | regular |
 | explorer-image-viewer | Изображения | regular |
 | explorer-archiver | Архиватор | regular |
 | explorer-video-player | Видеоплеер | regular |
