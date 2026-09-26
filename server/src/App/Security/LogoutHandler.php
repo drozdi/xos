@@ -5,6 +5,8 @@ namespace App\Security;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenInterface;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Gesdinet\JWTRefreshTokenBundle\Request\Extractor\ExtractorInterface;
+use Main\Entity\User;
+use Main\Service\AuditLogger;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,6 +18,7 @@ class LogoutHandler implements EventSubscriberInterface
     public function __construct(
         private readonly RefreshTokenManagerInterface $refreshTokenManager,
         private readonly ExtractorInterface $refreshTokenExtractor,
+        private readonly AuditLogger $auditLogger,
         #[Autowire('%gesdinet_jwt_refresh_token.token_parameter_name%')]
         private readonly string $tokenParameterName,
         #[Autowire('%gesdinet_jwt_refresh_token.logout_firewall_context%')]
@@ -27,6 +30,18 @@ class LogoutHandler implements EventSubscriberInterface
     {
         if ($event->getRequest()->attributes->get('_firewall_context') !== $this->logoutFirewallContext) {
             return;
+        }
+
+        $user = $event->getToken()?->getUser();
+        if ($user instanceof User) {
+            $this->auditLogger->log(
+                'logout',
+                'auth',
+                $user->getId(),
+                sprintf('Выход %s', $user->getLogin() ?? ('#'.$user->getId())),
+                null,
+                $user,
+            );
         }
 
         $this->invalidateRefreshTokens($event);

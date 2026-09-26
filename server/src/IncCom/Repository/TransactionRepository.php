@@ -65,6 +65,15 @@ class TransactionRepository extends AbstractRepository
             unset($filters['dateTo']);
         }
 
+        if (array_key_exists('deviceId', $filters) || array_key_exists('device', $filters)) {
+            $deviceId = (int) ($filters['deviceId'] ?? $filters['device'] ?? 0);
+            unset($filters['deviceId'], $filters['device']);
+            if ($deviceId > 0) {
+                $query->andWhere($n.'.deviceId = :txnDeviceId');
+                $query->setParameter('txnDeviceId', $deviceId);
+            }
+        }
+
         return parent::filter($query, $filters, $n);
     }
 

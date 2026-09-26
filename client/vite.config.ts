@@ -4,11 +4,40 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => ({
 	plugins: [
 		react(),
 		tailwindcss(),
+		mode !== 'test' &&
+			VitePWA({
+				registerType: 'autoUpdate',
+				devOptions: {
+					enabled: false,
+				},
+				manifest: {
+					name: 'XOS',
+					short_name: 'XOS',
+					theme_color: '#15171e',
+					background_color: '#15171e',
+					display: 'standalone',
+					start_url: '/',
+					icons: [
+						{
+							src: '/vite.svg',
+							sizes: 'any',
+							type: 'image/svg+xml',
+							purpose: 'any',
+						},
+					],
+				},
+				workbox: {
+					globPatterns: ['**/*.{js,css,html,svg,ico,woff2}'],
+					navigateFallback: '/index.html',
+					runtimeCaching: [],
+				},
+			}),
 		mode === 'analyze' &&
 			visualizer({
 				filename: 'dist/stats.html',

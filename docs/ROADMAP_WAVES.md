@@ -1,19 +1,11 @@
-# XOS expansion waves
+# XOS — открытый бэклог
 
-Очередь улучшений. Каждая волна — отдельный план/PR. Идеи apps: [APP_IDEAS.md](APP_IDEAS.md).
+Идеи apps и улучшений: **[APP_IDEAS.md](APP_IDEAS.md)**.
 
-| Волна | Статус | Содержание |
-|-------|--------|------------|
-| **1–2** | **DONE** | IncCom items/FNS; SchoolTask Critical; Explorer dirty-close |
-| **3** | **partial** | Board polling + search **DONE**; Mercure/SSE + PKB encryption/plugins → **W3b** |
-| **4** | backlog | Todo→Board; Device↔IncCom; due notify; **новые apps** — [APP_IDEAS.md](APP_IDEAS.md) |
-| **5** | backlog | PWA/offline; mobile layout; audit UI; multi-OU |
+| ID | Статус | Содержание |
+|----|--------|------------|
+| **W3b** | backlog | Board Mercure/SSE + conflict UI; PKB encryption / plugins / sync |
+| **Apps** | backlog | SchoolTask/IncCom/CRM/привычки/Inbox — см. APP_IDEAS |
+| **Platform+** | backlog | deeper PWA offline; multi-OU tenancy |
 
-## Бэклог (открыто)
-
-1. IBlock consumer: статьи / FAQ / события / галерея; `notebooks`
-2. Todo→Board, Device↔IncCom, due notify
-3. **W3b** — Board Mercure/SSE; PKB encryption / plugins
-4. PWA / mobile / audit / multi-OU
-
-Демо идей: vault `Notes/AppIdeas.md`, доска XOS → Roadmap (`php bin/console xos:seed-project`).
+Закрыто ранее: волны 1–2; Board polling/search; IBlock consumers; Assets CRUD; Todo↔Board / due-notify / Device↔IncCom; PWA shell / mobile settings / audit UI / OU list filter.

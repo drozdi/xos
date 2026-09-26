@@ -9,6 +9,7 @@ import {
 } from '@/core/lifecycle/pageLifecycle';
 import { getDesktopStatePersister } from '@/core/settings/desktopStatePersister';
 import { Taskbar } from '@/core/taskbar';
+import { DueNotifyWatcher } from '@/core/notifications';
 import { flushPendingWindowPersists, persistAllOpenWindowsNow, WindowManager } from '@/core/windowManager';
 
 /**
@@ -40,16 +41,19 @@ export function Desktop() {
 	}, [restoreFromHistory]);
 
 	return (
-		<Layout
-			view={HKEY_CONFIG_DEFAULTS.layout.view}
-			mobileView={HKEY_CONFIG_DEFAULTS.layout.mobileView}
-		>
-			<LayoutArea area="m">
-				<WindowManager />
-			</LayoutArea>
-			<LayoutArea area="f">
-				<Taskbar />
-			</LayoutArea>
-		</Layout>
+		<>
+			<DueNotifyWatcher />
+			<Layout
+				view={HKEY_CONFIG_DEFAULTS.layout.view}
+				mobileView={HKEY_CONFIG_DEFAULTS.layout.mobileView}
+			>
+				<LayoutArea area="m">
+					<WindowManager />
+				</LayoutArea>
+				<LayoutArea area="f">
+					<Taskbar />
+				</LayoutArea>
+			</Layout>
+		</>
 	);
 }

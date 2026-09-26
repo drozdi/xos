@@ -52,6 +52,10 @@ class Transaction
     #[ORM\Column(name: 'comment', type: Types::TEXT, nullable: true)]
     private ?string $comment = null;
 
+    /** Soft link to Device\Entity\Device id (no Doctrine relation across modules). */
+    #[ORM\Column(name: 'device_id', type: Types::INTEGER, nullable: true)]
+    private ?int $deviceId = null;
+
     #[ORM\Column(name: 'mcc', length: 10, nullable: true)]
     private ?string $mcc = null;
 
@@ -176,6 +180,17 @@ class Transaction
     }
     public function setComment(?string $comment): self {
         $this->comment = $comment;
+        return $this;
+    }
+
+    public function getDeviceId(): ?int
+    {
+        return $this->deviceId;
+    }
+
+    public function setDeviceId(?int $deviceId): self
+    {
+        $this->deviceId = $deviceId;
         return $this;
     }
 

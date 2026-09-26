@@ -27,6 +27,7 @@ use Main\Repository\UserRepository;
 use Main\Repository\GroupRepository;
 use Main\Repository\ClaimantRepository;
 
+use Main\Service\AuditLogger;
 use Main\Service\MainManager;
 
 #[Route('/api/main/ou', name: 'api_main_ou_')]
@@ -103,6 +104,7 @@ class OUController extends AbstractController {
         Request $request,
         MainManager $mainManager,
         UserScopeResolver $userScopeResolver,
+        AuditLogger $auditLogger,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canCreateMainOu($user)) {
@@ -119,6 +121,14 @@ class OUController extends AbstractController {
             $mainManager->getEntityManager()->getConnection()->rollBack();
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
+        $auditLogger->log(
+            'create',
+            'main.ou',
+            $ou->getId(),
+            sprintf('Создано подразделение %s', $ou->getCode() ?? ('#'.$ou->getId())),
+            ['code' => $ou->getCode(), 'name' => $ou->getName()],
+            $user,
+        );
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
@@ -128,6 +138,7 @@ class OUController extends AbstractController {
         MainManager $mainManager,
         OURepository $OURepository,
         UserScopeResolver $userScopeResolver,
+        AuditLogger $auditLogger,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canUpdateMainOu($user)) {
@@ -147,6 +158,14 @@ class OUController extends AbstractController {
             $mainManager->getEntityManager()->getConnection()->rollBack();
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
+        $auditLogger->log(
+            'update',
+            'main.ou',
+            $ou->getId(),
+            sprintf('Изменено подразделение %s', $ou->getCode() ?? ('#'.$ou->getId())),
+            ['fields' => array_keys($req)],
+            $user,
+        );
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
@@ -182,6 +201,7 @@ class OUController extends AbstractController {
         int $id,
         OURepository $OURepository,
         UserScopeResolver $userScopeResolver,
+        AuditLogger $auditLogger,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canDeleteMainOu($user)) {
@@ -202,6 +222,14 @@ class OUController extends AbstractController {
             'user_id' => $ou->getUser()? $ou->getUser()->getId(): null,
         ];
         $OURepository->remove($ou, true);
+        $auditLogger->log(
+            'delete',
+            'main.ou',
+            $arOu['id'],
+            sprintf('Удалено подразделение %s', $arOu['code'] ?? ('#'.$arOu['id'])),
+            $arOu,
+            $user,
+        );
         return $this->json($arOu);
     }
 }

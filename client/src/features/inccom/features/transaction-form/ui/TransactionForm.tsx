@@ -55,6 +55,7 @@ interface TransactionFormValues {
 	amount: number | string;
 	date: Date | null;
 	comment: string;
+	deviceId: number | '';
 	isManualAmount: boolean;
 	fn: string;
 	fpd: string;
@@ -100,6 +101,7 @@ export function TransactionForm({
 			amount: 0,
 			date: new Date(),
 			comment: '',
+			deviceId: '',
 			isManualAmount: false,
 			fn: '',
 			fpd: '',
@@ -204,6 +206,7 @@ export function TransactionForm({
 				amount: Number(transactionData.amount),
 				date: toFormDate(transactionData.date),
 				comment: transactionData.comment ?? '',
+				deviceId: transactionData.deviceId ?? '',
 				isManualAmount: transactionData.isManualAmount,
 				fn: transactionData.fn ?? '',
 				fpd: transactionData.fpd ?? '',
@@ -293,6 +296,10 @@ export function TransactionForm({
 			categoryId: values.categoryId ? Number(values.categoryId) : null,
 			date: toIsoDate(values.date),
 			comment: values.comment || null,
+			deviceId:
+				typeof values.deviceId === 'number' && values.deviceId > 0
+					? values.deviceId
+					: null,
 		};
 
 		if (isExpense) {
@@ -541,6 +548,14 @@ export function TransactionForm({
 				<TextInput
 					label="Комментарий"
 					{...form.getInputProps('comment')}
+					w="100%"
+				/>
+				<NumberInput
+					label="ID устройства (Device)"
+					description="Мягкая связь с каталогом устройств"
+					min={1}
+					allowDecimal={false}
+					{...form.getInputProps('deviceId')}
 					w="100%"
 				/>
 				<Group>

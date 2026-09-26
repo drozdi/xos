@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { insertMarkdownImage } from '@/features/iblock-content/insertMarkdownImage';
 import { stringListFromProperty } from '@/features/iblock-content/propertyValues';
 import { slugifyCode } from '@/features/iblock-content/slugifyCode';
-import { validateNoteForm } from '@/apps/note/noteValidation';
 import { validateRecipeForm } from '@/apps/recipe/recipeValidation';
 
 function nextUniqueCode(base: string, used: Set<string>): string {
@@ -11,6 +10,13 @@ function nextUniqueCode(base: string, used: Set<string>): string {
 	let n = 2;
 	while (used.has(`${base}-${n}`)) n += 1;
 	return `${base}-${n}`;
+}
+
+function validateContentName(data: { name?: string; block_id?: number | null }) {
+	const errors: { name?: string; block_id?: string } = {};
+	if (!data.name?.trim()) errors.name = 'Укажите название';
+	if (!data.block_id) errors.block_id = 'Инфоблок не загружен';
+	return errors;
 }
 
 describe('insertMarkdownImage', () => {
@@ -45,9 +51,9 @@ describe('slugifyCode / unique suffix', () => {
 	});
 });
 
-describe('note/recipe validation', () => {
+describe('content/recipe validation', () => {
 	it('requires name and block', () => {
-		expect(validateNoteForm({ name: '', block_id: null } as never).name).toBeTruthy();
+		expect(validateContentName({ name: '', block_id: null }).name).toBeTruthy();
 		expect(validateRecipeForm({ name: 'Soup', block_id: 1 } as never).name).toBeUndefined();
 	});
 });

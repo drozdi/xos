@@ -17,6 +17,8 @@ export type TodoDraftItem = {
 	done: boolean;
 	due_at: string | null;
 	calendar_event_id?: number | null;
+	board_card_id?: number | null;
+	board_id?: number | null;
 };
 
 /** Собирает markdown чеклиста из items (+ notes после ---). */

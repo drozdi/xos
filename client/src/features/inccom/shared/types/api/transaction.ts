@@ -27,6 +27,7 @@ export interface ApiTransaction {
 	amount: string;
 	date: string;
 	comment: string | null;
+	deviceId: number | null;
 	accountId: number;
 	authorId: number | null;
 	categoryId: number | null;

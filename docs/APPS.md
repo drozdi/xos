@@ -1,6 +1,6 @@
 # Каталог приложений XOS
 
-> Обновлено: 2026-09-25 · 70+ зарегистрированных приложений в `client/src/apps/*/index.ts`
+> Обновлено: 2026-09-26 · 100+ зарегистрированных приложений в `client/src/apps/*/index.ts`
 
 Идеи следующих apps: [APP_IDEAS.md](APP_IDEAS.md) · PKB `Notes/AppIdeas.md` · карточка Board «Идеи приложений».
 
@@ -31,8 +31,8 @@
 
 | Домен | Claimant | Приложений | Обзор | ТЗ |
 |-------|----------|------------|-------|-----|
-| Система | — | 6 | [system/README.md](system/README.md) | [system/TZ.md](system/TZ.md) |
-| Main | `main` | 8 | [main/README.md](main/README.md) | [main/TZ.md](main/TZ.md) |
+| Система | — | 7 | [system/README.md](system/README.md) | [system/TZ.md](system/TZ.md) |
+| Main | `main` | 9 | [main/README.md](main/README.md) | [main/TZ.md](main/TZ.md) |
 | Device | `device` | 17 | [device/README.md](device/README.md) | [device/TZ.md](device/TZ.md) |
 | Explorer | `explorer` | 14 | [explorer/README.md](explorer/README.md) | [explorer/TZ.md](explorer/TZ.md) |
 | SchoolTask | `schooltask` | 8 | [schooltask/README.md](schooltask/README.md) | [schooltask/TZ.md](schooltask/TZ.md) |
@@ -43,6 +43,7 @@
 | PKB | `pkb` | 1 | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) |
 | TeamStorm | `ts` | 1 | [ts/README.md](ts/README.md) | — |
 | IBlock + Content | `iblock` | 14 | [iblock/README.md](iblock/README.md) | [iblock/TZ.md](iblock/TZ.md) |
+| Assets | `assets` | 12 | — | — |
 
 Полный индекс документации: [README.md](README.md)
 
@@ -55,6 +56,7 @@
 | ID | Название | wmGroup | singleInstance | Доступ |
 |----|----------|---------|----------------|--------|
 | settings | Settings | system | ✓ | все авторизованные |
+| shell-settings | Макет оболочки | system | ✓ | все авторизованные |
 | browser | Браузер | browser | — | все |
 | chess | Шахматы | games | ✓ | все |
 | tic-tac-toe | Крестики-нолики | games | ✓ | все |
@@ -81,6 +83,7 @@
 | main-ou | Подразделение | sub-app | main |
 | main-claimants | Доступные права | regular | main |
 | main-claimant | Доступное право | sub-app | main |
+| main-audit | Аудит | regular | `requiredRole: main`, `can_read` main.audit |
 
 ### Device
 
@@ -157,11 +160,45 @@
 |----|----------|-----|--------|
 | notes | Заметки | regular | `requiredRole: iblock` |
 | note | Заметка | sub-app | iblock |
+| notebooks | Блокноты | regular | iblock sections CRUD |
+| articles | Статьи | regular | iblock |
+| article | Статья | sub-app | iblock |
+| faqs | FAQ | regular | iblock |
+| faq | Вопрос | sub-app | iblock |
+| galleries | Галерея | regular | iblock |
+| gallery | Фото | sub-app | iblock |
+| announcements | События | regular | iblock (block `events`) |
+| announcement | Событие | sub-app | iblock |
+| contacts | Контакты | regular | iblock |
+| contact | Контакт | sub-app | iblock |
+| services | Услуги | regular | iblock |
+| service | Услуга | sub-app | iblock |
+| ideas | Идеи | regular | iblock |
+| idea | Идея | sub-app | iblock |
 | recipes | Рецепты | regular | `requiredRole: recipe` (`ROLE_RECIPE`) |
 | recipe | Рецепт | sub-app | recipe |
 | recipe-categories | Категории | regular | `can_category` |
 
-Каталоги поверх type `content` / blocks `notes` + `recipes` (seed `xos:seed-project`). Markdown + картинки: `features/iblock-content`. Рецепты: view-first, share только просмотр. `ROLE_RECIPE` — свои CRUD; бит `can_category` — админ категорий.
+Каталоги поверх type `content` (seed `xos:seed-project`). Shared UI: `features/iblock-content` (`ContentCatalog*`). Рецепты: view-first, share только просмотр; `ROLE_RECIPE` + `can_category`.
+
+### Assets
+
+| ID | Название | Тип | Доступ |
+|----|----------|-----|--------|
+| assets-warehouse | Склад | regular | `requiredRole: assets` (`ROLE_ASSETS`) |
+| assets-warehouse-item | Позиция склада | sub-app | assets.warehouse |
+| assets-fleet | Автопарк | regular | assets.fleet |
+| assets-fleet-vehicle | Транспорт | sub-app | assets.fleet |
+| assets-parties | Контрагенты | regular | assets.party |
+| assets-party | Контрагент | sub-app | assets.party |
+| assets-contracts | Договоры | regular | assets.contract |
+| assets-contract | Договор | sub-app | assets.contract |
+| assets-rooms | Помещения | regular | assets.room |
+| assets-room | Помещение | sub-app | assets.room |
+| assets-software | ПО | regular | assets.software |
+| assets-software-item | Программный пакет | sub-app | assets.software |
+
+CRUD list+detail, модуль `server/src/Assets/`, API `/api/assets/*`, shared UI `features/assets` (`AssetsCatalog*`).
 
 ### Бизнес-приложения (tools)
 
@@ -192,6 +229,7 @@
 | Board | `server/src/Board/` | board | ✓ |
 | Pkb | `server/src/Pkb/` | pkb | ✓ |
 | Ts | `server/src/Ts/` | ts | ✓ |
+| Assets | `server/src/Assets/` | assets | ✓ |
 
 IBlock — API + desktop apps (`iblock-*`, Start Menu «Инфоблоки», `ROLE_IBLOCK`). См. [iblock/README.md](iblock/README.md), [iblock/DEVELOPER_GUIDE.md](iblock/DEVELOPER_GUIDE.md).
 

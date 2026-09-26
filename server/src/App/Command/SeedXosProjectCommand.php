@@ -110,19 +110,16 @@ final class SeedXosProjectCommand extends Command
      */
     private function syncAppIdeas(SymfonyStyle $io, User $user): void
     {
-        $io->section('Sync App Ideas → PKB + Board');
+        $io->section('Sync docs → PKB + Board');
 
         $vault = $this->vaults->findOneByOwnerAndSlug($user, self::VAULT_SLUG);
-        $noteBody = $this->appIdeasNoteContent();
         if ($vault instanceof Vault) {
-            $this->vaultFiles->putContent($vault, $user, 'Notes/AppIdeas.md', $noteBody);
-            $notes = $this->vaultNotes();
-            foreach (['Notes/Home.md', 'Notes/AppsCatalog.md', 'Notes/Changelog.md'] as $path) {
-                if (isset($notes[$path])) {
-                    $this->vaultFiles->putContent($vault, $user, $path, $notes[$path]);
-                }
+            $written = 0;
+            foreach ($this->vaultNotes() as $path => $content) {
+                $this->vaultFiles->putContent($vault, $user, $path, $content);
+                ++$written;
             }
-            $io->text(sprintf('PKB vault id=%d: Notes/AppIdeas.md (+ Home/AppsCatalog/Changelog)', $vault->getId()));
+            $io->text(sprintf('PKB vault id=%d: %d notes (full catalog)', $vault->getId(), $written));
         } else {
             $io->warning('Vault slug=xos не найден — PKB sync пропущен.');
         }
@@ -152,16 +149,21 @@ final class SeedXosProjectCommand extends Command
             $lists[$list->getTitle()] = $list;
         }
 
-        if (isset($lists['Обзор'])) {
+        $synced = 0;
+        foreach ($this->docCardCatalog() as $item) {
+            $listTitle = $item['boardList'];
+            if (!isset($lists[$listTitle])) {
+                continue;
+            }
             $this->upsertLinkedCard(
-                $lists['Обзор'],
+                $lists[$listTitle],
                 $user,
                 $vault,
-                'App Ideas',
-                "Бэклог идей apps по аналогии с существующими.\n\n[[AppIdeas]] · `docs/APP_IDEAS.md` · Roadmap «Идеи приложений».",
-                'Notes/AppIdeas.md',
+                $item['title'],
+                $item['description'],
+                $item['notePath'],
             );
-            $io->text('Board «Обзор»: карточка App Ideas');
+            ++$synced;
         }
 
         if (isset($lists['Roadmap'])) {
@@ -171,16 +173,16 @@ final class SeedXosProjectCommand extends Command
                 $vault,
                 'Идеи приложений',
                 <<<'MD'
-Бэклог идей «как Notes/Recipes, Device, Explorer, Todo…».
+Открытый бэклог: SchoolTask/IncCom apps, привычки/Inbox, **W3b** (Mercure, PKB encryption).
 
-Приоритет: IBlock content (статьи/FAQ/события) → notebooks → PDF-viewer → CRUD-справочники.
-
-[[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md` (волна 4).
+[[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md`
 MD,
                 'Notes/AppIdeas.md',
             );
-            $io->text('Board «Roadmap»: карточка Идеи приложений');
+            ++$synced;
         }
+
+        $io->text(sprintf('Board «%s»: upsert %d linked cards', self::BOARD_TITLE, $synced));
     }
 
     private function upsertLinkedCard(
@@ -226,7 +228,7 @@ MD,
     }
 
     /**
-     * Идемпотентный seed type=content + blocks notes/recipes для apps Notes/Recipes.
+     * Идемпотентный seed type=content + consumer blocks для Notes/Recipes и APP_IDEAS §1.
      *
      * @return array{type_id: int, notes_id: int, recipes_id: int}|null
      */
@@ -237,7 +239,7 @@ MD,
             $typeId = $this->typeManager->add([
                 'code' => 'content',
                 'name' => 'Контент',
-                'description' => 'Заметки и рецепты (consumer apps)',
+                'description' => 'Notes, Recipes и consumer apps (articles, FAQ, …)',
                 'sort' => 50,
                 'active' => true,
                 'sections' => true,
@@ -252,6 +254,13 @@ MD,
 
         $notesBlock = $this->ensureBlock($type, 'notes', 'Заметки', 10);
         $recipesBlock = $this->ensureBlock($type, 'recipes', 'Рецепты', 20);
+        $articlesBlock = $this->ensureBlock($type, 'articles', 'Статьи', 30);
+        $faqBlock = $this->ensureBlock($type, 'faq', 'FAQ', 40);
+        $galleryBlock = $this->ensureBlock($type, 'gallery', 'Галерея', 50);
+        $eventsBlock = $this->ensureBlock($type, 'events', 'События', 60);
+        $contactsBlock = $this->ensureBlock($type, 'contacts', 'Контакты', 70);
+        $servicesBlock = $this->ensureBlock($type, 'services', 'Услуги', 80);
+        $ideasBlock = $this->ensureBlock($type, 'ideas', 'Идеи', 90);
 
         $this->ensureProperty($notesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
         $this->ensureProperty($notesBlock, 'TAGS', 'Теги', 'S', true, 20);
@@ -266,11 +275,53 @@ MD,
         $this->ensureEnum($difficulty, 'hard', 'Сложно', 30, false);
         $this->ensureProperty($recipesBlock, 'INGREDIENTS', 'Ингредиенты', 'S', true, 60);
 
+        $this->ensureProperty($articlesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
+        $this->ensureProperty($articlesBlock, 'TAGS', 'Теги', 'S', true, 20);
+
+        $this->ensureProperty($faqBlock, 'TAGS', 'Теги', 'S', true, 10);
+
+        $this->ensureProperty($galleryBlock, 'COVER', 'Фото', 'F', true, 10, 'image');
+        $this->ensureProperty($galleryBlock, 'CAPTION', 'Подпись', 'S', false, 20);
+
+        $this->ensureProperty($eventsBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
+        $this->ensureProperty($eventsBlock, 'TAGS', 'Теги', 'S', true, 20);
+        $this->ensureProperty($eventsBlock, 'EVENT_DATE', 'Дата', 'S', false, 30);
+        $this->ensureProperty($eventsBlock, 'PLACE', 'Место', 'S', false, 40);
+
+        $this->ensureProperty($contactsBlock, 'COVER', 'Фото', 'F', false, 10, 'image');
+        $this->ensureProperty($contactsBlock, 'POSITION', 'Должность', 'S', false, 20);
+        $this->ensureProperty($contactsBlock, 'PHONE', 'Телефон', 'S', false, 30);
+        $this->ensureProperty($contactsBlock, 'EMAIL', 'Email', 'S', false, 40);
+
+        $this->ensureProperty($servicesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
+        $this->ensureProperty($servicesBlock, 'TAGS', 'Теги', 'S', true, 20);
+        $this->ensureProperty($servicesBlock, 'PRICE', 'Цена', 'N', false, 30);
+
+        $this->ensureProperty($ideasBlock, 'TAGS', 'Теги', 'S', true, 10);
+        $ideaStatus = $this->ensureProperty($ideasBlock, 'STATUS', 'Статус', 'L', false, 20);
+        $this->ensureEnum($ideaStatus, 'new', 'Новая', 10, true);
+        $this->ensureEnum($ideaStatus, 'doing', 'В работе', 20, false);
+        $this->ensureEnum($ideaStatus, 'done', 'Готово', 30, false);
+        $this->ensureEnum($ideaStatus, 'dropped', 'Отменена', 40, false);
+        $ideaPriority = $this->ensureProperty($ideasBlock, 'PRIORITY', 'Приоритет', 'L', false, 30);
+        $this->ensureEnum($ideaPriority, 'low', 'Низкий', 10, false);
+        $this->ensureEnum($ideaPriority, 'medium', 'Средний', 20, true);
+        $this->ensureEnum($ideaPriority, 'high', 'Высокий', 30, false);
+
         $personal = $this->ensureSection($notesBlock, 'personal', 'Личное', 10);
         $work = $this->ensureSection($notesBlock, 'work', 'Работа', 20);
         $soups = $this->ensureSection($recipesBlock, 'soups', 'Супы', 10);
         $mains = $this->ensureSection($recipesBlock, 'mains', 'Основные блюда', 20);
         $desserts = $this->ensureSection($recipesBlock, 'desserts', 'Десерты', 30);
+        $news = $this->ensureSection($articlesBlock, 'news', 'Новости', 10);
+        $blog = $this->ensureSection($articlesBlock, 'blog', 'Блог', 20);
+        $faqGeneral = $this->ensureSection($faqBlock, 'general', 'Общее', 10);
+        $faqTech = $this->ensureSection($faqBlock, 'tech', 'Техника', 20);
+        $albums = $this->ensureSection($galleryBlock, 'albums', 'Альбомы', 10);
+        $upcoming = $this->ensureSection($eventsBlock, 'upcoming', 'Анонсы', 10);
+        $staff = $this->ensureSection($contactsBlock, 'staff', 'Сотрудники', 10);
+        $svcCatalog = $this->ensureSection($servicesBlock, 'catalog', 'Каталог', 10);
+        $inbox = $this->ensureSection($ideasBlock, 'inbox', 'Inbox', 10);
 
         $this->ensureElement($notesBlock, 'welcome-note', 'Добро пожаловать', [
             'preview_text' => 'Первая заметка в каталоге',
@@ -324,8 +375,70 @@ MD,
             'sort' => 20,
         ]);
 
+        $this->ensureElement($articlesBlock, 'hello-xos', 'Первая статья', [
+            'preview_text' => 'Анонс для блога',
+            'detail_text' => "# Hello XOS\n\nСтатья на IBlock consumer `articles`.\n",
+            'section_ids' => [$blog->getId(), $news->getId()],
+            'PROPERTY_VALUES' => ['TAGS' => ['intro']],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($faqBlock, 'what-is-xos', 'Что такое XOS?', [
+            'detail_text' => "XOS — desktop-shell с приложениями на общем backend.\n",
+            'section_ids' => [$faqGeneral->getId()],
+            'PROPERTY_VALUES' => ['TAGS' => ['basics']],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($galleryBlock, 'sample-photo', 'Пример фото', [
+            'detail_text' => 'Загрузите изображения в свойство COVER.',
+            'section_ids' => [$albums->getId()],
+            'PROPERTY_VALUES' => ['CAPTION' => 'Демо альбома'],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($eventsBlock, 'meetup', 'Встреча команды', [
+            'preview_text' => 'Еженедельный sync',
+            'detail_text' => "## Повестка\n\n- Статус\n- Планы\n",
+            'section_ids' => [$upcoming->getId()],
+            'PROPERTY_VALUES' => [
+                'TAGS' => ['team'],
+                'EVENT_DATE' => '2026-10-01 15:00',
+                'PLACE' => 'Офис / Zoom',
+            ],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($contactsBlock, 'demo-contact', 'Иван Иванов', [
+            'detail_text' => 'Контакт для демо.',
+            'section_ids' => [$staff->getId()],
+            'PROPERTY_VALUES' => [
+                'POSITION' => 'Разработчик',
+                'PHONE' => '+7 900 000-00-00',
+                'EMAIL' => 'ivan@example.com',
+            ],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($servicesBlock, 'consulting', 'Консультация', [
+            'preview_text' => 'Час с экспертом',
+            'detail_text' => "Описание услуги.\n",
+            'section_ids' => [$svcCatalog->getId()],
+            'PROPERTY_VALUES' => [
+                'TAGS' => ['consult'],
+                'PRICE' => 5000,
+            ],
+            'sort' => 10,
+        ]);
+        $this->ensureElement($ideasBlock, 'wishlist-item', 'Ещё один consumer-app', [
+            'preview_text' => 'Идея из бэклога',
+            'detail_text' => "Черновик идеи для wishlist.\n",
+            'section_ids' => [$inbox->getId()],
+            'PROPERTY_VALUES' => [
+                'TAGS' => ['backlog'],
+                'STATUS' => 'new',
+                'PRIORITY' => 'medium',
+            ],
+            'sort' => 10,
+        ]);
+
         $io->text(sprintf(
-            'IBlock content: type=#%d notes=#%d recipes=#%d',
+            'IBlock content: type=#%d notes=#%d recipes=#%d + articles/faq/gallery/events/contacts/services/ideas',
             $type->getId(),
             $notesBlock->getId(),
             $recipesBlock->getId(),
@@ -719,19 +832,17 @@ MD, ['docs', 'mvp'], [
         $card(
             'Идеи приложений',
             <<<'MD'
-Бэклог идей «как Notes/Recipes, Device, Explorer, Todo…».
+Открытый бэклог. Закрыто: IBlock content, Assets CRUD, Todo↔Board / due-notify / Device↔IncCom, PWA shell / audit / OU filter.
 
-Приоритет: IBlock content (статьи/FAQ/события) → notebooks → PDF-viewer → CRUD-справочники.
-
-[[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md` (волна 4).
+Дальше: **W3b**, SchoolTask/IncCom apps, привычки/Inbox — [[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md`.
 MD,
-            ['docs', 'iblock', 'v2'],
+            ['docs', 'v2'],
             [
                 'title' => 'Быстрый старт',
                 'items' => [
-                    'articles / faq / events на IBlock consumer',
-                    'notebooks для notes (как recipe-categories)',
-                    'Explorer PDF-viewer',
+                    'W3b Mercure / PKB encryption',
+                    'SchoolTask: дневник / ДЗ / parent share',
+                    'Привычки / Inbox',
                 ],
             ],
             'Notes/AppIdeas.md',
@@ -782,21 +893,21 @@ MD,
                 'notePath' => 'Notes/AppsCatalog.md',
                 'boardList' => 'Обзор',
                 'labels' => ['docs'],
-                'description' => "Реестр ~55 приложений и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/APPS.md`.",
+                'description' => "Реестр 100+ приложений (System…Assets) и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/APPS.md`.",
             ],
             [
                 'title' => 'App Ideas',
                 'notePath' => 'Notes/AppIdeas.md',
                 'boardList' => 'Обзор',
                 'labels' => ['docs', 'v2'],
-                'description' => "Бэклог идей apps по аналогии с существующими.\n\n[[AppIdeas]] · `docs/APP_IDEAS.md` · Roadmap «Идеи приложений».",
+                'description' => "Открытый бэклог: SchoolTask/IncCom apps, W3b, PWA+.\n\n[[AppIdeas]] · `docs/APP_IDEAS.md`.",
             ],
             [
                 'title' => 'Changelog',
                 'notePath' => 'Notes/Changelog.md',
                 'boardList' => 'Обзор',
                 'labels' => ['docs', 'mvp'],
-                'description' => "Недавние сдачи (Волна 1 IncCom+DX, Board↔PKB).\n\nСм. [[Changelog]].",
+                'description' => "Журнал сдач: волны 1–2, content/assets, bridges, platform.\n\nСм. [[Changelog]].",
             ],
         ];
 
@@ -880,11 +991,14 @@ Claimant `main` · роль `ROLE_MAIN` · `server/src/Main/` · `client/src/fea
 | `main-groups` / `main-group` | список / карточка |
 | `main-ous` / `main-ou` | список / карточка |
 | `main-claimants` / `main-claimant` | список / карточка |
+| `main-audit` | журнал аудита (`main.audit` can_read) |
 
 ## Ключевое
 
 - JWT scopes из `setting.json` + sync в БД: `php bin/console main:claimant:sync`
 - UI прав: `access_options` в claimant после sync
+- Аудит: `AuditLog` + app `main-audit`
+- OU list filter (multi-OU список; полноценный tenancy — [[AppIdeas]])
 - Документы: `docs/main/README.md`, `docs/main/TZ.md`
 
 ← [[Home]] · [[Architecture]] · [[AppsCatalog]]
@@ -920,7 +1034,7 @@ MD,
                 'title' => 'Explorer',
                 'notePath' => 'Notes/Apps/Explorer.md',
                 'labels' => ['explorer'],
-                'cardDescription' => "VFS, pickers, просмотрщики.\n\nЗаметка: [[Explorer]] · API `/api/explorer/`",
+                'cardDescription' => "VFS, pickers, viewers (PDF/code/diff/map/media).\n\nЗаметка: [[Explorer]] · API `/api/explorer/`",
                 'body' => <<<'MD'
 # Explorer
 
@@ -928,7 +1042,7 @@ Claimant `explorer` · `server/src/Explorer/` · `client/src/features/explorer/`
 
 ## Назначение
 
-Файловая система пользователя, Open/Save pickers, блокнот, markdown, изображения, архивы, медиа.
+Файловая система пользователя, Open/Save pickers, редакторы и просмотрщики.
 
 ## Приложения (app id)
 
@@ -936,14 +1050,19 @@ Claimant `explorer` · `server/src/Explorer/` · `client/src/features/explorer/`
 |----|------------|
 | `explorer` | проводник, multi-instance |
 | `explorer-open-picker` / `explorer-save-picker` | диалоги |
-| `explorer-notepad` / `explorer-markdown-viewer` | редакторы |
-| `explorer-image-viewer` / `explorer-archiver` | просмотр |
-| `explorer-audio-player` / `explorer-video-player` | single-instance |
+| `explorer-notepad` / `explorer-markdown-viewer` | текст / MD |
+| `explorer-code-viewer` | код |
+| `explorer-pdf-viewer` | PDF |
+| `explorer-office-viewer` | DOCX |
+| `explorer-diff` | сравнение |
+| `explorer-map-viewer` | GPX/KML |
+| `explorer-image-viewer` / `explorer-archiver` | изображения / архивы |
+| `explorer-audio-player` / `explorer-video-player` | media, single-instance |
 
 ## Ключевое
 
 - Persist: `WIN.documentPath`
-- Долг: dirty-close notepad/markdown
+- Dirty-close notepad/markdown (save / discard / cancel); taskbar → `getWindowApi().close()`
 - Документы: `docs/explorer/`
 
 ← [[Home]] · [[PKB]] (vault = папка Explorer) · [[Calendar]]
@@ -1003,12 +1122,16 @@ Claimant `inccom` (`can_read` / `can_write`) · `server/src/IncCom/` · `client/
 - UI: «Проверить и сохранить чек» (с `fill_items`) и «Заполнить позиции из чека»
 - At rest: `INCCOM_FNS_SECRET` → AES-256-GCM (`enc:v1:`); legacy plaintext принимается до следующего PUT
 
+## Мосты
+
+- Soft-link устройство: `deviceId` на транзакции → [[Device]]
+
 ## Ключевое
 
 - API: `/api/IncCom/`
 - Документы: `docs/inccom/README.md`, `TZ.md` · журнал: [[Changelog]]
 
-← [[Home]] · [[AppsCatalog]] · [[Changelog]]
+← [[Home]] · [[AppsCatalog]] · [[Changelog]] · [[Device]]
 MD,
             ],
             [
@@ -1044,7 +1167,7 @@ MD,
                 'title' => 'Todo',
                 'notePath' => 'Notes/Apps/Todo.md',
                 'labels' => ['todo'],
-                'cardDescription' => "Списки и заметки.\n\nЗаметка: [[Todo]] · API `/api/todo/`",
+                'cardDescription' => "Списки, due → Calendar; soft-link Board; due-notify.\n\nЗаметка: [[Todo]] · API `/api/todo/`",
                 'body' => <<<'MD'
 # Todo
 
@@ -1052,13 +1175,21 @@ Claimant `todo` · `server/src/Todo/` · `client/src/features/todo/` · app `tod
 
 ## Назначение
 
-Списки, пункты, markdown-заметки, sharing по email. Due → overlay в [[Calendar]].
+Списки, пункты, markdown-заметки, sharing по email.
+
+## Мосты
+
+| Связь | Поля / поведение |
+|-------|------------------|
+| [[Calendar]] overlay | `due_at` |
+| [[Board]] soft-link | `board_card_id` на пункте |
+| Shell notify | due-notify watcher (`DueNotifyWatcher`) |
 
 ## Приложения
 
 `todo`
 
-← [[Home]] · [[Calendar]]
+← [[Home]] · [[Calendar]] · [[Board]] · [[Changelog]]
 MD,
             ],
             [
@@ -1125,7 +1256,7 @@ MD,
                 'title' => 'System',
                 'notePath' => 'Notes/Apps/System.md',
                 'labels' => ['system'],
-                'cardDescription' => "Settings, browser, игры.\n\nЗаметка: [[System]]",
+                'cardDescription' => "Settings, shell layout, browser, games, widgets.\n\nЗаметка: [[System]]",
                 'body' => <<<'MD'
 # System
 
@@ -1135,18 +1266,94 @@ MD,
 
 | ID | Название |
 |----|----------|
-| `settings` | Settings (тема, desktop-state) |
+| `settings` | Settings (тема, desktop-state, mobile) |
+| `shell-settings` | Макет оболочки (панель / меню) |
 | `browser` | Браузер (`/api/browser/proxy`) |
 | `chess` | Шахматы |
 | `tic-tac-toe` | Крестики-нолики |
 | `sudoku` | Судоку |
 | `minesweeper` | Сапёр |
 | `solitaire` | Косынка |
+| `game-2048` | 2048 |
+| `memory` | Memory |
+| `snake` | Змейка |
+| `sticky-note` | Стикер (multi) |
+| `widget-clock` | Часы |
+| `widget-weather` | Погода |
 | `demo-calculator` | Calculator (демо) |
+
+PWA: vite-plugin-pwa (shell + SW). Offline API cache — [[AppIdeas]].
 
 Документы: `docs/system/README.md`, `TZ.md`
 
 ← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Content',
+                'notePath' => 'Notes/Apps/Content.md',
+                'labels' => ['iblock', 'content'],
+                'cardDescription' => "IBlock consumers: notes, articles, FAQ, gallery, events…\n\nЗаметка: [[Content]] · factory `features/iblock-content`",
+                'body' => <<<'MD'
+# Content (IBlock consumers)
+
+Каталоги поверх type `content` (seed `xos:seed-project`). Shared UI: `client/src/features/iblock-content` (`ContentCatalog*`).
+
+Claimant в основном `iblock`; рецепты — `recipe` (`ROLE_RECIPE`).
+
+## Приложения
+
+| ID | Block / примечание |
+|----|--------------------|
+| `notes` / `note` | notes |
+| `notebooks` | sections CRUD |
+| `articles` / `article` | articles |
+| `faqs` / `faq` | faqs |
+| `galleries` / `gallery` | galleries |
+| `announcements` / `announcement` | block `events` |
+| `contacts` / `contact` | contacts |
+| `services` / `service` | services |
+| `ideas` / `idea` | ideas |
+| `recipes` / `recipe` / `recipe-categories` | `ROLE_RECIPE` + `can_category`; share read-only |
+
+## Ключевое
+
+- Hub инфоблоков: [[IBlock]]
+- Идеи (теги/избранное): [[AppIdeas]]
+
+← [[Home]] · [[IBlock]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Assets',
+                'notePath' => 'Notes/Apps/Assets.md',
+                'labels' => ['assets'],
+                'cardDescription' => "Склад, автопарк, контрагенты, договоры, помещения, ПО.\n\nЗаметка: [[Assets]] · API `/api/assets/`",
+                'body' => <<<'MD'
+# Assets
+
+Claimant `assets` · `ROLE_ASSETS` · `server/src/Assets/` · `client/src/features/assets/` · apps `assets-*`
+
+## Назначение
+
+CRUD-справочники: склад, автопарк, контрагенты, договоры, помещения, ПО. Shared UI `AssetsCatalog*`.
+
+## Приложения
+
+| ID | Scope |
+|----|-------|
+| `assets-warehouse` / `assets-warehouse-item` | warehouse |
+| `assets-fleet` / `assets-fleet-vehicle` | fleet |
+| `assets-parties` / `assets-party` | party |
+| `assets-contracts` / `assets-contract` | contract |
+| `assets-rooms` / `assets-room` | room |
+| `assets-software` / `assets-software-item` | software |
+
+## API
+
+Prefix `/api/assets/*`. Claimants: `assets.warehouse`, `assets.fleet`, …
+
+← [[Home]] · [[AppsCatalog]] · [[Changelog]]
 MD,
             ],
             [
@@ -1164,6 +1371,8 @@ Claimant `iblock` · `ROLE_IBLOCK` · `server/src/IBlock/` · `client/src/featur
 ## Назначение
 
 Универсальные инфоблоки: Type → Block → Section / Element / Property → PROPERTY_VALUES. Сервер переиспользуемый (managers без UI).
+
+Consumers: [[Content]].
 
 ## Карта заметок
 
@@ -1192,7 +1401,7 @@ Prefix API: `/api/iblock/`.
 
 Facet `PROPERTY_INDEX`, LEFT/RIGHT_MARGIN, RSS, workflow, права раздела, полный SECTION_CHOOSER.
 
-← [[Home]] · [[Architecture]] · [[AppsCatalog]] · [[Changelog]]
+← [[Home]] · [[Architecture]] · [[AppsCatalog]] · [[Changelog]] · [[Content]]
 MD,
             ],
         ];
@@ -1215,28 +1424,30 @@ MD,
 
 ## Карта модулей
 
-- [[Main]] — администрирование
+- [[Main]] — администрирование (+ audit)
 - [[Device]] — учёт оборудования
-- [[Explorer]] — файлы
+- [[Explorer]] — файлы и viewers
 - [[SchoolTask]] — расписание
 - [[IncCom]] — финансы
 - [[Calendar]] — календарь
-- [[Todo]] — заметки
+- [[Todo]] — списки / due / Board-link
 - [[Board]] — канбан
 - [[PKB]] — база знаний
-- [[System]] — settings, browser, игры
-- [[IBlock]] — инфоблоки (API)
+- [[System]] — settings, shell, games, widgets, PWA
+- [[IBlock]] — инфоблоки (API + apps)
+- [[Content]] — IBlock consumers (notes…recipes)
+- [[Assets]] — склад / автопарк / договоры…
 
 ## Обзорные заметки
 
 - [[Architecture]] — слои monorepo
-- [[AppsCatalog]] — реестр приложений
-- [[AppIdeas]] — идеи следующих apps
-- [[Changelog]] — недавние сдачи (Волна 1 и др.)
+- [[AppsCatalog]] — реестр 100+ приложений
+- [[AppIdeas]] — открытый бэклог
+- [[Changelog]] — журнал сдач
 
 ## Документы в репозитории
 
-Индекс: `docs/README.md` · каталог: `docs/APPS.md` · идеи: `docs/APP_IDEAS.md` · архитектура: `docs/ARCHITECTURE.md`
+Индекс: `docs/README.md` · каталог: `docs/APPS.md` · идеи: `docs/APP_IDEAS.md` · волны: `docs/ROADMAP_WAVES.md`
 
 Seed: `php bin/console xos:seed-project [--login=] [--force]`
 MD,
@@ -1249,97 +1460,89 @@ MD,
 
 ### IncCom: позиции из чека
 
-- Парсинг FNS JSON → `TransactionItem` (product по имени, qty/price, пересчёт `amount`, `isManualAmount=false`)
-- `POST …/receipt/fetch` с `fill_items=true` (body или query)
-- `POST …/receipt/apply-items` для уже сохранённого `receipt_json`
-- UI: «Заполнить позиции из чека» после загрузки чека
-
-См. [[IncCom]], `docs/inccom/README.md`.
-
-### Шифрование FNS `master_token`
-
-- Env `INCCOM_FNS_SECRET` → AES-256-GCM, префикс `enc:v1:`
-- Encrypt на PUT credentials; decrypt только в `FnsReceiptService`
-- Legacy plaintext читается; следующий PUT перешифровывает
+- Парсинг FNS JSON → `TransactionItem`; `fill_items` / `apply-items`
+- At rest: `INCCOM_FNS_SECRET` → AES-256-GCM (`enc:v1:`)
 
 ### Board ↔ PKB DX
 
-- Поля карточки `pkb_vault_id`, `pkb_note_path`; `GET /api/board/cards/linked`
-- Deep-link: Board `boardId`/`cardId`, PKB `vaultId`/`notePath`
-- `docs/API_SPEC.md` § Board↔PKB; PHPUnit linked/serialize
-- Seed локали: `xos:seed-project --force` (не на prod) — `docs/DEVELOPER_GUIDE.md`
+- `pkb_vault_id` / `pkb_note_path`; `GET /api/board/cards/linked`; deep-link
 
-См. [[Board]], [[PKB]].
+См. [[IncCom]], [[Board]], [[PKB]].
 
-## IBlock — developer docs (PKB + Board)
+## IBlock — developer docs (DONE)
 
-- Guide: `docs/iblock/DEVELOPER_GUIDE.md` (Bitrix fields/D7 mapping)
-- Vault: [[IBlock]], [[IBlock Fields]], [[IBlock API]], [[IBlock Sections]], [[IBlock Properties]], [[IBlock Frontend]]
-- Доска XOS: карточки модуля + подкарточки Fields/API/Sections/Properties/Frontend
-- Seed: `php bin/console xos:seed-project --force`
+Vault: [[IBlock]] + Fields/API/Sections/Properties/Frontend. Guide: `docs/iblock/DEVELOPER_GUIDE.md`.
 
 ## Волна 2 — SchoolTask Critical + Explorer dirty-close (DONE)
 
-### SchoolTask
+SchoolTask B1–B3/F1–F3; Explorer dirty-close + taskbar `getWindowApi().close()`.
 
-- B1/B2: тьютор **или** scopes/ROOT; create/update/delete; class show/update `checkScopes: false`
-- B3: `GET /api/schooltask/files/{id}/download`; `/uploads/task/` запрещён
-- F1/F2: `user_ids` + FormData без forced Content-Type
-- F3: launch `schooltask-calendar-editor` из классов/календарей
-
-См. [[SchoolTask]], `docs/ROADMAP_WAVES.md`, `docs/APP_IDEAS.md`.
-
-### Explorer
-
-- Dirty-close notepad/markdown: save / discard / cancel
-- Taskbar close → `getWindowApi().close()` (не обход confirm)
-
-См. [[Explorer]], `docs/explorer/TZ.md`.
+См. [[SchoolTask]], [[Explorer]].
 
 ## Волна 3 — Board polling + search (partial)
 
-- Board changes polling (`…/changes?since=`) + global search (`/api/board/search`) — **DONE**
-- **W3b** backlog: Mercure/SSE; PKB templates/graph (encryption/plugins)
+Polling `…/changes` + `/api/board/search` — **DONE**. **W3b** backlog: Mercure/SSE; PKB encryption/plugins.
 
-См. `docs/ROADMAP_WAVES.md`, [[Board]], [[PKB]].
+## Content + Assets + bridges + platform (DONE)
 
-## Далее (Roadmap)
+- [[Content]]: articles, FAQ, gallery, events, contacts, services, ideas, notebooks (+ notes/recipes)
+- [[Assets]]: warehouse, fleet, parties, contracts, rooms, software — `/api/assets/*`
+- Bridges: [[Todo]]↔[[Board]] (`board_card_id`); due-notify; Device↔[[IncCom]] (`deviceId`)
+- Platform: PWA shell (vite-plugin-pwa); `shell-settings`; `main-audit`; OU list filter
+- [[Explorer]] viewers: PDF, code, DOCX, diff, map
+- [[System]] games/widgets: 2048, memory, snake, sticky, clock, weather
 
-- **W3b**: Mercure/SSE; PKB templates/graph/encryption/plugins — `docs/ROADMAP_WAVES.md`
-- SchoolTask High/Medium — [[SchoolTask]]
-- Волна 4–5: bridges, PWA/offline — backlog
-- **Идеи apps**: [[AppIdeas]] · `docs/APP_IDEAS.md`
+См. `docs/ROADMAP_WAVES.md`, [[AppsCatalog]].
 
-← [[Home]] · [[IncCom]] · [[Board]] · [[PKB]]
+## Далее
+
+- **W3b**, SchoolTask/IncCom apps, привычки/Inbox — [[AppIdeas]]
+
+← [[Home]] · [[AppsCatalog]] · [[AppIdeas]]
 MD,
             'Notes/AppIdeas.md' => <<<'MD'
 # App Ideas
 
-Бэклог идей приложений «по аналогии» с уже существующими в XOS (2026-09-25).
+Открытый бэклог. Не ТЗ. Каталог сделанного: [[AppsCatalog]] · `docs/APPS.md` · волны: `docs/ROADMAP_WAVES.md`.
 
 Полный текст в репо: `docs/APP_IDEAS.md`.
 
+## Новые apps
+
+| Идея | Паттерн |
+|------|---------|
+| Дневник оценок | SchoolTask |
+| Домашние задания | SchoolTask |
+| Родительский read-only share | SchoolTask |
+| Банк / счета | IncCom |
+| CRM-мини (лиды) | IBlock consumer |
+| Ещё один внешний API-клиент | TeamStorm-like |
+| Привычки / трекер | Todo + due |
+| Inbox / почта (мини) | list + detail |
+
+Дополнения к [[Content]]: поиск по тегам, избранное.
+
+## Улучшения модулей / платформы
+
+| Область | Идея |
+|---------|------|
+| Board | Mercure/SSE; conflict UI (**W3b**) |
+| PKB | encryption at rest; plugin API; sync/publish (**W3b**) |
+| PKB | FULLTEXT search; ambiguous wikilink UX |
+| Multi-OU | полноценный tenancy (сейчас фильтр списка) |
+| PWA | offline data / API cache (сейчас shell + SW) |
+
 ## Приоритет
 
-1. IBlock consumer: статьи / FAQ / события / галерея (шаблон [[IBlock]] + Notes/Recipes)
-2. notebooks — разделы notes (как recipe-categories)
-3. Explorer PDF-viewer
-4. CRUD: склад, автопарк, договоры
-5. Игры/утилиты; IncCom+/TeamStorm-like интеграции
+1. **W3b** — Mercure, PKB encryption/plugins
+2. SchoolTask / IncCom apps из таблицы выше
+3. Привычки / Inbox
 
-## Группы идей
+```bash
+php bin/console xos:seed-project
+```
 
-| Группа | Примеры |
-|--------|---------|
-| IBlock content | articles, faq, gallery, events, contacts, services |
-| CRUD admin | склад, автопарк, контрагенты |
-| Explorer | PDF, код, diff, карта |
-| Productivity | привычки, inbox, уведомления |
-| SchoolTask | дневник, ДЗ, родительский share |
-| Games/utils | 2048, sticky notes, виджеты |
-| Integrations | банк/счета, CRM-мини |
-
-← [[Home]] · [[AppsCatalog]] · [[IBlock]] · [[Changelog]]
+← [[Home]] · [[AppsCatalog]] · [[Changelog]] · [[IBlock]] · [[Content]]
 MD,
             'Notes/Architecture.md' => <<<'MD'
 # Architecture
@@ -1351,22 +1554,24 @@ MD,
 | Модуль | Путь | Назначение |
 |--------|------|------------|
 | App | `App/` | Kernel, JWT, HTTP-утилиты |
-| Main | `Main/` | Пользователи, OU, claimants |
+| Main | `Main/` | Пользователи, OU, claimants, audit |
 | Device | `Device/` | Оборудование |
 | IBlock | `IBlock/` | Инфоблоки |
+| Assets | `Assets/` | Склад / автопарк / … |
 | IncCom | `IncCom/` | Доходы/расходы |
 | SchoolTask | `SchoolTask/` | Расписание |
 | Explorer | `Explorer/` | Файлы |
 | Calendar | `Calendar/` | Календари |
-| Todo | `Todo/` | Заметки |
+| Todo | `Todo/` | Списки |
 | Board | `Board/` | Kanban |
 | Pkb | `Pkb/` | Vaults |
+| Ts | `Ts/` | TeamStorm proxy |
 
 ## Клиент
 
-- `client/src/apps/*` — манифесты окон (~55+)
-- `client/src/features/*` — доменная логика
-- `client/src/core/*` — auth, API, window manager, theme
+- `client/src/apps/*` — манифесты окон (100+)
+- `client/src/features/*` — доменная логика (`iblock-content`, `assets`, …)
+- `client/src/core/*` — auth, API, window manager, theme, notifications
 
 ## Безопасность API
 
@@ -1379,14 +1584,14 @@ MD,
 - Legacy: `limit` / `offset` + `Content-Range`
 - 400: `{ message, violations }`
 
-Связано: [[Home]], [[AppsCatalog]], [[Board]], [[PKB]]
+Связано: [[Home]], [[AppsCatalog]], [[Board]], [[PKB]], [[Assets]], [[Content]]
 
 Полный текст: `docs/ARCHITECTURE.md`
 MD,
             'Notes/AppsCatalog.md' => <<<'MD'
 # Apps Catalog
 
-Реестр приложений XOS (см. `docs/APPS.md`).
+Реестр приложений XOS (см. `docs/APPS.md`, обновлено 2026-09-26). **100+** app id.
 
 ## Как устроены приложения
 
@@ -1402,26 +1607,30 @@ MD,
 
 ## Домены
 
-| Домен | Claimant | Apps (порядок) |
-|-------|----------|----------------|
-| System | — | settings, browser, games, demo-calculator |
-| Main | main | 8 (users/groups/ous/claimants) |
+| Домен | Claimant | Apps |
+|-------|----------|------|
+| System | — | settings, shell-settings, browser, 8 games, sticky, widgets, calculator |
+| Main | main | 9 (users/groups/ous/claimants + audit) |
 | Device | device | 17 |
-| Explorer | explorer | 9 |
+| Explorer | explorer | 14 (проводники + viewers) |
 | SchoolTask | schooltask | 8 |
 | IncCom | inccom | 1 |
 | Calendar | calendar | 1 |
 | Todo | todo | 1 |
 | Board | board | 1 |
 | PKB | pkb | 1 |
-| IBlock | iblock | 10 (types/blocks/sections/elements/properties + details) |
-| Content | iblock / recipe | notes, note, recipes, recipe, recipe-categories |
+| TeamStorm | ts | 1 |
+| IBlock | iblock | 10 |
+| Content | iblock / recipe | 21 (notes…recipes) |
+| Assets | assets | 12 |
 
-Детали по модулям: [[Main]], [[Device]], [[Explorer]], [[SchoolTask]], [[IncCom]], [[Calendar]], [[Todo]], [[Board]], [[PKB]], [[System]], [[IBlock]]
+## Модули в vault
 
-Идеи следующих apps: [[AppIdeas]] · `docs/APP_IDEAS.md`
+[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[Assets]]
 
-← [[Home]] · [[Architecture]]
+Идеи: [[AppIdeas]] · `docs/APP_IDEAS.md`
+
+← [[Home]] · [[Architecture]] · [[Changelog]]
 MD,
             'Notes/Apps/IBlock/Fields.md' => <<<'MD'
 # IBlock Fields

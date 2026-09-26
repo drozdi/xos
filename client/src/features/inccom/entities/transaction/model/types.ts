@@ -27,6 +27,7 @@ export interface ITransaction {
 	amount: string;
 	date: string;
 	comment: string | null;
+	deviceId?: number | null;
 	accountId: number;
 	authorId: number | null;
 	categoryId: number | null;
@@ -52,6 +53,7 @@ export interface ITransactionFilters {
 	dateTo?: string;
 	mcc?: string;
 	author?: number;
+	deviceId?: number;
 }
 
 export interface ITransactionCreateItem {
@@ -66,6 +68,7 @@ export interface ITransactionPayload {
 	date: string;
 	categoryId?: number | null;
 	comment?: string | null;
+	deviceId?: number | null;
 	amount?: string;
 	isManualAmount?: boolean;
 	fn?: string | null;

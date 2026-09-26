@@ -75,6 +75,17 @@ export function ClaimantIcon({ size = 32 }: { size?: number }) {
 	);
 }
 
+export function AuditIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+			<path d="M14 2v6h6" />
+			<path d="M8 13h8" />
+			<path d="M8 17h6" />
+		</svg>
+	);
+}
+
 export function DeviceIcon({ size = 32 }: { size?: number }) {
 	return (
 		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -254,6 +265,143 @@ export function TeamStormIcon({ size = 32 }: { size?: number }) {
 		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
 			<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
 			<circle cx="12" cy="12" r="3" />
+		</svg>
+	);
+}
+
+export function ArticlesIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M4 4h12v16H4z" />
+			<path d="M8 8h4M8 12h4M8 16h2" />
+			<path d="M16 8h4v4" />
+		</svg>
+	);
+}
+
+export function FaqIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<circle cx="12" cy="12" r="9" />
+			<path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.5 1-1.5 2.2" />
+			<path d="M12 17h.01" />
+		</svg>
+	);
+}
+
+export function GalleryIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<rect x="3" y="5" width="18" height="14" rx="2" />
+			<circle cx="8.5" cy="10" r="1.5" />
+			<path d="M21 16l-5-5-4 4-2-2-5 5" />
+		</svg>
+	);
+}
+
+export function AnnouncementsIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M3 11l18-5v12L3 13v-2z" />
+			<path d="M11.5 15.5V19a2 2 0 0 0 2 2h1" />
+		</svg>
+	);
+}
+
+export function ContactsIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+			<circle cx="12" cy="7" r="4" />
+		</svg>
+	);
+}
+
+export function ServicesIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
+			<circle cx="12" cy="12" r="3" />
+		</svg>
+	);
+}
+
+export function IdeasIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M9 18h6M10 22h4" />
+			<path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+		</svg>
+	);
+}
+
+export function NotebooksIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M4 4h12v16H4z" />
+			<path d="M8 4v16" />
+			<path d="M11 8h4M11 12h4" />
+		</svg>
+	);
+}
+
+export function AssetsWarehouseIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M3 21V8l9-5 9 5v13" />
+			<path d="M9 21V12h6v9" />
+		</svg>
+	);
+}
+
+export function AssetsFleetIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M3 14h13l3-5H8l-2 5z" />
+			<path d="M5 14v3h2M16 14v3h2" />
+			<circle cx="7" cy="18" r="1.5" />
+			<circle cx="17" cy="18" r="1.5" />
+		</svg>
+	);
+}
+
+export function AssetsPartyIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+			<circle cx="9" cy="7" r="3" />
+			<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+			<path d="M16 3.13a3 3 0 0 1 0 5.75" />
+		</svg>
+	);
+}
+
+export function AssetsContractIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+			<path d="M14 2v6h6" />
+			<path d="M8 13h8M8 17h5" />
+		</svg>
+	);
+}
+
+export function AssetsRoomIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<path d="M3 21h18" />
+			<path d="M5 21V8l7-4 7 4v13" />
+			<path d="M9 21v-6h6v6" />
+		</svg>
+	);
+}
+
+export function AssetsSoftwareIcon({ size = 32 }: { size?: number }) {
+	return (
+		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+			<rect x="3" y="4" width="18" height="14" rx="2" />
+			<path d="M8 21h8M12 18v3" />
+			<path d="M8 9l2 2-2 2M12 13h4" />
 		</svg>
 	);
 }

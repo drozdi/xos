@@ -5,7 +5,8 @@
     "main.user": "Main: Пользователи",
     "main.group": "Main: Группы",
     "main.ou": "Main: Подразделения",
-    "main.claimant": "Main: Правила"
+    "main.claimant": "Main: Правила",
+    "main.audit": "Main: Аудит"
   },
   "map-access": {
     "user": {
@@ -36,6 +37,9 @@
       "can_read": { "bit": 2, "title": "Чтение" },
       "can_update": { "bit": 4, "title": "Изменение" },
       "can_delete": { "bit": 8, "title": "Удаление" }
+    },
+    "audit": {
+      "can_read": { "bit": 2, "title": "Чтение" }
     }
   }
 }

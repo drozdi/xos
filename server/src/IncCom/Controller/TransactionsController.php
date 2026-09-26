@@ -165,6 +165,12 @@ class TransactionsController extends AbstractController
 
         }
 
+        if ($request->query->has('deviceId')) {
+
+            $filters['deviceId'] = (int) $request->query->get('deviceId');
+
+        }
+
 
 
         $sort = [['key' => 'date', 'order' => 'DESC']];
@@ -622,6 +628,8 @@ class TransactionsController extends AbstractController
             'date' => $this->formatDateTime($transaction->getDate()),
 
             'comment' => $transaction->getComment(),
+
+            'deviceId' => $transaction->getDeviceId(),
 
             'accountId' => $transaction->getAccount()->getId(),
 

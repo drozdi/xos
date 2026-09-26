@@ -20,6 +20,7 @@ use Main\Entity\Group;
 use Main\Repository\OURepository;
 use Main\Repository\UserRepository;
 use Main\Security\MainUserAccessMessages;
+use Main\Service\AuditLogger;
 use Main\Service\ClaimantManager;
 use Main\Service\MainManager;
 
@@ -46,6 +47,7 @@ class UserController extends AbstractController {
             ]],
             'filters' => [
                 'ou' => -1,
+                'ou_id' => -1,
                 'group' => -1
             ]
         ], $request->toArray());
@@ -54,6 +56,17 @@ class UserController extends AbstractController {
         }
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
+        if (!is_array($req['filters'] ?? null)) {
+            $req['filters'] = [];
+        }
+        // Multi-OU list filter only (not full tenancy): accept filters.ou_id alias of filters.ou
+        if (
+            array_key_exists('ou_id', $req['filters'])
+            && (int) $req['filters']['ou_id'] > 0
+            && (!array_key_exists('ou', $req['filters']) || (int) $req['filters']['ou'] <= 0)
+        ) {
+            $req['filters']['ou'] = (int) $req['filters']['ou_id'];
+        }
         $totalItems = $UserRepository->cnt($req['filters']);
         $query = $UserRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -237,6 +250,7 @@ class UserController extends AbstractController {
         Request $request,
         MainManager $mainManager,
         UserScopeResolver $userScopeResolver,
+        AuditLogger $auditLogger,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canCreateMainUser($user)) {
@@ -254,6 +268,14 @@ class UserController extends AbstractController {
             $mainManager->getEntityManager()->getConnection()->rollBack();
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
+        $auditLogger->log(
+            'create',
+            'main.user',
+            $userEntity->getId(),
+            sprintf('Создан пользователь %s', $userEntity->getLogin() ?? ('#'.$userEntity->getId())),
+            ['login' => $userEntity->getLogin()],
+            $user,
+        );
         return $this->json($userEntity->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
@@ -263,6 +285,7 @@ class UserController extends AbstractController {
         MainManager $mainManager,
         UserRepository $UserRepository,
         UserScopeResolver $userScopeResolver,
+        AuditLogger $auditLogger,
         #[CurrentUser] User $user,
     ): JsonResponse {
         $existing = $UserRepository->find($id);
@@ -284,6 +307,14 @@ class UserController extends AbstractController {
             $mainManager->getEntityManager()->getConnection()->rollBack();
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
+        $auditLogger->log(
+            'update',
+            'main.user',
+            $userEntity->getId(),
+            sprintf('Изменён пользователь %s', $userEntity->getLogin() ?? ('#'.$userEntity->getId())),
+            ['fields' => array_keys($req)],
+            $user,
+        );
         return $this->json($userEntity->getId(), Response::HTTP_CREATED);
     }
     #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
@@ -291,6 +322,7 @@ class UserController extends AbstractController {
         int $id,
         UserRepository $UserRepository,
         UserScopeResolver $userScopeResolver,
+        AuditLogger $auditLogger,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canDeleteMainUser($user)) {
@@ -308,6 +340,14 @@ class UserController extends AbstractController {
             'alias' => $userEntity->getAlias(),
         ];
         $UserRepository->remove($userEntity, true);
+        $auditLogger->log(
+            'delete',
+            'main.user',
+            $arUser['id'],
+            sprintf('Удалён пользователь %s', $arUser['login'] ?? ('#'.$arUser['id'])),
+            $arUser,
+            $user,
+        );
         return $this->json($arUser);
     }
 

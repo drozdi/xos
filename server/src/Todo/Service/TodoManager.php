@@ -66,10 +66,11 @@ class TodoManager extends AbstractManager
                 'done' => $item->isDone(),
                 'due_at' => $item->getDueAt('Y-m-d\TH:i:s'),
                 'calendar_event_id' => $item->getCalendarEventId(),
+                'board_card_id' => $item->getBoardCardId(),
             ];
         }, array_values(array_filter(
             $items,
-            static fn (TodoItem $item): bool => null === $item->getCalendarEventId(),
+            static fn (TodoItem $item): bool => null === $item->getCalendarEventId() && !$item->isDone(),
         )));
     }
 
@@ -360,6 +361,7 @@ class TodoManager extends AbstractManager
             'done' => $item->isDone(),
             'due_at' => $item->getDueAt('Y-m-d H:i:s'),
             'calendar_event_id' => $item->getCalendarEventId(),
+            'board_card_id' => $item->getBoardCardId(),
             'position' => $item->getPosition(),
         ];
     }
@@ -406,6 +408,14 @@ class TodoManager extends AbstractManager
                 $item->setCalendarEventId(
                     null !== $eventId && '' !== $eventId && (int) $eventId > 0
                         ? (int) $eventId
+                        : null,
+                );
+            }
+            if (array_key_exists('board_card_id', $row)) {
+                $cardId = $row['board_card_id'];
+                $item->setBoardCardId(
+                    null !== $cardId && '' !== $cardId && (int) $cardId > 0
+                        ? (int) $cardId
                         : null,
                 );
             }

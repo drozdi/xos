@@ -356,3 +356,23 @@ export const mainClaimantApi = {
 	update: (id: number, body: unknown) => updateEntity('/api/main/claimant', id, body),
 	remove: (id: number) => removeEntity('/api/main/claimant', id),
 };
+
+// --- Audit ---
+
+export const auditListItemSchema = z.object({
+	id: z.number(),
+	created_at: z.string().nullable(),
+	actor_id: z.number().nullable().optional(),
+	actor_label: z.string(),
+	action: z.string(),
+	entity_type: z.string(),
+	entity_id: z.number().nullable().optional(),
+	summary: z.string(),
+});
+
+export type AuditListItem = z.infer<typeof auditListItemSchema>;
+
+export const mainAuditApi = {
+	list: (request?: ListRequest) =>
+		postList('/api/main/audit/list', request ?? {}, z.array(auditListItemSchema)),
+};

@@ -281,3 +281,32 @@ export function useCanRoleMainUser(): boolean {
 export function useCanChangeMainUserPassword(): boolean {
 	return useMainUserAccess(canChangeMainUserPassword);
 }
+
+const MAIN_AUDIT_SCOPE = 'main.audit';
+const READ_MAIN_AUDIT_SCOPE = 'can_read.main.audit';
+
+function canMainAudit(actionScope: string): boolean {
+	if (!canAccessApp('main')) {
+		return false;
+	}
+	if (isRoot() || isAppRoot('main') || isScopeRoot(MAIN_AUDIT_SCOPE)) {
+		return true;
+	}
+
+	return Boolean(getLevelScope(MAIN_AUDIT_SCOPE) & getCanScope(actionScope));
+}
+
+export function canReadMainAudit(): boolean {
+	return canMainAudit(READ_MAIN_AUDIT_SCOPE);
+}
+
+function useMainAuditAccess(check: () => boolean): boolean {
+	const scopes = useAuthStore((state) => state.scopes);
+	const roles = useAuthStore((state) => state.user?.roles);
+
+	return useMemo(() => check(), [scopes, roles]);
+}
+
+export function useCanReadMainAudit(): boolean {
+	return useMainAuditAccess(canReadMainAudit);
+}

@@ -13,6 +13,7 @@ export const PROTECTED_APP_MODULES = [
 	'ts',
 	'iblock',
 	'recipe',
+	'assets',
 ] as const;
 
 export type ProtectedAppModule = (typeof PROTECTED_APP_MODULES)[number];

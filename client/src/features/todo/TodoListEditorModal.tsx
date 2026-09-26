@@ -13,7 +13,7 @@ import {
 	Tooltip,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconCalendar, IconCalendarPlus, IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
+import { IconCalendar, IconCalendarPlus, IconLayoutKanban, IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
@@ -21,6 +21,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { calendarApi } from '@/core/api/endpoints/calendarApi';
+import { boardApi } from '@/core/api/endpoints/boardApi';
 import { todoApi, type TodoListDetail } from '@/core/api/endpoints/todoApi';
 import { useAppManager } from '@/core/appManager/useAppManager';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -29,6 +30,7 @@ import { DateTimeField } from '@/core/dates/DateTimeField';
 
 import { TODO_COLORS, itemsToMarkdown, parseMarkdown, type TodoDraftItem } from './todoMarkdown';
 import { TodoShareModal } from './TodoShareModal';
+import { ConvertTodoToBoardModal } from './ConvertTodoToBoardModal';
 
 interface TodoListEditorModalProps {
 	listId: number | null;
@@ -48,6 +50,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 	const [shareOpened, setShareOpened] = useState(false);
 	const [detail, setDetail] = useState<TodoListDetail | null>(null);
 	const [linkingIndex, setLinkingIndex] = useState<number | null>(null);
+	const [boardConvertIndex, setBoardConvertIndex] = useState<number | null>(null);
 
 	const detailQuery = useQuery({
 		queryKey: queryKeys.todo.list(listId ?? 0),
@@ -70,6 +73,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 				done: item.done,
 				due_at: item.due_at ?? null,
 				calendar_event_id: item.calendar_event_id ?? null,
+				board_card_id: item.board_card_id ?? null,
 			})),
 		);
 		setNotesMd(data.notes_md ?? '');
@@ -96,6 +100,7 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 						done: item.done,
 						due_at: item.due_at,
 						calendar_event_id: item.calendar_event_id ?? null,
+						board_card_id: item.board_card_id ?? null,
 						position,
 					})),
 			});
@@ -222,6 +227,26 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 		});
 	};
 
+	const openInBoard = async (item: TodoDraftItem) => {
+		if (!item.board_card_id) return;
+		try {
+			let boardId = item.board_id ?? null;
+			if (!boardId) {
+				const card = await boardApi.card(item.board_card_id);
+				boardId = card.board_id ?? null;
+			}
+			if (!boardId) {
+				notifications.show({ color: 'yellow', message: 'Не удалось определить доску' });
+				return;
+			}
+			void launchApp('board', {
+				props: { boardId, cardId: item.board_card_id },
+			});
+		} catch (error) {
+			notifications.show({ color: 'red', message: 'Карточка недоступна' });
+		}
+	};
+
 	return (
 		<>
 			<Modal
@@ -336,6 +361,34 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 													</Tooltip>
 												</Group>
 											) : null}
+											<Group gap={4}>
+												{item.board_card_id ? (
+													<>
+														<Text size="xs" c="dimmed">
+															Карточка #{item.board_card_id}
+														</Text>
+														<Tooltip label="Открыть на доске">
+															<ActionIcon
+																variant="subtle"
+																aria-label="Board"
+																onClick={() => openInBoard(item)}
+															>
+																<IconLayoutKanban size={16} />
+															</ActionIcon>
+														</Tooltip>
+													</>
+												) : canWrite && item.text.trim() ? (
+													<Tooltip label="Создать карточку Board">
+														<ActionIcon
+															variant="subtle"
+															aria-label="В Board"
+															onClick={() => setBoardConvertIndex(index)}
+														>
+															<IconLayoutKanban size={16} />
+														</ActionIcon>
+													</Tooltip>
+												) : null}
+											</Group>
 										</Stack>
 										{canWrite ? (
 											<ActionIcon
@@ -463,6 +516,40 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 					opened={shareOpened}
 					onClose={() => setShareOpened(false)}
 					onUpdated={(next) => setDetail(next)}
+				/>
+			) : null}
+
+			{boardConvertIndex !== null && items[boardConvertIndex] ? (
+				<ConvertTodoToBoardModal
+					opened
+					onClose={() => setBoardConvertIndex(null)}
+					title={items[boardConvertIndex]!.text}
+					dueAt={items[boardConvertIndex]!.due_at}
+					onLinked={(cardId, boardId) => {
+						const index = boardConvertIndex;
+						const nextItems = items.map((row, i) =>
+							i === index ? { ...row, board_card_id: cardId, board_id: boardId } : row,
+						);
+						setItems(nextItems);
+						if (listId) {
+							void todoApi.update(listId, {
+								title,
+								color,
+								notes_md: notesMd || null,
+								items: nextItems
+									.filter((row) => row.text.trim() !== '')
+									.map((row, position) => ({
+										id: row.id ?? null,
+										text: row.text.trim(),
+										done: row.done,
+										due_at: row.due_at,
+										calendar_event_id: row.calendar_event_id ?? null,
+										board_card_id: row.board_card_id ?? null,
+										position,
+									})),
+							});
+						}
+					}}
 				/>
 			) : null}
 		</>

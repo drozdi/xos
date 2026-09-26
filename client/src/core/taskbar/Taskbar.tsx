@@ -6,6 +6,7 @@ import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 
 import { RunningApps } from './RunningApps';
 import { StartMenu } from './StartMenu';
+import { NotificationCenterButton } from '@/core/notifications';
 
 export function Taskbar() {
 	const [now, setNow] = useState(() => dayjs());
@@ -33,6 +34,7 @@ export function Taskbar() {
 				<StartMenu />
 				<RunningApps />
 				<Group gap="sm" wrap="nowrap" ml="auto">
+					<NotificationCenterButton />
 					<Text size="xs" c="dimmed">
 						{now.format('HH:mm')}
 					</Text>

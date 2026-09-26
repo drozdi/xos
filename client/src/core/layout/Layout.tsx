@@ -1,6 +1,6 @@
 import { Box } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { useSetState, useSetting } from '@/core/settings/hooks';
@@ -37,6 +37,21 @@ export function Layout({ children, view: viewProp, mobileView: mobileViewProp }:
 		'layout.panels.right.width',
 		HKEY_CONFIG_DEFAULTS.layout.panels.right.width,
 	);
+
+	useEffect(() => {
+		const root = document.documentElement;
+		if (isMobile) {
+			root.dataset.xosMobile = '1';
+			document.body.classList.add('xos-mobile');
+		} else {
+			delete root.dataset.xosMobile;
+			document.body.classList.remove('xos-mobile');
+		}
+		return () => {
+			delete root.dataset.xosMobile;
+			document.body.classList.remove('xos-mobile');
+		};
+	}, [isMobile]);
 
 	const activeView = isMobile ? (mobileView ?? view) : view;
 	const usesSidePanels = /[lr]/i.test(activeView?.replace(/\s/g, '') ?? '');

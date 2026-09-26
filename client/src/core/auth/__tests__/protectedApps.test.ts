@@ -22,6 +22,7 @@ describe('protectedApps', () => {
 			'ts',
 			'iblock',
 			'recipe',
+			'assets',
 		]);
 	});
 
@@ -53,6 +54,8 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('iblock')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_RECIPE']);
 		expect(canUseAppModule('recipe')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_ASSETS']);
+		expect(canUseAppModule('assets')).toBe(true);
 		resetUserRoles();
 	});
 });

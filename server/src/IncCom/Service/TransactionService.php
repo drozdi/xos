@@ -194,6 +194,13 @@ class TransactionService
             $transaction->setComment($data['comment']);
         }
 
+        if (array_key_exists('deviceId', $data) || array_key_exists('device_id', $data)) {
+            $raw = $data['deviceId'] ?? $data['device_id'];
+            $transaction->setDeviceId(
+                null !== $raw && '' !== $raw && (int) $raw > 0 ? (int) $raw : null,
+            );
+        }
+
         if (array_key_exists('category', $data)) {
             $transaction->setCategory($this->resolveCategory($data['category']));
         }

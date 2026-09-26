@@ -34,6 +34,10 @@ class TodoItem
     #[ORM\Column(name: 'calendar_event_id', type: Types::INTEGER, nullable: true)]
     private ?int $calendarEventId = null;
 
+    /** Linked Board\Entity\Card id (soft link, no Doctrine relation across modules). */
+    #[ORM\Column(name: 'board_card_id', type: Types::INTEGER, nullable: true)]
+    private ?int $boardCardId = null;
+
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
     private int $position = 0;
 
@@ -113,6 +117,18 @@ class TodoItem
     public function setCalendarEventId(?int $calendarEventId): self
     {
         $this->calendarEventId = $calendarEventId;
+
+        return $this;
+    }
+
+    public function getBoardCardId(): ?int
+    {
+        return $this->boardCardId;
+    }
+
+    public function setBoardCardId(?int $boardCardId): self
+    {
+        $this->boardCardId = $boardCardId;
 
         return $this;
     }

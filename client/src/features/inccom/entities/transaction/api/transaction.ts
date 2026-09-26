@@ -94,6 +94,8 @@ function mapTransactionPayload(
 
 		'comment',
 
+		'deviceId',
+
 		'amount',
 
 		'isManualAmount',
@@ -173,6 +175,7 @@ export async function requestTransactionList(
 	if (params.mcc) queryParams['mcc'] = params.mcc;
 
 	if (params.author) queryParams['author'] = params.author;
+	if (params.deviceId) queryParams['deviceId'] = params.deviceId;
 
 
 

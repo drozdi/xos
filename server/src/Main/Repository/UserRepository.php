@@ -74,10 +74,21 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
             ->getOneOrNullResult();
     }
     protected function filter (QueryBuilder $query, array $filters = array(), string $n = "u"): QueryBuilder {
+        // Multi-OU list filter: ou_id is an alias of ou (list filter only, not tenancy)
+        if (
+            array_key_exists('ou_id', $filters)
+            && (is_int($filters['ou_id']) || is_numeric($filters['ou_id']))
+            && (int) $filters['ou_id'] > 0
+            && (!array_key_exists('ou', $filters) || (int) ($filters['ou'] ?? -1) <= 0)
+        ) {
+            $filters['ou'] = (int) $filters['ou_id'];
+        }
         if (array_key_exists('ou', $filters) && null === $filters['ou']) {
             $query->andWhere($n.'.ou IS NULL');
         } elseif (!empty($filters['ou']) && is_int($filters['ou']) && $filters['ou'] > 0) {
             $query->andWhere($this->fieldVal($n.".ou", $filters['ou']));
+        } elseif (!empty($filters['ou']) && is_numeric($filters['ou']) && (int) $filters['ou'] > 0) {
+            $query->andWhere($this->fieldVal($n.".ou", (int) $filters['ou']));
         } elseif (!empty($filters['ou']) && is_array($filter = $filters['ou'])) {
             $query->innerJoin($n.'.ou', $n.'ou');
             foreach ($filter as $field => $val) {

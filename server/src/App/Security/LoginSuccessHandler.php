@@ -6,6 +6,7 @@ use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Main\Entity\User;
+use Main\Service\AuditLogger;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +20,7 @@ class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
         private readonly RefreshTokenGeneratorInterface $refreshTokenGenerator,
         private readonly RefreshTokenManagerInterface $refreshTokenManager,
         private readonly UserScopeResolver $userScopeResolver,
+        private readonly AuditLogger $auditLogger,
         #[Autowire('%gesdinet_jwt_refresh_token.ttl%')]
         private readonly int $refreshTokenTtl,
     ) {
@@ -34,6 +36,15 @@ class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
         $jwt = $this->jwtManager->create($user);
         $refreshToken = $this->refreshTokenGenerator->createForUserWithTtl($user, $this->refreshTokenTtl);
         $this->refreshTokenManager->save($refreshToken);
+
+        $this->auditLogger->log(
+            'login',
+            'auth',
+            $user->getId(),
+            sprintf('Вход %s', $user->getLogin() ?? ('#'.$user->getId())),
+            ['ip' => $request->getClientIp()],
+            $user,
+        );
 
         return new JsonResponse([
             'token' => $jwt,

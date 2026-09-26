@@ -1,0 +1,9 @@
+doctrine:
+    orm:
+        mappings:
+            Assets:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Assets/Entity'
+                prefix: 'Assets\Entity'
+                alias: Assets

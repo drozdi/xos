@@ -1,4 +1,4 @@
-import { Alert, Select, Stack } from '@mantine/core';
+import { Alert, Select, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
@@ -8,6 +8,7 @@ import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { mainUserApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
+import { useSetting } from '@/core/settings/hooks';
 import {
 	useCanCreateMainUser,
 	useCanDeleteMainUser,
@@ -19,6 +20,9 @@ import { useLaunchMainApp } from '@/features/main/mainAppUtils';
 
 const ALL_FILTER = -1;
 
+/**
+ * Multi-OU: list filter only (filters.ou / filters.ou_id). Full tenancy is not implemented.
+ */
 export default function MainUsersApp() {
 	useWindowTitle('Пользователи');
 	const launchMainApp = useLaunchMainApp();
@@ -27,12 +31,17 @@ export default function MainUsersApp() {
 	const canCreate = useCanCreateMainUser();
 	const canUpdate = useCanUpdateMainUser();
 	const canDelete = useCanDeleteMainUser();
-	const [ouFilter, setOuFilter] = useState<number>(ALL_FILTER);
+	const [ouFilter, setOuFilter] = useSetting<number>('USER', 'ouFilter', ALL_FILTER);
 	const [groupFilter, setGroupFilter] = useState<number>(ALL_FILTER);
+	const activeOu = ouFilter ?? ALL_FILTER;
 
 	const pagination = usePaginatedList({
 		sortBy: [{ key: 'login', order: 'ASC' }],
-		filters: { ou: ouFilter, group: groupFilter },
+		filters: {
+			ou: activeOu,
+			ou_id: activeOu,
+			group: groupFilter,
+		},
 	});
 
 	const filterQuery = useQuery({
@@ -67,10 +76,10 @@ export default function MainUsersApp() {
 
 	const groupOptions = useMemo(() => {
 		const options = [{ value: String(ALL_FILTER), label: 'Все группы' }];
-		if (ouFilter === ALL_FILTER) {
+		if (activeOu === ALL_FILTER) {
 			return options;
 		}
-		const ou = filterQuery.data?.find((item) => item.value === ouFilter);
+		const ou = filterQuery.data?.find((item) => item.value === activeOu);
 		for (const group of ou?.groups ?? []) {
 			if (group.type === 'divider' || group.type === 'subheader') {
 				continue;
@@ -84,7 +93,7 @@ export default function MainUsersApp() {
 			});
 		}
 		return options;
-	}, [filterQuery.data, ouFilter]);
+	}, [filterQuery.data, activeOu]);
 
 	const columns = useMemo(
 		() => [
@@ -128,8 +137,9 @@ export default function MainUsersApp() {
 				<Stack gap="xs">
 					<Select
 						label="Подразделение"
+						description="Фильтр списка (не tenancy)"
 						data={ouOptions}
-						value={String(ouFilter)}
+						value={String(activeOu)}
 						onChange={(value) => {
 							setOuFilter(value ? Number(value) : ALL_FILTER);
 							setGroupFilter(ALL_FILTER);
@@ -142,10 +152,13 @@ export default function MainUsersApp() {
 						data={groupOptions}
 						value={String(groupFilter)}
 						onChange={(value) => setGroupFilter(value ? Number(value) : ALL_FILTER)}
-						disabled={ouFilter === ALL_FILTER}
+						disabled={activeOu === ALL_FILTER}
 						searchable
 						clearable={false}
 					/>
+					<Text size="xs" c="dimmed">
+						Полная мультитенантность не реализована — только фильтр списка по OU.
+					</Text>
 				</Stack>
 			}
 		>

@@ -17,6 +17,7 @@ final class ProtectedAppModules
         'ts',
         'iblock',
         'recipe',
+        'assets',
     ];
 
     public static function isProtected(string $module): bool

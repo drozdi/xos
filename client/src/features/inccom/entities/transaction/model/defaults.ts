@@ -8,6 +8,7 @@ export const defaultTransaction: ITransaction = {
 	amount: '0',
 	date: new Date().toISOString(),
 	comment: null,
+	deviceId: null,
 	accountId: 0,
 	authorId: null,
 	categoryId: null,
@@ -31,6 +32,7 @@ export const defaultTransactionPayload: ITransactionPayload = {
 	date: new Date().toISOString(),
 	categoryId: null,
 	comment: null,
+	deviceId: null,
 	isManualAmount: false,
 	items: [],
 };

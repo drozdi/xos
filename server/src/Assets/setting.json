@@ -1,0 +1,50 @@
+{
+  "name": "Assets",
+  "claimant": {
+    "assets": "Активы",
+    "assets.warehouse": "Активы: Склад",
+    "assets.fleet": "Активы: Автопарк",
+    "assets.party": "Активы: Контрагенты",
+    "assets.contract": "Активы: Договоры",
+    "assets.room": "Активы: Помещения",
+    "assets.software": "Активы: ПО"
+  },
+  "map-access": {
+    "warehouse": {
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
+    },
+    "fleet": {
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
+    },
+    "party": {
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
+    },
+    "contract": {
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
+    },
+    "room": {
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
+    },
+    "software": {
+      "can_create": { "bit": 1, "title": "Создание" },
+      "can_read": { "bit": 2, "title": "Чтение" },
+      "can_update": { "bit": 4, "title": "Изменение" },
+      "can_delete": { "bit": 8, "title": "Удаление" }
+    }
+  }
+}

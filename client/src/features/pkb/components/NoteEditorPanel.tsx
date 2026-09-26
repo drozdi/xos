@@ -162,7 +162,6 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 	noteSuggestionsRef.current = noteSuggestions;
 
 	const isBrokenWikilink = useCallback(
-	const isBrokenWikilink = useCallback(
 		(title: string) => {
 			if (parseIblockWikilink(title)) {
 				return false;
