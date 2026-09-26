@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-
+import { isAxiosError } from 'axios';
 
 import { apiClient } from '@/core/api/client';
 
@@ -333,6 +332,8 @@ export type CardWritePayload = {
 
 	pkb_note_path?: string | null;
 
+	expected_updated_at?: string | null;
+
 };
 
 
@@ -519,6 +520,21 @@ export const boardChangesResponseSchema = z.object({
 
 export type BoardChangesResponse = z.infer<typeof boardChangesResponseSchema>;
 
+export const boardRealtimeConfigSchema = z.object({
+	transport: z.enum(['mercure', 'sse']),
+	mercure: z.object({
+		enabled: z.boolean(),
+		hub_url: z.string().nullable(),
+		topic: z.string(),
+		token: z.string().nullable(),
+	}),
+	sse: z.object({
+		path: z.string(),
+	}),
+});
+
+export type BoardRealtimeConfig = z.infer<typeof boardRealtimeConfigSchema>;
+
 export const boardSearchCardSchema = z.object({
 	id: z.number(),
 	title: z.string(),
@@ -677,9 +693,19 @@ export const boardApi = {
 			.get<unknown>(`${BASE}/cards/linked`, { params: { vault_id: vaultId, path } })
 			.then(({ data }) => linkedBoardCardsResponseSchema.parse(data)),
 
-	updateCard: (id: number, payload: CardWritePayload) =>
-
-		putJson(`${BASE}/cards/${id}`, payload, cardDetailSchema),
+	updateCard: async (id: number, payload: CardWritePayload) => {
+		try {
+			return await putJson(`${BASE}/cards/${id}`, payload, cardDetailSchema);
+		} catch (error) {
+			if (isAxiosError(error) && error.response?.status === 409) {
+				const serverCard = cardDetailSchema.parse(error.response.data);
+				const conflict = new Error('CARD_CONFLICT') as Error & { card: z.infer<typeof cardDetailSchema> };
+				conflict.card = serverCard;
+				throw conflict;
+			}
+			throw error;
+		}
+	},
 
 	deleteCard: async (id: number): Promise<void> => {
 
@@ -849,6 +875,11 @@ export const boardApi = {
 		}
 		const { data } = await apiClient.get<unknown>(`${BASE}/boards/${boardId}/changes`, { params });
 		return boardChangesResponseSchema.parse(data);
+	},
+
+	boardRealtime: async (boardId: number): Promise<BoardRealtimeConfig> => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/boards/${boardId}/realtime`);
+		return boardRealtimeConfigSchema.parse(data);
 	},
 
 	search: async (q: string, limit = 50): Promise<BoardSearchResponse> => {

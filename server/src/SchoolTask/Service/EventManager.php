@@ -290,6 +290,47 @@ class EventManager extends AbstractManager
         return $this->getEpEventRepository()->findInRange($start, $end, ['user' => $teacher->getId()]);
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function listHomework(
+        \DateTimeInterface $start,
+        \DateTimeInterface $end,
+        ?int $classId = null,
+    ): array {
+        $items = [];
+        foreach ($this->getEpEventRepository()->findHomeworkInRange($start, $end, $classId) as $event) {
+            $items[] = $this->serializeHomeworkItem($event);
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function serializeHomeworkItem(EpEvent $event): array
+    {
+        $group = $event->getGroup();
+        $subject = $group ? $this->schoolTaskManager->getSubjectForGroup($group) : null;
+
+        return [
+            'id' => $event->getId(),
+            'class_id' => $event->getClass()?->getId(),
+            'class_name' => $event->getClass()?->getName(),
+            'subject' => $subject?->getName()
+                ?? $event->getTitle()
+                ?? $group?->getName()
+                ?? 'Урок',
+            'start' => $event->getStart('Y-m-d H:i:s'),
+            'end' => $event->getEnd('Y-m-d H:i:s'),
+            'theme' => $event->getTheme(),
+            'ht' => $event->getHt(),
+            'teacher' => $event->getUser()?->getAlias(),
+            'has_homework' => true,
+        ];
+    }
+
     /** @return array<int, array{lesson_number: int, start: string, end: string}> */
     public function listLessonTemplates(): array
     {
@@ -314,7 +355,8 @@ class EventManager extends AbstractManager
             'name' => $name,
             'start' => $event->getStart('Y-m-d H:i:s'),
             'end' => $event->getEnd('Y-m-d H:i:s'),
-            'color' => !empty($event->getTheme()) ? 'green' : 'blue',
+            'color' => !empty($event->getTheme()) ? 'green' : (!empty(trim((string) $event->getHt())) ? 'violet' : 'blue'),
+            'has_homework' => '' !== trim((string) $event->getHt()),
         ];
 
         if ('teacher' === $mode) {

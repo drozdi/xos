@@ -199,6 +199,14 @@ class Board
         return $this->updatedAt;
     }
 
+    /** Bump updated_at so SSE/polling delta sees list-only mutations. */
+    public function touch(): self
+    {
+        $this->updatedAt = new \DateTime();
+
+        return $this;
+    }
+
     /** @return Collection<int, BoardMember> */
     public function getMembers(): Collection
     {

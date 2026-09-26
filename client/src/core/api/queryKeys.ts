@@ -60,6 +60,9 @@ export const queryKeys = {
 			['schooltask', 'calendar', 'teacher', range] as const,
 		teacherEvent: (id: number) => ['schooltask', 'calendar', 'teacher', id] as const,
 		teacherFiles: ['schooltask', 'calendar', 'teacher', 'files'] as const,
+		homework: (params: { from: string; to: string; classId: number | null }) =>
+			['schooltask', 'homework', params] as const,
+		classShares: (classId: number) => ['schooltask', 'class', 'shares', classId] as const,
 	},
 	iblock: {
 		types: (filters: ListRequest) => ['iblock', 'types', filters] as const,

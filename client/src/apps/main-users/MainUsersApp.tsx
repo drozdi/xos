@@ -1,14 +1,14 @@
 import { Alert, Select, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { mainUserApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { isRoot } from '@/core/auth/coreRoles';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
-import { useSetting } from '@/core/settings/hooks';
 import {
 	useCanCreateMainUser,
 	useCanDeleteMainUser,
@@ -17,11 +17,12 @@ import {
 } from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
+import { useActiveOuId } from '@/features/main/useActiveOuId';
 
 const ALL_FILTER = -1;
 
 /**
- * Multi-OU: list filter only (filters.ou / filters.ou_id). Full tenancy is not implemented.
+ * Multi-OU: list uses active_ou_id (user-app-data); ROOT may choose «все».
  */
 export default function MainUsersApp() {
 	useWindowTitle('Пользователи');
@@ -31,9 +32,23 @@ export default function MainUsersApp() {
 	const canCreate = useCanCreateMainUser();
 	const canUpdate = useCanUpdateMainUser();
 	const canDelete = useCanDeleteMainUser();
-	const [ouFilter, setOuFilter] = useSetting<number>('USER', 'ouFilter', ALL_FILTER);
+	const root = isRoot();
+	const { activeOuId, restored } = useActiveOuId();
+	const [ouFilter, setOuFilter] = useState<number>(ALL_FILTER);
 	const [groupFilter, setGroupFilter] = useState<number>(ALL_FILTER);
-	const activeOu = ouFilter ?? ALL_FILTER;
+
+	useEffect(() => {
+		if (!restored) {
+			return;
+		}
+		if (activeOuId && activeOuId > 0) {
+			setOuFilter(activeOuId);
+		} else if (!root) {
+			setOuFilter(ALL_FILTER);
+		}
+	}, [activeOuId, restored, root]);
+
+	const activeOu = !root && activeOuId && activeOuId > 0 ? activeOuId : ouFilter;
 
 	const pagination = usePaginatedList({
 		sortBy: [{ key: 'login', order: 'ASC' }],
@@ -52,6 +67,7 @@ export default function MainUsersApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.users(pagination.listRequest),
 		queryFn: () => mainUserApi.list(pagination.listRequest),
+		enabled: restored,
 	});
 
 	const deleteMutation = useMutation({
@@ -65,13 +81,13 @@ export default function MainUsersApp() {
 
 	const ouOptions = useMemo(
 		() => [
-			{ value: String(ALL_FILTER), label: 'Все подразделения' },
+			...(root ? [{ value: String(ALL_FILTER), label: 'Все подразделения' }] : []),
 			...(filterQuery.data?.map((ou) => ({
 				value: String(ou.value),
 				label: ou.title,
 			})) ?? []),
 		],
-		[filterQuery.data],
+		[filterQuery.data, root],
 	);
 
 	const groupOptions = useMemo(() => {
@@ -122,7 +138,7 @@ export default function MainUsersApp() {
 		<MainListLayout
 			title="Пользователи"
 			total={listQuery.data?.total}
-			isLoading={listQuery.isLoading}
+			isLoading={!restored || listQuery.isLoading}
 			isError={listQuery.isError}
 			errorMessage={
 				listQuery.error
@@ -137,13 +153,21 @@ export default function MainUsersApp() {
 				<Stack gap="xs">
 					<Select
 						label="Подразделение"
-						description="Фильтр списка (не tenancy)"
+						description={
+							root
+								? 'ROOT: фильтр списка; active OU задаётся в настройках оболочки'
+								: 'Активное OU (tenancy slice)'
+						}
 						data={ouOptions}
 						value={String(activeOu)}
 						onChange={(value) => {
+							if (!root) {
+								return;
+							}
 							setOuFilter(value ? Number(value) : ALL_FILTER);
 							setGroupFilter(ALL_FILTER);
 						}}
+						disabled={!root}
 						searchable
 						clearable={false}
 					/>
@@ -156,9 +180,11 @@ export default function MainUsersApp() {
 						searchable
 						clearable={false}
 					/>
-					<Text size="xs" c="dimmed">
-						Полная мультитенантность не реализована — только фильтр списка по OU.
-					</Text>
+					{!root && !activeOuId ? (
+						<Text size="xs" c="orange">
+							Выберите активное подразделение в настройках оболочки.
+						</Text>
+					) : null}
 				</Stack>
 			}
 		>

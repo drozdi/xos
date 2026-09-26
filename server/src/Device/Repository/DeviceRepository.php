@@ -83,6 +83,25 @@ class DeviceRepository extends AbstractRepository
         }
         unset($filters['accounting']);
 
+        // Multi-OU: Device has no ou_id — scope via createdBy.ou
+        if (
+            array_key_exists('ou_id', $filters)
+            && (is_int($filters['ou_id']) || is_numeric($filters['ou_id']))
+            && (int) $filters['ou_id'] > 0
+            && (!array_key_exists('ou', $filters) || (int) ($filters['ou'] ?? -1) <= 0)
+        ) {
+            $filters['ou'] = (int) $filters['ou_id'];
+        }
+        unset($filters['ou_id']);
+        if (array_key_exists('ou', $filters) && null === $filters['ou']) {
+            $query->leftJoin($n.'.createdBy', $n.'cb')
+                ->andWhere($n.'cb.ou IS NULL');
+        } elseif (!empty($filters['ou']) && (is_int($filters['ou']) || is_numeric($filters['ou'])) && (int) $filters['ou'] > 0) {
+            $query->innerJoin($n.'.createdBy', $n.'cb')
+                ->andWhere($this->fieldVal($n.'cb.ou', (int) $filters['ou']));
+        }
+        unset($filters['ou']);
+
         foreach ($filters as $f => $v) {
             $query->andWhere($this->fieldVal($n.".{$f}", $v));
         }

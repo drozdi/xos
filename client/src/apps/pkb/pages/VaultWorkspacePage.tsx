@@ -16,9 +16,11 @@ import { notifications } from '@mantine/notifications';
 import {
 	IconArrowLeft,
 	IconCalendar,
+	IconDownload,
 	IconFilePlus,
 	IconPencil,
 	IconReplace,
+	IconSettings,
 	IconUsers,
 } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -47,6 +49,8 @@ import { VaultFileTree } from '@/features/pkb/components/VaultFileTree';
 import { VaultSearchBar } from '@/features/pkb/components/VaultSearchBar';
 
 import { ShareVaultModal } from '@/features/pkb/ShareVaultModal';
+
+import { VaultSettingsModal } from '@/features/pkb/VaultSettingsModal';
 
 import { resolveDailyNotePath } from '@/features/pkb/dailyNotes';
 
@@ -86,6 +90,7 @@ export function VaultWorkspacePage({
 	const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set(['']));
 	const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('editor');
 	const [shareOpened, setShareOpened] = useState(false);
+	const [settingsOpened, setSettingsOpened] = useState(false);
 	const [templateOpened, setTemplateOpened] = useState(false);
 	const [searchReplaceOpened, setSearchReplaceOpened] = useState(false);
 	const [vaultRenameOpened, setVaultRenameOpened] = useState(false);
@@ -198,6 +203,20 @@ export function VaultWorkspacePage({
 			notifications.show({ color: 'green', message: 'Пространство переименовано' });
 		},
 		onError: (error) => notifyApiError(error, 'Не удалось переименовать пространство'),
+	});
+
+	const exportMutation = useMutation({
+		mutationFn: () => pkbApi.exportVault(vaultId),
+		onSuccess: (blob) => {
+			const url = URL.createObjectURL(blob);
+			const anchor = document.createElement('a');
+			anchor.href = url;
+			anchor.download = `${vaultQuery.data?.slug ?? 'vault'}-export.zip`;
+			anchor.click();
+			URL.revokeObjectURL(url);
+			notifications.show({ color: 'green', message: 'ZIP экспортирован' });
+		},
+		onError: (error) => notifyApiError(error, 'Не удалось экспортировать vault'),
 	});
 
 	const handleRenameFile = useCallback(
@@ -317,6 +336,25 @@ export function VaultWorkspacePage({
 					>
 						Замена
 					</Button>
+					<Button
+						size="compact-xs"
+						variant="light"
+						leftSection={<IconDownload size={14} />}
+						onClick={() => exportMutation.mutate()}
+						loading={exportMutation.isPending}
+					>
+						Экспорт
+					</Button>
+					{canUpdate ? (
+						<Button
+							size="compact-xs"
+							variant="light"
+							leftSection={<IconSettings size={14} />}
+							onClick={() => setSettingsOpened(true)}
+						>
+							Настройки
+						</Button>
+					) : null}
 					<IndexStaleIndicator
 						vaultId={vaultId}
 						canRebuildIndex={vaultQuery.data?.permissions?.can_rebuild_index ?? false}
@@ -419,6 +457,7 @@ export function VaultWorkspacePage({
 							vaultId={vaultId}
 							filePath={editorPath}
 							canWrite={canWrite}
+							pluginIds={vaultQuery.data?.plugins ?? []}
 							onWikilinkNavigate={handleNavigateNote}
 						/>
 					)}
@@ -441,6 +480,14 @@ export function VaultWorkspacePage({
 					</ScrollArea>
 				</Box>
 			</Group>
+
+			{vaultQuery.data ? (
+				<VaultSettingsModal
+					vault={vaultQuery.data}
+					opened={settingsOpened}
+					onClose={() => setSettingsOpened(false)}
+				/>
+			) : null}
 
 			{vaultQuery.data?.permissions?.can_manage_members ? (
 				<ShareVaultModal

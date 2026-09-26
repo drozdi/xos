@@ -8,6 +8,9 @@ import {
 	IDEA_PRIORITY_OPTIONS,
 	IDEA_STATUS_OPTIONS,
 	IDEAS_BLOCK_CODE,
+	LEAD_PRIORITY_OPTIONS,
+	LEAD_STAGE_OPTIONS,
+	LEADS_BLOCK_CODE,
 	NOTES_BLOCK_CODE,
 	SERVICES_BLOCK_CODE,
 	type ContentCatalogConfig,
@@ -149,5 +152,34 @@ export const ideasCatalogConfig: ContentCatalogConfig = {
 			label: 'Приоритет',
 			options: IDEA_PRIORITY_OPTIONS,
 		},
+	],
+};
+
+export const leadsCatalogConfig: ContentCatalogConfig = {
+	blockCode: LEADS_BLOCK_CODE,
+	listAppId: 'leads',
+	detailAppId: 'lead',
+	listTitle: 'Лиды',
+	detailTitle: 'Лид',
+	entityLabel: 'Лид',
+	createLabel: 'Новый лид',
+	sectionLabel: 'Воронка',
+	storageKey: 'leads-catalog',
+	codeFallback: 'lead',
+	features: { cover: false, tags: true, preview: true, markdown: true, share: true },
+	extraFields: [
+		{
+			type: 'select',
+			prop: CONTENT_PROPS.STAGE,
+			label: 'Стадия',
+			options: LEAD_STAGE_OPTIONS,
+		},
+		{
+			type: 'select',
+			prop: CONTENT_PROPS.PRIORITY,
+			label: 'Приоритет',
+			options: LEAD_PRIORITY_OPTIONS,
+		},
+		{ type: 'text', prop: CONTENT_PROPS.CONTACT, label: 'Контакт' },
 	],
 };

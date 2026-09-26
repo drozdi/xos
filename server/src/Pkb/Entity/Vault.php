@@ -49,6 +49,13 @@ class Vault
     #[ORM\Column(name: 'index_stale', type: Types::BOOLEAN, options: ['default' => false])]
     private bool $indexStale = false;
 
+    #[ORM\Column(name: 'encrypt_at_rest', type: Types::BOOLEAN, options: ['default' => false])]
+    private bool $encryptAtRest = false;
+
+    /** @var list<string>|null */
+    #[ORM\Column(name: 'plugins_json', type: Types::JSON, nullable: true)]
+    private ?array $pluginsJson = null;
+
     /** @var Collection<int, VaultMember> */
     #[ORM\OneToMany(mappedBy: 'vault', targetEntity: VaultMember::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $members;
@@ -177,6 +184,32 @@ class Vault
     public function setIndexStale(bool $indexStale): self
     {
         $this->indexStale = $indexStale;
+
+        return $this;
+    }
+
+    public function isEncryptAtRest(): bool
+    {
+        return $this->encryptAtRest;
+    }
+
+    public function setEncryptAtRest(bool $encryptAtRest): self
+    {
+        $this->encryptAtRest = $encryptAtRest;
+
+        return $this;
+    }
+
+    /** @return list<string> */
+    public function getPluginsJson(): array
+    {
+        return $this->pluginsJson ?? [];
+    }
+
+    /** @param list<string>|null $pluginsJson */
+    public function setPluginsJson(?array $pluginsJson): self
+    {
+        $this->pluginsJson = null === $pluginsJson || [] === $pluginsJson ? null : array_values($pluginsJson);
 
         return $this;
     }

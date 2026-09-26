@@ -1,0 +1,10 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Github\:
+        resource: '../'
+        exclude:
+            - '../Entity/'
+            - '../config/'

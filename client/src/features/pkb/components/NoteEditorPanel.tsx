@@ -39,6 +39,7 @@ import {
 } from '@/features/markdown';
 import { WikilinkAutocompleteMenu } from '@/features/pkb/editor/WikilinkAutocompleteMenu';
 import { useWikilinkNavigate, parseIblockWikilink } from '@/features/pkb/editor/useWikilinkNavigate';
+import { applyPkbRenderPlugins, applyPkbSavePlugins } from '@/features/pkb/plugins/pkbPlugins';
 import {
 	createWikilinkExtension,
 	type WikilinkAutocompleteState,
@@ -53,6 +54,7 @@ interface NoteEditorPanelProps {
 	vaultId: number;
 	filePath: string | null;
 	canWrite?: boolean;
+	pluginIds?: string[];
 	onWikilinkNavigate?: (path: string) => void;
 }
 
@@ -104,7 +106,13 @@ function insertMarkdownSnippet(
 	return { value: next, selectionStart: cursor, selectionEnd: cursor };
 }
 
-export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilinkNavigate }: NoteEditorPanelProps) {
+export function NoteEditorPanel({
+	vaultId,
+	filePath,
+	canWrite = false,
+	pluginIds = [],
+	onWikilinkNavigate,
+}: NoteEditorPanelProps) {
 	const sessionKey = pkbSessionKey(vaultId);
 	const queryClient = useQueryClient();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -123,7 +131,10 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 		[onWikilinkNavigate],
 	);
 
-	const handleWikilinkClick = useWikilinkNavigate(vaultId, handleNavigate);
+	const { navigate: handleWikilinkClick, ambiguousPicker } = useWikilinkNavigate(
+		vaultId,
+		handleNavigate,
+	);
 	const launchApp = useAppManager((state) => state.launchApp);
 	const boardAvailable = canUseBoard();
 
@@ -146,9 +157,25 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 		return titles;
 	}, [notesQuery.data?.notes]);
 
+	const ambiguousTitleSet = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const note of notesQuery.data?.notes ?? []) {
+			const key = normalizeWikilinkTitle(note.title).toLowerCase();
+			counts.set(key, (counts.get(key) ?? 0) + 1);
+		}
+		const ambiguous = new Set<string>();
+		for (const [title, count] of counts) {
+			if (count > 1) {
+				ambiguous.add(title);
+			}
+		}
+		return ambiguous;
+	}, [notesQuery.data?.notes]);
+
 	const noteSuggestionsRef = useRef<WikilinkSuggestion[]>([]);
 	const handleWikilinkClickRef = useRef<(title: string) => void>(() => undefined);
 	const isBrokenWikilinkRef = useRef<(title: string) => boolean>(() => false);
+	const isAmbiguousWikilinkRef = useRef<(title: string) => boolean>(() => false);
 
 	const noteSuggestions = useMemo<WikilinkSuggestion[]>(
 		() =>
@@ -171,7 +198,18 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 		[noteTitleSet],
 	);
 
+	const isAmbiguousWikilink = useCallback(
+		(title: string) => {
+			if (parseIblockWikilink(title)) {
+				return false;
+			}
+			return ambiguousTitleSet.has(normalizeWikilinkTitle(title).toLowerCase());
+		},
+		[ambiguousTitleSet],
+	);
+
 	isBrokenWikilinkRef.current = isBrokenWikilink;
+	isAmbiguousWikilinkRef.current = isAmbiguousWikilink;
 	handleWikilinkClickRef.current = (title: string) => {
 		void handleWikilinkClick(title);
 	};
@@ -194,6 +232,7 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 					handleWikilinkClickRef.current(title);
 				},
 				isBrokenLink: (title) => isBrokenWikilinkRef.current(title),
+				isAmbiguousLink: (title) => isAmbiguousWikilinkRef.current(title),
 			}),
 		[],
 	);
@@ -403,8 +442,9 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 		if (!latest.dirty) {
 			return;
 		}
-		saveMutation.mutate({ path: filePath, content: latest.content });
-	}, [filePath, saveMutation, sessionKey]);
+		const content = applyPkbSavePlugins(latest.content, pluginIds);
+		saveMutation.mutate({ path: filePath, content });
+	}, [filePath, pluginIds, saveMutation, sessionKey]);
 
 	const handleUpload = useCallback(
 		(file: File | null) => {
@@ -546,6 +586,10 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 	const showWysiwyg = showsMarkdownWysiwyg(viewMode);
 	const showSource = showsMarkdownSource(viewMode);
 	const showPreview = showsMarkdownPreview(viewMode);
+	const previewContent = useMemo(
+		() => applyPkbRenderPlugins(session.content, pluginIds),
+		[pluginIds, session.content],
+	);
 
 	const handleFormatHandled = useCallback(() => {
 		patchSession(sessionKey, { formatCommand: null });
@@ -773,17 +817,19 @@ export function NoteEditorPanel({ vaultId, filePath, canWrite = false, onWikilin
 					{showPreview ? (
 						<ScrollArea h="100%" style={{ minHeight: 0, flex: 1 }} type="auto" offsetScrollbars>
 							<MarkdownPreview
-								content={session.content}
+								content={previewContent}
 								variant="reading"
 								onWikilinkClick={(title) => {
 									void handleWikilinkClick(title);
 								}}
 								isBrokenWikilink={isBrokenWikilink}
+								isAmbiguousWikilink={isAmbiguousWikilink}
 							/>
 						</ScrollArea>
 					) : null}
 				</Box>
 			)}
+			{ambiguousPicker}
 		</Box>
 	);
 }

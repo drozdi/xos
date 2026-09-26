@@ -11,6 +11,8 @@ export function mapAccountFromApi(data: ApiAccount): IAccount {
 		owner_id: data.ownerId ?? data.masterId ?? 0,
 		sort: data.order ?? 0,
 		label: data.label ?? data.name ?? '',
+		description: data.description ?? null,
+		number: data.number ?? null,
 		balance: Number(data.balance ?? 0),
 		type: data.type ?? '',
 		color: data.color ?? '',
@@ -32,7 +34,7 @@ export function mapAccountToApi(
 	const mapped: Record<string, unknown> = {};
 	if (data.label !== undefined) mapped['label'] = data.label;
 	if (data.sort !== undefined) mapped['order'] = data.sort;
-	for (const field of ['type', 'color', 'icon', 'balance', 'currency'] as const) {
+	for (const field of ['type', 'color', 'icon', 'balance', 'currency', 'description', 'number'] as const) {
 		if (data[field] !== undefined) mapped[field] = data[field];
 	}
 	if (mapped['icon'] === undefined || mapped['icon'] === '') {

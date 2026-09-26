@@ -30,7 +30,7 @@ import { MemberInviteModal } from './MemberInviteModal';
 import { BoardDndContext } from './dnd/BoardDndContext';
 import { useBoardDnd } from './dnd/useBoardDnd';
 import { saveLastBoardId, useBoardFilters } from './hooks/useBoardFilters';
-import { useBoardChangesPolling } from './hooks/useBoardChangesPolling';
+import { useBoardRealtime } from './hooks/useBoardRealtime';
 import { QuickAddList } from './QuickAddList';
 
 interface BoardViewPageProps {
@@ -56,7 +56,7 @@ export function BoardViewPage({ boardId, initialCardId = null, onBack }: BoardVi
 		queryFn: () => boardApi.board(boardId),
 	});
 
-	useBoardChangesPolling(boardId, boardQuery.isSuccess);
+	useBoardRealtime(boardId, boardQuery.isSuccess);
 
 	const [lists, setLists] = useState<BoardList[]>([]);
 	const [selectedCardId, setSelectedCardId] = useState<number | null>(null);

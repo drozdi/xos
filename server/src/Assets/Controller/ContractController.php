@@ -8,7 +8,11 @@ use Assets\Entity\Contract;
 use Assets\Repository\ContractRepository;
 use Assets\Repository\CounterpartyRepository;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Doctrine\ORM\EntityManagerInterface;
+use Main\Entity\User;
+use Main\Service\OuScope;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -29,9 +33,9 @@ class ContractController extends AssetsCrudController
 
     #[Route('/list', methods: ['POST'])]
     #[Access('can_read')]
-    public function list(Request $request): JsonResponse
+    public function list(Request $request, OuScope $ouScope, #[CurrentUser] User $user): JsonResponse
     {
-        return $this->listAction($request);
+        return $this->listAction($request, $ouScope, $user);
     }
 
     #[Route('/{id}', methods: ['GET'], requirements: ['id' => '\d+'])]
@@ -43,9 +47,14 @@ class ContractController extends AssetsCrudController
 
     #[Route('/', methods: ['POST'])]
     #[Access('can_create')]
-    public function create(Request $request, ValidatorInterface $validator): JsonResponse
-    {
-        return $this->createAction($request, $validator);
+    public function create(
+        Request $request,
+        ValidatorInterface $validator,
+        OuScope $ouScope,
+        EntityManagerInterface $em,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        return $this->createAction($request, $validator, $ouScope, $em, $user);
     }
 
     #[Route('/{id}', methods: ['PUT'], requirements: ['id' => '\d+'])]

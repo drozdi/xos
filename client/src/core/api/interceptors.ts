@@ -1,6 +1,14 @@
 import { apiBaseURL, apiClient } from '@/core/api/client';
 import { extractApiErrorMessage } from '@/core/api/apiError';
 import { refreshResponseSchema } from '@/core/api/endpoints/auth';
+import {
+	createQueuedOfflineError,
+	enqueueOutboxItem,
+	initOfflineOutbox,
+	isAuthBypassPath,
+	isMutatingMethod,
+	isUnqueueableBody,
+} from '@/core/api/offlineOutbox';
 import * as tokenStorage from '@/core/auth/tokenStorage';
 import { notifications } from '@mantine/notifications';
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
@@ -14,6 +22,10 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
 	_errorToastShown?: boolean;
 	/** Skip 404 toast when missing resource is expected (e.g. optional user_app_data). */
 	_silent404?: boolean;
+	/** Request was already written to offline outbox. */
+	_offlineQueued?: boolean;
+	/** Flush replay — do not re-queue. */
+	_outboxFlush?: boolean;
 }
 
 let isRefreshing = false;
@@ -58,24 +70,28 @@ function resolveRealmForApiUrl(url: string | undefined): tokenStorage.AuthRealm 
 }
 
 function isAuthBypassUrl(url: string | undefined): boolean {
-	if (!url) {
+	return isAuthBypassPath(url);
+}
+
+function shouldConsiderOutbox(config: RetryableRequestConfig | undefined): boolean {
+	if (!config || config._outboxFlush || config._offlineQueued) {
 		return false;
 	}
-	return (
-		url.includes('/api/login') ||
-		url.includes('/api/IncCom/auth/login') ||
-		url.includes('/api/IncCom/auth/register') ||
-		url.includes('/api/schooltask/auth/login') ||
-		url.includes('/api/calendar/auth/login') ||
-		url.includes('/api/token/refresh') ||
-		url.includes('/api/IncCom/token/refresh') ||
-		url.includes('/api/schooltask/token/refresh') ||
-		url.includes('/api/calendar/token/refresh') ||
-		url.includes('/api/logout') ||
-		url.includes('/api/IncCom/auth/logout') ||
-		url.includes('/api/schooltask/auth/logout') ||
-		url.includes('/api/calendar/auth/logout')
-	);
+	if (!isMutatingMethod(config.method)) {
+		return false;
+	}
+	if (isAuthBypassUrl(config.url)) {
+		return false;
+	}
+	return true;
+}
+
+async function queueMutatingRequest(
+	config: RetryableRequestConfig,
+	opts?: { failed?: boolean; failReason?: string },
+): Promise<void> {
+	config._offlineQueued = true;
+	await enqueueOutboxItem(config, opts);
 }
 
 function getErrorMessage(error: AxiosError): string {
@@ -89,6 +105,25 @@ function showErrorToast(error: AxiosError, config: RetryableRequestConfig | unde
 
 	if (config) {
 		config._errorToastShown = true;
+	}
+
+	if (error.code === 'ERR_OFFLINE_QUEUED') {
+		notifications.show({
+			color: 'yellow',
+			title: 'Offline',
+			message: 'Изменение сохранено в очередь',
+			autoClose: 2500,
+		});
+		return;
+	}
+
+	if (error.code === 'ERR_OFFLINE_BINARY') {
+		notifications.show({
+			color: 'red',
+			title: 'Offline',
+			message: 'Бинарный запрос нельзя поставить в очередь',
+		});
+		return;
 	}
 
 	if (error.response?.status === 403) {
@@ -174,7 +209,9 @@ export function stripJsonContentTypeForFormData(
 }
 
 export function setupInterceptors(authStore: AuthStoreRef): void {
-	apiClient.interceptors.request.use((config) => {
+	initOfflineOutbox(apiClient);
+
+	apiClient.interceptors.request.use(async (config) => {
 		stripJsonContentTypeForFormData(config);
 		const accessToken = tokenStorage.getAccessToken(
 			resolveRealmForApiUrl(config.url),
@@ -182,12 +219,67 @@ export function setupInterceptors(authStore: AuthStoreRef): void {
 		if (accessToken) {
 			config.headers.Authorization = `Bearer ${accessToken}`;
 		}
+
+		const retryable = config as RetryableRequestConfig;
+		if (
+			shouldConsiderOutbox(retryable) &&
+			typeof navigator !== 'undefined' &&
+			!navigator.onLine
+		) {
+			if (isUnqueueableBody(config.data)) {
+				await queueMutatingRequest(retryable, {
+					failed: true,
+					failReason: 'binary',
+				});
+				return Promise.reject(
+					new axios.AxiosError(
+						'Offline: binary body not queued',
+						'ERR_OFFLINE_BINARY',
+						config,
+					),
+				);
+			}
+			await queueMutatingRequest(retryable);
+			return Promise.reject(createQueuedOfflineError(config));
+		}
+
 		return config;
 	});
 	apiClient.interceptors.response.use(
 		(response) => response,
 		async (error: AxiosError) => {
 			const originalRequest = error.config as RetryableRequestConfig | undefined;
+			if (
+				error.code === 'ERR_OFFLINE_QUEUED' ||
+				error.code === 'ERR_OFFLINE_BINARY'
+			) {
+				showErrorToast(error, originalRequest);
+				return Promise.reject(error);
+			}
+			// Network fail → queue mutating writes (except auth / binary / flush replay)
+			if (
+				!error.response &&
+				shouldConsiderOutbox(originalRequest) &&
+				originalRequest
+			) {
+				if (isUnqueueableBody(originalRequest.data)) {
+					await queueMutatingRequest(originalRequest, {
+						failed: true,
+						failReason: 'binary',
+					});
+					const binaryErr = new axios.AxiosError(
+						'Offline: binary body not queued',
+						'ERR_OFFLINE_BINARY',
+						originalRequest,
+					);
+					showErrorToast(binaryErr, originalRequest);
+					return Promise.reject(binaryErr);
+				}
+				await queueMutatingRequest(originalRequest);
+				const queued = createQueuedOfflineError(originalRequest);
+				showErrorToast(queued, originalRequest);
+				return Promise.reject(queued);
+			}
 			if (error.response?.status !== 401) {
 				showErrorToast(error, originalRequest);
 			}

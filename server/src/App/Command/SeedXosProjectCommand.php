@@ -132,7 +132,7 @@ final class SeedXosProjectCommand extends Command
         }
 
         $board = null;
-        foreach ($workspace->getBoards() as $candidate) {
+        foreach ($this->boardManager->getBoardRepository()->findByWorkspace($workspace) as $candidate) {
             if ($candidate->getTitle() === self::BOARD_TITLE) {
                 $board = $candidate;
                 break;
@@ -173,9 +173,9 @@ final class SeedXosProjectCommand extends Command
                 $vault,
                 'Идеи приложений',
                 <<<'MD'
-Открытый бэклог: SchoolTask/IncCom apps, привычки/Inbox, **W3b** (Mercure, PKB encryption).
+Открытый бэклог: IMAP/Open Banking; Board email/Trello. Platform W3b+ **DONE**.
 
-[[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md`
+[[AppIdeas]] · `docs/APP_IDEAS.md`
 MD,
                 'Notes/AppIdeas.md',
             );
@@ -261,6 +261,7 @@ MD,
         $contactsBlock = $this->ensureBlock($type, 'contacts', 'Контакты', 70);
         $servicesBlock = $this->ensureBlock($type, 'services', 'Услуги', 80);
         $ideasBlock = $this->ensureBlock($type, 'ideas', 'Идеи', 90);
+        $leadsBlock = $this->ensureBlock($type, 'leads', 'Лиды', 100);
 
         $this->ensureProperty($notesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
         $this->ensureProperty($notesBlock, 'TAGS', 'Теги', 'S', true, 20);
@@ -308,6 +309,19 @@ MD,
         $this->ensureEnum($ideaPriority, 'medium', 'Средний', 20, true);
         $this->ensureEnum($ideaPriority, 'high', 'Высокий', 30, false);
 
+        $this->ensureProperty($leadsBlock, 'TAGS', 'Теги', 'S', true, 10);
+        $leadStage = $this->ensureProperty($leadsBlock, 'STAGE', 'Стадия', 'L', false, 20);
+        $this->ensureEnum($leadStage, 'new', 'Новый', 10, true);
+        $this->ensureEnum($leadStage, 'contacted', 'На связи', 20, false);
+        $this->ensureEnum($leadStage, 'qualified', 'Квалифицирован', 30, false);
+        $this->ensureEnum($leadStage, 'won', 'Выигран', 40, false);
+        $this->ensureEnum($leadStage, 'lost', 'Потерян', 50, false);
+        $leadPriority = $this->ensureProperty($leadsBlock, 'PRIORITY', 'Приоритет', 'L', false, 30);
+        $this->ensureEnum($leadPriority, 'low', 'Низкий', 10, false);
+        $this->ensureEnum($leadPriority, 'medium', 'Средний', 20, true);
+        $this->ensureEnum($leadPriority, 'high', 'Высокий', 30, false);
+        $this->ensureProperty($leadsBlock, 'CONTACT', 'Контакт', 'S', false, 40);
+
         $personal = $this->ensureSection($notesBlock, 'personal', 'Личное', 10);
         $work = $this->ensureSection($notesBlock, 'work', 'Работа', 20);
         $soups = $this->ensureSection($recipesBlock, 'soups', 'Супы', 10);
@@ -322,6 +336,7 @@ MD,
         $staff = $this->ensureSection($contactsBlock, 'staff', 'Сотрудники', 10);
         $svcCatalog = $this->ensureSection($servicesBlock, 'catalog', 'Каталог', 10);
         $inbox = $this->ensureSection($ideasBlock, 'inbox', 'Inbox', 10);
+        $pipeline = $this->ensureSection($leadsBlock, 'pipeline', 'Воронка', 10);
 
         $this->ensureElement($notesBlock, 'welcome-note', 'Добро пожаловать', [
             'preview_text' => 'Первая заметка в каталоге',
@@ -436,9 +451,21 @@ MD,
             ],
             'sort' => 10,
         ]);
+        $this->ensureElement($leadsBlock, 'demo-lead', 'Acme Corp', [
+            'preview_text' => 'Демо-лид CRM',
+            'detail_text' => "Запрос на пилот XOS.\n",
+            'section_ids' => [$pipeline->getId()],
+            'PROPERTY_VALUES' => [
+                'TAGS' => ['inbound'],
+                'STAGE' => 'new',
+                'PRIORITY' => 'high',
+                'CONTACT' => 'alice@acme.example',
+            ],
+            'sort' => 10,
+        ]);
 
         $io->text(sprintf(
-            'IBlock content: type=#%d notes=#%d recipes=#%d + articles/faq/gallery/events/contacts/services/ideas',
+            'IBlock content: type=#%d notes=#%d recipes=#%d + articles/faq/gallery/events/contacts/services/ideas/leads',
             $type->getId(),
             $notesBlock->getId(),
             $recipesBlock->getId(),
@@ -701,6 +728,10 @@ MD,
             'pkb' => '#00838f',
             'system' => '#78909c',
             'iblock' => '#5d4037',
+            'assets' => '#455a64',
+            'content' => '#6a1b9a',
+            'github' => '#24292e',
+            'inbox' => '#0277bd',
         ];
         $result = [];
         foreach ($defs as $name => $color) {
@@ -773,7 +804,7 @@ MD,
             <<<'MD'
 Сдано: позиции из чека ФНС, шифрование `master_token`, DX Board↔PKB.
 
-Детали: [[Changelog]] · [[IncCom]] · `docs/inccom/README.md` · `docs/API_SPEC.md` § Board↔PKB.
+Детали: [[Changelog]] · [[IncCom]] · `docs/inccom/README.md` · [[Board]]↔[[PKB]].
 MD,
             ['inccom', 'docs', 'mvp'],
             [
@@ -792,7 +823,7 @@ MD,
             <<<'MD'
 Сдано: SchoolTask Critical B1–B3 / F1–F3; Explorer dirty-close.
 
-Детали: [[Changelog]] · [[SchoolTask]] · [[Explorer]] · `docs/ROADMAP_WAVES.md`.
+Детали: [[Changelog]] · [[SchoolTask]] · [[Explorer]].
 MD,
             ['schooltask', 'explorer', 'docs', 'mvp'],
             [
@@ -806,18 +837,26 @@ MD,
             'Notes/Changelog.md',
         );
         $card('Волна 3 Board — partial (polling+search)', <<<'MD'
-Сдано (slice): Board changes polling + global card search.
+Сдано: Board changes polling + global card search.
 
-**W3b** backlog: Mercure/SSE; Trello import; email-уведомления.
+**W3b DONE:** SSE `/events` + optional Mercure (`/realtime`) + conflict UI. Остаток: Trello import; email.
 
-См. `docs/ROADMAP_WAVES.md`, `docs/APP_IDEAS.md`, [[Board]], [[Changelog]].
+См. [[Board]], [[Changelog]].
 MD, ['board', 'docs', 'mvp']);
 
         $card('W3b PKB: templates/graph, encryption, plugins', <<<'MD'
-Backlog **W3b**: PKB templates/graph; encryption at-rest; plugins / co-editing.
+**DONE:** FULLTEXT; ambiguous UX; encrypt_at_rest; plugins_json; ZIP export; remote_sync_url + POST `/remote-sync`.
 
-См. [[PKB]], `docs/APP_IDEAS.md`, `docs/ROADMAP_WAVES.md`.
-MD, ['pkb', 'v2']);
+Остаток: co-editing; plugin marketplace.
+
+См. [[PKB]], [[AppIdeas]], `docs/APP_IDEAS.md`.
+MD, ['pkb', 'mvp']);
+
+        $card('Apps wave — homework, CRM, GitHub, habits, Inbox', <<<'MD'
+**DONE:** `schooltask-homeworks` + parent share; IncCom bank UI; `leads`/`lead`; `github`; `habits`; `inbox`/`inbox-message`; tags/favorites.
+
+См. [[AppsCatalog]] · [[Changelog]] · [[SchoolTask]] · [[GitHub]] · [[Inbox]] · [[Habits]] · [[Content]]
+MD, ['docs', 'mvp', 'schooltask']);
 
         $card('Документация приложений', <<<'MD'
 Каталог `docs/APPS.md`, ТЗ по доменам, индекс `docs/README.md`. Связано с [[AppsCatalog]], [[Changelog]] и vault XOS.
@@ -832,17 +871,17 @@ MD, ['docs', 'mvp'], [
         $card(
             'Идеи приложений',
             <<<'MD'
-Открытый бэклог. Закрыто: IBlock content, Assets CRUD, Todo↔Board / due-notify / Device↔IncCom, PWA shell / audit / OU filter.
+Открытый бэклог. **W3b/Platform+ DONE** (Mercure, remote PKB sync, OU v2, outbox). Дальше: IMAP/Open Banking.
 
-Дальше: **W3b**, SchoolTask/IncCom apps, привычки/Inbox — [[AppIdeas]] · `docs/APP_IDEAS.md` · `docs/ROADMAP_WAVES.md`.
+[[AppIdeas]] · `docs/APP_IDEAS.md`
 MD,
             ['docs', 'v2'],
             [
                 'title' => 'Быстрый старт',
                 'items' => [
-                    'W3b Mercure / PKB encryption',
-                    'SchoolTask: дневник / ДЗ / parent share',
-                    'Привычки / Inbox',
+                    'IMAP / Open Banking',
+                    'Board email / Trello import',
+                    'PKB co-edit',
                 ],
             ],
             'Notes/AppIdeas.md',
@@ -886,7 +925,7 @@ MD,
                 'notePath' => 'Notes/Architecture.md',
                 'boardList' => 'Обзор',
                 'labels' => ['docs'],
-                'description' => "Слои monorepo, auth, клиент/сервер.\n\nСм. [[Architecture]] и `docs/ARCHITECTURE.md`.",
+                'description' => "Слои monorepo, auth, клиент/сервер.\n\nСм. [[Architecture]] и модули в vault.",
             ],
             [
                 'title' => 'Apps Catalog',
@@ -998,7 +1037,7 @@ Claimant `main` · роль `ROLE_MAIN` · `server/src/Main/` · `client/src/fea
 - JWT scopes из `setting.json` + sync в БД: `php bin/console main:claimant:sync`
 - UI прав: `access_options` в claimant после sync
 - Аудит: `AuditLog` + app `main-audit`
-- OU list filter (multi-OU список; полноценный tenancy — [[AppIdeas]])
+- Multi-OU: `main.active_ou_id`; list/create scope (Device via createdBy.ou; Assets `ou_id`)
 - Документы: `docs/main/README.md`, `docs/main/TZ.md`
 
 ← [[Home]] · [[Architecture]] · [[AppsCatalog]]
@@ -1025,6 +1064,7 @@ Claimant `device` · `server/src/Device/` · `client/src/features/device/` · ap
 ## Ключевое
 
 - Карточка устройства: свойства, ремонты, изображения, файлы
+- Multi-OU list: filter через `createdBy.ou` + `main.active_ou_id`
 - Документы: `docs/device/README.md`, `docs/device/TZ.md`
 
 ← [[Home]] · [[AppsCatalog]]
@@ -1084,13 +1124,20 @@ Claimant `schooltask` · `server/src/SchoolTask/` · `client/src/features/school
 
 ## Приложения (app id)
 
-`schooltask-subjects`, `schooltask-subject`, `schooltask-classes`, `schooltask-class`, `schooltask-calendars`, `schooltask-calendar`, `schooltask-calendar-editor`, `schooltask-calendar-teacher`
+| ID | Назначение |
+|----|------------|
+| `schooltask-subjects` / `schooltask-subject` | справочник предметов |
+| `schooltask-classes` / `schooltask-class` | классы (+ вкладка «Родители» / share) |
+| `schooltask-calendars` / `schooltask-calendar` / `schooltask-calendar-editor` | расписание |
+| `schooltask-calendar-teacher` | мои уроки |
+| `schooltask-homeworks` | агрегатор ДЗ (`EpEvent.ht`, `GET /homework`) |
 
 ## Ключевое
 
-- Документы: `docs/schooltask/README.md`, `TZ.md`; идеи — `docs/APP_IDEAS.md`
+- Parent read-only: `st_ep_group_share`
+- Документы: `docs/schooltask/README.md`, `TZ.md`
 
-← [[Home]] · [[Calendar]]
+← [[Home]] · [[Calendar]] · [[AppsCatalog]]
 MD,
             ],
             [
@@ -1187,9 +1234,14 @@ Claimant `todo` · `server/src/Todo/` · `client/src/features/todo/` · app `tod
 
 ## Приложения
 
-`todo`
+| ID | Назначение |
+|----|------------|
+| `todo` | списки и пункты |
+| `habits` | трекер привычек (UI на Todo API, v1 без habit_log) |
 
-← [[Home]] · [[Calendar]] · [[Board]] · [[Changelog]]
+Документы: `docs/todo/README.md`, `docs/habits/README.md`
+
+← [[Home]] · [[Calendar]] · [[Board]] · [[Changelog]] · [[AppsCatalog]]
 MD,
             ],
             [
@@ -1212,17 +1264,21 @@ Workspaces → boards → lists → cards. DnD, чеклисты, коммент
 
 Deep-link окна Board: props `boardId`, `cardId`.
 
-DX: `docs/API_SPEC.md` § Board↔PKB; PHPUnit `BoardManagerTest::testPkbNoteLinkSerializeAndLinkedLookup`.
+DX: PHPUnit `BoardManagerTest::testPkbNoteLinkSerializeAndLinkedLookup`; см. [[Board]]↔[[PKB]].
 
 Эта доска «XOS — roadmap» связана с vault `slug=xos`. Журнал сдач: [[Changelog]].
 
-W3: polling `GET /boards/{id}/changes`, search `GET /search` — см. [[Changelog]].
+Realtime: SSE `GET /boards/{id}/events`; optional Mercure (`MERCURE_URL`+`MERCURE_JWT_SECRET`, `GET …/realtime`); polling fallback. Conflict: `expected_updated_at` → 409.
+
+Также: `GET /boards/{id}/changes`, `GET /search`.
+
+Документы: `docs/board/README.md`, `TZ.md` · журнал: [[Changelog]]
 
 ## Приложения
 
 `board`
 
-← [[Home]] · [[PKB]] · [[Calendar]] · [[Changelog]]
+← [[Home]] · [[PKB]] · [[Calendar]] · [[Changelog]] · [[AppsCatalog]]
 MD,
             ],
             [
@@ -1243,13 +1299,17 @@ Vault = папка [[Explorer]] + индекс в БД. Wikilinks `[[Note]]`, ba
 
 Deep-link окна PKB: props `vaultId`, `notePath`. Связанные карточки [[Board]]: `GET /api/board/cards/linked`.
 
-Документация в vault обновляется через seed: `php bin/console xos:seed-project --force` (локаль; см. `docs/DEVELOPER_GUIDE.md`).
+Фичи: FULLTEXT; ambiguous wikilink; `encrypt_at_rest`; plugins; ZIP export; `remote_sync_url` + `POST /vaults/{id}/remote-sync`.
+
+Документация в vault обновляется через seed: `php bin/console xos:seed-project --force`.
+
+Документы: `docs/pkb/README.md`, `TZ.md`
 
 ## Приложения
 
 `pkb`
 
-← [[Home]] · [[Board]] · [[Explorer]] · [[Changelog]]
+← [[Home]] · [[Board]] · [[Explorer]] · [[Changelog]] · [[AppsCatalog]]
 MD,
             ],
             [
@@ -1282,7 +1342,7 @@ MD,
 | `widget-weather` | Погода |
 | `demo-calculator` | Calculator (демо) |
 
-PWA: vite-plugin-pwa (shell + SW). Offline API cache — [[AppIdeas]].
+PWA: vite-plugin-pwa (shell + SW); NetworkFirst GET `/api/*`; offline banner + write outbox — **DONE**.
 
 Документы: `docs/system/README.md`, `TZ.md`
 
@@ -1314,12 +1374,14 @@ Claimant в основном `iblock`; рецепты — `recipe` (`ROLE_RECIPE
 | `contacts` / `contact` | contacts |
 | `services` / `service` | services |
 | `ideas` / `idea` | ideas |
+| `leads` / `lead` | CRM-мини (block `leads`) |
 | `recipes` / `recipe` / `recipe-categories` | `ROLE_RECIPE` + `can_category`; share read-only |
 
 ## Ключевое
 
 - Hub инфоблоков: [[IBlock]]
-- Идеи (теги/избранное): [[AppIdeas]]
+- Теги / избранное в ContentCatalog — **DONE**
+- Документы: `docs/iblock/README.md`, `docs/APPS.md`
 
 ← [[Home]] · [[IBlock]] · [[AppsCatalog]]
 MD,
@@ -1353,14 +1415,119 @@ CRUD-справочники: склад, автопарк, контрагент�
 
 Prefix `/api/assets/*`. Claimants: `assets.warehouse`, `assets.fleet`, …
 
+Multi-OU: nullable `ou_id` на каталогах; list/create через `OuScope`.
+
+Документы: `docs/APPS.md` § Assets
+
 ← [[Home]] · [[AppsCatalog]] · [[Changelog]]
+MD,
+            ],
+            [
+                'title' => 'TeamStorm',
+                'notePath' => 'Notes/Apps/TeamStorm.md',
+                'labels' => ['system'],
+                'cardDescription' => "TeamStorm proxy (URL + PrivateToken).\n\nЗаметка: [[TeamStorm]] · API `/api/ts/`",
+                'body' => <<<'MD'
+# TeamStorm
+
+Claimant `ts` · `ROLE_TS` · `server/src/Ts/` · app `teamstorm`
+
+## Назначение
+
+Прокси к TeamStorm: connection URL + PrivateToken (шифрование `TS_TOKEN_SECRET`).
+
+## Приложения
+
+`teamstorm`
+
+Документы: `docs/ts/README.md`
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'GitHub',
+                'notePath' => 'Notes/Apps/GitHub.md',
+                'labels' => ['github'],
+                'cardDescription' => "GitHub Issues proxy (PAT).\n\nЗаметка: [[GitHub]] · API `/api/github/`",
+                'body' => <<<'MD'
+# GitHub
+
+Claimant `github` · `ROLE_GITHUB` · `server/src/Github/` · app `github`
+
+## Назначение
+
+Personal Access Token → proxy Issues (list / detail / patch).
+
+## Приложения
+
+`github`
+
+## API
+
+- `GET/PUT/DELETE /api/github/credentials`
+- `GET /api/github/issues`
+- `GET/PATCH /api/github/repos/{owner}/{repo}/issues/{number}`
+
+At rest: `GITHUB_TOKEN_SECRET`. Документы: `docs/github/README.md`
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Inbox',
+                'notePath' => 'Notes/Apps/Inbox.md',
+                'labels' => ['inbox'],
+                'cardDescription' => "Внутренние сообщения User→User.\n\nЗаметка: [[Inbox]] · API `/api/inbox/`",
+                'body' => <<<'MD'
+# Inbox
+
+Claimant `inbox` · `ROLE_INBOX` · `server/src/Inbox/` · apps `inbox`, `inbox-message`
+
+## Назначение
+
+Мини-почта внутри XOS (не IMAP). Список входящих/исходящих, карточка сообщения.
+
+## Приложения
+
+| ID | Тип |
+|----|-----|
+| `inbox` | regular |
+| `inbox-message` | sub-app |
+
+Документы: `docs/inbox/README.md` · бэклог IMAP: [[AppIdeas]]
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Habits',
+                'notePath' => 'Notes/Apps/Habits.md',
+                'labels' => ['todo'],
+                'cardDescription' => "Трекер привычек на Todo.\n\nЗаметка: [[Habits]] · см. [[Todo]]",
+                'body' => <<<'MD'
+# Habits
+
+App `habits` · UI поверх [[Todo]] API (отдельного backend-модуля нет).
+
+## Назначение
+
+Ежедневные/повторяющиеся привычки. v1 без сущности `habit_log`.
+
+## Приложения
+
+`habits`
+
+Документы: `docs/habits/README.md`
+
+← [[Home]] · [[Todo]] · [[AppsCatalog]]
 MD,
             ],
             [
                 'title' => 'IBlock',
                 'notePath' => 'Notes/Apps/IBlock.md',
                 'labels' => ['iblock'],
-                'cardDescription' => "Инфоблоки Bitrix-like: API, managers, desktop apps.\n\nHub: [[IBlock]] · [[IBlock Fields]] · [[IBlock API]] · [[IBlock Sections]] · [[IBlock Properties]] · [[IBlock Frontend]]\n\ndocs/iblock/DEVELOPER_GUIDE.md",
+                'cardDescription' => "Инфоблоки Bitrix-like: API, managers, desktop apps.\n\nHub: [[IBlock]] · Fields/API/Sections/Properties/Frontend\n\ndocs/iblock/README.md",
                 'body' => <<<'MD'
 # IBlock
 
@@ -1395,7 +1562,7 @@ Prefix API: `/api/iblock/`.
 
 ## Документы в репо
 
-`docs/iblock/DEVELOPER_GUIDE.md` · `API.md` · `README.md` · `TZ.md` · `docs/DATABASE_SCHEMA.md`
+`docs/iblock/README.md` · `TZ.md` · `docs/APPS.md`
 
 ## Вне scope (как в Bitrix, но не в XOS)
 
@@ -1437,17 +1604,21 @@ MD,
 - [[IBlock]] — инфоблоки (API + apps)
 - [[Content]] — IBlock consumers (notes…recipes)
 - [[Assets]] — склад / автопарк / договоры…
+- [[TeamStorm]] — TeamStorm proxy
+- [[GitHub]] — Issues
+- [[Inbox]] — внутренние сообщения
+- [[Habits]] — привычки (на Todo)
 
 ## Обзорные заметки
 
 - [[Architecture]] — слои monorepo
-- [[AppsCatalog]] — реестр 100+ приложений
+- [[AppsCatalog]] — реестр всех приложений
 - [[AppIdeas]] — открытый бэклог
 - [[Changelog]] — журнал сдач
 
 ## Документы в репозитории
 
-Индекс: `docs/README.md` · каталог: `docs/APPS.md` · идеи: `docs/APP_IDEAS.md` · волны: `docs/ROADMAP_WAVES.md`
+Индекс: `docs/README.md` · каталог: `docs/APPS.md` · идеи: `docs/APP_IDEAS.md`
 
 Seed: `php bin/console xos:seed-project [--login=] [--force]`
 MD,
@@ -1471,7 +1642,7 @@ MD,
 
 ## IBlock — developer docs (DONE)
 
-Vault: [[IBlock]] + Fields/API/Sections/Properties/Frontend. Guide: `docs/iblock/DEVELOPER_GUIDE.md`.
+Vault: [[IBlock]] + Fields/API/Sections/Properties/Frontend. Обзор: `docs/iblock/README.md`.
 
 ## Волна 2 — SchoolTask Critical + Explorer dirty-close (DONE)
 
@@ -1481,68 +1652,64 @@ SchoolTask B1–B3/F1–F3; Explorer dirty-close + taskbar `getWindowApi().close
 
 ## Волна 3 — Board polling + search (partial)
 
-Polling `…/changes` + `/api/board/search` — **DONE**. **W3b** backlog: Mercure/SSE; PKB encryption/plugins.
+Polling `…/changes` + `/api/board/search` — **DONE**.
+
+## W3b + Platform+ (DONE)
+
+- [[Board]]: SSE `/boards/{id}/events` + optional Mercure (`MERCURE_URL`+`MERCURE_JWT_SECRET`, `/realtime`) + conflict UI
+- [[PKB]]: FULLTEXT; encrypt_at_rest; plugins; ZIP export; `remote_sync_url` + POST `/remote-sync`
+- Multi-OU: Main users/groups; Device via `createdBy.ou`; Assets `ou_id`
+- PWA: NetworkFirst GET `/api/*` + offline banner + write outbox
+
+Остаток: Board email/Trello; PKB co-edit; IMAP/Open Banking — [[AppIdeas]]
 
 ## Content + Assets + bridges + platform (DONE)
 
 - [[Content]]: articles, FAQ, gallery, events, contacts, services, ideas, notebooks (+ notes/recipes)
 - [[Assets]]: warehouse, fleet, parties, contracts, rooms, software — `/api/assets/*`
 - Bridges: [[Todo]]↔[[Board]] (`board_card_id`); due-notify; Device↔[[IncCom]] (`deviceId`)
-- Platform: PWA shell (vite-plugin-pwa); `shell-settings`; `main-audit`; OU list filter
-- [[Explorer]] viewers: PDF, code, DOCX, diff, map
-- [[System]] games/widgets: 2048, memory, snake, sticky, clock, weather
+- Platform: PWA shell; `shell-settings`; `main-audit`; OU list filter
+- [[Explorer]] viewers; [[System]] games/widgets
 
-См. `docs/ROADMAP_WAVES.md`, [[AppsCatalog]].
+См. [[AppsCatalog]], `docs/APPS.md`.
+
+## Apps wave (DONE)
+
+[[SchoolTask]] homeworks + parent share · [[Content]] leads · [[GitHub]] · [[Habits]] · [[Inbox]] · IncCom bank UI · tags/favorites.
 
 ## Далее
 
-- **W3b**, SchoolTask/IncCom apps, привычки/Inbox — [[AppIdeas]]
+- IMAP / Open Banking; Board email/Trello — [[AppIdeas]]
 
 ← [[Home]] · [[AppsCatalog]] · [[AppIdeas]]
 MD,
             'Notes/AppIdeas.md' => <<<'MD'
 # App Ideas
 
-Открытый бэклог. Не ТЗ. Каталог сделанного: [[AppsCatalog]] · `docs/APPS.md` · волны: `docs/ROADMAP_WAVES.md`.
+Открытый бэклог. Не ТЗ. Каталог сделанного: [[AppsCatalog]] · `docs/APPS.md`.
 
 Полный текст в репо: `docs/APP_IDEAS.md`.
 
-## Новые apps
+## Бэклог
 
-| Идея | Паттерн |
+| Идея | Заметки |
 |------|---------|
-| Дневник оценок | SchoolTask |
-| Домашние задания | SchoolTask |
-| Родительский read-only share | SchoolTask |
-| Банк / счета | IncCom |
-| CRM-мини (лиды) | IBlock consumer |
-| Ещё один внешний API-клиент | TeamStorm-like |
-| Привычки / трекер | Todo + due |
-| Inbox / почта (мини) | list + detail |
+| IMAP/SMTP inbox | поверх [[Inbox]] |
+| Open Banking / CSV | импорт в [[IncCom]] |
+| Plugin marketplace | каталог плагинов [[PKB]] |
+| Co-editing PKB | совместное редактирование |
+| Trello import | импорт в [[Board]] |
+| Board email notify | уведомления по карточкам |
 
-Дополнения к [[Content]]: поиск по тегам, избранное.
+## Уже сделано
 
-## Улучшения модулей / платформы
-
-| Область | Идея |
-|---------|------|
-| Board | Mercure/SSE; conflict UI (**W3b**) |
-| PKB | encryption at rest; plugin API; sync/publish (**W3b**) |
-| PKB | FULLTEXT search; ambiguous wikilink UX |
-| Multi-OU | полноценный tenancy (сейчас фильтр списка) |
-| PWA | offline data / API cache (сейчас shell + SW) |
-
-## Приоритет
-
-1. **W3b** — Mercure, PKB encryption/plugins
-2. SchoolTask / IncCom apps из таблицы выше
-3. Привычки / Inbox
+Homework + parent share · IncCom bank UI · CRM leads · [[GitHub]] · [[Habits]] · [[Inbox]] · tags/favorites · Board SSE/Mercure · PKB encrypt/plugins/ZIP/remote sync · Multi-OU · PWA outbox.
 
 ```bash
 php bin/console xos:seed-project
 ```
 
-← [[Home]] · [[AppsCatalog]] · [[Changelog]] · [[IBlock]] · [[Content]]
+← [[Home]] · [[AppsCatalog]] · [[Changelog]]
 MD,
             'Notes/Architecture.md' => <<<'MD'
 # Architecture
@@ -1566,12 +1733,14 @@ MD,
 | Board | `Board/` | Kanban |
 | Pkb | `Pkb/` | Vaults |
 | Ts | `Ts/` | TeamStorm proxy |
+| Github | `Github/` | Issues proxy |
+| Inbox | `Inbox/` | Внутренние сообщения |
 
 ## Клиент
 
-- `client/src/apps/*` — манифесты окон (100+)
-- `client/src/features/*` — доменная логика (`iblock-content`, `assets`, …)
-- `client/src/core/*` — auth, API, window manager, theme, notifications
+- `client/src/apps/*` — манифесты окон (120+)
+- `client/src/features/*` — доменная логика (`iblock-content`, `assets`, `github`, `inbox`, …)
+- `client/src/core/*` — auth, API, offline outbox, window manager, theme
 
 ## Безопасность API
 
@@ -1586,12 +1755,12 @@ MD,
 
 Связано: [[Home]], [[AppsCatalog]], [[Board]], [[PKB]], [[Assets]], [[Content]]
 
-Полный текст: `docs/ARCHITECTURE.md`
+См. также `docs/APPS.md`, `docs/README.md`
 MD,
             'Notes/AppsCatalog.md' => <<<'MD'
 # Apps Catalog
 
-Реестр приложений XOS (см. `docs/APPS.md`, обновлено 2026-09-26). **100+** app id.
+Реестр приложений XOS (см. `docs/APPS.md`). Источник правды по app id: `client/src/apps/*/index.ts`.
 
 ## Как устроены приложения
 
@@ -1607,28 +1776,31 @@ MD,
 
 ## Домены
 
-| Домен | Claimant | Apps |
-|-------|----------|------|
-| System | — | settings, shell-settings, browser, 8 games, sticky, widgets, calculator |
-| Main | main | 9 (users/groups/ous/claimants + audit) |
-| Device | device | 17 |
-| Explorer | explorer | 14 (проводники + viewers) |
-| SchoolTask | schooltask | 8 |
-| IncCom | inccom | 1 |
-| Calendar | calendar | 1 |
-| Todo | todo | 1 |
-| Board | board | 1 |
-| PKB | pkb | 1 |
-| TeamStorm | ts | 1 |
-| IBlock | iblock | 10 |
-| Content | iblock / recipe | 21 (notes…recipes) |
-| Assets | assets | 12 |
+| Домен | Claimant | Apps (id) |
+|-------|----------|-----------|
+| System | — | settings, shell-settings, browser, chess, tic-tac-toe, sudoku, minesweeper, solitaire, game-2048, memory, snake, sticky-note, widget-clock, widget-weather, demo-calculator |
+| Main | main | main-users, main-user, main-groups, main-group, main-ous, main-ou, main-claimants, main-claimant, main-audit |
+| Device | device | device-devices…device-license-key (17) |
+| Explorer | explorer | explorer + pickers + notepad/markdown/code/pdf/office/diff/map/image/archiver/video/audio (14) |
+| SchoolTask | schooltask | subjects/classes/calendars/teacher + **homeworks** (9) |
+| IncCom | inccom | inccom |
+| Calendar | calendar | calendar |
+| Todo | todo | todo |
+| Habits | todo | habits |
+| Board | board | board |
+| PKB | pkb | pkb |
+| TeamStorm | ts | teamstorm |
+| GitHub | github | github |
+| Inbox | inbox | inbox, inbox-message |
+| IBlock | iblock | iblock-types…iblock-property (10) |
+| Content | iblock / recipe | notes, notebooks, articles, faqs, galleries, announcements, contacts, services, ideas, **leads**, recipes (+ categories) |
+| Assets | assets | warehouse/fleet/parties/contracts/rooms/software × list+detail (12) |
 
 ## Модули в vault
 
-[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[Assets]]
+[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[Assets]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]]
 
-Идеи: [[AppIdeas]] · `docs/APP_IDEAS.md`
+Полный каталог: `docs/APPS.md` · идеи: [[AppIdeas]]
 
 ← [[Home]] · [[Architecture]] · [[Changelog]]
 MD,
@@ -1668,7 +1840,7 @@ MD,
 - `sections`, `property` — флаги возможностей
 - `section_mode` — `bind` \| `tree` \| `filter` \| `bind_filter`
 
-Полный guide: `docs/iblock/DEVELOPER_GUIDE.md` · schema: `docs/DATABASE_SCHEMA.md`
+Обзор: `docs/iblock/README.md`
 
 ← [[IBlock]] · [[IBlock Sections]] · [[IBlock Properties]]
 MD,

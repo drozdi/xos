@@ -20,9 +20,11 @@ describe('protectedApps', () => {
 			'board',
 			'pkb',
 			'ts',
+			'github',
 			'iblock',
 			'recipe',
 			'assets',
+			'inbox',
 		]);
 	});
 
@@ -50,12 +52,16 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('board')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_TS']);
 		expect(canUseAppModule('ts')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_GITHUB']);
+		expect(canUseAppModule('github')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_IBLOCK']);
 		expect(canUseAppModule('iblock')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_RECIPE']);
 		expect(canUseAppModule('recipe')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_ASSETS']);
 		expect(canUseAppModule('assets')).toBe(true);
+		setUserRoles(['ROLE_USER', 'ROLE_INBOX']);
+		expect(canUseAppModule('inbox')).toBe(true);
 		resetUserRoles();
 	});
 });

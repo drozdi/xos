@@ -5,6 +5,8 @@ export const defaultAccount: IAccount = {
 	owner_id: 0,
 	sort: 100,
 	label: '',
+	description: null,
+	number: null,
 	balance: 0,
 	type: '',
 	color: '#228be6',

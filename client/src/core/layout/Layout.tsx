@@ -1,6 +1,6 @@
-import { Box } from '@mantine/core';
+import { Alert, Box } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { useSetState, useSetting } from '@/core/settings/hooks';
@@ -15,10 +15,30 @@ interface LayoutProps {
 	mobileView?: string;
 }
 
+function useOnlineStatus(): boolean {
+	const [online, setOnline] = useState(
+		typeof navigator === 'undefined' ? true : navigator.onLine,
+	);
+
+	useEffect(() => {
+		const onOnline = () => setOnline(true);
+		const onOffline = () => setOnline(false);
+		window.addEventListener('online', onOnline);
+		window.addEventListener('offline', onOffline);
+		return () => {
+			window.removeEventListener('online', onOnline);
+			window.removeEventListener('offline', onOffline);
+		};
+	}, []);
+
+	return online;
+}
+
 export function Layout({ children, view: viewProp, mobileView: mobileViewProp }: LayoutProps) {
 	const isMobile = useMediaQuery('(max-width: 767px)', false, {
 		getInitialValueInEffect: true,
 	});
+	const online = useOnlineStatus();
 	const [storedView] = useSetting('USER', 'layout.view', HKEY_CONFIG_DEFAULTS.layout.view);
 	const [storedMobileView] = useSetting(
 		'USER',
@@ -90,8 +110,27 @@ export function Layout({ children, view: viewProp, mobileView: mobileViewProp }:
 					gridTemplateColumns: parsed.templateColumns,
 					gridTemplateRows: parsed.templateRows,
 					backgroundColor: 'var(--mantine-color-body)',
+					position: 'relative',
 				}}
 			>
+				{!online ? (
+					<Alert
+						color="orange"
+						title="Нет сети"
+						radius={0}
+						styles={{
+							root: {
+								position: 'absolute',
+								top: 0,
+								left: 0,
+								right: 0,
+								zIndex: 5000,
+							},
+						}}
+					>
+						Вы офлайн. Данные API могут быть из кэша Service Worker.
+					</Alert>
+				) : null}
 				{children}
 			</Box>
 		</LayoutProvider>

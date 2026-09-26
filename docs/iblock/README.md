@@ -34,6 +34,8 @@ Desktop apps: группа Start Menu **«Инфоблоки»** (`iblock-*`) и
 | `iblock-properties` | да | свойства |
 | `iblock-property` | нет | форма + enums |
 | `notes` / `note` | да / нет | каталог заметок (block `notes`) |
+| `articles` … `ideas` | да / нет | content-каталоги (см. [APPS.md](../APPS.md)) |
+| `leads` / `lead` | да / нет | CRM-мини (block `leads`) |
 | `recipes` / `recipe` | да / нет | каталог рецептов (block `recipes`) |
 | `recipe-categories` | да | категории recipes — только с `can_category` |
 
@@ -56,7 +58,7 @@ server/src/IBlock/
 
 **API prefix:** `/api/iblock/`
 
-Документация API: [API.md](API.md) · ТЗ: [TZ.md](TZ.md) · **Guide:** [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+ТЗ: [TZ.md](TZ.md) · каталог apps: [APPS.md](../APPS.md)
 
 Демо в PKB/Board: `php bin/console xos:seed-project --force` → заметки `Notes/Apps/IBlock*` + карточка «IBlock».
 

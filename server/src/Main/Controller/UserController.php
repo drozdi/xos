@@ -23,6 +23,7 @@ use Main\Security\MainUserAccessMessages;
 use Main\Service\AuditLogger;
 use Main\Service\ClaimantManager;
 use Main\Service\MainManager;
+use Main\Service\OuScope;
 
 #[Route('/api/main/user', name: 'api_main_user_')]
 class UserController extends AbstractController {
@@ -31,6 +32,7 @@ class UserController extends AbstractController {
         Request $request,
         UserRepository $UserRepository,
         UserScopeResolver $userScopeResolver,
+        OuScope $ouScope,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canReadMainUser($user)) {
@@ -67,6 +69,7 @@ class UserController extends AbstractController {
         ) {
             $req['filters']['ou'] = (int) $req['filters']['ou_id'];
         }
+        $req['filters'] = $ouScope->applyListFilter($user, $req['filters']);
         $totalItems = $UserRepository->cnt($req['filters']);
         $query = $UserRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -250,6 +253,7 @@ class UserController extends AbstractController {
         Request $request,
         MainManager $mainManager,
         UserScopeResolver $userScopeResolver,
+        OuScope $ouScope,
         AuditLogger $auditLogger,
         #[CurrentUser] User $user,
     ): JsonResponse {
@@ -260,6 +264,7 @@ class UserController extends AbstractController {
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
         $req = $this->filterUserCreatePayload($req, $userScopeResolver, $user);
+        $req = $ouScope->applyCreateDefaults($user, $req);
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
         try {
             $userEntity = $mainManager->user($req['id'], $req);

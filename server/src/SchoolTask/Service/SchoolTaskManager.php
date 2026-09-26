@@ -17,6 +17,7 @@ use SchoolTask\Entity\EpSubject;
 use SchoolTask\Entity\EpGroup;
 
 use SchoolTask\Entity\EpGroupUser;
+use SchoolTask\Entity\EpGroupShare;
 
 use SchoolTask\Repository\EpSubjectRepository;
 
@@ -918,6 +919,72 @@ class SchoolTaskManager extends AbstractManager
     }
 
 
+
+
+    public function isClassParent(User $user, EpGroup $classGroup): bool
+    {
+        $share = $this->getEntityManager()->getRepository(EpGroupShare::class)
+            ->findOneByGroupAndUser($classGroup, $user);
+
+        return $share instanceof EpGroupShare && EpGroupShare::ROLE_PARENT === $share->getRole();
+    }
+
+    /** @return list<array{id: int, user_id: int, email: ?string, alias: ?string, role: string}> */
+    public function listClassShares(EpGroup $class): array
+    {
+        $items = [];
+        foreach ($this->getEntityManager()->getRepository(EpGroupShare::class)->findByGroup($class) as $share) {
+            $u = $share->getUser();
+            $items[] = [
+                'id' => (int) $share->getId(),
+                'user_id' => (int) $u?->getId(),
+                'email' => $u?->getEmail(),
+                'alias' => $u?->getAlias(),
+                'role' => $share->getRole(),
+            ];
+        }
+
+        return $items;
+    }
+
+    public function inviteClassParent(EpGroup $class, User $inviter, string $email): EpGroupShare
+    {
+        $email = strtolower(trim($email));
+        if ('' === $email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException('Укажите корректный email');
+        }
+
+        $target = $this->getEntityManager()->getRepository(User::class)->findOneBy(['email' => $email]);
+        if (!$target instanceof User) {
+            throw new \InvalidArgumentException('Пользователь с таким email не найден');
+        }
+
+        $repo = $this->getEntityManager()->getRepository(EpGroupShare::class);
+        $existing = $repo->findOneByGroupAndUser($class, $target);
+        if ($existing instanceof EpGroupShare) {
+            return $existing;
+        }
+
+        $share = new EpGroupShare();
+        $share->setGroup($class);
+        $share->setUser($target);
+        $share->setRole(EpGroupShare::ROLE_PARENT);
+        $share->setInvitedBy($inviter);
+        $this->getEntityManager()->persist($share);
+        $this->getEntityManager()->flush();
+
+        return $share;
+    }
+
+    public function removeClassShare(EpGroup $class, int $shareId): void
+    {
+        $share = $this->getEntityManager()->getRepository(EpGroupShare::class)->find($shareId);
+        if (!$share instanceof EpGroupShare || $share->getGroup()?->getId() !== $class->getId()) {
+            throw new \InvalidArgumentException('Доступ не найден');
+        }
+        $this->getEntityManager()->remove($share);
+        $this->getEntityManager()->flush();
+    }
 
     /** Учитель подгруппы (урока) в классе. */
     public function isClassLessonTeacher(User $user, EpGroup $classGroup): bool

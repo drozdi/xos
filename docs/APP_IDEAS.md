@@ -1,44 +1,37 @@
 # Идеи приложений и улучшений XOS
 
 > Открытый бэклог. Не ТЗ.  
-> Каталог уже сделанного: [APPS.md](APPS.md) · волны: [ROADMAP_WAVES.md](ROADMAP_WAVES.md)
+> Каталог сделанного: [APPS.md](APPS.md) · индекс: [README.md](README.md)
 
 ---
 
 ## Новые apps
 
-| Идея | Паттерн |
+| Идея | Заметки |
 |------|---------|
-| Дневник оценок | SchoolTask |
-| Домашние задания | SchoolTask |
-| Родительский read-only share | SchoolTask |
-| Банк / счета | IncCom |
-| CRM-мини (лиды) | IBlock consumer |
-| Ещё один внешний API-клиент | TeamStorm-like |
-| Привычки / трекер | Todo + due |
-| Inbox / почта (мини) | list + detail |
-
-Дополнения к IBlock content: поиск по тегам, избранное.
+| IMAP/SMTP inbox | Внешняя почта поверх мини-Inbox |
+| Open Banking / CSV | Импорт выписок в IncCom |
+| Plugin marketplace | Каталог плагинов PKB |
+| Co-editing PKB | Совместное редактирование заметок |
+| Trello import | Импорт досок в Board |
+| Board email notify | Уведомления по карточкам на email |
 
 ---
 
-## Улучшения модулей / платформы
+## Улучшения платформы / модулей
 
 | Область | Идея |
 |---------|------|
-| Board | Mercure/SSE вместо polling; conflict UI (**W3b**) |
-| PKB | encryption at rest; plugin API; sync/publish (**W3b**) |
-| PKB | FULLTEXT search; ambiguous wikilink UX |
-| Multi-OU | полноценный tenancy (сейчас только фильтр списка) |
-| PWA | offline data / API cache (сейчас shell + SW) |
+| Board | email notify; Trello import |
+| PKB | co-editing; plugin marketplace |
+| Inbox | IMAP/SMTP |
+| IncCom | Open Banking / CSV |
 
 ---
 
-## Приоритет
+## Уже сделано (не бэклог)
 
-1. **W3b** — Mercure, PKB encryption/plugins  
-2. SchoolTask / IncCom apps из таблицы выше  
-3. Привычки / Inbox  
+Homework + parent share · IncCom bank UI · CRM leads · GitHub · habits · Inbox · tags/favorites · Board SSE/Mercure/conflict · PKB FULLTEXT/encrypt/plugins/ZIP/remote sync · Multi-OU (Main/Device/Assets) · PWA cache + offline outbox.
 
 ```bash
 php bin/console xos:seed-project

@@ -1,12 +1,13 @@
 import { Alert, Select } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { mainGroupApi, type GroupListItem } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { isRoot } from '@/core/auth/coreRoles';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import {
 	useCanCreateMainGroup,
@@ -16,6 +17,7 @@ import {
 } from '@/features/main/mainAccess';
 import { MainListLayout } from '@/features/main/MainListLayout';
 import { useLaunchMainApp } from '@/features/main/mainAppUtils';
+import { useActiveOuId } from '@/features/main/useActiveOuId';
 
 const ALL_FILTER = -1;
 
@@ -27,10 +29,23 @@ export default function MainGroupsApp() {
 	const canCreate = useCanCreateMainGroup();
 	const canUpdate = useCanUpdateMainGroup();
 	const canDelete = useCanDeleteMainGroup();
+	const root = isRoot();
+	const { activeOuId, restored } = useActiveOuId();
 	const [ouFilter, setOuFilter] = useState<number>(ALL_FILTER);
 
+	useEffect(() => {
+		if (!restored) {
+			return;
+		}
+		if (activeOuId && activeOuId > 0) {
+			setOuFilter(activeOuId);
+		}
+	}, [activeOuId, restored]);
+
+	const activeOu = !root && activeOuId && activeOuId > 0 ? activeOuId : ouFilter;
+
 	const pagination = usePaginatedList({
-		filters: { ou: ouFilter },
+		filters: { ou: activeOu },
 	});
 
 	const filterQuery = useQuery({
@@ -42,7 +57,7 @@ export default function MainGroupsApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.groups(pagination.listRequest),
 		queryFn: () => mainGroupApi.list(pagination.listRequest),
-		enabled: canRead,
+		enabled: canRead && restored,
 	});
 
 	const deleteMutation = useMutation({
@@ -56,13 +71,13 @@ export default function MainGroupsApp() {
 
 	const ouOptions = useMemo(
 		() => [
-			{ value: String(ALL_FILTER), label: 'Все подразделения' },
+			...(root ? [{ value: String(ALL_FILTER), label: 'Все подразделения' }] : []),
 			...(filterQuery.data?.map((ou) => ({
 				value: String(ou.id),
 				label: ou.name,
 			})) ?? []),
 		],
-		[filterQuery.data],
+		[filterQuery.data, root],
 	);
 
 	const columns = useMemo(
@@ -89,7 +104,7 @@ export default function MainGroupsApp() {
 		<MainListLayout
 			title="Группы"
 			total={listQuery.data?.total}
-			isLoading={listQuery.isLoading}
+			isLoading={!restored || listQuery.isLoading}
 			isError={listQuery.isError}
 			errorMessage={
 				listQuery.error
@@ -103,8 +118,14 @@ export default function MainGroupsApp() {
 				<Select
 					label="Подразделение"
 					data={ouOptions}
-					value={String(ouFilter)}
-					onChange={(value) => setOuFilter(value ? Number(value) : ALL_FILTER)}
+					value={String(activeOu)}
+					onChange={(value) => {
+						if (!root) {
+							return;
+						}
+						setOuFilter(value ? Number(value) : ALL_FILTER);
+					}}
+					disabled={!root}
 					searchable
 					clearable={false}
 				/>
@@ -121,11 +142,9 @@ export default function MainGroupsApp() {
 				onLimitChange={pagination.onLimitChange}
 				serverPagination
 				loading={listQuery.isFetching && !listQuery.isLoading}
-				onRowClick={(row) => openGroup(row.id)}
-				onEdit={canUpdate ? (row) => openGroup(row.id) : undefined}
-				onDelete={canDelete ? (row) => deleteMutation.mutateAsync(row.id) : undefined}
-				canEdit={canUpdate}
-				canDelete={canDelete}
+				onRowClick={(row: GroupListItem) => openGroup(row.id)}
+				onEdit={canUpdate ? (row: GroupListItem) => openGroup(row.id) : undefined}
+				onDelete={canDelete ? (row: GroupListItem) => deleteMutation.mutateAsync(row.id) : undefined}
 				getRowLabel={(row: GroupListItem) => row.name || row.code}
 			/>
 		</MainListLayout>

@@ -66,7 +66,11 @@ class EpClassController extends AbstractController
         if (!$class || !$schoolTaskManager->isClassGroup($class)) {
             return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
         }
-        if (!$userScopeResolver->canReadSchooltaskClass($user) && !$schoolTaskManager->isClassTutor($user, $class)) {
+        if (
+            !$userScopeResolver->canReadSchooltaskClass($user)
+            && !$schoolTaskManager->isClassTutor($user, $class)
+            && !$schoolTaskManager->isClassParent($user, $class)
+        ) {
             return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_CLASS);
         }
 
@@ -273,5 +277,86 @@ class EpClassController extends AbstractController
         }
 
         return $this->json($schoolTaskManager->getPupils());
+    }
+
+    #[Route('/{id}/shares', requirements: ['id' => '\d+'], methods: ['GET'])]
+    #[Access('can_read', checkScopes: false)]
+    public function listShares(
+        int $id,
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        $class = $schoolTaskManager->getClassGroup($id);
+        if (!$class || !$schoolTaskManager->isClassGroup($class)) {
+            return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
+        }
+        if (
+            !$userScopeResolver->canReadSchooltaskClass($user)
+            && !$schoolTaskManager->isClassTutor($user, $class)
+        ) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::READ_CLASS);
+        }
+
+        return $this->json(['shares' => $schoolTaskManager->listClassShares($class)]);
+    }
+
+    #[Route('/{id}/shares', requirements: ['id' => '\d+'], methods: ['POST'])]
+    #[Access('can_update', checkScopes: false)]
+    public function inviteShare(
+        int $id,
+        Request $request,
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        $class = $schoolTaskManager->getClassGroup($id);
+        if (!$class || !$schoolTaskManager->isClassGroup($class)) {
+            return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
+        }
+        if (
+            !$userScopeResolver->canUpdateSchooltaskClass($user)
+            && !$schoolTaskManager->isClassTutor($user, $class)
+        ) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_CLASS);
+        }
+
+        $email = (string) ($request->toArray()['email'] ?? '');
+        try {
+            $schoolTaskManager->inviteClassParent($class, $user, $email);
+        } catch (\InvalidArgumentException $e) {
+            return ApiResponse::badRequest($e->getMessage());
+        }
+
+        return $this->json(['shares' => $schoolTaskManager->listClassShares($class)], Response::HTTP_CREATED);
+    }
+
+    #[Route('/{id}/shares/{shareId}', requirements: ['id' => '\d+', 'shareId' => '\d+'], methods: ['DELETE'])]
+    #[Access('can_update', checkScopes: false)]
+    public function removeShare(
+        int $id,
+        int $shareId,
+        SchoolTaskManager $schoolTaskManager,
+        UserScopeResolver $userScopeResolver,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
+        $class = $schoolTaskManager->getClassGroup($id);
+        if (!$class || !$schoolTaskManager->isClassGroup($class)) {
+            return ApiResponse::notFound(SchoolTaskAccessMessages::CLASS_NOT_FOUND);
+        }
+        if (
+            !$userScopeResolver->canUpdateSchooltaskClass($user)
+            && !$schoolTaskManager->isClassTutor($user, $class)
+        ) {
+            return ApiResponse::forbidden(SchoolTaskAccessMessages::UPDATE_CLASS);
+        }
+
+        try {
+            $schoolTaskManager->removeClassShare($class, $shareId);
+        } catch (\InvalidArgumentException $e) {
+            return ApiResponse::badRequest($e->getMessage());
+        }
+
+        return $this->json(['shares' => $schoolTaskManager->listClassShares($class)]);
     }
 }

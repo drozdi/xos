@@ -56,6 +56,8 @@ client/src/features/board/
 | Attachments | upload через `UploadPathResolver` (module `board`) |
 | Filters | assignee, labels, due range, search |
 | Activity log | `GET /boards/{id}/activity` |
+| Realtime | SSE `/boards/{id}/events`; optional Mercure (`MERCURE_*`); polling fallback |
+| Conflict | `expected_updated_at` → 409 на PUT card |
 
 ## Интеграция с Calendar
 
@@ -70,4 +72,4 @@ client/src/features/board/
 | Файл | Содержание |
 |------|------------|
 | [TZ.md](TZ.md) | Техническое задание |
-| [APP_IDEAS.md](../APP_IDEAS.md) | Бэклог улучшений (Mercure и др.) |
+| [APP_IDEAS.md](../APP_IDEAS.md) | Бэклог (email notify, Trello import) |

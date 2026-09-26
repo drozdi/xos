@@ -20,6 +20,7 @@ use Main\Repository\OURepository;
 use Main\Repository\GroupRepository;
 use Main\Security\MainGroupAccessMessages;
 use Main\Service\MainManager;
+use Main\Service\OuScope;
 
 #[Route('/api/main/group', name: 'api_main_group_')]
 class GroupController extends AbstractController {
@@ -28,6 +29,7 @@ class GroupController extends AbstractController {
         Request $request,
         GroupRepository $GroupRepository,
         UserScopeResolver $userScopeResolver,
+        OuScope $ouScope,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canReadMainGroup($user) && !$userScopeResolver->canGroupMainUser($user)) {
@@ -51,6 +53,10 @@ class GroupController extends AbstractController {
         ], $request->toArray());
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
+        if (!is_array($req['filters'] ?? null)) {
+            $req['filters'] = [];
+        }
+        $req['filters'] = $ouScope->applyListFilter($user, $req['filters']);
         $totalItems = $GroupRepository->cnt($req['filters']);
         $query = $GroupRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -116,6 +122,7 @@ class GroupController extends AbstractController {
         Request $request,
         MainManager $mainManager,
         UserScopeResolver $userScopeResolver,
+        OuScope $ouScope,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canCreateMainGroup($user)) {
@@ -125,6 +132,7 @@ class GroupController extends AbstractController {
         $req = $request->toArray();
         $req['id'] = (int)$req['id'];
         $req = $this->filterGroupCreatePayload($req, $userScopeResolver, $user);
+        $req = $ouScope->applyCreateDefaults($user, $req);
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
         try {
             $group = $mainManager->group($req['id'], $req);

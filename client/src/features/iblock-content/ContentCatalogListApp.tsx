@@ -1,5 +1,17 @@
-import { Alert, Badge, Button, Group, Select, Stack, Text } from '@mantine/core';
+import {
+	ActionIcon,
+	Alert,
+	Badge,
+	Button,
+	Chip,
+	Group,
+	Select,
+	Stack,
+	Text,
+	TextInput,
+} from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { IconStar, IconStarFilled } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ReactNode } from 'react';
 
@@ -7,6 +19,7 @@ import { DataTable, usePaginatedList } from '@/components/table';
 import { AuthFileImage } from '@/core/api/AuthFileImage';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { iblockElementApi } from '@/core/api/endpoints/iblockApi';
+import { userDataApi } from '@/core/api/endpoints/userData';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useUser } from '@/core/auth/hooks';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
@@ -19,10 +32,15 @@ import { useLaunchIblockApp } from '@/features/iblock/iblockAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
 
 import {
+	CONTENT_PROPS,
 	type ContentCatalogConfig,
 	contentFeatures,
 } from './contentCatalog';
 import { useContentBlock } from './useContentBlock';
+
+function favoritesCode(blockCode: string): string {
+	return `iblock.favorites.${blockCode}`;
+}
 
 export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig }) {
 	useWindowTitle(config.listTitle);
@@ -36,14 +54,47 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 	const { blockId, sectionOptions, isLoading: blockLoading, error: blockError, isReady } =
 		useContentBlock(config.blockCode);
 	const [sectionId, setSectionId] = useState<string | null>(null);
+	const [tagFilter, setTagFilter] = useState<string | null>(null);
+	const [tagDraft, setTagDraft] = useState('');
+	const [favoritesOnly, setFavoritesOnly] = useState(false);
+
+	const favoritesKey = favoritesCode(config.blockCode);
+	const favoritesQuery = useQuery({
+		queryKey: ['user-data', favoritesKey],
+		queryFn: async () => {
+			const row = await userDataApi.getOptional(favoritesKey);
+			const value = row?.value;
+			if (!Array.isArray(value)) {
+				return [] as number[];
+			}
+			return value.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0);
+		},
+		enabled: canRead && Boolean(userQuery.data?.id),
+	});
+	const favoriteIds = favoritesQuery.data ?? [];
+	const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
 	const filters = useMemo(() => {
 		const next: Record<string, unknown> = {};
 		if (blockId) next.block_id = blockId;
 		if (sectionId) next.section_id = Number(sectionId);
 		if (userQuery.data?.id) next.accessible_for = userQuery.data.id;
+		if (features.tags && tagFilter) {
+			next[`PROPERTY_${CONTENT_PROPS.TAGS}`] = tagFilter;
+		}
+		if (favoritesOnly) {
+			next.id = favoriteIds.length > 0 ? favoriteIds : [-1];
+		}
 		return next;
-	}, [blockId, sectionId, userQuery.data?.id]);
+	}, [
+		blockId,
+		sectionId,
+		userQuery.data?.id,
+		features.tags,
+		tagFilter,
+		favoritesOnly,
+		favoriteIds,
+	]);
 
 	const pagination = usePaginatedList({ filters });
 
@@ -62,6 +113,31 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});
 
+	const favoritesMutation = useMutation({
+		mutationFn: async (nextIds: number[]) =>
+			userDataApi.upsert({ code: favoritesKey, value: nextIds }),
+		onSuccess: (_data, nextIds) => {
+			queryClient.setQueryData(['user-data', favoritesKey], nextIds);
+		},
+		onError: (error) => notifyApiError(error, 'Не удалось сохранить избранное'),
+	});
+
+	function toggleFavorite(id: number) {
+		const next = favoriteSet.has(id)
+			? favoriteIds.filter((x) => x !== id)
+			: [...favoriteIds, id];
+		favoritesMutation.mutate(next);
+	}
+
+	function applyTagDraft() {
+		const value = tagDraft.trim();
+		if (!value) {
+			return;
+		}
+		setTagFilter(value);
+		setTagDraft('');
+	}
+
 	const columns = useMemo(() => {
 		const cols: Array<{
 			field: string;
@@ -69,6 +145,28 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 			width?: number;
 			render?: (row: Record<string, unknown>) => ReactNode;
 		}> = [];
+		cols.push({
+			field: 'favorite',
+			header: '',
+			width: 44,
+			render: (row) => {
+				const id = Number(row.id);
+				const active = favoriteSet.has(id);
+				return (
+					<ActionIcon
+						variant="subtle"
+						color={active ? 'yellow' : 'gray'}
+						aria-label={active ? 'Убрать из избранного' : 'В избранное'}
+						onClick={(event) => {
+							event.stopPropagation();
+							toggleFavorite(id);
+						}}
+					>
+						{active ? <IconStarFilled size={16} /> : <IconStar size={16} />}
+					</ActionIcon>
+				);
+			},
+		});
 		if (features.cover) {
 			cols.push({
 				field: 'cover',
@@ -118,7 +216,15 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 		cols.push({ field: 'section_id', header: config.sectionLabel, width: 90 });
 		cols.push({ field: 'sort', header: 'Сорт.', width: 70 });
 		return cols;
-	}, [config.nameLabel, config.previewLabel, config.sectionLabel, features.cover, features.preview]);
+	}, [
+		config.nameLabel,
+		config.previewLabel,
+		config.sectionLabel,
+		features.cover,
+		features.preview,
+		favoriteSet,
+		favoriteIds,
+	]);
 
 	const openDetail = (id: number) =>
 		launchApp(config.detailAppId, id, blockId ? { blockId } : undefined);
@@ -176,6 +282,43 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 						searchable
 						clearable
 					/>
+					<Chip
+						checked={favoritesOnly}
+						onChange={setFavoritesOnly}
+						variant="outline"
+					>
+						Избранное ({favoriteIds.length})
+					</Chip>
+					{features.tags ? (
+						<Stack gap={6}>
+							<Text size="sm" fw={500}>
+								Тег
+							</Text>
+							<Group gap="xs">
+								{tagFilter ? (
+									<Chip checked onChange={() => setTagFilter(null)}>
+										{tagFilter}
+									</Chip>
+								) : null}
+								<TextInput
+									placeholder="PROPERTY_TAGS…"
+									size="xs"
+									value={tagDraft}
+									onChange={(e) => setTagDraft(e.currentTarget.value)}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											applyTagDraft();
+										}
+									}}
+									w={160}
+								/>
+								<Button size="xs" variant="light" onClick={applyTagDraft} disabled={!tagDraft.trim()}>
+									Фильтр
+								</Button>
+							</Group>
+						</Stack>
+					) : null}
 				</Stack>
 			}
 		>

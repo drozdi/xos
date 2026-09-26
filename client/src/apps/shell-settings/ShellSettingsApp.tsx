@@ -1,9 +1,14 @@
 import { Alert, Select, Stack, Text } from '@mantine/core';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
+import { mainOuApi } from '@/core/api/endpoints/mainApi';
+import { queryKeys } from '@/core/api/queryKeys';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { useLayoutContext } from '@/core/layout/LayoutContext';
 import { useSetting } from '@/core/settings/hooks';
+import { useActiveOuId } from '@/features/main/useActiveOuId';
 
 const LAYOUT_PRESETS = [
 	{ value: 'h m f', label: 'h m f — header / main / footer' },
@@ -22,6 +27,23 @@ export default function ShellSettingsApp() {
 		'USER',
 		'layout.mobileView',
 		HKEY_CONFIG_DEFAULTS.layout.mobileView,
+	);
+	const { activeOuId, setActiveOuId, restored } = useActiveOuId();
+
+	const ouQuery = useQuery({
+		queryKey: queryKeys.main.ous({}),
+		queryFn: () => mainOuApi.list({ limit: -1, offset: 1 }),
+	});
+
+	const ouSelectData = useMemo(
+		() => [
+			{ value: '', label: 'Не выбрано' },
+			...(ouQuery.data?.items ?? []).map((ou) => ({
+				value: String(ou.id),
+				label: ou.name || `OU #${ou.id}`,
+			})),
+		],
+		[ouQuery.data],
 	);
 
 	return (
@@ -60,6 +82,18 @@ export default function ShellSettingsApp() {
 				}}
 				searchable
 				allowDeselect={false}
+			/>
+			<Select
+				label="Активное подразделение (OU)"
+				description="main.active_ou_id — tenancy slice для Users/Groups/Device/Assets (Board — global)"
+				data={ouSelectData}
+				value={activeOuId ? String(activeOuId) : ''}
+				onChange={(value) => {
+					void setActiveOuId(value ? Number(value) : null);
+				}}
+				disabled={!restored || ouQuery.isLoading}
+				searchable
+				clearable
 			/>
 		</Stack>
 	);

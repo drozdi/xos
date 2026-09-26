@@ -7,10 +7,14 @@ import { DataTable, usePaginatedList } from '@/components/table';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { MainListLayout } from '@/features/main/MainListLayout';
+import { useActiveOuId } from '@/features/main/useActiveOuId';
 
 import type { AssetsCatalogConfig } from './assetsConfigs';
 import { useLaunchAssetsApp } from './assetsAppUtils';
 
+/**
+ * Multi-OU: list respects main.active_ou_id (server OuScope on catalog).
+ */
 export function AssetsCatalogListApp({
 	config,
 }: {
@@ -23,12 +27,19 @@ export function AssetsCatalogListApp({
 	const canCreate = config.access.useCanCreate();
 	const canUpdate = config.access.useCanUpdate();
 	const canDelete = config.access.useCanDelete();
-	const pagination = usePaginatedList();
+	const { activeOuId, restored } = useActiveOuId();
+	const ouFilters = useMemo(() => {
+		if (activeOuId && activeOuId > 0) {
+			return { ou: activeOuId, ou_id: activeOuId };
+		}
+		return {};
+	}, [activeOuId]);
+	const pagination = usePaginatedList({ filters: ouFilters });
 
 	const listQuery = useQuery({
 		queryKey: config.listQueryKey(pagination.listRequest),
 		queryFn: () => config.api.list(pagination.listRequest),
-		enabled: canRead,
+		enabled: canRead && restored,
 	});
 
 	const deleteMutation = useMutation({

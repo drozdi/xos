@@ -56,6 +56,31 @@ class EpEventRepository extends AbstractRepository
         return $qb->orderBy('e.start', 'ASC')->getQuery()->getResult();
     }
 
+    /**
+     * Events with non-empty homework text (ht).
+     *
+     * @return EpEvent[]
+     */
+    public function findHomeworkInRange(
+        \DateTimeInterface $start,
+        \DateTimeInterface $end,
+        ?int $classId = null,
+    ): array {
+        $qb = $this->createQueryBuilder('e')
+            ->andWhere('e.start <= :end')
+            ->andWhere('e.end >= :start')
+            ->andWhere('e.ht IS NOT NULL')
+            ->andWhere("TRIM(e.ht) <> ''")
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
+
+        if (null !== $classId && $classId > 0) {
+            $qb->andWhere('e.class = :class')->setParameter('class', $classId);
+        }
+
+        return $qb->orderBy('e.start', 'ASC')->getQuery()->getResult();
+    }
+
     /** @return EpEvent[] */
     public function findByFile(File $file): array
     {

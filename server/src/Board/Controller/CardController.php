@@ -3,6 +3,7 @@
 namespace Board\Controller;
 
 use App\Attribute\Access;
+use Board\Exception\CardUpdateConflictException;
 use Board\Service\BoardManager;
 use Main\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -80,7 +81,11 @@ class CardController extends AbstractController
         \assert($user instanceof User);
 
         $card = $boardManager->getCard($id, $user);
-        $boardManager->updateCard($card, $user, $request->toArray());
+        try {
+            $boardManager->updateCard($card, $user, $request->toArray());
+        } catch (CardUpdateConflictException $e) {
+            return $this->json($boardManager->serializeCardDetail($e->getCard()), Response::HTTP_CONFLICT);
+        }
 
         return $this->json($boardManager->serializeCardDetail($card));
     }

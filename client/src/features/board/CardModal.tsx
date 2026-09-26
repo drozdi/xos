@@ -138,10 +138,25 @@ export function CardModal({
 		setEditingCommentId(null);
 	}, [card?.id, card?.title, card?.description_md, card?.due_date]);
 
+	const [conflictCard, setConflictCard] = useState<CardDetail | null>(null);
+
+	const withExpected = (payload: Parameters<typeof boardApi.updateCard>[1]) => ({
+		...payload,
+		expected_updated_at: card?.updated_at ?? null,
+	});
+
 	const updateCardMutation = useMutation({
 		mutationFn: (payload: Parameters<typeof boardApi.updateCard>[1]) =>
-			boardApi.updateCard(cardId!, payload),
-		onSuccess: () => invalidateBoard(),
+			boardApi.updateCard(cardId!, withExpected(payload)),
+		onSuccess: () => {
+			setConflictCard(null);
+			invalidateBoard();
+		},
+		onError: (error: Error & { card?: CardDetail }) => {
+			if (error.message === 'CARD_CONFLICT' && error.card) {
+				setConflictCard(error.card);
+			}
+		},
 	});
 
 	useEffect(() => {
@@ -336,6 +351,7 @@ export function CardModal({
 	};
 
 	return (
+		<>
 		<Modal
 			opened={opened}
 			onClose={handleClose}
@@ -965,5 +981,62 @@ export function CardModal({
 				</Grid>
 			)}
 		</Modal>
+		<Modal
+			opened={conflictCard != null}
+			onClose={() => setConflictCard(null)}
+			title="Конфликт изменений"
+			centered
+			withinPortal={false}
+		>
+			<Stack gap="md">
+				<Text size="sm">
+					Карточка была изменена другим пользователем. Перезагрузить серверную версию или перезаписать своими правками?
+				</Text>
+				<Group justify="flex-end">
+					<Button
+						variant="default"
+						onClick={() => {
+							if (!conflictCard || cardId == null) {
+								return;
+							}
+							queryClient.setQueryData(queryKeys.board.card(cardId), conflictCard);
+							setTitle(conflictCard.title);
+							setDescription(conflictCard.description_md ?? '');
+							setDueDate(
+								conflictCard.due_date && dayjs(conflictCard.due_date).isValid()
+									? dayjs(conflictCard.due_date).format('YYYY-MM-DD')
+									: null,
+							);
+							setConflictCard(null);
+							void invalidateBoard();
+						}}
+					>
+						Перезагрузить
+					</Button>
+					<Button
+						color="orange"
+						onClick={() => {
+							if (cardId == null) {
+								return;
+							}
+							const apiValue = dueDate ? `${dueDate}T00:00:00` : null;
+							void boardApi
+								.updateCard(cardId, {
+									title: title.trim() || undefined,
+									description_md: description.trim() || null,
+									due_date: apiValue,
+								})
+								.then(() => {
+									setConflictCard(null);
+									void invalidateBoard();
+								});
+						}}
+					>
+						Перезаписать
+					</Button>
+				</Group>
+			</Stack>
+		</Modal>
+		</>
 	);
 }

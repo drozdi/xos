@@ -24,6 +24,7 @@ export interface WikilinkExtensionOptions {
 	onAutocompleteStateChange?: (state: WikilinkAutocompleteState | null) => void;
 	onWikilinkClick?: (title: string) => void;
 	isBrokenLink?: (title: string) => boolean;
+	isAmbiguousLink?: (title: string) => boolean;
 }
 
 export interface WikilinkExtensionStorage {
@@ -68,6 +69,7 @@ export function createWikilinkExtension(options: WikilinkExtensionOptions) {
 				onAutocompleteStateChange: undefined,
 				onWikilinkClick: undefined,
 				isBrokenLink: undefined,
+				isAmbiguousLink: undefined,
 			};
 		},
 
@@ -91,13 +93,20 @@ export function createWikilinkExtension(options: WikilinkExtensionOptions) {
 
 		renderHTML({ node, HTMLAttributes }) {
 			const display = (node.attrs.alias as string | null) ?? (node.attrs.title as string);
-			const broken = options.isBrokenLink?.(node.attrs.title as string) ?? false;
+			const title = node.attrs.title as string;
+			const broken = options.isBrokenLink?.(title) ?? false;
+			const ambiguous = !broken && (options.isAmbiguousLink?.(title) ?? false);
+			const className = broken
+				? 'pkb-wikilink pkb-wikilink-broken'
+				: ambiguous
+					? 'pkb-wikilink pkb-wikilink-ambiguous'
+					: 'pkb-wikilink';
 			return [
 				'span',
 				mergeAttributes(HTMLAttributes, {
 					'data-wikilink': '',
 					'data-title': node.attrs.title,
-					class: broken ? 'pkb-wikilink pkb-wikilink-broken' : 'pkb-wikilink',
+					class: className,
 				}),
 				display,
 			];

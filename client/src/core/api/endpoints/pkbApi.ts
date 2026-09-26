@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { apiClient } from '@/core/api/client';
-import { getDetail } from '@/core/api/crudHelpers';
 
 const BASE = '/api/pkb';
 
@@ -21,7 +20,8 @@ const pkbVaultConfigSchema = z.object({
 		caseSensitive: z.boolean(),
 		extension: z.string(),
 	}),
-});
+	remote_sync_url: z.string().nullable().optional(),
+}).passthrough();
 
 export const pkbHealthResponseSchema = z.object({ status: z.literal('ok') });
 
@@ -57,11 +57,14 @@ export const pkbVaultSummarySchema = z.object({
 	permissions: pkbVaultPermissionsSchema.optional(),
 	index_version: z.number(),
 	index_stale: z.boolean(),
+	encrypt_at_rest: z.boolean().optional().default(false),
+	plugins: z.array(z.string()).optional().default([]),
 	updated_at: z.string().nullable().optional(),
 });
 
 export const pkbVaultDetailSchema = pkbVaultSummarySchema.extend({
 	config: pkbVaultConfigSchema.nullable().optional(),
+	remote_sync_url: z.string().nullable().optional(),
 	created_at: z.string().nullable().optional(),
 });
 
@@ -232,6 +235,14 @@ export type VaultWritePayload = {
 	rootPath?: string;
 };
 
+export type VaultUpdatePayload = {
+	name?: string;
+	encrypt_at_rest?: boolean;
+	plugins?: string[];
+	plugins_json?: string[];
+	remote_sync_url?: string | null;
+};
+
 export const pkbApi = {
 	health: () =>
 		apiClient.get<unknown>(`${BASE}/health`).then(({ data }) => pkbHealthResponseSchema.parse(data)),
@@ -247,7 +258,7 @@ export const pkbApi = {
 			.post<unknown>(`${BASE}/vaults`, payload)
 			.then(({ data }) => pkbVaultDetailSchema.parse(data)),
 
-	updateVault: (id: number, payload: Partial<VaultWritePayload>) =>
+	updateVault: (id: number, payload: VaultUpdatePayload) =>
 		apiClient
 			.put<unknown>(`${BASE}/vaults/${id}`, payload)
 			.then(({ data }) => pkbVaultDetailSchema.parse(data)),
@@ -257,7 +268,28 @@ export const pkbApi = {
 			.delete<unknown>(`${BASE}/vaults/${id}`, {
 				params: deleteFiles ? { deleteFiles: true } : undefined,
 			})
-			.then(({ data }) => getDetail(data)),
+			.then(({ data }) => data),
+
+	exportVault: async (id: number): Promise<Blob> => {
+		const { data } = await apiClient.get<Blob>(`${BASE}/vaults/${id}/export`, {
+			responseType: 'blob',
+		});
+		return data;
+	},
+
+	pushRemoteSync: (id: number) =>
+		apiClient
+			.post<unknown>(`${BASE}/vaults/${id}/remote-sync`)
+			.then(({ data }) =>
+				z
+					.object({
+						ok: z.boolean(),
+						status: z.number(),
+						remote_sync_url: z.string(),
+						bytes: z.number(),
+					})
+					.parse(data),
+			),
 
 	fileTree: (vaultId: number, path?: string, depth = 8) =>
 		apiClient
@@ -323,7 +355,7 @@ export const pkbApi = {
 	deleteFileItem: (vaultId: number, path: string) =>
 		apiClient
 			.delete<unknown>(`${BASE}/vaults/${vaultId}/files/item`, { params: { path } })
-			.then(({ data }) => getDetail(data)),
+			.then(({ data }) => data),
 
 	renameFile: (vaultId: number, fromPath: string, toPath: string) =>
 		apiClient

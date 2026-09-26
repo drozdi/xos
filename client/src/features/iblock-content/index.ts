@@ -9,10 +9,13 @@ export {
 	CONTACTS_BLOCK_CODE,
 	SERVICES_BLOCK_CODE,
 	IDEAS_BLOCK_CODE,
+	LEADS_BLOCK_CODE,
 	CONTENT_PROPS,
 	DIFFICULTY_OPTIONS,
 	IDEA_STATUS_OPTIONS,
 	IDEA_PRIORITY_OPTIONS,
+	LEAD_STAGE_OPTIONS,
+	LEAD_PRIORITY_OPTIONS,
 	contentFeatures,
 	type ContentCatalogConfig,
 	type ContentExtraField,
@@ -26,6 +29,7 @@ export {
 	contactsCatalogConfig,
 	servicesCatalogConfig,
 	ideasCatalogConfig,
+	leadsCatalogConfig,
 } from './contentConfigs';
 export { insertMarkdownImage, markdownSafeSrc } from './insertMarkdownImage';
 export { IblockMarkdownEditor } from './IblockMarkdownEditor';

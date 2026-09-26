@@ -35,15 +35,18 @@
 | Main | `main` | 9 | [main/README.md](main/README.md) | [main/TZ.md](main/TZ.md) |
 | Device | `device` | 17 | [device/README.md](device/README.md) | [device/TZ.md](device/TZ.md) |
 | Explorer | `explorer` | 14 | [explorer/README.md](explorer/README.md) | [explorer/TZ.md](explorer/TZ.md) |
-| SchoolTask | `schooltask` | 8 | [schooltask/README.md](schooltask/README.md) | [schooltask/TZ.md](schooltask/TZ.md) |
+| SchoolTask | `schooltask` | 9 | [schooltask/README.md](schooltask/README.md) | [schooltask/TZ.md](schooltask/TZ.md) |
 | IncCom | `inccom` | 1 | [inccom/README.md](inccom/README.md) | [inccom/TZ.md](inccom/TZ.md) |
 | Calendar | `calendar` | 1 | [calendar/README.md](calendar/README.md) | [calendar/TZ.md](calendar/TZ.md) |
 | Todo | `todo` | 1 | [todo/README.md](todo/README.md) | [todo/TZ.md](todo/TZ.md) |
 | Board | `board` | 1 | [board/README.md](board/README.md) | [board/TZ.md](board/TZ.md) |
 | PKB | `pkb` | 1 | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) |
 | TeamStorm | `ts` | 1 | [ts/README.md](ts/README.md) | — |
-| IBlock + Content | `iblock` | 14 | [iblock/README.md](iblock/README.md) | [iblock/TZ.md](iblock/TZ.md) |
+| IBlock + Content | `iblock` | 16+ | [iblock/README.md](iblock/README.md) | [iblock/TZ.md](iblock/TZ.md) |
 | Assets | `assets` | 12 | — | — |
+| Inbox | `inbox` | 2 | [inbox/README.md](inbox/README.md) | — |
+| GitHub | `github` | 1 | [github/README.md](github/README.md) | — |
+| Habits | `todo` | 1 | [habits/README.md](habits/README.md) | — |
 
 Полный индекс документации: [README.md](README.md)
 
@@ -138,6 +141,7 @@
 | schooltask-calendar | Календарь класса | sub-app |
 | schooltask-calendar-editor | Редактор расписания | sub-app |
 | schooltask-calendar-teacher | Мои уроки | regular |
+| schooltask-homeworks | Домашние задания | regular |
 
 ### IBlock
 
@@ -178,8 +182,10 @@
 | recipes | Рецепты | regular | `requiredRole: recipe` (`ROLE_RECIPE`) |
 | recipe | Рецепт | sub-app | recipe |
 | recipe-categories | Категории | regular | `can_category` |
+| leads | Лиды (CRM) | regular | iblock (block `leads`) |
+| lead | Лид | sub-app | iblock |
 
-Каталоги поверх type `content` (seed `xos:seed-project`). Shared UI: `features/iblock-content` (`ContentCatalog*`). Рецепты: view-first, share только просмотр; `ROLE_RECIPE` + `can_category`.
+Каталоги поверх type `content` (seed `xos:seed-project`). Shared UI: `features/iblock-content` (`ContentCatalog*`). Рецепты: view-first, share только просмотр; `ROLE_RECIPE` + `can_category`. Теги / избранное — в ContentCatalog.
 
 ### Assets
 
@@ -204,12 +210,16 @@ CRUD list+detail, модуль `server/src/Assets/`, API `/api/assets/*`, shared
 
 | ID | Название | API prefix | Особенности |
 |----|----------|------------|-------------|
-| inccom | Доходы и расходы | `/api/IncCom/` | учёт операций |
+| inccom | Доходы и расходы | `/api/IncCom/` | учёт операций, счета |
 | calendar | Календарь | `/api/calendar/` | overlay: Todo, Board, SchoolTask |
 | todo | Заметки | `/api/todo/` | списки, sharing, due dates |
-| board | Доска | `/api/board/` | Kanban, workspaces |
-| pkb | База знаний | `/api/pkb/` | vaults, wikilinks, graph |
-| teamstorm | TeamStorm | `/api/ts/` | связь: URL + PrivateToken (`ROLE_TS`) |
+| habits | Привычки | `/api/todo/` | трекер на Todo |
+| board | Доска | `/api/board/` | Kanban, SSE/Mercure, conflict UI |
+| pkb | База знаний | `/api/pkb/` | vaults, wikilinks, encrypt, remote sync |
+| teamstorm | TeamStorm | `/api/ts/` | URL + PrivateToken (`ROLE_TS`) |
+| github | GitHub Issues | `/api/github/` | PAT, proxy issues (`ROLE_GITHUB`) |
+| inbox | Inbox | `/api/inbox/` | внутренние сообщения User→User |
+| inbox-message | Сообщение | `/api/inbox/` | sub-app карточка |
 
 ---
 
@@ -230,8 +240,10 @@ CRUD list+detail, модуль `server/src/Assets/`, API `/api/assets/*`, shared
 | Pkb | `server/src/Pkb/` | pkb | ✓ |
 | Ts | `server/src/Ts/` | ts | ✓ |
 | Assets | `server/src/Assets/` | assets | ✓ |
+| Github | `server/src/Github/` | github | ✓ |
+| Inbox | `server/src/Inbox/` | inbox | ✓ |
 
-IBlock — API + desktop apps (`iblock-*`, Start Menu «Инфоблоки», `ROLE_IBLOCK`). См. [iblock/README.md](iblock/README.md), [iblock/DEVELOPER_GUIDE.md](iblock/DEVELOPER_GUIDE.md).
+IBlock — API + desktop apps (`iblock-*`, Start Menu «Инфоблоки», `ROLE_IBLOCK`). См. [iblock/README.md](iblock/README.md).
 
 ---
 
@@ -239,8 +251,6 @@ IBlock — API + desktop apps (`iblock-*`, Start Menu «Инфоблоки», `R
 
 | Документ | Содержание |
 |----------|------------|
-| [README.md](README.md) | Индекс всей документации |
-| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Как добавить новое приложение |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Архитектура monorepo |
-| [API_SPEC.md](API_SPEC.md) | REST API (общий) |
-| [TZ.md](TZ.md) | Общее ТЗ системы |
+| [README.md](README.md) | Индекс |
+| [APP_IDEAS.md](APP_IDEAS.md) | Идеи новых apps и улучшений |
+| [*/README.md](.) | Описание приложений по доменам |

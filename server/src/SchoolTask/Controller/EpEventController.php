@@ -556,7 +556,8 @@ class EpEventController extends AbstractController
 
         return $schoolTaskManager->isClassMember($user, $class)
             || $schoolTaskManager->isClassTutor($user, $class)
-            || $schoolTaskManager->isClassLessonTeacher($user, $class);
+            || $schoolTaskManager->isClassLessonTeacher($user, $class)
+            || $schoolTaskManager->isClassParent($user, $class);
     }
 
     /** @return array{0: \DateTimeInterface, 1: \DateTimeInterface} */

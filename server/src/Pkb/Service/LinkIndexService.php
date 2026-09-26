@@ -92,7 +92,7 @@ final class LinkIndexService
 
         $contentHash = hash('sha256', $content);
 
-        $bodyExcerpt = $this->extractBodyExcerpt($content);
+        $bodyExcerpt = $vault->isEncryptAtRest() ? '[encrypted]' : $this->extractBodyExcerpt($content);
 
         $indexedAt = new \DateTime();
 

@@ -1,0 +1,5 @@
+controllers:
+    resource:
+        path: '../Controller/'
+        namespace: Inbox\Controller
+    type: attribute

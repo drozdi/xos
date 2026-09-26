@@ -52,6 +52,7 @@ class BoardManager extends AbstractManager
         private readonly string $uploadDir,
         private readonly PkbManager $pkbManager,
         private readonly PkbPermissionResolver $pkbPermissionResolver,
+        private readonly BoardMercurePublisher $mercurePublisher,
     ) {
         parent::__construct($validator);
     }
@@ -429,6 +430,7 @@ class BoardManager extends AbstractManager
         }
 
         $this->getEntityManager()->flush();
+        $this->publishBoardRealtime($board, ['op' => 'board_updated']);
 
         return $board;
     }
@@ -446,8 +448,10 @@ class BoardManager extends AbstractManager
         $board->addList($list);
 
         $em = $this->getEntityManager();
+        $board->touch();
         $em->persist($list);
         $em->flush();
+        $this->publishBoardRealtime($board);
 
         return $list;
     }
@@ -483,7 +487,9 @@ class BoardManager extends AbstractManager
             $list->setAssignee($this->resolveOptionalUserById($data['assignee_id']));
         }
 
+        $board->touch();
         $this->getEntityManager()->flush();
+        $this->publishBoardRealtime($board, ['op' => 'list_updated']);
 
         return $list;
     }
@@ -503,8 +509,10 @@ class BoardManager extends AbstractManager
 
         $em = $this->getEntityManager();
         $board->removeList($list);
+        $board->touch();
         $em->remove($list);
         $em->flush();
+        $this->publishBoardRealtime($board, ['op' => 'list_deleted']);
     }
 
     /**
@@ -531,7 +539,9 @@ class BoardManager extends AbstractManager
             $list->setOrderIndex((int) $item['order_index']);
         }
 
+        $board->touch();
         $em->flush();
+        $this->publishBoardRealtime($board, ['op' => 'lists_reordered']);
     }
 
     public function createCard(BoardList $list, User $user, array $data): Card
@@ -554,6 +564,7 @@ class BoardManager extends AbstractManager
         $em = $this->getEntityManager();
         $em->persist($card);
         $em->flush();
+        $this->publishBoardRealtime($board, ['op' => 'card_created', 'card_id' => $card->getId()]);
 
         return $card;
     }
@@ -580,6 +591,16 @@ class BoardManager extends AbstractManager
         }
         if (!$this->permissionResolver->canManageCards($board, $user, $card->getList(), $card)) {
             throw new AccessDeniedHttpException('Нет прав на изменение карточки');
+        }
+
+        if (array_key_exists('expected_updated_at', $data) && null !== $data['expected_updated_at'] && '' !== $data['expected_updated_at']) {
+            $expected = is_string($data['expected_updated_at'])
+                ? trim($data['expected_updated_at'])
+                : '';
+            $actual = $card->getUpdatedAt('Y-m-d H:i:s');
+            if ('' !== $expected && is_string($actual) && $expected !== $actual) {
+                throw new \Board\Exception\CardUpdateConflictException($card);
+            }
         }
 
         if (array_key_exists('title', $data)) {
@@ -614,6 +635,8 @@ class BoardManager extends AbstractManager
             );
             $this->getEntityManager()->flush();
         }
+
+        $this->publishBoardRealtime($board, ['op' => 'card_updated', 'card_id' => $card->getId()]);
 
         return $card;
     }
@@ -665,6 +688,7 @@ class BoardManager extends AbstractManager
         $em = $this->getEntityManager();
         $em->remove($card);
         $em->flush();
+        $this->publishBoardRealtime($board, ['op' => 'card_deleted']);
     }
 
     public function moveCard(Card $card, User $user, int $listId, int $position): Card
@@ -708,6 +732,8 @@ class BoardManager extends AbstractManager
             $this->rebalanceCardPositions($targetList);
             $em->flush();
         }
+
+        $this->publishBoardRealtime($board, ['op' => 'card_moved', 'card_id' => $card->getId()]);
 
         return $card;
     }
@@ -1988,5 +2014,37 @@ class BoardManager extends AbstractManager
         if (is_file($path)) {
             unlink($path);
         }
+    }
+
+    public function getRealtimeConfig(Board $board, User $user): array
+    {
+        if (!$this->permissionResolver->canViewBoard($board, $user)) {
+            throw new AccessDeniedHttpException('Нет доступа к доске');
+        }
+
+        $boardId = (int) $board->getId();
+        $enabled = $this->mercurePublisher->isEnabled();
+
+        return [
+            'transport' => $enabled ? 'mercure' : 'sse',
+            'mercure' => [
+                'enabled' => $enabled,
+                'hub_url' => $this->mercurePublisher->hubUrl(),
+                'topic' => $this->mercurePublisher->topicForBoard($boardId),
+                'token' => $enabled ? $this->mercurePublisher->subscriberToken($boardId) : null,
+            ],
+            'sse' => [
+                'path' => '/api/board/boards/'.$boardId.'/events',
+            ],
+        ];
+    }
+
+    private function publishBoardRealtime(Board $board, array $extra = []): void
+    {
+        $boardId = $board->getId();
+        if (null === $boardId) {
+            return;
+        }
+        $this->mercurePublisher->publishBoard((int) $boardId, $extra);
     }
 }

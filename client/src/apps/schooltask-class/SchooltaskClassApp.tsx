@@ -20,6 +20,7 @@ import { useMemo, useState } from 'react';
 import { extractApiErrorMessage, notifyApiError } from '@/core/api/apiError';
 import {
 	schooltaskClassApi,
+	schooltaskClassShareApi,
 	schooltaskParallelApi,
 	type ClassDetail,
 } from '@/core/api/endpoints/schooltaskApi';
@@ -72,6 +73,7 @@ export default function SchooltaskClassApp() {
 	const canCreate = canCreateSchooltaskClass();
 	const isNew = entityId === 0;
 	const [activeTab, setActiveTab] = useState<string | null>('general');
+	const [parentEmail, setParentEmail] = useState('');
 	const [parallelModalOpen, setParallelModalOpen] = useState(false);
 	const [newParallelName, setNewParallelName] = useState('');
 	const [newParallelGraduates, setNewParallelGraduates] = useState(false);
@@ -100,6 +102,30 @@ export default function SchooltaskClassApp() {
 		queryKey: queryKeys.schooltask.classes(classNamesListRequest),
 		queryFn: () => schooltaskClassApi.list(classNamesListRequest),
 		enabled: canRead || canCreate,
+	});
+
+	const sharesQuery = useQuery({
+		queryKey: queryKeys.schooltask.classShares(entityId),
+		queryFn: () => schooltaskClassShareApi.list(entityId),
+		enabled: !isNew && entityId > 0 && (canRead || canUpdate),
+	});
+
+	const inviteParentMutation = useMutation({
+		mutationFn: (email: string) => schooltaskClassShareApi.invite(entityId, email),
+		onSuccess: () => {
+			setParentEmail('');
+			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.classShares(entityId) });
+			notifications.show({ message: 'Родитель добавлен', color: 'green' });
+		},
+		onError: (error) => notifyApiError(error),
+	});
+
+	const removeParentMutation = useMutation({
+		mutationFn: (shareId: number) => schooltaskClassShareApi.remove(entityId, shareId),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.classShares(entityId) });
+		},
+		onError: (error) => notifyApiError(error),
 	});
 
 	const parallelOptions = useMemo(
@@ -239,6 +265,7 @@ export default function SchooltaskClassApp() {
 							<Tabs.List>
 								<Tabs.Tab value="general">Общие</Tabs.Tab>
 								<Tabs.Tab value="subjects">Предметные группы</Tabs.Tab>
+								{!isNew ? <Tabs.Tab value="parents">Родители</Tabs.Tab> : null}
 							</Tabs.List>
 
 							<Tabs.Panel value="general" pt="sm">
@@ -476,6 +503,61 @@ export default function SchooltaskClassApp() {
 									</Table>
 								</Stack>
 							</Tabs.Panel>
+
+							{!isNew ? (
+								<Tabs.Panel value="parents" pt="sm">
+									<Stack gap="sm">
+										<Group align="flex-end" gap="xs" wrap="nowrap">
+											<TextInput
+												label="Email родителя"
+												placeholder="parent@example.com"
+												value={parentEmail}
+												onChange={(e) => setParentEmail(e.currentTarget.value)}
+												style={{ flex: 1 }}
+												disabled={readOnly || !canUpdate}
+											/>
+											<Button
+												disabled={readOnly || !canUpdate || !parentEmail.trim()}
+												loading={inviteParentMutation.isPending}
+												onClick={() => inviteParentMutation.mutate(parentEmail.trim())}
+											>
+												Пригласить
+											</Button>
+										</Group>
+										<Table striped withTableBorder>
+											<Table.Thead>
+												<Table.Tr>
+													<Table.Th>Имя</Table.Th>
+													<Table.Th>Email</Table.Th>
+													<Table.Th>Роль</Table.Th>
+													<Table.Th w={48} />
+												</Table.Tr>
+											</Table.Thead>
+											<Table.Tbody>
+												{(sharesQuery.data?.shares ?? []).map((share) => (
+													<Table.Tr key={share.id}>
+														<Table.Td>{share.alias || '—'}</Table.Td>
+														<Table.Td>{share.email || '—'}</Table.Td>
+														<Table.Td>{share.role === 'parent' ? 'Родитель' : share.role}</Table.Td>
+														<Table.Td>
+															{canUpdate && !readOnly ? (
+																<ActionIcon
+																	color="red"
+																	variant="light"
+																	loading={removeParentMutation.isPending}
+																	onClick={() => removeParentMutation.mutate(share.id)}
+																>
+																	<IconTrash size={16} />
+																</ActionIcon>
+															) : null}
+														</Table.Td>
+													</Table.Tr>
+												))}
+											</Table.Tbody>
+										</Table>
+									</Stack>
+								</Tabs.Panel>
+							) : null}
 						</Tabs>
 					);
 				}}

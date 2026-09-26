@@ -104,6 +104,16 @@ export function AccountForm({ id }: AccountFormProps) {
 				required
 				{...form.getInputProps('label')}
 			/>
+			<TextInput
+				label="Номер счёта"
+				placeholder="IBAN / номер карты / р/с"
+				{...form.getInputProps('number')}
+			/>
+			<TextInput
+				label="Описание"
+				placeholder="Банк, комментарий"
+				{...form.getInputProps('description')}
+			/>
 			<Select
 				label="Тип"
 				placeholder="Выберите тип"

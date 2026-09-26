@@ -14,6 +14,7 @@ import {
 } from '@/features/main/mainAccess';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 import { useEntityId } from '@/features/main/mainAppUtils';
+import { useActiveOuId } from '@/features/main/useActiveOuId';
 
 import { UserAccessTab } from './UserAccessTab';
 import { UserGeneralTab } from './UserGeneralTab';
@@ -61,6 +62,7 @@ export default function MainUserApp() {
 	const canCreate = canCreateMainUser();
 	const isNew = entityId === 0;
 	const [activeTab, setActiveTab] = useState<string | null>('general');
+	const { activeOuId } = useActiveOuId();
 
 	const canSave =
 		(isNew ? canCreate : canUpdate) || canGroup || canAccess || canRole;
@@ -91,6 +93,10 @@ export default function MainUserApp() {
 			create={mainUserApi.create}
 			remove={mainUserApi.remove}
 			initialData={initialData}
+			buildNewData={async () => ({
+				...initialData,
+				ou_id: activeOuId && activeOuId > 0 ? activeOuId : null,
+			})}
 			validate={validateUserForm}
 			transformBeforeSave={prepareUserSavePayload}
 			canSave={canSave}

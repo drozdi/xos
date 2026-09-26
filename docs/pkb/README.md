@@ -45,20 +45,19 @@ client/src/features/pkb/
 ## Функции
 
 - Несколько vault (private / shared)
-- Markdown + wikilinks `[[note]]`
-- Backlinks, graph view
+- Markdown + wikilinks `[[note]]` (+ ambiguous picker)
+- Backlinks, graph view, FULLTEXT search
 - Search & replace по vault
-- Шаблоны заметок
-- Bookmarks
+- Шаблоны заметок, bookmarks
+- `encrypt_at_rest`, plugins_json, ZIP export
+- Remote sync: `remote_sync_url` + `POST /vaults/{id}/remote-sync`
 
 ## Документы
 
 | Файл | Содержание |
 |------|------------|
 | [TZ.md](TZ.md) | Техническое задание |
-| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Структура, checklist фич |
-| [API_SPEC.md](API_SPEC.md) | REST endpoints PKB |
-| [APP_IDEAS.md](../APP_IDEAS.md) | Бэклог (encryption, plugins) |
+| [APP_IDEAS.md](../APP_IDEAS.md) | Бэклог (co-edit, marketplace) |
 
 ## Доступ
 

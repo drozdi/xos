@@ -17,29 +17,38 @@ interface MarkdownPreviewProps {
 	variant?: 'default' | 'reading';
 	onWikilinkClick?: (title: string) => void;
 	isBrokenWikilink?: (title: string) => boolean;
+	isAmbiguousWikilink?: (title: string) => boolean;
 }
 
 function WikilinkPreview({
 	link,
 	onWikilinkClick,
 	isBrokenWikilink,
+	isAmbiguousWikilink,
 }: {
 	link: NonNullable<WikilinkTextSegment['link']>;
 	onWikilinkClick?: (title: string) => void;
 	isBrokenWikilink?: (title: string) => boolean;
+	isAmbiguousWikilink?: (title: string) => boolean;
 }) {
 	const broken = isBrokenWikilink?.(link.title) ?? false;
+	const ambiguous = !broken && (isAmbiguousWikilink?.(link.title) ?? false);
 	const display = getWikilinkDisplayText(link);
+	const className = broken
+		? pkbClasses.pkbWikilinkBroken
+		: ambiguous
+			? pkbClasses.pkbWikilinkAmbiguous
+			: pkbClasses.pkbWikilink;
 
 	if (!onWikilinkClick) {
-		return <span className={broken ? pkbClasses.pkbWikilinkBroken : pkbClasses.pkbWikilink}>{display}</span>;
+		return <span className={className}>{display}</span>;
 	}
 
 	return (
 		<Anchor
 			component="button"
 			type="button"
-			className={broken ? pkbClasses.pkbWikilinkBroken : pkbClasses.pkbWikilink}
+			className={className}
 			onClick={() => onWikilinkClick(link.title)}
 			styles={{ root: { fontWeight: 'inherit', verticalAlign: 'baseline' } }}
 		>
@@ -76,6 +85,7 @@ export function MarkdownPreview({
 	variant = 'default',
 	onWikilinkClick,
 	isBrokenWikilink,
+	isAmbiguousWikilink,
 }: MarkdownPreviewProps) {
 	const className =
 		variant === 'reading'
@@ -111,6 +121,7 @@ export function MarkdownPreview({
 							link={segment.link}
 							onWikilinkClick={onWikilinkClick}
 							isBrokenWikilink={isBrokenWikilink}
+							isAmbiguousWikilink={isAmbiguousWikilink}
 						/>
 					);
 				}

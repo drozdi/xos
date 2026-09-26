@@ -11,9 +11,11 @@ export const PROTECTED_APP_MODULES = [
 	'board',
 	'pkb',
 	'ts',
+	'github',
 	'iblock',
 	'recipe',
 	'assets',
+	'inbox',
 ] as const;
 
 export type ProtectedAppModule = (typeof PROTECTED_APP_MODULES)[number];

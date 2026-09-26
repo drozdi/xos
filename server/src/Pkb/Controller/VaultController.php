@@ -5,6 +5,7 @@ namespace Pkb\Controller;
 use App\Attribute\Access;
 use Main\Entity\User;
 use Pkb\Service\PkbManager;
+use Pkb\Service\VaultExportService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -70,5 +71,44 @@ class VaultController extends AbstractController
         $pkbManager->deleteVault($vault, $user, $deleteFiles);
 
         return $this->json(['ok' => true]);
+    }
+
+    #[Route('/vaults/{id}/export', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function export(
+        int $id,
+        #[CurrentUser] ?User $user,
+        PkbManager $pkbManager,
+        VaultExportService $exportService,
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $vault = $pkbManager->getVault($id, $user);
+
+        return $exportService->exportZipResponse($vault, $user);
+    }
+
+    /** Push vault ZIP to config.remote_sync_url (multipart field vault). */
+    #[Route('/vaults/{id}/remote-sync', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function remoteSync(
+        int $id,
+        #[CurrentUser] ?User $user,
+        PkbManager $pkbManager,
+        VaultExportService $exportService,
+    ): JsonResponse {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $vault = $pkbManager->getVault($id, $user);
+        $detail = $pkbManager->serializeVaultDetail($vault, $user);
+        if (!($detail['permissions']['can_update'] ?? false)) {
+            return $this->json(['error' => 'Нет прав на remote sync'], Response::HTTP_FORBIDDEN);
+        }
+        $url = $pkbManager->getRemoteSyncUrl($vault, $user);
+        if (null === $url) {
+            return $this->json(['error' => 'remote_sync_url не задан'], Response::HTTP_BAD_REQUEST);
+        }
+
+        return $this->json($exportService->pushRemoteSync($vault, $user, $url));
     }
 }

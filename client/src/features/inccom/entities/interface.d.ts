@@ -86,6 +86,10 @@ interface IAccount {
 
 	label: string;
 
+	description?: string | null;
+
+	number?: string | null;
+
 	balance: number;
 
 	type: string;

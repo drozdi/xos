@@ -5,10 +5,15 @@ namespace Assets\Controller;
 use AbstractRepository;
 use App\Http\ApiResponse;
 use App\Http\ContentRangeHeaders;
+use Doctrine\ORM\EntityManagerInterface;
+use Main\Entity\OU;
+use Main\Entity\User;
+use Main\Service\OuScope;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -46,7 +51,45 @@ abstract class AssetsCrudController extends AbstractController
         ];
     }
 
-    protected function listAction(Request $request): JsonResponse
+    /**
+     * @param array<string, mixed> $filters
+     *
+     * @return array<string, mixed>
+     */
+    protected function normalizeOuFilters(array $filters): array
+    {
+        $ouId = null;
+        if (isset($filters['ou']) && (is_int($filters['ou']) || is_numeric($filters['ou'])) && (int) $filters['ou'] > 0) {
+            $ouId = (int) $filters['ou'];
+        } elseif (isset($filters['ou_id']) && (is_int($filters['ou_id']) || is_numeric($filters['ou_id'])) && (int) $filters['ou_id'] > 0) {
+            $ouId = (int) $filters['ou_id'];
+        }
+        unset($filters['ou'], $filters['ou_id']);
+        if (null !== $ouId) {
+            $filters['ou'] = $ouId;
+        }
+
+        return $filters;
+    }
+
+    protected function assignOu(object $entity, array $data, EntityManagerInterface $em): void
+    {
+        if (!method_exists($entity, 'setOu')) {
+            return;
+        }
+
+        $raw = $data['ou_id'] ?? $data['ou'] ?? null;
+        if (null === $raw || '' === $raw || (int) $raw <= 0) {
+            $entity->setOu(null);
+
+            return;
+        }
+
+        $ou = $em->find(OU::class, (int) $raw);
+        $entity->setOu($ou);
+    }
+
+    protected function listAction(Request $request, OuScope $ouScope, #[CurrentUser] User $user): JsonResponse
     {
         $repository = $this->getRepository();
         $req = array_merge([
@@ -59,6 +102,7 @@ abstract class AssetsCrudController extends AbstractController
         $req['limit'] = (int) $req['limit'];
         $req['offset'] = (int) $req['offset'];
         $filters = \is_array($req['filters'] ?? null) ? $req['filters'] : [];
+        $filters = $this->normalizeOuFilters($ouScope->applyListFilter($user, $filters));
         $sortBy = \is_array($req['sortBy'] ?? null) ? $req['sortBy'] : $this->getDefaultSort();
 
         $totalItems = $repository->cnt($filters);
@@ -93,10 +137,17 @@ abstract class AssetsCrudController extends AbstractController
         return $this->json($this->serializeDetail($entity));
     }
 
-    protected function createAction(Request $request, ValidatorInterface $validator): JsonResponse
-    {
+    protected function createAction(
+        Request $request,
+        ValidatorInterface $validator,
+        OuScope $ouScope,
+        EntityManagerInterface $em,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
         try {
-            $entity = $this->createEntity($request->toArray());
+            $data = $ouScope->applyCreateDefaults($user, $request->toArray());
+            $entity = $this->createEntity($data);
+            $this->assignOu($entity, $data, $em);
             $this->validate($entity, $validator);
             $this->getRepository()->save($entity, true);
         } catch (ValidationFailedException $e) {

@@ -35,7 +35,39 @@ export default defineConfig(({ mode }) => ({
 				workbox: {
 					globPatterns: ['**/*.{js,css,html,svg,ico,woff2}'],
 					navigateFallback: '/index.html',
-					runtimeCaching: [],
+					runtimeCaching: [
+						{
+							urlPattern: ({ request, url }) => {
+								if (request.method !== 'GET') {
+									return false;
+								}
+								if (!url.pathname.startsWith('/api/')) {
+									return false;
+								}
+								if (
+									url.pathname.startsWith('/api/login') ||
+									url.pathname.startsWith('/api/token/refresh') ||
+									url.pathname.startsWith('/api/auth/login') ||
+									url.pathname.startsWith('/api/auth/refresh')
+								) {
+									return false;
+								}
+								return true;
+							},
+							handler: 'NetworkFirst',
+							options: {
+								cacheName: 'xos-api-get',
+								networkTimeoutSeconds: 8,
+								expiration: {
+									maxEntries: 50,
+									maxAgeSeconds: 5 * 60,
+								},
+								cacheableResponse: {
+									statuses: [0, 200],
+								},
+							},
+						},
+					],
 				},
 			}),
 		mode === 'analyze' &&

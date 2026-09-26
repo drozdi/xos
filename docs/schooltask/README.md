@@ -20,6 +20,7 @@
 | schooltask-calendar | Календарь класса | sub-app | Просмотр сетки занятий |
 | schooltask-calendar-editor | Редактор расписания | sub-app | Редактирование шаблона недели |
 | schooltask-calendar-teacher | Мои уроки | regular | Календарь учителя, темы уроков |
+| schooltask-homeworks | Домашние задания | regular | Агрегатор ДЗ (`EpEvent.ht`) |
 
 ## Backend
 
@@ -27,13 +28,16 @@
 server/src/SchoolTask/
 ├── Controller/
 │   ├── EpSubjectController.php    # /api/schooltask/subjects
-│   ├── EpClassController.php
-│   ├── EpEventController.php      # занятия
+│   ├── EpClassController.php      # + shares (parent invite)
+│   ├── EpEventController.php      # занятия (+ ht = ДЗ)
+│   ├── HomeworkController.php     # GET /homework
 │   └── AuthController.php         # /api/schooltask/auth/me
 └── setting.json
 ```
 
 **API prefix:** `/api/schooltask/`
+
+Parent read-only: `st_ep_group_share`, вкладка «Родители» в классе.
 
 ## Frontend
 
@@ -55,4 +59,4 @@ client/src/features/schooltask/    # EventTeacherModal, LessonFilesPanel, …
 ## Документы
 
 - [TZ.md](TZ.md) — техническое задание
-- [APP_IDEAS.md](../APP_IDEAS.md) — идеи (дневник, ДЗ, родительский share)
+- [APP_IDEAS.md](../APP_IDEAS.md) — идеи следующих apps

@@ -8,6 +8,7 @@ export const EVENTS_BLOCK_CODE = 'events';
 export const CONTACTS_BLOCK_CODE = 'contacts';
 export const SERVICES_BLOCK_CODE = 'services';
 export const IDEAS_BLOCK_CODE = 'ideas';
+export const LEADS_BLOCK_CODE = 'leads';
 
 export const CONTENT_PROPS = {
 	COVER: 'COVER',
@@ -25,7 +26,9 @@ export const CONTENT_PROPS = {
 	EMAIL: 'EMAIL',
 	PRICE: 'PRICE',
 	STATUS: 'STATUS',
+	STAGE: 'STAGE',
 	PRIORITY: 'PRIORITY',
+	CONTACT: 'CONTACT',
 } as const;
 
 export const DIFFICULTY_OPTIONS = [
@@ -42,6 +45,20 @@ export const IDEA_STATUS_OPTIONS = [
 ] as const;
 
 export const IDEA_PRIORITY_OPTIONS = [
+	{ value: 'low', label: 'Низкий' },
+	{ value: 'medium', label: 'Средний' },
+	{ value: 'high', label: 'Высокий' },
+] as const;
+
+export const LEAD_STAGE_OPTIONS = [
+	{ value: 'new', label: 'Новый' },
+	{ value: 'contacted', label: 'На связи' },
+	{ value: 'qualified', label: 'Квалифицирован' },
+	{ value: 'won', label: 'Выигран' },
+	{ value: 'lost', label: 'Потерян' },
+] as const;
+
+export const LEAD_PRIORITY_OPTIONS = [
 	{ value: 'low', label: 'Низкий' },
 	{ value: 'medium', label: 'Средний' },
 	{ value: 'high', label: 'Высокий' },

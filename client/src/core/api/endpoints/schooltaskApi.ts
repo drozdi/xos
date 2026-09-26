@@ -456,6 +456,83 @@ export const schooltaskCalendarApi = {
 	},
 };
 
+export const schooltaskHomeworkApi = {
+	list: async (params: { from?: string; to?: string; class_id?: number }) => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/homework`, { params });
+		return z
+			.object({
+				items: z.array(
+					z.object({
+						id: z.number(),
+						class_id: z.number().nullable().optional(),
+						class_name: z.string().nullable().optional(),
+						subject: z.string().optional(),
+						start: z.string().nullable().optional(),
+						end: z.string().nullable().optional(),
+						theme: z.string().nullable().optional(),
+						ht: z.string().nullable().optional(),
+						teacher: z.string().nullable().optional(),
+						has_homework: z.boolean().optional(),
+					}),
+				),
+			})
+			.parse(data);
+	},
+};
+
+export type HomeworkItem = Awaited<ReturnType<typeof schooltaskHomeworkApi.list>>['items'][number];
+
+export const schooltaskClassShareApi = {
+	list: async (classId: number) => {
+		const { data } = await apiClient.get<unknown>(`${BASE}/classes/${classId}/shares`);
+		return z
+			.object({
+				shares: z.array(
+					z.object({
+						id: z.number(),
+						user_id: z.number(),
+						email: z.string().nullable().optional(),
+						alias: z.string().nullable().optional(),
+						role: z.string(),
+					}),
+				),
+			})
+			.parse(data);
+	},
+	invite: async (classId: number, email: string) => {
+		const { data } = await apiClient.post<unknown>(`${BASE}/classes/${classId}/shares`, { email });
+		return z
+			.object({
+				shares: z.array(
+					z.object({
+						id: z.number(),
+						user_id: z.number(),
+						email: z.string().nullable().optional(),
+						alias: z.string().nullable().optional(),
+						role: z.string(),
+					}),
+				),
+			})
+			.parse(data);
+	},
+	remove: async (classId: number, shareId: number) => {
+		const { data } = await apiClient.delete<unknown>(`${BASE}/classes/${classId}/shares/${shareId}`);
+		return z
+			.object({
+				shares: z.array(
+					z.object({
+						id: z.number(),
+						user_id: z.number(),
+						email: z.string().nullable().optional(),
+						alias: z.string().nullable().optional(),
+						role: z.string(),
+					}),
+				),
+			})
+			.parse(data);
+	},
+};
+
 export const schooltaskEndpoints = {
 	base: BASE,
 } as const;

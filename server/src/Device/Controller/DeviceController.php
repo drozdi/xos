@@ -25,6 +25,7 @@ use Device\Repository\PropertyEnumRepository;
 use Device\Repository\Device\LocationRepository;
 
 use Main\Service\FileManager;
+use Main\Service\OuScope;
 
 #[Route('/api/device/device')]
 #[Access('device.device')]
@@ -62,7 +63,13 @@ class DeviceController extends AbstractController {
 
     #[Route('/select', methods: ['POST'])]
     #[Access('can_read')]
-    public function select (Request $request, DeviceRepository $DeviceRepository, LocationRepository $LocationRepository): JsonResponse {
+    public function select (
+        Request $request,
+        DeviceRepository $DeviceRepository,
+        LocationRepository $LocationRepository,
+        OuScope $ouScope,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
         /*throw $this->createNotFoundException(
             'No product found for id'
         );//*/
@@ -90,6 +97,10 @@ class DeviceController extends AbstractController {
         }
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
+        if (!is_array($req['filters'] ?? null)) {
+            $req['filters'] = [];
+        }
+        $req['filters'] = $ouScope->applyListFilter($user, $req['filters']);
         $totalItems = $DeviceRepository->cnt($req['filters']);
         $query = $DeviceRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -113,7 +124,13 @@ class DeviceController extends AbstractController {
 
     #[Route('/list', methods: ['POST'])]
     #[Access('can_read')]
-    public function list (Request $request, DeviceRepository $DeviceRepository, LocationRepository $LocationRepository): JsonResponse {
+    public function list (
+        Request $request,
+        DeviceRepository $DeviceRepository,
+        LocationRepository $LocationRepository,
+        OuScope $ouScope,
+        #[CurrentUser] User $user,
+    ): JsonResponse {
         /*throw $this->createNotFoundException(
             'No product found for id'
         );//*/
@@ -141,6 +158,11 @@ class DeviceController extends AbstractController {
         }
         $req['limit'] = (int)$req['limit'];
         $req['offset'] = (int)$req['offset'];
+        if (!is_array($req['filters'] ?? null)) {
+            $req['filters'] = [];
+        }
+        // Multi-OU list filter via createdBy.ou (Device has no ou_id column)
+        $req['filters'] = $ouScope->applyListFilter($user, $req['filters']);
         $totalItems = $DeviceRepository->cnt($req['filters']);
         $query = $DeviceRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();

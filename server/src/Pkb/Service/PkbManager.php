@@ -54,6 +54,10 @@ class PkbManager extends AbstractManager
 
         private readonly PkbPermissionResolver $permissionResolver,
 
+        private readonly VaultFileService $vaultFileService,
+
+        private readonly PkbBodyCipher $bodyCipher,
+
     ) {
 
         parent::__construct($validator);
@@ -188,11 +192,65 @@ class PkbManager extends AbstractManager
 
 
 
+        $encryptChanged = false;
+        $encryptTarget = $vault->isEncryptAtRest();
+        if (array_key_exists('encrypt_at_rest', $data) || array_key_exists('encryptAtRest', $data)) {
+            $encryptTarget = (bool) ($data['encrypt_at_rest'] ?? $data['encryptAtRest']);
+            if ($encryptTarget && !$this->bodyCipher->isEnabled()) {
+                throw new BadRequestHttpException('PKB_AT_REST_SECRET не задан — нельзя включить encrypt_at_rest');
+            }
+            if ($encryptTarget !== $vault->isEncryptAtRest()) {
+                $encryptChanged = true;
+            }
+            $vault->setEncryptAtRest($encryptTarget);
+        }
+
+        if (array_key_exists('plugins_json', $data) || array_key_exists('plugins', $data)) {
+            $plugins = $data['plugins_json'] ?? $data['plugins'];
+            if (null === $plugins) {
+                $vault->setPluginsJson(null);
+            } elseif (is_array($plugins)) {
+                $normalized = [];
+                foreach ($plugins as $pluginId) {
+                    if (is_string($pluginId) && '' !== trim($pluginId)) {
+                        $normalized[] = trim($pluginId);
+                    }
+                }
+                $vault->setPluginsJson($normalized);
+            } else {
+                throw new BadRequestHttpException('plugins_json должен быть массивом строк');
+            }
+        }
+
+        $remoteSyncUrl = null;
+        $writeRemoteSync = false;
+        if (array_key_exists('remote_sync_url', $data) || array_key_exists('remoteSyncUrl', $data)) {
+            $writeRemoteSync = true;
+            $rawUrl = $data['remote_sync_url'] ?? $data['remoteSyncUrl'];
+            if (null === $rawUrl || '' === $rawUrl) {
+                $remoteSyncUrl = '';
+            } elseif (!is_string($rawUrl)) {
+                throw new BadRequestHttpException('remote_sync_url должен быть строкой');
+            } else {
+                $remoteSyncUrl = trim($rawUrl);
+                if ('' !== $remoteSyncUrl && !preg_match('#^https?://#i', $remoteSyncUrl)) {
+                    throw new BadRequestHttpException('remote_sync_url должен быть http(s) URL');
+                }
+            }
+        }
+
         $em = $this->getEntityManager();
 
         $em->flush();
 
+        if ($encryptChanged) {
+            $this->vaultFileService->rewriteMarkdownBodiesForEncryptionFlag($vault, $user, $encryptTarget);
+            $em->flush();
+        }
 
+        if ($writeRemoteSync) {
+            $this->writeVaultConfigKey($vault, $user, 'remote_sync_url', '' === $remoteSyncUrl ? null : $remoteSyncUrl);
+        }
 
         return $vault;
 
@@ -416,6 +474,10 @@ class PkbManager extends AbstractManager
 
             'index_stale' => $vault->isIndexStale(),
 
+            'encrypt_at_rest' => $vault->isEncryptAtRest(),
+
+            'plugins' => $vault->getPluginsJson(),
+
             'updated_at' => $vault->getUpdatedAt('Y-m-d H:i:s'),
 
         ];
@@ -430,16 +492,61 @@ class PkbManager extends AbstractManager
 
     {
 
+        $config = $this->readVaultConfig($vault, $viewer);
+        $remote = is_array($config) && isset($config['remote_sync_url']) && is_string($config['remote_sync_url'])
+            ? $config['remote_sync_url']
+            : null;
+
         return [
 
             ...$this->serializeVaultSummary($vault, $viewer),
 
-            'config' => $this->readVaultConfig($vault, $viewer),
+            'config' => $config,
+
+            'remote_sync_url' => $remote,
 
             'created_at' => $vault->getCreatedAt('Y-m-d H:i:s'),
 
         ];
 
+    }
+
+    public function getRemoteSyncUrl(Vault $vault, User $user): ?string
+    {
+        $config = $this->readVaultConfig($vault, $user);
+        if (!is_array($config)) {
+            return null;
+        }
+        $url = $config['remote_sync_url'] ?? null;
+
+        return is_string($url) && '' !== trim($url) ? trim($url) : null;
+    }
+
+    /** @param mixed $value */
+    private function writeVaultConfigKey(Vault $vault, User $user, string $key, mixed $value): void
+    {
+        if (!$this->permissionResolver->canUpdateVault($vault, $user)) {
+            throw new AccessDeniedHttpException('Нет прав на изменение vault');
+        }
+
+        $owner = $vault->getOwner();
+        if (!$owner instanceof User) {
+            throw new BadRequestHttpException('У vault нет владельца');
+        }
+
+        $config = $this->readVaultConfig($vault, $user) ?? [];
+        if (null === $value) {
+            unset($config[$key]);
+        } else {
+            $config[$key] = $value;
+        }
+
+        $configUri = $this->pathResolver->toExplorerUri($vault, '.xos-vault/config.json');
+        $this->explorerManager->writeText(
+            $owner,
+            $configUri,
+            json_encode($config, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        );
     }
 
 

@@ -9,9 +9,13 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
+/**
+ * Multi-OU: Board remains global — no OuScope / ou_id tenancy (unlike Main/Device/Assets).
+ */
 #[Route('/api/board')]
 #[Access('board')]
 class BoardController extends AbstractController
@@ -157,6 +161,78 @@ class BoardController extends AbstractController
         $sinceStr = is_string($since) ? $since : null;
 
         return $this->json($boardManager->getBoardChanges($board, $user, $sinceStr));
+    }
+
+    /** Mercure hub config when MERCURE_URL + MERCURE_JWT_SECRET set; else transport=sse. */
+    #[Route('/boards/{id}/realtime', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function realtime(int $id, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $board = $boardManager->getBoard($id, $user);
+
+        return $this->json($boardManager->getRealtimeConfig($board, $user));
+    }
+
+    #[Route('/boards/{id}/events', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function events(int $id, Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): StreamedResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        \assert($user instanceof User);
+
+        $board = $boardManager->getBoard($id, $user);
+        $since = $request->query->get('since');
+        $sinceStr = is_string($since) ? $since : null;
+        $maxSeconds = max(10, min(120, (int) $request->query->get('max_seconds', 55)));
+        $boardId = (int) $board->getId();
+
+        $response = new StreamedResponse(function () use ($boardManager, $boardId, $user, $sinceStr, $maxSeconds): void {
+            @ini_set('zlib.output_compression', '0');
+            @ini_set('output_buffering', '0');
+            while (ob_get_level() > 0) {
+                ob_end_flush();
+            }
+
+            $started = time();
+            $cursor = $sinceStr;
+            $heartbeatAt = time();
+
+            echo ": connected\n\n";
+            flush();
+
+            while (!connection_aborted() && (time() - $started) < $maxSeconds) {
+                $board = $boardManager->getBoard($boardId, $user);
+                $delta = $boardManager->getBoardChanges($board, $user, $cursor);
+                if ($delta['has_changes']) {
+                    echo 'event: board_delta'."\n";
+                    echo 'data: '.json_encode($delta, \JSON_UNESCAPED_UNICODE)."\n\n";
+                    flush();
+                }
+                if (!empty($delta['server_time']) && is_string($delta['server_time'])) {
+                    $cursor = $delta['server_time'];
+                }
+
+                if ((time() - $heartbeatAt) >= 15) {
+                    echo ": heartbeat\n\n";
+                    flush();
+                    $heartbeatAt = time();
+                }
+
+                usleep(1_500_000);
+            }
+
+            echo "event: stream_end\n";
+            echo 'data: {"ok":true}'."\n\n";
+            flush();
+        });
+
+        $response->headers->set('Content-Type', 'text/event-stream; charset=utf-8');
+        $response->headers->set('Cache-Control', 'no-cache, no-store');
+        $response->headers->set('Connection', 'keep-alive');
+        $response->headers->set('X-Accel-Buffering', 'no');
+
+        return $response;
     }
 
     #[Route('/search', methods: ['GET'])]
