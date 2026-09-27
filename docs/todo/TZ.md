@@ -8,9 +8,9 @@
 
 ## 2. Пользователи и доступ
 
-- **Claimant:** `todo`, `todo.list`
-- **Права list:** `can_create`, `can_read`, `can_update`, `can_delete`, `can_share`
-- Проверка: `canUseTodo()`
+- **App:** любой `ROLE_USER` (`canUseTodo()`); не `ProtectedAppModules`
+- **Claimant (справочник):** `todo`, `todo.list` — `can_create|read|update|delete|share`
+- **API:** `IS_AUTHENTICATED_FULLY` + доступ к списку (owner/share)
 
 ## 3. Приложения
 

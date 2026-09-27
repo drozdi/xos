@@ -56,6 +56,15 @@ export interface AppManifest {
 	menu?: AppMenuSource;
 	/** Настройки окна: перетаскивание, размер, позиция */
 	window?: WindowDragConfig & WindowLayoutConfig;
+	/**
+	 * Роль в оболочке. `widget` — frameless карточка на столе, без taskbar, z-tier ниже окон.
+	 * По умолчанию `app`.
+	 */
+	shellRole?: 'app' | 'widget';
+	/** Показывать на панели задач. По умолчанию false для widget, true для app */
+	showInTaskbar?: boolean;
+	/** Краткое описание для каталога виджетов */
+	widgetDescription?: string;
 }
 
 export interface RunningApp {

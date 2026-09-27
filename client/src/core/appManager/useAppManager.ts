@@ -16,6 +16,8 @@ import { resolveWindowLayoutConfig } from '@/core/windowManager/windowLayout';
 import { resolveTaskbarGroup } from '@/core/taskbar/taskbarUtils';
 
 import { AppRegistry } from './AppRegistry';
+import { markWidgetClosedInCatalog, syncDesktopWidgetsFromCatalog } from '@/core/desktop/desktopWidgets';
+
 import {
 	addToLaunchHistory,
 	removeFromLaunchHistory,
@@ -86,6 +88,7 @@ function initCloseCleanup(): void {
 					// Tab close/refresh unmounts windows — do not wipe server launchHistory
 					if (!isPageUnloading()) {
 						void removeFromLaunchHistory(closed.appId, closed.instanceKey);
+						void markWidgetClosedInCatalog(closed.appId, closed.instanceKey);
 					}
 				}
 			}
@@ -171,6 +174,7 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			...params?.props,
 			...(documentPath ? { documentPath } : {}),
 		};
+		const isWidget = (manifest.shellRole ?? 'app') === 'widget';
 		const openedId = openWindow({
 			id: windowId,
 			appId,
@@ -180,10 +184,11 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			title: params?.title ?? persisted?.title ?? manifest.name,
 			x: launchX,
 			y: launchY,
-			width: persisted?.width ?? manifest.defaultSize.width,
-			height: persisted?.height ?? manifest.defaultSize.height,
-			minimized: persisted?.minimized,
-			maximized: persisted?.maximized,
+			// Widgets stay compact: always manifest size (position may be persisted).
+			width: isWidget ? manifest.defaultSize.width : (persisted?.width ?? manifest.defaultSize.width),
+			height: isWidget ? manifest.defaultSize.height : (persisted?.height ?? manifest.defaultSize.height),
+			minimized: isWidget ? false : persisted?.minimized,
+			maximized: isWidget ? false : persisted?.maximized,
 			wmGroup: persisted?.wmGroup ?? manifest.wmGroup ?? 'default',
 			wmSort: persisted?.wmSort ?? manifest.wmSort ?? 0,
 			taskbarGroup: resolveTaskbarGroup(manifest),
@@ -192,6 +197,7 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 			resizable: layout.resizable,
 			positionFixed,
 			autoSize: layout.autoSize,
+			shellRole: manifest.shellRole ?? 'app',
 		});
 
 		set((state) => ({
@@ -211,6 +217,7 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 	restoreFromHistory: async () => {
 		initCloseCleanup();
 		await restoreFromHistoryEntries((appId, params) => get().launchApp(appId, params));
+		await syncDesktopWidgetsFromCatalog();
 	},
 
 	removeRunning: (windowId) => {

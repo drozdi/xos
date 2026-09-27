@@ -8,9 +8,9 @@ Obsidian-like база знаний: vaults с markdown-заметками, wiki
 
 ## 2. Пользователи и доступ
 
-- **Claimant:** `pkb`
-- **Права:** `can_read`, `can_write`
-- Vault-level ACL (owner / reader / editor) — v2 sharing
+- **Роль:** `ROLE_PKB` (`ProtectedAppModules`); манифест `requiredRole: 'pkb'`
+- **Claimant:** `pkb` — `can_read`, `can_write`
+- Vault-level ACL (owner / reader / editor) — sharing
 - Проверка: `canUsePkb()`
 
 ## 3. Приложения

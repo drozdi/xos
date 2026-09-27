@@ -1078,7 +1078,7 @@ MD,
                 'body' => <<<'MD'
 # Explorer
 
-Claimant `explorer` · `server/src/Explorer/` · `client/src/features/explorer/` · apps `explorer*`
+Claimant `explorer` · `ROLE_EXPLORER` · `requiredRole: explorer` + `canReadExplorer` · `server/src/Explorer/` · apps `explorer*`
 
 ## Назначение
 
@@ -1189,7 +1189,7 @@ MD,
                 'body' => <<<'MD'
 # Calendar
 
-Claimant `calendar` · `server/src/Calendar/` · app `calendar`
+Claimant `calendar` · `ROLE_CALENDAR` · `requiredRole: calendar` · `server/src/Calendar/` · app `calendar`
 
 ## Назначение
 
@@ -1219,6 +1219,8 @@ MD,
 # Todo
 
 Claimant `todo` · `server/src/Todo/` · `client/src/features/todo/` · app `todo`
+
+**Доступ:** app — любой `ROLE_USER` (`canUseTodo()`); не `ProtectedAppModules`. ACL — owner/share на списках.
 
 ## Назначение
 
@@ -1252,7 +1254,7 @@ MD,
                 'body' => <<<'MD'
 # Board
 
-Claimant `board` · `server/src/Board/` · `client/src/features/board/` · app `board`
+Claimant `board` · `ROLE_BOARD` · `requiredRole: board` · `server/src/Board/` · `client/src/features/board/` · app `board`
 
 ## Назначение
 
@@ -1289,7 +1291,7 @@ MD,
                 'body' => <<<'MD'
 # PKB
 
-Claimant `pkb` · `server/src/Pkb/` · `client/src/features/pkb/` · app `pkb`
+Claimant `pkb` · `ROLE_PKB` · `requiredRole: pkb` · `server/src/Pkb/` · `client/src/features/pkb/` · app `pkb`
 
 ## Назначение
 
@@ -1338,13 +1340,20 @@ MD,
 | `memory` | Memory |
 | `snake` | Змейка |
 | `sticky-note` | Стикер (multi) |
-| `widget-clock` | Часы |
-| `widget-weather` | Погода |
+| `widget-clock` | Часы (desktop widget) |
+| `widget-weather` | Погода (desktop widget) |
+| `widget-reminders` | Напоминания (лента + local reminders) |
 | `demo-calculator` | Calculator (демо) |
+
+## Виджеты на столе
+
+- `shellRole: widget` — компактный chrome, без taskbar, z-tier ниже окон
+- USER `desktop.widgets` — add/remove (ПКМ по столу / shell-settings)
+- Prefs в `user_app_data`: `widget.clock`, `widget.weather`, `widget.reminders`
 
 PWA: vite-plugin-pwa (shell + SW); NetworkFirst GET `/api/*`; offline banner + write outbox — **DONE**.
 
-Документы: `docs/system/README.md`, `TZ.md`
+Документы: `docs/system/README.md`, `docs/APPS.md`
 
 ← [[Home]] · [[AppsCatalog]]
 MD,
@@ -1778,7 +1787,7 @@ MD,
 
 | Домен | Claimant | Apps (id) |
 |-------|----------|-----------|
-| System | — | settings, shell-settings, browser, chess, tic-tac-toe, sudoku, minesweeper, solitaire, game-2048, memory, snake, sticky-note, widget-clock, widget-weather, demo-calculator |
+| System | — | settings, shell-settings, browser, games, sticky-note, **widget-clock/weather/reminders**, demo-calculator |
 | Main | main | main-users, main-user, main-groups, main-group, main-ous, main-ou, main-claimants, main-claimant, main-audit |
 | Device | device | device-devices…device-license-key (17) |
 | Explorer | explorer | explorer + pickers + notepad/markdown/code/pdf/office/diff/map/image/archiver/video/audio (14) |

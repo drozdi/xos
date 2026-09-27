@@ -8,6 +8,7 @@ import { AppShell } from '@/core/appMenu';
 import { AppProvider } from '@/core/context/AppContext';
 import { CoreApiProvider } from '@/core/context/CoreApiContext';
 import { getOrCreateCoreApi } from '@/core/context/coreApiRegistry';
+import { WidgetSkeleton } from '@/core/desktop/WidgetSurface';
 
 import { DemoWindowContent } from './DemoWindowContent';
 import { Window } from './Window';
@@ -19,6 +20,7 @@ import type { WindowState } from './types';
 const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 	const manifest = AppRegistry.get(window.appId);
 	const coreApi = getOrCreateCoreApi(window.id, window.appId);
+	const isWidget = (window.shellRole ?? manifest?.shellRole) === 'widget';
 	const appContextValue = useMemo(
 		() =>
 			manifest
@@ -26,11 +28,23 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 						appId: window.appId,
 						windowId: window.id,
 						instanceKey: window.instanceKey,
-						props: window.props,
+						props: {
+							...window.props,
+							...(window.widgetSettingsTick != null
+								? { __widgetSettingsTick: window.widgetSettingsTick }
+								: {}),
+						},
 						manifest,
 					}
 				: null,
-		[manifest, window.appId, window.id, window.instanceKey, window.props],
+		[
+			manifest,
+			window.appId,
+			window.id,
+			window.instanceKey,
+			window.props,
+			window.widgetSettingsTick,
+		],
 	);
 
 	if (!manifest || !appContextValue) {
@@ -39,19 +53,28 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 
 	const AppComponent = manifest.component;
 
+	const fallback = isWidget ? (
+		<WidgetSkeleton compact={window.height < 90} />
+	) : (
+		<Box p="md">
+			<Loader size="sm" />
+		</Box>
+	);
+
 	return (
 		<CoreApiProvider coreApi={coreApi}>
 			<AppProvider value={appContextValue}>
-				<Suspense
-					fallback={
-						<Box p="md">
-							<Loader size="sm" />
+				<Suspense fallback={fallback}>
+					{/* Widgets skip AppShell: absolute inset collapses until interaction. */}
+					{isWidget ? (
+						<Box h="100%" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+							<AppComponent />
 						</Box>
-					}
-				>
-					<AppShell>
-						<AppComponent />
-					</AppShell>
+					) : (
+						<AppShell>
+							<AppComponent />
+						</AppShell>
+					)}
 				</Suspense>
 			</AppProvider>
 		</CoreApiProvider>

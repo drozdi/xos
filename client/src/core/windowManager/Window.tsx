@@ -14,7 +14,9 @@ import {
 } from 'react';
 import { Rnd } from 'react-rnd';
 
+import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { destroyCoreApi } from '@/core/context/coreApiRegistry';
+import { widgetSurfaceStyle } from '@/core/desktop/WidgetSurface';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { WindowContextMenu } from '@/core/contextMenu';
@@ -25,7 +27,12 @@ import { useChildWindowStore } from './childWindowStore';
 import { useWindowAutoSize } from './useWindowAutoSize';
 import { WindowSizeContext } from './useWindowSize';
 import { useWmStore } from './useWmStore';
-import { emitWindowFocus, emitWindowResize, getWindowApi } from './windowApiRegistry';
+import {
+	emitWindowDragStart,
+	emitWindowFocus,
+	emitWindowResize,
+	getWindowApi,
+} from './windowApiRegistry';
 import {
 	buildDragCancelSelector,
 	resolveWindowDragConfig,
@@ -74,10 +81,12 @@ function WindowComponent({ windowId, children }: WindowProps) {
 
 	const isMobile = useMediaQuery(MOBILE_BREAKPOINT, false, { getInitialValueInEffect: true });
 	const [isDragging, setIsDragging] = useState(false);
+	const [widgetControlsVisible, setWidgetControlsVisible] = useState(false);
 	const rndRef = useRef<Rnd>(null);
 	const shellRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
-	const titlebarHeight = isMobile ? 44 : 36;
+	const isWidget = windowState?.shellRole === 'widget';
+	const titlebarHeight = isWidget ? 0 : isMobile ? 44 : 36;
 	const taskbarHeight = HKEY_CONFIG_DEFAULTS.taskbar.height;
 	const { minWidth, minHeight, dragMargin } = HKEY_CONFIG_DEFAULTS.window;
 	const viewport = useWindowManagerViewport();
@@ -129,11 +138,27 @@ function WindowComponent({ windowId, children }: WindowProps) {
 
 	const dragConfig = useMemo(
 		() =>
-			resolveWindowDragConfig({
-				dragHandles: windowState?.dragHandles,
-				dragCancel: windowState?.dragCancel,
-			}),
-		[windowState?.dragCancel, windowState?.dragHandles],
+			resolveWindowDragConfig(
+				isWidget
+					? {
+							dragHandles: ['.xos-widget-shell'],
+							dragCancel: [
+								`.${XOS_WINDOW_NO_DRAG_CLASS}`,
+								'button',
+								'input',
+								'textarea',
+								'select',
+								'a',
+								'[role="button"]',
+								'[contenteditable="true"]',
+							],
+						}
+					: {
+							dragHandles: windowState?.dragHandles,
+							dragCancel: windowState?.dragCancel,
+						},
+			),
+		[isWidget, windowState?.dragCancel, windowState?.dragHandles],
 	);
 	const dragCancelSelector = useMemo(
 		() => buildDragCancelSelector(dragConfig.dragCancel),
@@ -222,6 +247,43 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		windowState?.y,
 	]);
 
+	// Widgets: re-sync Rnd after lazy/content paint (otherwise UI stays on skeleton until hover).
+	useEffect(() => {
+		if (!isWidget || !windowState || isMaximizedLayout || !boundsReady) {
+			return;
+		}
+		const outer = contentRef.current;
+		if (!outer) {
+			return;
+		}
+		const sync = () => {
+			rndRef.current?.updateSize({
+				width: windowState.width,
+				height: windowState.height,
+			});
+		};
+		const ro = new ResizeObserver(() => {
+			sync();
+		});
+		ro.observe(outer);
+		const mo = new MutationObserver(() => {
+			sync();
+		});
+		mo.observe(outer, { childList: true, subtree: true });
+		sync();
+		return () => {
+			ro.disconnect();
+			mo.disconnect();
+		};
+	}, [
+		boundsReady,
+		isMaximizedLayout,
+		isWidget,
+		windowId,
+		windowState?.height,
+		windowState?.width,
+	]);
+
 	useEffect(() => {
 		if (!windowState?.maximized || isMobile || !boundsReady) {
 			return;
@@ -276,7 +338,8 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const handleDragStart = useCallback(() => {
 		setIsDragging(true);
 		handleFocus();
-	}, [handleFocus]);
+		emitWindowDragStart(windowId);
+	}, [handleFocus, windowId]);
 
 	const handleDragStop = useCallback(
 		(_event: unknown, data: { x: number; y: number }) => {
@@ -428,19 +491,37 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		],
 	);
 
+	const handleOpenWidgetSettings = useCallback(() => {
+		const current = useWmStore.getState().windows[windowId];
+		updateWindow(windowId, {
+			widgetSettingsTick: (current?.widgetSettingsTick ?? 0) + 1,
+		});
+	}, [updateWindow, windowId]);
+
 	if (!windowState) {return null;}
 
 	const controlSize = isMobile ? 44 : 36;
 	const canDrag = !isMaximizedLayout && !positionFixed;
-	const canResize = !isMaximizedLayout && resizable;
+	const canResize = !isMaximizedLayout && resizable && !isWidget;
+	const manifestMin = AppRegistry.get(windowState.appId)?.minSize;
+	const rndMinWidth = isWidget
+		? (manifestMin?.width ?? 80)
+		: isMobile
+			? mobileBounds.width
+			: (manifestMin?.width ?? minWidth);
+	const rndMinHeight = isWidget
+		? (manifestMin?.height ?? 48)
+		: isMobile
+			? mobileBounds.height
+			: (manifestMin?.height ?? minHeight);
 
 	return (
 		<Rnd
 			ref={rndRef}
 			key={rndKey}
 			default={defaultBounds}
-			minWidth={isMobile ? mobileBounds.width : minWidth}
-			minHeight={isMobile ? mobileBounds.height : minHeight}
+			minWidth={rndMinWidth}
+			minHeight={rndMinHeight}
 			dragHandleClassName={XOS_WINDOW_DRAG_HANDLE_CLASS}
 			cancel={dragCancelSelector}
 			disableDragging={!canDrag}
@@ -451,7 +532,8 @@ function WindowComponent({ windowId, children }: WindowProps) {
 				pointerEvents: 'auto',
 				display: 'flex',
 				flexDirection: 'column',
-				willChange: isDragging ? 'transform' : undefined,
+				// Avoid sticky will-change on widgets — blocks paint until interaction.
+				willChange: !isWidget && isDragging ? 'transform' : undefined,
 			}}
 			onDragStart={handleDragStart}
 			onResizeStart={handleFocus}
@@ -460,68 +542,122 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		>
 			<Box
 				ref={shellRef}
+				className={isWidget ? `xos-widget-shell ${XOS_WINDOW_DRAG_HANDLE_CLASS}` : undefined}
 				data-xos-window-id={windowId}
+				data-xos-shell-role={windowState.shellRole ?? 'app'}
 				style={{
 					display: 'flex',
 					flexDirection: 'column',
 					height: '100%',
-					backgroundColor: 'var(--xos-window-bg)',
-					color: 'var(--xos-window-text)',
-					border: '1px solid var(--xos-window-border)',
+					position: 'relative',
+					backgroundColor: isWidget ? 'transparent' : 'var(--xos-window-bg)',
+					color: isWidget ? 'inherit' : 'var(--xos-window-text)',
+					border: isWidget ? 'none' : '1px solid var(--xos-window-border)',
 					borderRadius: 0,
-					boxShadow: 'var(--xos-window-shadow)',
-					overflow: 'hidden',
+					boxShadow: isWidget ? 'none' : 'var(--xos-window-shadow)',
+					overflow: isWidget ? 'visible' : 'hidden',
+					cursor: isWidget && canDrag ? 'grab' : undefined,
 				}}
+				onMouseDown={isWidget ? handleFocus : undefined}
+				onMouseEnter={isWidget ? () => setWidgetControlsVisible(true) : undefined}
+				onMouseLeave={isWidget ? () => setWidgetControlsVisible(false) : undefined}
 			>
-				<Group
-					className={`${XOS_WINDOW_TITLEBAR_CLASS} ${XOS_WINDOW_DRAG_HANDLE_CLASS}`}
-					gap={0}
-					wrap="nowrap"
-					justify="space-between"
-					style={{
-						flexShrink: 0,
-						height: isMobile ? 44 : 36,
-						cursor: canDrag ? 'move' : 'default',
-						background: 'var(--xos-window-titlebar-bg)',
-						borderBottom: '1px solid var(--xos-window-titlebar-border)',
-						color: 'var(--xos-window-text)',
-						userSelect: 'none',
-						paddingLeft: 12,
-						paddingRight: 0,
-					}}
-					onMouseDown={handleFocus}
-					onDoubleClick={handleTitlebarDoubleClick}
-				>
-					<Text size="sm" fw={500} truncate style={{ flex: 1, minWidth: 0 }} c="inherit" pr="xs">
-						{windowState.title}
-					</Text>
-					<Group gap={0} wrap="nowrap" style={{ height: '100%' }}>
-						<WindowControl
-							label="Minimize"
-							size={controlSize}
-							onClick={handleMinimize}
+				{isWidget ? (
+					<Group
+						className={`xos-widget-controls ${XOS_WINDOW_NO_DRAG_CLASS}`}
+						gap={2}
+						wrap="nowrap"
+						style={{
+							position: 'absolute',
+							top: 4,
+							right: 4,
+							zIndex: 2,
+							opacity: widgetControlsVisible ? 1 : 0,
+							transition: 'opacity 120ms ease',
+							pointerEvents: widgetControlsVisible ? 'auto' : 'none',
+						}}
+					>
+						<ActionIcon
+							aria-label="Settings"
+							className={XOS_WINDOW_NO_DRAG_CLASS}
+							variant="filled"
+							color="dark"
+							size={22}
+							radius="xl"
+							onClick={handleOpenWidgetSettings}
 						>
-							−
-						</WindowControl>
-						{!positionFixed ? (
-							<WindowControl
-								label={windowState.maximized && !isMobile ? 'Restore' : 'Maximize'}
-								size={controlSize}
-								onClick={handleMaximizeToggle}
-							>
-								{windowState.maximized && !isMobile ? '⧉' : '□'}
-							</WindowControl>
-						) : null}
-						<WindowControl
-							label="Close"
-							size={controlSize}
-							variant="close"
+							⚙
+						</ActionIcon>
+						<ActionIcon
+							aria-label="Close"
+							className={XOS_WINDOW_NO_DRAG_CLASS}
+							variant="filled"
+							color="dark"
+							size={22}
+							radius="xl"
 							onClick={handleClose}
 						>
 							×
-						</WindowControl>
+						</ActionIcon>
 					</Group>
-				</Group>
+				) : (
+					<Group
+						className={`${XOS_WINDOW_TITLEBAR_CLASS} ${XOS_WINDOW_DRAG_HANDLE_CLASS}`}
+						gap={0}
+						wrap="nowrap"
+						justify="space-between"
+						style={{
+							flexShrink: 0,
+							height: titlebarHeight,
+							cursor: canDrag ? 'move' : 'default',
+							background: 'var(--xos-window-titlebar-bg)',
+							borderBottom: '1px solid var(--xos-window-titlebar-border)',
+							color: 'var(--xos-window-text)',
+							userSelect: 'none',
+							paddingLeft: 12,
+							paddingRight: 0,
+						}}
+						onMouseDown={handleFocus}
+						onDoubleClick={handleTitlebarDoubleClick}
+					>
+						<Text
+							size="sm"
+							fw={500}
+							truncate
+							style={{ flex: 1, minWidth: 0 }}
+							c="inherit"
+							pr="xs"
+						>
+							{windowState.title}
+						</Text>
+						<Group gap={0} wrap="nowrap" style={{ height: '100%' }}>
+							<WindowControl
+								label="Minimize"
+								size={controlSize}
+								onClick={handleMinimize}
+							>
+								−
+							</WindowControl>
+							{!positionFixed ? (
+								<WindowControl
+									label={windowState.maximized && !isMobile ? 'Restore' : 'Maximize'}
+									size={controlSize}
+									onClick={handleMaximizeToggle}
+								>
+									{windowState.maximized && !isMobile ? '⧉' : '□'}
+								</WindowControl>
+							) : null}
+							<WindowControl
+								label="Close"
+								size={controlSize}
+								variant="close"
+								onClick={handleClose}
+							>
+								×
+							</WindowControl>
+						</Group>
+					</Group>
+				)}
 
 				<WindowSizeContext.Provider value={contentSizeValue}>
 					<Box
@@ -532,13 +668,20 @@ function WindowComponent({ windowId, children }: WindowProps) {
 							position: 'relative',
 							flex: autoSize ? '0 0 auto' : 1,
 							minHeight: autoSize ? undefined : 0,
-							overflow: autoSize ? 'hidden' : 'auto',
+							overflow: autoSize || isWidget ? 'hidden' : 'auto',
+							...(isWidget ? widgetSurfaceStyle : null),
 							['--window-width' as string]: `${contentSizeValue.width}px`,
 							['--window-height' as string]: `${contentSizeValue.height}px`,
 						}}
 					>
 						<WindowContextMenu windowId={windowId} windowState={windowState}>
-							<Box data-xos-window-content style={{ minHeight: autoSize ? undefined : '100%' }}>
+							<Box
+								data-xos-window-content
+								style={{
+									minHeight: autoSize ? undefined : '100%',
+									height: isWidget || !autoSize ? '100%' : undefined,
+								}}
+							>
 								{children}
 								<ChildWindowPortalGate windowId={windowId} />
 							</Box>

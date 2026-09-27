@@ -1,10 +1,11 @@
-import { Alert, Select, Stack, Text } from '@mantine/core';
+import { Alert, Divider, Select, Stack, Text } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { mainOuApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { WidgetsCatalogPanel } from '@/core/desktop/WidgetsCatalogPanel';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { useLayoutContext } from '@/core/layout/LayoutContext';
 import { useSetting } from '@/core/settings/hooks';
@@ -95,6 +96,8 @@ export default function ShellSettingsApp() {
 				searchable
 				clearable
 			/>
+			<Divider label="Виджеты" labelPosition="left" />
+			<WidgetsCatalogPanel />
 		</Stack>
 	);
 }

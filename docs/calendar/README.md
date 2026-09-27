@@ -2,10 +2,11 @@
 
 Личные календари, события, шаринг и overlay из других модулей.
 
-## Claimant
+## Доступ
 
-- **Код:** `calendar`
-- **Права:** `can_read`, `can_write`
+- **Роль:** `ROLE_CALENDAR` (`ProtectedAppModules`)
+- **Манифест:** `requiredRole: 'calendar'`, `canAccess: canUseCalendar()`
+- **Claimant:** `calendar` — `can_read`, `can_write`
 
 ## Приложения
 

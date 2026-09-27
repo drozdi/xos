@@ -27,6 +27,10 @@ export interface WindowState {
 	resizable: boolean;
 	positionFixed: boolean;
 	autoSize: WindowAutoSizeMode;
+	/** Shell role from manifest (widget stays below apps). */
+	shellRole: 'app' | 'widget';
+	/** Bumped by chrome ⚙ to open in-app settings. */
+	widgetSettingsTick?: number;
 	preMaximize?: {
 		x: number;
 		y: number;
@@ -56,6 +60,7 @@ export interface OpenWindowPayload {
 	resizable?: boolean;
 	positionFixed?: boolean;
 	autoSize?: WindowAutoSizeMode;
+	shellRole?: 'app' | 'widget';
 }
 
 export interface PersistedWindowState {
@@ -76,7 +81,7 @@ export interface PersistedWindowState {
 	documentPath?: string;
 }
 
-export type WindowEvent = 'close' | 'focus' | 'resize';
+export type WindowEvent = 'close' | 'focus' | 'resize' | 'dragStart';
 
 export type CloseEventHandler = () => boolean | void | Promise<boolean | void>;
 export type WindowEventHandler = () => void;

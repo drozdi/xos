@@ -23,6 +23,7 @@ function makeWindow(overrides: Partial<WindowState> = {}): WindowState {
 		resizable: true,
 		positionFixed: false,
 		autoSize: false,
+		shellRole: 'app',
 		...overrides,
 	};
 }

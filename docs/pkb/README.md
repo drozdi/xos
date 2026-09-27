@@ -2,10 +2,12 @@
 
 Personal Knowledge Base: vaults, markdown-заметки, wikilinks, граф, поиск.
 
-## Claimant
+## Доступ
 
-- **Код:** `pkb`
-- **Права:** `can_read`, `can_write`
+- **Роль:** `ROLE_PKB` (`ProtectedAppModules`)
+- **Манифест:** `requiredRole: 'pkb'`, `canAccess: canUsePkb()`
+- **Claimant:** `pkb` — `can_read`, `can_write`
+- Vault ACL (owner / reader / editor) — sharing
 
 ## Приложения
 

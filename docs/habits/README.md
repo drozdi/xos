@@ -15,7 +15,7 @@ client/src/apps/habits/
 client/src/features/habits/habitUtils.ts
 ```
 
-Доступ: как Todo (`requiredRole: todo` / `canUseTodo`).
+Доступ: как Todo — любой авторизованный (`canUseTodo()`), без `ROLE_TODO`.
 
 ## Документы
 

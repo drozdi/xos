@@ -1,8 +1,16 @@
+export type WeatherHour = {
+	time: string;
+	temperature: number;
+	weatherCode: number;
+	windSpeed: number;
+};
+
 export type WeatherSnapshot = {
 	temperature: number;
 	weatherCode: number;
 	windSpeed: number;
 	placeName: string;
+	hourly: WeatherHour[];
 };
 
 const WMO: Record<number, string> = {
@@ -56,6 +64,8 @@ export async function fetchWeather(lat: number, lon: number, placeName: string):
 	url.searchParams.set('latitude', String(lat));
 	url.searchParams.set('longitude', String(lon));
 	url.searchParams.set('current', 'temperature_2m,weather_code,wind_speed_10m');
+	url.searchParams.set('hourly', 'temperature_2m,weather_code,wind_speed_10m');
+	url.searchParams.set('forecast_days', '1');
 	url.searchParams.set('timezone', 'auto');
 	const res = await fetch(url);
 	if (!res.ok) {
@@ -67,12 +77,46 @@ export async function fetchWeather(lat: number, lon: number, placeName: string):
 			weather_code?: number;
 			wind_speed_10m?: number;
 		};
+		hourly?: {
+			time?: string[];
+			temperature_2m?: number[];
+			weather_code?: number[];
+			wind_speed_10m?: number[];
+		};
 	};
+
+	const times = data.hourly?.time ?? [];
+	const temps = data.hourly?.temperature_2m ?? [];
+	const codes = data.hourly?.weather_code ?? [];
+	const winds = data.hourly?.wind_speed_10m ?? [];
+	const now = Date.now();
+	const hourly: WeatherHour[] = [];
+	for (let i = 0; i < times.length; i++) {
+		const t = times[i];
+		if (!t) {
+			continue;
+		}
+		const ts = new Date(t).getTime();
+		if (Number.isNaN(ts) || ts < now - 60 * 60 * 1000) {
+			continue;
+		}
+		hourly.push({
+			time: t,
+			temperature: temps[i] ?? 0,
+			weatherCode: codes[i] ?? 0,
+			windSpeed: winds[i] ?? 0,
+		});
+		if (hourly.length >= 12) {
+			break;
+		}
+	}
+
 	return {
 		temperature: data.current?.temperature_2m ?? 0,
 		weatherCode: data.current?.weather_code ?? 0,
 		windSpeed: data.current?.wind_speed_10m ?? 0,
 		placeName,
+		hourly,
 	};
 }
 

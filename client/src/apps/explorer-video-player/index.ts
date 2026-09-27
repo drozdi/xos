@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canReadExplorer } from '@/features/explorer/explorerAccess';
 import { registerExplorerFileAssociation } from '@/features/explorer/openWithRegistry';
 
 import { VideoPlayerIcon } from './VideoPlayerIcon';
@@ -27,6 +28,7 @@ const manifest: AppManifest = {
 	startMenuGroup: 'tools',
 	taskbarGroup: 'explorer-tools',
 	requiredRole: 'explorer',
+	canAccess: canReadExplorer,
 	singleInstance: true,
 	startMenu: true,
 	menu: () => import('./menu').then((module) => module.default),

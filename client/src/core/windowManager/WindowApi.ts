@@ -26,6 +26,7 @@ export function createWindowApi(windowId: string): WindowApi {
 	const closeHandlers = new Set<CloseEventHandler>();
 	const focusHandlers = new Set<WindowEventHandler>();
 	const resizeHandlers = new Set<WindowEventHandler>();
+	const dragStartHandlers = new Set<WindowEventHandler>();
 
 	const api: WindowApi = {
 		close: async (force = false) => {
@@ -129,7 +130,13 @@ export function createWindowApi(windowId: string): WindowApi {
 		},
 
 		on: ((event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => {
-			const handlers = getHandlers(event, closeHandlers, focusHandlers, resizeHandlers);
+			const handlers = getHandlers(
+				event,
+				closeHandlers,
+				focusHandlers,
+				resizeHandlers,
+				dragStartHandlers,
+			);
 			handlers.add(handler);
 			return () => {
 				handlers.delete(handler);
@@ -137,7 +144,13 @@ export function createWindowApi(windowId: string): WindowApi {
 		}) as WindowApi['on'],
 
 		off: (event: WindowEvent, handler: CloseEventHandler | WindowEventHandler) => {
-			getHandlers(event, closeHandlers, focusHandlers, resizeHandlers).delete(handler);
+			getHandlers(
+				event,
+				closeHandlers,
+				focusHandlers,
+				resizeHandlers,
+				dragStartHandlers,
+			).delete(handler);
 		},
 
 		createChildWindow: (options: ChildWindowOptions): ChildWindowHandle => {
@@ -159,7 +172,12 @@ export function createWindowApi(windowId: string): WindowApi {
 		},
 	};
 
-	registerWindowApi(windowId, api, { closeHandlers, focusHandlers, resizeHandlers });
+	registerWindowApi(windowId, api, {
+		closeHandlers,
+		focusHandlers,
+		resizeHandlers,
+		dragStartHandlers,
+	});
 	return api;
 }
 
@@ -173,6 +191,7 @@ function getHandlers(
 	closeHandlers: Set<CloseEventHandler>,
 	focusHandlers: Set<WindowEventHandler>,
 	resizeHandlers: Set<WindowEventHandler>,
+	dragStartHandlers: Set<WindowEventHandler>,
 ): Set<CloseEventHandler | WindowEventHandler> {
 	switch (event) {
 		case 'close':
@@ -181,6 +200,8 @@ function getHandlers(
 			return focusHandlers;
 		case 'resize':
 			return resizeHandlers;
+		case 'dragStart':
+			return dragStartHandlers;
 	}
 }
 

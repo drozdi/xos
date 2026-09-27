@@ -27,6 +27,15 @@ export const AppRegistry = {
 		return AppRegistry.getAll().filter((manifest) => AppRegistry.canAccess(manifest));
 	},
 
+	/** Desktop widgets (shellRole=widget), filtered by access. */
+	getWidgets(): AppManifest[] {
+		return AppRegistry.getAvailable().filter((manifest) => manifest.shellRole === 'widget');
+	},
+
+	isWidget(appId: string): boolean {
+		return AppRegistry.get(appId)?.shellRole === 'widget';
+	},
+
 	canAccess(manifest: AppManifest): boolean {
 		if (!canUseAuthenticatedApps()) {
 			return false;

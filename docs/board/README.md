@@ -2,10 +2,12 @@
 
 Trello-like планирование: workspaces → boards → lists → cards.
 
-## Claimant
+## Доступ
 
-- **Код:** `board`
-- **Права:** `can_read`, `can_write`
+- **Роль:** `ROLE_BOARD` (`ProtectedAppModules`)
+- **Манифест:** `requiredRole: 'board'`, `canAccess: canUseBoard()`
+- **Claimant:** `board` — `can_read`, `can_write`
+- Роли workspace/board: owner, admin, editor, observer
 
 ## Приложения
 

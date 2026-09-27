@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canReadExplorer } from '@/features/explorer/explorerAccess';
 
 import { DiffViewerIcon } from './DiffViewerIcon';
 
@@ -18,6 +19,7 @@ const manifest: AppManifest = {
 	startMenuGroup: 'tools',
 	taskbarGroup: 'explorer-tools',
 	requiredRole: 'explorer',
+	canAccess: canReadExplorer,
 	singleInstance: false,
 	startMenu: true,
 	menu: () => import('./menu').then((m) => m.default),

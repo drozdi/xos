@@ -10,6 +10,7 @@ describe('useWmStore', () => {
 			windows: {},
 			activeWindowId: null,
 			nextZIndex: 100,
+			nextWidgetZIndex: 20,
 		});
 	});
 

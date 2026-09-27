@@ -26,12 +26,13 @@
 | PKB | co-editing; plugin marketplace |
 | Inbox | IMAP/SMTP |
 | IncCom | Open Banking / CSV |
+| Desktop | snap-сетка виджетов; sticky sync |
 
 ---
 
 ## Уже сделано (не бэклог)
 
-Homework + parent share · IncCom bank UI · CRM leads · GitHub · habits · Inbox · tags/favorites · Board SSE/Mercure/conflict · PKB FULLTEXT/encrypt/plugins/ZIP/remote sync · Multi-OU (Main/Device/Assets) · PWA cache + offline outbox.
+Homework + parent share · IncCom bank UI · CRM leads · GitHub · habits · Inbox · tags/favorites · Board SSE/Mercure/conflict · PKB FULLTEXT/encrypt/plugins/ZIP/remote sync · Multi-OU (Main/Device/Assets) · PWA cache + offline outbox · **desktop widgets** (clock/weather/reminders, add/remove, prefs).
 
 ```bash
 php bin/console xos:seed-project

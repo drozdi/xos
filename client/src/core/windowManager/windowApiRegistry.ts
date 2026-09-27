@@ -6,6 +6,7 @@ interface WindowApiEntry {
 		closeHandlers: Set<CloseEventHandler>;
 		focusHandlers: Set<WindowEventHandler>;
 		resizeHandlers: Set<WindowEventHandler>;
+		dragStartHandlers: Set<WindowEventHandler>;
 	};
 }
 
@@ -48,5 +49,13 @@ export function emitWindowClose(windowId: string): void {
 	if (!entry) {return;}
 	for (const handler of entry.handlers.closeHandlers) {
 		void handler();
+	}
+}
+
+export function emitWindowDragStart(windowId: string): void {
+	const entry = registry.get(windowId);
+	if (!entry) {return;}
+	for (const handler of entry.handlers.dragStartHandlers) {
+		handler();
 	}
 }

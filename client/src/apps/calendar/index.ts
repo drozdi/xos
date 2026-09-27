@@ -19,6 +19,7 @@ const manifest: AppManifest = {
 	startMenuGroup: 'tools',
 	taskbarGroup: 'tools',
 	singleInstance: true,
+	requiredRole: 'calendar',
 	canAccess: () => canUseCalendar(),
 };
 

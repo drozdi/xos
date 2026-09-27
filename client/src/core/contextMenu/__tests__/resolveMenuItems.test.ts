@@ -39,6 +39,7 @@ function createWindow(overrides: Partial<WindowState> = {}): WindowState {
 		positionFixed: false,
 		autoSize: false,
 		taskbarGroup: 'default',
+		shellRole: 'app',
 		...overrides,
 	};
 }

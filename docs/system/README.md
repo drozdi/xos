@@ -7,43 +7,37 @@
 | ID | Название | Назначение | Backend |
 |----|----------|------------|---------|
 | settings | Settings | Настройки shell, тема, быстрый доступ | `/api/settings`, `/api/desktop-state` |
+| shell-settings | Макет оболочки | layout + OU + **каталог виджетов** | USER settings |
 | browser | Браузер | Встроенный браузер с прокси | `/api/browser/proxy` |
-| chess | Шахматы | Локальная игра | — |
-| tic-tac-toe | Крестики-нолики | Локальная игра | — |
-| sudoku | Судоку | Локальная игра | — |
-| demo-calculator | Calculator | Пример приложения для разработчиков | — |
+| chess…snake | Игры | Локальные игры | — |
+| sticky-note | Стикер | Multi-instance заметки | localStorage |
+| widget-clock | Часы | Desktop widget | `user_app_data` `widget.clock` |
+| widget-weather | Погода | Desktop widget | `user_app_data` `widget.weather` |
+| widget-reminders | Напоминания | Лента shell + локальные reminders | `widget.reminders` |
+| demo-calculator | Calculator | Пример приложения | — |
+
+## Виджеты на рабочем столе
+
+- Манифест: `shellRole: 'widget'`, `showInTaskbar: false`, frameless (свой UI, ⚙/✕ по hover), стек справа сверху.
+- Каталог: USER `desktop.widgets` → `[{ appId, instanceKey, enabled }]`.
+- UX: ПКМ по пустому столу или секция в `shell-settings`.
+- Закрытие виджета → `enabled: false` в каталоге; restore подхватывает enabled.
 
 ## Код
 
 ```
 client/src/apps/settings/
-client/src/apps/browser/
-client/src/apps/chess/
-client/src/apps/tic-tac-toe/
-client/src/apps/sudoku/
-client/src/apps/demo-calculator/
+client/src/apps/shell-settings/
+client/src/apps/widget-*/
+client/src/core/desktop/desktopWidgets.ts
+client/src/core/desktop/DesktopSurface.tsx
 ```
 
 ## Доступ
 
-Все приложения доступны любому авторизованному пользователю (`ROLE_USER`). Игры и demo-calculator не требуют специальных прав.
-
-## Settings
-
-- Загрузка/сохранение настроек пользователя и desktop-state
-- Управление темой (светлая/тёмная)
-- Быстрый доступ к приложениям в меню «Пуск»
-
-## Browser
-
-- Адресная строка, навигация
-- Прокси-запросы через сервер (`BrowserProxyController`) для обхода CORS
-- Множественные экземпляры (`singleInstance: false`, `instanceKey` по timestamp)
-
-## Игры
-
-Полностью клиентские, без API. Используются как примеры UI и window manager.
+Все приложения доступны любому авторизованному пользователю (`ROLE_USER`).
 
 ## Документы
 
 - [TZ.md](TZ.md) — техническое задание
+- [APPS.md](../APPS.md) — полный реестр

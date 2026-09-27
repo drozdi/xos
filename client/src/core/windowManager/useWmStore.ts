@@ -8,12 +8,15 @@ import { removePersistedWindow, schedulePersistWindow } from './persistWindow';
 import type { OpenWindowPayload, WindowState } from './types';
 import { resolveWindowLayoutConfig } from './windowLayout';
 
-const BASE_Z_INDEX = 100;
+const BASE_APP_Z_INDEX = 100;
+const BASE_WIDGET_Z_INDEX = 20;
+const MAX_WIDGET_Z_INDEX = 99;
 
 interface WmStore {
 	windows: Record<string, WindowState>;
 	activeWindowId: string | null;
 	nextZIndex: number;
+	nextWidgetZIndex: number;
 	openWindow: (payload: OpenWindowPayload) => string;
 	closeWindow: (id: string) => void;
 	focusWindow: (id: string) => void;
@@ -24,6 +27,25 @@ interface WmStore {
 	getWindowsByGroup: (wmGroup: string) => WindowState[];
 	minimizeGroup: (wmGroup: string) => void;
 	restoreGroup: (wmGroup: string) => void;
+}
+
+function allocateZIndex(
+	shellRole: 'app' | 'widget',
+	state: { nextZIndex: number; nextWidgetZIndex: number },
+): { zIndex: number; nextZIndex: number; nextWidgetZIndex: number } {
+	if (shellRole === 'widget') {
+		const zIndex = Math.min(state.nextWidgetZIndex, MAX_WIDGET_Z_INDEX);
+		const nextWidgetZIndex =
+			state.nextWidgetZIndex >= MAX_WIDGET_Z_INDEX
+				? BASE_WIDGET_Z_INDEX
+				: state.nextWidgetZIndex + 1;
+		return { zIndex, nextZIndex: state.nextZIndex, nextWidgetZIndex };
+	}
+	return {
+		zIndex: state.nextZIndex,
+		nextZIndex: state.nextZIndex + 1,
+		nextWidgetZIndex: state.nextWidgetZIndex,
+	};
 }
 
 function createWindowId(appId: string, instanceKey: string, id?: string): string {
@@ -45,15 +67,37 @@ function defaultWindowBounds(): Pick<WindowState, 'x' | 'y' | 'width' | 'height'
 	};
 }
 
+/** Top-right stack for desktop widgets (no persisted geometry). */
+function defaultWidgetPosition(width: number, _height: number): { x: number; y: number } {
+	const margin = 16;
+	const gap = 10;
+	const vw =
+		typeof window !== 'undefined' ? window.innerWidth : 1280;
+	const widgets = Object.values(useWmStore.getState().windows).filter(
+		(w) => w.shellRole === 'widget' && !w.minimized,
+	);
+	let y = margin;
+	for (const w of widgets) {
+		const nearRight = w.x + w.width >= vw - width - margin * 2;
+		if (nearRight) {
+			y = Math.max(y, w.y + w.height + gap);
+		}
+	}
+	return {
+		x: Math.max(margin, vw - width - margin),
+		y,
+	};
+}
+
 export const useWmStore = create<WmStore>((set, get) => ({
 	windows: {},
 	activeWindowId: null,
-	nextZIndex: BASE_Z_INDEX,
+	nextZIndex: BASE_APP_Z_INDEX,
+	nextWidgetZIndex: BASE_WIDGET_Z_INDEX,
 
 	openWindow: (payload) => {
 		const id = createWindowId(payload.appId, payload.instanceKey, payload.id);
 		const defaults = defaultWindowBounds();
-		const zIndex = get().nextZIndex;
 
 		const layout = resolveWindowLayoutConfig({
 			resizable: payload.resizable,
@@ -62,6 +106,7 @@ export const useWmStore = create<WmStore>((set, get) => ({
 		});
 
 		const manifest = AppRegistry.get(payload.appId);
+		const shellRole = payload.shellRole ?? manifest?.shellRole ?? 'app';
 		const taskbarGroup =
 			payload.taskbarGroup ??
 			(manifest ? resolveTaskbarGroup(manifest) : payload.appId);
@@ -72,6 +117,15 @@ export const useWmStore = create<WmStore>((set, get) => ({
 				? payload.props.documentPath
 				: undefined);
 
+		const zAlloc = allocateZIndex(shellRole, get());
+
+		const width = payload.width ?? defaults.width;
+		const height = payload.height ?? defaults.height;
+		const widgetPos =
+			shellRole === 'widget' && payload.x == null && payload.y == null
+				? defaultWidgetPosition(width, height)
+				: null;
+
 		const windowState: WindowState = {
 			id,
 			appId: payload.appId,
@@ -79,11 +133,11 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			props: payload.props,
 			...(documentPath ? { documentPath } : {}),
 			title: payload.title,
-			x: payload.x ?? defaults.x,
-			y: payload.y ?? defaults.y,
-			width: payload.width ?? defaults.width,
-			height: payload.height ?? defaults.height,
-			zIndex,
+			x: payload.x ?? widgetPos?.x ?? defaults.x,
+			y: payload.y ?? widgetPos?.y ?? defaults.y,
+			width,
+			height,
+			zIndex: zAlloc.zIndex,
 			minimized: payload.minimized ?? false,
 			maximized: payload.maximized ?? false,
 			wmGroup: payload.wmGroup ?? 'default',
@@ -95,6 +149,7 @@ export const useWmStore = create<WmStore>((set, get) => ({
 			resizable: layout.resizable,
 			positionFixed: layout.positionFixed,
 			autoSize: layout.autoSize,
+			shellRole,
 		};
 
 		if (windowState.maximized) {
@@ -109,7 +164,8 @@ export const useWmStore = create<WmStore>((set, get) => ({
 		set((state) => ({
 			windows: { ...state.windows, [id]: windowState },
 			activeWindowId: id,
-			nextZIndex: state.nextZIndex + 1,
+			nextZIndex: zAlloc.nextZIndex,
+			nextWidgetZIndex: zAlloc.nextWidgetZIndex,
 		}));
 
 		schedulePersistWindow(id);
@@ -138,13 +194,14 @@ export const useWmStore = create<WmStore>((set, get) => ({
 		const windowState = get().windows[id];
 		if (!windowState || get().activeWindowId === id) {return;}
 
-		const zIndex = get().nextZIndex;
+		const zAlloc = allocateZIndex(windowState.shellRole ?? 'app', get());
 		set((state) => ({
 			activeWindowId: id,
-			nextZIndex: state.nextZIndex + 1,
+			nextZIndex: zAlloc.nextZIndex,
+			nextWidgetZIndex: zAlloc.nextWidgetZIndex,
 			windows: {
 				...state.windows,
-				[id]: { ...windowState, zIndex, minimized: false },
+				[id]: { ...windowState, zIndex: zAlloc.zIndex, minimized: false },
 			},
 		}));
 	},

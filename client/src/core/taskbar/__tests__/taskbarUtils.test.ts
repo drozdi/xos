@@ -27,6 +27,7 @@ function makeWindow(partial: Partial<WindowState> & Pick<WindowState, 'id' | 'wm
 		resizable: true,
 		positionFixed: false,
 		autoSize: false,
+		shellRole: 'app',
 		taskbarGroup: partial.taskbarGroup ?? partial.id,
 		...partial,
 	};
@@ -48,6 +49,13 @@ describe('taskbar group utils', () => {
 			makeWindow({ id: 'b', wmGroup: 'tools', taskbarGroup: 'tools', wmSort: 2, title: 'B' }),
 			makeWindow({ id: 'a', wmGroup: 'tools', taskbarGroup: 'tools', wmSort: 1, title: 'A' }),
 			makeWindow({ id: 'c', wmGroup: 'other', taskbarGroup: 'other', wmSort: 0, title: 'C' }),
+			makeWindow({
+				id: 'w',
+				wmGroup: 'tools',
+				taskbarGroup: 'tools',
+				shellRole: 'widget',
+				title: 'Widget',
+			}),
 		]);
 
 		expect(groups).toHaveLength(2);

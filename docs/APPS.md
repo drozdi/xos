@@ -31,7 +31,7 @@
 
 | Домен | Claimant | Приложений | Обзор | ТЗ |
 |-------|----------|------------|-------|-----|
-| Система | — | 7 | [system/README.md](system/README.md) | [system/TZ.md](system/TZ.md) |
+| Система | — | 16+ (игры, widgets, shell) | [system/README.md](system/README.md) | [system/TZ.md](system/TZ.md) |
 | Main | `main` | 9 | [main/README.md](main/README.md) | [main/TZ.md](main/TZ.md) |
 | Device | `device` | 17 | [device/README.md](device/README.md) | [device/TZ.md](device/TZ.md) |
 | Explorer | `explorer` | 14 | [explorer/README.md](explorer/README.md) | [explorer/TZ.md](explorer/TZ.md) |
@@ -70,9 +70,12 @@
 | memory | Memory | games | ✓ | все |
 | snake | Змейка | games | ✓ | все |
 | sticky-note | Стикер | tools | — (multi) | все |
-| widget-clock | Часы | tools | ✓ | все |
-| widget-weather | Погода | tools | ✓ | все |
+| widget-clock | Часы (виджет) | tools | ✓ | shellRole=widget |
+| widget-weather | Погода (виджет) | tools | ✓ | shellRole=widget |
+| widget-reminders | Напоминания (виджет) | tools | ✓ | shellRole=widget |
 | demo-calculator | Calculator | tools | ✓ | все (демо) |
+
+**Виджеты на столе:** `shellRole: 'widget'`, USER `desktop.widgets`, ПКМ по столу / shell-settings. Prefs: `user_app_data` (`widget.clock`, `widget.weather`, `widget.reminders`).
 
 ### Main
 
@@ -111,6 +114,8 @@
 | device-license-key | Ключ лицензии | sub-app |
 
 ### Explorer
+
+Доступ: `requiredRole: explorer` + `canReadExplorer` (все apps ниже).
 
 | ID | Название | Тип |
 |----|----------|-----|
@@ -210,12 +215,12 @@ CRUD list+detail, модуль `server/src/Assets/`, API `/api/assets/*`, shared
 
 | ID | Название | API prefix | Особенности |
 |----|----------|------------|-------------|
-| inccom | Доходы и расходы | `/api/IncCom/` | учёт операций, счета |
-| calendar | Календарь | `/api/calendar/` | overlay: Todo, Board, SchoolTask |
-| todo | Заметки | `/api/todo/` | списки, sharing, due dates |
-| habits | Привычки | `/api/todo/` | трекер на Todo |
-| board | Доска | `/api/board/` | Kanban, SSE/Mercure, conflict UI |
-| pkb | База знаний | `/api/pkb/` | vaults, wikilinks, encrypt, remote sync |
+| inccom | Доходы и расходы | `/api/IncCom/` | `ROLE_INCCOM` |
+| calendar | Календарь | `/api/calendar/` | `ROLE_CALENDAR` + overlay Todo/Board/SchoolTask |
+| todo | Заметки | `/api/todo/` | любой `ROLE_USER`; ACL списков |
+| habits | Привычки | `/api/todo/` | как todo (`canUseTodo`) |
+| board | Доска | `/api/board/` | `ROLE_BOARD`; SSE/Mercure |
+| pkb | База знаний | `/api/pkb/` | `ROLE_PKB`; vaults, remote sync |
 | teamstorm | TeamStorm | `/api/ts/` | URL + PrivateToken (`ROLE_TS`) |
 | github | GitHub Issues | `/api/github/` | PAT, proxy issues (`ROLE_GITHUB`) |
 | inbox | Inbox | `/api/inbox/` | внутренние сообщения User→User |

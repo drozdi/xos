@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import { AppRegistry } from '@/core/appManager/AppRegistry';
 import type { AppManifest } from '@/core/appManager/types';
 import type { WindowState } from '@/core/windowManager/types';
 export interface WindowGroup {
@@ -11,10 +12,24 @@ export function resolveTaskbarGroup(manifest: AppManifest): string {
 	return manifest.taskbarGroup ?? manifest.id;
 }
 
+function isShownInTaskbar(window: WindowState): boolean {
+	if (window.shellRole === 'widget') {
+		return false;
+	}
+	const manifest = AppRegistry.get(window.appId);
+	if (manifest?.showInTaskbar === false) {
+		return false;
+	}
+	return true;
+}
+
 export function groupWindowsByTaskbarGroup(windows: WindowState[]): WindowGroup[] {
 	const groups = new Map<string, WindowState[]>();
 
 	for (const window of windows) {
+		if (!isShownInTaskbar(window)) {
+			continue;
+		}
 		const current = groups.get(window.taskbarGroup) ?? [];
 		current.push(window);
 		groups.set(window.taskbarGroup, current);

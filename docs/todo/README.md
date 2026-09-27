@@ -2,10 +2,10 @@
 
 Списки задач с дедлайнами, sharing и markdown-заметками.
 
-## Claimant
+## Доступ
 
-- **Код:** `todo`, `todo.list`
-- **Права list:** `can_create`, `can_read`, `can_update`, `can_delete`, `can_share`
+- **App shell:** любой авторизованный (`canUseTodo()` → `ROLE_USER`). Модуль **не** в `ProtectedAppModules` (нет `ROLE_TODO`).
+- **Claimant (каталог прав):** `todo`, `todo.list` — опции `can_create|read|update|delete|share` в Main Admin; API списков — владелец / share, не роль модуля.
 
 ## Приложения
 
@@ -53,7 +53,7 @@ client/src/features/todo/
 
 ## Доступ
 
-`canUseTodo()` — проверка прав модуля todo.
+`canUseTodo()` — только «залогинен»; ACL на уровне списков.
 
 ## Документы
 
