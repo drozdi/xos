@@ -1,6 +1,6 @@
 # Каталог приложений XOS
 
-> Обновлено: 2026-09-26 · 100+ зарегистрированных приложений в `client/src/apps/*/index.ts`
+> Обновлено: 2026-09-27 · 100+ зарегистрированных приложений в `client/src/apps/*/index.ts`
 
 Идеи следующих apps: [APP_IDEAS.md](APP_IDEAS.md) · PKB `Notes/AppIdeas.md` · карточка Board «Идеи приложений».
 
@@ -58,8 +58,8 @@
 
 | ID | Название | wmGroup | singleInstance | Доступ |
 |----|----------|---------|----------------|--------|
-| settings | Settings | system | ✓ | все авторизованные |
-| shell-settings | Макет оболочки | system | ✓ | все авторизованные |
+| settings | Настройки | system | ✓ | вкладки profile/date/shell/OU/widgets; `startMenuList: false` (сайдбар Пуска, не «Все») |
+| shell-settings | Макет оболочки | system | alias | → `settings?tab=shell`; `startMenuList: false` |
 | browser | Браузер | browser | — | все |
 | chess | Шахматы | games | ✓ | все |
 | tic-tac-toe | Крестики-нолики | games | ✓ | все |
@@ -70,12 +70,14 @@
 | memory | Memory | games | ✓ | все |
 | snake | Змейка | games | ✓ | все |
 | sticky-note | Стикер | tools | — (multi) | все |
-| widget-clock | Часы (виджет) | tools | ✓ | shellRole=widget |
-| widget-weather | Погода (виджет) | tools | ✓ | shellRole=widget |
-| widget-reminders | Напоминания (виджет) | tools | ✓ | shellRole=widget |
+| widget-clock | Часы (виджет) | tools | ✓ | widget; `startMenuList: false` |
+| widget-weather | Погода (виджет) | tools | ✓ | widget; click↔details, drag≥5px нет |
+| widget-reminders | Напоминания (виджет) | tools | ✓ | widget; `startMenuList: false` |
 | demo-calculator | Calculator | tools | ✓ | все (демо) |
 
-**Виджеты на столе:** `shellRole: 'widget'`, USER `desktop.widgets`, ПКМ по столу / shell-settings. Prefs: `user_app_data` (`widget.clock`, `widget.weather`, `widget.reminders`).
+**Виджеты на столе:** `shellRole: 'widget'`, frameless, USER `desktop.widgets` (в snapshot `/api/desktop-state`), каталог — ПКМ по столу / вкладка «Виджеты». Prefs: `user_app_data` (`widget.clock` / `widget.weather` / `widget.reminders`) через `getOptional` (list+prefix, без GET 404).
+
+**Сессия окон (desktop-state):** USER/APP/WIN; `APP.launchHistory` + `WIN` (позиция, min/max). Close → убрать из history и WIN; на другом устройстве закрытое не восстанавливается.
 
 ### Main
 

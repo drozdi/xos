@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import axios, { type InternalAxiosRequestConfig } from 'axios';
 
 import { apiClient } from '@/core/api/client';
 
@@ -40,19 +39,14 @@ export async function get(code: string): Promise<UserAppDataDto> {
 	return userAppDataDtoSchema.parse(data);
 }
 
-/** Returns null when the key was never saved (404 is normal for optional prefs). */
+/**
+ * Returns null when the key was never saved.
+ * Uses list+exact match (200) instead of GET-by-code (404) so optional
+ * prefs like widget.reminders never show as missing-resource errors.
+ */
 export async function getOptional(code: string): Promise<UserAppDataDto | null> {
-	try {
-		const { data } = await apiClient.get<unknown>(PATHS.one(code), {
-			_silent404: true,
-		} as InternalAxiosRequestConfig);
-		return userAppDataDtoSchema.parse(data);
-	} catch (error) {
-		if (axios.isAxiosError(error) && error.response?.status === 404) {
-			return null;
-		}
-		throw error;
-	}
+	const items = await list(code);
+	return items.find((item) => item.code === code) ?? null;
 }
 
 export async function upsert(payload: UserAppDataUpsertRequest): Promise<UserAppDataDto> {

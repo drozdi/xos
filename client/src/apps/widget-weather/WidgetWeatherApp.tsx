@@ -48,7 +48,7 @@ export default function WidgetWeatherApp() {
 		setWidgetSize(COLLAPSED);
 	}, [setWidgetSize]);
 
-	// While dragging to another place — hide hourly details.
+	// Real drag (not click): collapse hourly list and ignore the trailing click.
 	useEffect(() => {
 		return coreApi.window.on('dragStart', () => {
 			suppressClickRef.current = true;

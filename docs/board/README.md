@@ -60,6 +60,7 @@ client/src/features/board/
 | Activity log | `GET /boards/{id}/activity` |
 | Realtime | SSE `/boards/{id}/events`; optional Mercure (`MERCURE_*`); polling fallback |
 | Conflict | `expected_updated_at` → 409 на PUT card |
+| UI prefs | `board.ui.*` → `user_app_data` (`getOptional`) |
 
 ## Интеграция с Calendar
 

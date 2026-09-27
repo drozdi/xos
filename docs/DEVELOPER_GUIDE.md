@@ -68,6 +68,10 @@ export default manifest;
 | `defaultSize` | `{ width, height }` | Размер окна при первом открытии |
 | `minSize` | `{ width, height }` | Минимальный размер (react-rnd) |
 | `wmGroup` | `string` | Группа на панели задач (`tools`, `admin`, `system`, …) |
+| `startMenu` | `boolean` | Показывать в меню «Пуск» (по умолчанию true) |
+| `startMenuList` | `boolean` | Показывать в колонке «Все приложения». `false` — только сайдбар/пин (settings, shell-settings, widgets) |
+| `shellRole` | `'app' \| 'widget'` | `widget` — frameless карточка на столе, без taskbar, z-tier ниже окон |
+| `showInTaskbar` | `boolean` | По умолчанию false для widget |
 | `singleInstance` | `boolean` | При повторном launch — фокус и restore существующего окна |
 | `requiredRole` | `string` | Доступ только при наличии роли (`admin` → `ROLE_ADMIN`) |
 | `requiredScope` | `string` | Доступ только при наличии scope у пользователя |
@@ -106,7 +110,7 @@ useEffect(() => {
 
 - Экспорт `default` — функциональный компонент.
 - Оборачивается в `CoreApiContext` и `AppContext` при открытии окна.
-- Используйте Mantine + Tailwind по стилю существующих apps.
+- UI: Ant Design + существующие `@/ui/*` (см. § UI-стек); не добавлять новые `@mantine/*`.
 - Для HTTP-запросов предпочтительно TanStack Query + endpoints из `core/api/endpoints/`.
 
 ### Слой `services/`
@@ -176,17 +180,15 @@ const [theme, setTheme] = useSetting('USER', 'theme', 'light');
 
 ## Хранилища данных пользователя
 
-> Полный контракт границ: [`docs/ADR-user-app-data.md`](ADR-user-app-data.md).  
-> Политика sync (Accepted): [`docs/ADR-desktop-ux-sync.md`](ADR-desktop-ux-sync.md) — **DONE**.  
-> **Target wire:** один load/save — [`docs/ADR-desktop-state-batch.md`](ADR-desktop-state-batch.md) · план [`platform/README.md`](platform/README.md).  
-> Поведение as-is — раздел **«Desktop UX sync»** ниже; target — **«Desktop state batch»**.
+> Контракт границ: [ARCHITECTURE.md](ARCHITECTURE.md) § user_app_data / Desktop UX sync / Desktop state batch.  
+> As-is wire: разделы ниже + [platform/README.md](platform/README.md).
 
 Четыре разных места — **не** смешивать:
 
 | Хранилище | API / helper | Когда использовать |
 |-----------|--------------|-------------------|
 | **`user_settings`** | `/api/settings` · `api.settings` / `core/settings` | Desktop shell: layout (`USER`), window geometry (`WIN`), launch history / shell chrome (`APP`), defaults (`HKEY_CONFIG` / `CONFIG`) |
-| **`user_app_data`** | `/api/user-data` · `userData.ts` | Opaque prefs модуля, drafts, app-local UI state; **Explorer last path** `explorer.last_path` → `{ "path": string }` (см. ADR-desktop-ux-sync) |
+| **`user_app_data`** | `/api/user-data` · `userData.ts` | Opaque prefs модуля, drafts, app-local UI state; **Explorer last path** `explorer.last_path` → `{ "path": string }` |
 | **Доменные entity** | `/api/{module}/…` | Данные с бизнес-смыслом, связями, claimant scopes, списками/поиском |
 | **`User.options`** | `/api/account/options` | **Только legacy** профильный blob аккаунта |
 
@@ -209,13 +211,16 @@ const [theme, setTheme] = useSetting('USER', 'theme', 'light');
 |------|------------|
 | `todo.ui.filters` | UI-фильтры модуля todo |
 | `inccom.draft.compose` | Черновик формы IncCom |
-| `explorer.last_path` | Global last folder Explorer: `{ "path": string }` (ADR-desktop-ux-sync) |
+| `explorer.last_path` | Global last folder Explorer: `{ "path": string }` |
+| `widget.clock` / `widget.weather` / `widget.reminders` | Prefs desktop widgets |
+| `board.ui.*` / `pkb.ui.*` | UI prefs Board / PKB |
 
-Не дублировать категории settings (`USER`/`WIN`/…) внутри `code`. Не класть secrets в `value`.
+Не дублировать категории settings (`USER`/`WIN`/…) внутри `code`. Не класть secrets в `value`.  
+Каталог виджетов (`desktop.widgets`) — **USER** settings / desktop-state, не `user_app_data`.
 
 ### Клиентский helper
 
-Используйте **`client/src/core/api/endpoints/userData.ts`** (list / get / upsert / delete, Zod).  
+Используйте **`client/src/core/api/endpoints/userData.ts`** (list / get / **getOptional** / upsert / delete, Zod).  
 **Не** встраивать app prefs в `SettingManager` и категории `USER`|`APP`|`WIN`. Query keys: `['userData', …]`.
 
 ```typescript
@@ -223,8 +228,13 @@ import { list, upsert, userDataApi } from '@/core/api/endpoints/userData';
 
 const items = await list('todo.');
 await upsert({ code: 'todo.ui.filters', value: { status: 'open' } });
+// optional prefs (нет ключа → null; без GET 404):
+const dto = await userDataApi.getOptional('widget.weather');
 // или: await userDataApi.delete('todo.ui.filters');
 ```
+
+- `get(code)` — 404, если ключа нет (обязательные ресурсы).
+- `getOptional(code)` — `list(prefix=code)` + exact match; для prefs, которые могут отсутствовать.
 
 PUT всегда **full replace** `value` (merge на клиенте, если нужен частичный апдейт).
 
@@ -232,7 +242,7 @@ PUT всегда **full replace** `value` (merge на клиенте, если �
 
 ## Desktop UX sync (cross-browser)
 
-> Политика: [`ADR-desktop-ux-sync.md`](ADR-desktop-ux-sync.md). Ниже — baseline SoT/LWW и исторический контекст.  
+> Политика: [ARCHITECTURE.md](ARCHITECTURE.md) § Desktop UX sync.  
 > Включить API settings: `VITE_USE_API_SETTINGS=true`. Guest / flag off → только localStorage.
 
 ### Source of truth
@@ -275,7 +285,7 @@ MVP: **last-write-wins** — побеждает последний успешн�
 
 - Два браузера одновременно: ожидаемо; **нет** optimistic lock и **нет** merge UI.
 - Поле **`updatedAt`** в DTO `/api/settings` и `/api/user-data` — **информативное** (отладка / отображение); клиент **не** сравнивает его для resolve и **не** шлёт If-Match / version.
-- Согласовано с ADR-user-app-data (optimistic lock — out of scope).
+- Согласовано с ARCHITECTURE § user_app_data (optimistic lock — out of scope).
 
 ### Offline buffer — settings
 
@@ -309,17 +319,18 @@ MVP: **last-write-wins** — побеждает последний успешн�
 
 ## Desktop state batch (as-is)
 
-> ADR: [`ADR-desktop-state-batch.md`](ADR-desktop-state-batch.md) (**Accepted**, выбор **A**).  
-> Текущий shell wire уже переведён на aggregate endpoint.
+> ADR: [ARCHITECTURE.md](ARCHITECTURE.md) § Desktop state batch (**Accepted**, выбор **A**).  
+> Wire: `desktopStatePersister.ts` + `desktopStateApi`.
 
 | | As-is |
 |--|-------|
 | Load | `desktopStateApi.load()` → `GET /api/desktop-state` |
 | Save | `desktopStateApi.save(snapshot)` → `PUT /api/desktop-state` |
-| Snapshot | USER allowlist + `APP.launchHistory` + все `WIN.*` + `explorerLastPath` |
+| Snapshot | все локальные **USER/APP/WIN** (theme, pinned, `desktop.widgets`, `launchHistory`, WIN.*) + `explorerLastPath` |
 | Debounce | **2500 ms** один save на весь snapshot + flush hide/unload |
-| Orphans | Сервер удаляет отсутствующие managed `WIN`, omitted USER allowlist / `launchHistory`, `explorerLastPath: null` |
-| Managed writes | `CompositeAdapter` для managed keys не шлёт `/api/settings`; роутит в `DesktopStatePersister` |
+| Orphans | Сервер удаляет USER/APP/WIN-ключи, отсутствующие в body; `explorerLastPath: null` → delete |
+| Session | Close окна → remove `launchHistory` entry + `WIN` key (не при tab unload) |
+| Managed writes | `CompositeAdapter` → `DesktopStatePersister`, не `/api/settings` |
 | Guest / flag off | Без HTTP `desktop-state`, только localStorage |
 | CRUD | `/api/settings`, `/api/user-data` остаются для adhoc / non-desktop |
 
@@ -342,9 +353,10 @@ const modules = import.meta.glob('../../apps/*/index.ts', { eager: true });
 - Ключ: `{appId}/{windowId}` (например `demo-calculator/demo-calculator__default`)
 - Сохраняется: позиция, размер, minimized/maximized, wmGroup, wmSort, title
 - При `launchApp` окно восстанавливается из WIN, если настройки инициализированы
-- При закрытии — запись удаляется из WIN
+- При закрытии (не unload) — запись удаляется из **WIN** и из **APP.launchHistory**
 
-Приложению **не нужно** вручную сохранять геометрию окна — это делает Window Manager.
+Приложению **не нужно** вручную сохранять геометрию окна — это делает Window Manager.  
+Виджеты (`shellRole: 'widget'`): закрытие → `desktop.widgets[].enabled = false` (+ WIN/history как у apps).
 
 ## Role / Scope gating
 
@@ -402,7 +414,7 @@ const windowId = await useAppManager.getState().launchApp('my-app', {
 ## Claimants и `can_*` (права модулей)
 
 Контракт и ADR: [ARCHITECTURE.md](ARCHITECTURE.md) — «ADR: каталог прав `setting.json` → `main_claimant.access_options`».  
-Схема БД: [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md). API: [API_SPEC.md](API_SPEC.md).
+Схема БД: [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md).
 
 ### Источник истины и риск рассинхрона
 
@@ -504,8 +516,8 @@ main:claimant:sync
 - **Backend:** `server/src/Board/` — Symfony-модуль по образцу Todo: `config/routes.yaml`, `setting.json`, Doctrine entities, `BoardManager`, `PermissionResolver`.
 - **Claimant sync:** после изменения `Board/setting.json` — `php bin/console main:claimant:sync`; scope `board` попадает в `main_claimant`.
 - **Protected app:** модуль `board` в `ProtectedAppModules` (BE) и `protectedApps` (FE); доступ через User Settings → «Доступ к приложениям».
-- **Frontend:** `client/src/apps/board/` + `client/src/features/board/`; API — `boardApi.ts`; UI prefs — `board.ui.filters`, `board.ui.lastBoardId` в `user_app_data` (см. [ADR-user-app-data.md](ADR-user-app-data.md)).
-- **API:** см. [API_SPEC.md](API_SPEC.md) § Board module.
+- **Frontend:** `client/src/apps/board/` + `client/src/features/board/`; API — `boardApi.ts`; UI prefs — `board.ui.*` в `user_app_data` (`getOptional`).
+- **Обзор / ТЗ:** [board/README.md](board/README.md), [board/TZ.md](board/TZ.md).
 - **Демо Board↔PKB (локаль):** `php bin/console xos:seed-project --force` — vault + доска XOS со связанными карточками/заметками. На prod не запускать (см. `server/update`).
 
 ### Воспроизводимый путь
@@ -551,11 +563,9 @@ php vendor/bin/phpunit tests/Controller/SchoolTaskApiTest.php
 
 ## См. также
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — §2.3 бизнес-приложения, §3.2 Window Lifecycle, ADR access_options / user_app_data / desktop UX sync
-- [ADR-user-app-data.md](ADR-user-app-data.md) — границы `user_settings` / `user_app_data` / домен / `User.options`
-- [ADR-desktop-ux-sync.md](ADR-desktop-ux-sync.md) — hydrate / SoT / LWW / Explorer path (**DONE**)
-- [ADR-desktop-state-batch.md](ADR-desktop-state-batch.md) — aggregate `GET`/`PUT /api/desktop-state` (Accepted)
-- § **Desktop UX sync** / **Desktop state batch** (этот файл) — as-is vs target
-- [API_SPEC.md](API_SPEC.md) — REST (`/api/settings`, `/api/user-data`, `/api/desktop-state`, …)
-- [platform/README.md](platform/README.md) — shell ADR и desktop-state batch
-- [README.md](../README.md) — запуск проекта
+- [ARCHITECTURE.md](ARCHITECTURE.md) — ADR access_options / user_app_data / desktop UX sync / desktop-state
+- § **Desktop UX sync** / **Desktop state batch** (этот файл) — as-is
+- [platform/README.md](platform/README.md) — shell / desktop-state / widgets paths
+- [system/README.md](system/README.md) — settings, widgets, session
+- [APPS.md](APPS.md) — каталог приложений
+- [README.md](README.md) — индекс документации

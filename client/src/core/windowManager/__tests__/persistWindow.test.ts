@@ -51,4 +51,10 @@ describe('toPersistedState', () => {
 		expect(persisted.position).toEqual({ x: 80, y: 60, width: 800, height: 600 });
 		expect(persisted.state.maximized).toBe(true);
 	});
+
+	it('persists minimized flag for session restore', () => {
+		const persisted = toPersistedState(makeWindow({ minimized: true }));
+		expect(persisted.state.minimized).toBe(true);
+		expect(persisted.state.maximized).toBe(false);
+	});
 });

@@ -6,7 +6,7 @@
 
 ## Обзор
 
-Схема отражает **существующие** Doctrine-сущности в `server/src/`, включая `UserSetting` (ApiAdapter настроек клиента, ТЗ §4.1.2, §5.3) и `UserAppData` (per-user opaque KV, см. `docs/ADR-user-app-data.md`).
+Схема отражает **существующие** Doctrine-сущности в `server/src/`, включая `UserSetting` (ApiAdapter / desktop-state) и `UserAppData` (per-user opaque KV, см. [ARCHITECTURE.md](ARCHITECTURE.md) § user_app_data).
 
 ### Модули
 
@@ -361,9 +361,9 @@ class UserSetting
 
 | Категория | Примеры ключей | Назначение |
 |-----------|----------------|------------|
-| WIN | `{appId}` | Состояние окна приложения (position, size, state, wmGroup, wmSort) |
-| APP | `launchHistory`, `{appId}.state` | История запусков, состояние приложения |
-| USER | `layout.view`, `layout.mobileView`, `layout.panels.left.width` | Макет рабочего стола |
+| WIN | `{appId}/{windowId}` | Геометрия окна (position, size, minimized/maximized, wmGroup, wmSort) |
+| APP | `launchHistory` | Открытые apps для restore; close убирает запись |
+| USER | `theme`, `startMenu.pinnedApps`, `desktop.widgets` | Shell + каталог виджетов (desktop-state) |
 | HKEY_CONFIG | `defaults.*` | Серверные дефолты (опционально, read-only для клиента) |
 
 **Приоритет чтения на клиенте:** USER > APP > WIN > HKEY_CONFIG (ТЗ §4.2.6).
@@ -388,9 +388,11 @@ CREATE TABLE user_settings (
 
 ## App — UserAppData (`user_app_data`)
 
-> ADR: `docs/ADR-user-app-data.md`. Entity: `App\Entity\UserAppData`. Migration: `Version20260806100000`.
+> ADR: [ARCHITECTURE.md](ARCHITECTURE.md) § user_app_data. Entity: `App\Entity\UserAppData`. Migration: `Version20260806100000`.
 
 Opaque per-user KV для prefs / drafts / app UI-state. **Не** путать с `user_settings` (shell) и `User.options` (legacy).
+
+Примеры `code`: `explorer.last_path`, `widget.clock` / `widget.weather` / `widget.reminders`, `board.ui.*`, `pkb.ui.*`. Optional prefs на клиенте — `userDataApi.getOptional` (list+prefix).
 
 | Поле | Тип | Nullable | Описание |
 |------|-----|----------|----------|
@@ -496,7 +498,7 @@ erDiagram
 4. **Device:** при удалении type с RESTRICT — блокировать удаление типа с устройствами.
 5. **Optimistic locking:** `x_timestamp` @Version на User, Group, OU, Device, Block — учитывать при PUT.
 
-Границы `User.options` / `user_settings` / `user_app_data` / домен — **закрыты** в `docs/ADR-user-app-data.md` (автомиграции между ними нет).
+Границы `User.options` / `user_settings` / `user_app_data` / домен — **закрыты** в [ARCHITECTURE.md](ARCHITECTURE.md) § user_app_data (автомиграции между ними нет).
 
 ---
 

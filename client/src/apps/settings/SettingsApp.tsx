@@ -1,21 +1,36 @@
-import { Alert, Button, Loader, PasswordInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import {
+	Alert,
+	Button,
+	Loader,
+	PasswordInput,
+	Select,
+	Stack,
+	Tabs,
+	Text,
+	TextInput,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { updateAccount } from '@/core/api/endpoints/account';
 import { queryKeys } from '@/core/api/queryKeys';
+import { useAppContext } from '@/core/context/AppContext';
 import {
 	DATE_LOCALE_OPTIONS,
 	DATE_TIME_FORMAT_OPTIONS,
 	useDateSettings,
 } from '@/core/dates';
+import { WidgetsCatalogPanel } from '@/core/desktop/WidgetsCatalogPanel';
 import { useCoreApi } from '@/core/hooks/useCoreApi';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import type { AccountUpdateRequest, ApiError } from '@/types/api.types';
 
+import { ActiveOuPanel } from './ActiveOuPanel';
 import { useAccount } from './hooks/useAccount';
+import { ShellLayoutPanel } from './ShellLayoutPanel';
+import { resolveSettingsTab, type SettingsTab } from './settingsTabs';
 
 interface ProfileFormValues {
 	email: string;
@@ -71,9 +86,11 @@ function toUpdatePayload(values: ProfileFormValues): AccountUpdateRequest {
 
 export default function SettingsApp() {
 	const coreApi = useCoreApi();
+	const { props } = useAppContext();
 	const queryClient = useQueryClient();
 	const { data: account, isLoading, isError, error } = useAccount();
 	const { locale, timeFormat, setLocale, setTimeFormat } = useDateSettings();
+	const [tab, setTab] = useState<SettingsTab>(() => resolveSettingsTab(props?.tab));
 
 	const form = useForm<ProfileFormValues>({
 		mode: 'uncontrolled',
@@ -90,7 +107,11 @@ export default function SettingsApp() {
 		},
 	});
 
-	useWindowTitle('Settings');
+	useWindowTitle('Настройки');
+
+	useEffect(() => {
+		setTab(resolveSettingsTab(props?.tab));
+	}, [props?.tab]);
 
 	const syncedAccountIdRef = useRef<number | null>(null);
 
@@ -131,7 +152,7 @@ export default function SettingsApp() {
 		saveMutation.mutate(values);
 	});
 
-	if (isLoading && !account) {
+	if (isLoading && !account && tab === 'profile') {
 		return (
 			<Stack align="center" justify="center" h="100%" p="md">
 				<Loader size="sm" />
@@ -139,92 +160,125 @@ export default function SettingsApp() {
 		);
 	}
 
-	if (isError) {
-		const message = error instanceof Error ? error.message : 'Не удалось загрузить профиль';
-		return (
-			<Stack p="md">
-				<Alert color="red" title="Ошибка">
-					{message}
-				</Alert>
-			</Stack>
-		);
-	}
-
 	return (
-		<form onSubmit={handleSubmit} autoComplete="off">
-			<Stack p="md" gap="md">
-				<Stack gap="sm">
-					<Text fw={600}>Дата и время</Text>
-					<Select
-						label="Язык календаря"
-						data={[...DATE_LOCALE_OPTIONS]}
-						value={locale}
-						onChange={(value) => {
-							if (value === 'ru' || value === 'en') {
-								setLocale(value);
-							}
-						}}
-					/>
-					<Select
-						label="Формат даты и времени"
-						data={[...DATE_TIME_FORMAT_OPTIONS]}
-						value={timeFormat}
-						onChange={(value) => {
-							const option = DATE_TIME_FORMAT_OPTIONS.find((item) => item.value === value);
-							if (option) {
-								setTimeFormat(option.value);
-							}
-						}}
-					/>
-				</Stack>
+		<Stack p="md" gap="md" h="100%" style={{ minHeight: 0 }}>
+			<Text size="sm" c="dimmed">
+				Настройки синхронизируются через desktop-state / user_app_data (сервер).
+			</Text>
+			<Tabs
+				value={tab}
+				onChange={(value) => setTab(resolveSettingsTab(value))}
+				style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+			>
+				<Tabs.List>
+					<Tabs.Tab value="profile">Профиль</Tabs.Tab>
+					<Tabs.Tab value="date">Дата/время</Tabs.Tab>
+					<Tabs.Tab value="shell">Оболочка</Tabs.Tab>
+					<Tabs.Tab value="ou">Подразделение</Tabs.Tab>
+					<Tabs.Tab value="widgets">Виджеты</Tabs.Tab>
+				</Tabs.List>
 
-				<Stack gap="sm">
-					<Text fw={600}>Профиль</Text>
-				<TextInput label="Email" key={form.key('email')} {...form.getInputProps('email')} />
-				<TextInput label="Alias" key={form.key('alias')} {...form.getInputProps('alias')} />
-				<TextInput
-					label="Фамилия"
-					key={form.key('second_name')}
-					{...form.getInputProps('second_name')}
-				/>
-				<TextInput
-					label="Имя"
-					key={form.key('first_name')}
-					{...form.getInputProps('first_name')}
-				/>
-				<TextInput
-					label="Отчество"
-					key={form.key('patronymic')}
-					{...form.getInputProps('patronymic')}
-				/>
-				<TextInput
-					label="Описание"
-					key={form.key('description')}
-					{...form.getInputProps('description')}
-				/>
-				<PasswordInput
-					label="Текущий пароль"
-					key={form.key('old_password')}
-					defaultValue=''
-					{...form.getInputProps('old_password')}
-					autoComplete="off"
-				/>
-				<PasswordInput
-					label="Новый пароль"
-					key={form.key('password')}
-					{...form.getInputProps('password')}
-				/>
-				<PasswordInput
-					label="Подтверждение пароля"
-					key={form.key('confirm_password')}
-					{...form.getInputProps('confirm_password')}
-					
-				/>
-				<Button type="submit" loading={saveMutation.isPending}>
-					Сохранить профиль
-				</Button>
-				</Stack>
-			</Stack>
-		</form>
+				<Tabs.Panel value="profile" pt="md" style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+					{isError ? (
+						<Alert color="red" title="Ошибка">
+							{error instanceof Error ? error.message : 'Не удалось загрузить профиль'}
+						</Alert>
+					) : (
+						<form onSubmit={handleSubmit} autoComplete="off">
+							<Stack gap="sm">
+								<TextInput
+									label="Email"
+									key={form.key('email')}
+									{...form.getInputProps('email')}
+								/>
+								<TextInput
+									label="Alias"
+									key={form.key('alias')}
+									{...form.getInputProps('alias')}
+								/>
+								<TextInput
+									label="Фамилия"
+									key={form.key('second_name')}
+									{...form.getInputProps('second_name')}
+								/>
+								<TextInput
+									label="Имя"
+									key={form.key('first_name')}
+									{...form.getInputProps('first_name')}
+								/>
+								<TextInput
+									label="Отчество"
+									key={form.key('patronymic')}
+									{...form.getInputProps('patronymic')}
+								/>
+								<TextInput
+									label="Описание"
+									key={form.key('description')}
+									{...form.getInputProps('description')}
+								/>
+								<PasswordInput
+									label="Текущий пароль"
+									key={form.key('old_password')}
+									defaultValue=""
+									{...form.getInputProps('old_password')}
+									autoComplete="off"
+								/>
+								<PasswordInput
+									label="Новый пароль"
+									key={form.key('password')}
+									{...form.getInputProps('password')}
+								/>
+								<PasswordInput
+									label="Подтверждение пароля"
+									key={form.key('confirm_password')}
+									{...form.getInputProps('confirm_password')}
+								/>
+								<Button type="submit" loading={saveMutation.isPending}>
+									Сохранить профиль
+								</Button>
+							</Stack>
+						</form>
+					)}
+				</Tabs.Panel>
+
+				<Tabs.Panel value="date" pt="md">
+					<Stack gap="sm">
+						<Select
+							label="Язык календаря"
+							data={[...DATE_LOCALE_OPTIONS]}
+							value={locale}
+							onChange={(value) => {
+								if (value === 'ru' || value === 'en') {
+									setLocale(value);
+								}
+							}}
+						/>
+						<Select
+							label="Формат даты и времени"
+							data={[...DATE_TIME_FORMAT_OPTIONS]}
+							value={timeFormat}
+							onChange={(value) => {
+								const option = DATE_TIME_FORMAT_OPTIONS.find((item) => item.value === value);
+								if (option) {
+									setTimeFormat(option.value);
+								}
+							}}
+						/>
+					</Stack>
+				</Tabs.Panel>
+
+				<Tabs.Panel value="shell" pt="md" style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+					<ShellLayoutPanel />
+				</Tabs.Panel>
+
+				<Tabs.Panel value="ou" pt="md">
+					<ActiveOuPanel />
+				</Tabs.Panel>
+
+				<Tabs.Panel value="widgets" pt="md" style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+					<WidgetsCatalogPanel />
+				</Tabs.Panel>
+			</Tabs>
+		</Stack>
 	);
 }

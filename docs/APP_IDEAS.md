@@ -32,7 +32,7 @@
 
 ## Уже сделано (не бэклог)
 
-Homework + parent share · IncCom bank UI · CRM leads · GitHub · habits · Inbox · tags/favorites · Board SSE/Mercure/conflict · PKB FULLTEXT/encrypt/plugins/ZIP/remote sync · Multi-OU (Main/Device/Assets) · PWA cache + offline outbox · **desktop widgets** (clock/weather/reminders, add/remove, prefs).
+Homework + parent share · IncCom bank UI · CRM leads · GitHub · habits · Inbox · tags/favorites · Board SSE/Mercure/conflict · PKB FULLTEXT/encrypt/plugins/ZIP/remote sync · Multi-OU (Main/Device/Assets) · PWA cache + offline outbox · **desktop widgets** (clock/weather/reminders, catalog, prefs) · **unified Settings** (profile/date/shell/OU/widgets; shell-settings alias).
 
 ```bash
 php bin/console xos:seed-project

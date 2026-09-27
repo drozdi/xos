@@ -38,6 +38,8 @@ export function useSetting<T>(
 	key: string,
 	defaultValue?: T,
 ): [T | undefined, (value: T) => void, boolean] {
+	const defaultRef = useRef(defaultValue);
+	defaultRef.current = defaultValue;
 	const [value, setValueState] = useState<T | undefined>(defaultValue);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -47,7 +49,7 @@ export function useSetting<T>(
 		const load = async () => {
 			if (!settingManager.isInitialized()) {
 				if (active) {
-					setValueState(defaultValue);
+					setValueState(defaultRef.current);
 					setIsLoading(false);
 				}
 				return;
@@ -61,7 +63,7 @@ export function useSetting<T>(
 			if (!active) {
 				return;
 			}
-			const resolved = stored ?? defaultValue;
+			const resolved = stored ?? defaultRef.current;
 			setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 			setIsLoading(false);
 		};
@@ -75,7 +77,7 @@ export function useSetting<T>(
 			active = false;
 			unsubscribeInit();
 		};
-	}, [category, key, defaultValue]);
+	}, [category, key]);
 
 	useEffect(() => {
 		return settingManager.subscribe((changedCategory, changedKey) => {
@@ -84,12 +86,12 @@ export function useSetting<T>(
 			}
 			if (changedCategory === category && changedKey === key) {
 				void settingManager.get(category, key).then((next) => {
-					const resolved = (next ?? defaultValue) as T | undefined;
+					const resolved = (next ?? defaultRef.current) as T | undefined;
 					setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 				});
 			}
 		});
-	}, [category, key, defaultValue]);
+	}, [category, key]);
 
 	const setValue = useCallback(
 		(next: T) => {
@@ -116,6 +118,8 @@ export function useSetState<T>(
 	key: string,
 	initial: T,
 ): [T, (value: T | ((prev: T) => T)) => void, boolean] {
+	const initialRef = useRef(initial);
+	initialRef.current = initial;
 	const [value, setValueState] = useState<T>(initial);
 	const [isLoading, setIsLoading] = useState(true);
 	const valueRef = useRef(value);
@@ -130,8 +134,8 @@ export function useSetState<T>(
 		const load = async () => {
 			if (!settingManager.isInitialized()) {
 				if (active) {
-					setValueState(initial);
-					valueRef.current = initial;
+					setValueState(initialRef.current);
+					valueRef.current = initialRef.current;
 					setIsLoading(false);
 				}
 				return;
@@ -145,7 +149,7 @@ export function useSetState<T>(
 			if (!active) {
 				return;
 			}
-			const resolved = stored ?? initial;
+			const resolved = stored ?? initialRef.current;
 			setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 			valueRef.current = resolved;
 			setIsLoading(false);
@@ -160,7 +164,7 @@ export function useSetState<T>(
 			active = false;
 			unsubscribeInit();
 		};
-	}, [category, key, initial]);
+	}, [category, key]);
 
 	useEffect(() => {
 		return settingManager.subscribe((changedCategory, changedKey) => {
@@ -169,12 +173,12 @@ export function useSetState<T>(
 			}
 			if (changedCategory === category && changedKey === key) {
 				void settingManager.get(category, key).then((next) => {
-					const resolved = (next ?? initial) as T;
+					const resolved = (next ?? initialRef.current) as T;
 					setValueState((current) => (Object.is(current, resolved) ? current : resolved));
 				});
 			}
 		});
-	}, [category, key, initial]);
+	}, [category, key]);
 
 	const persist = useDebouncedCallback((next: T) => {
 		void settingManager.set(category, key, next);

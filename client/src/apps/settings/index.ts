@@ -8,15 +8,18 @@ const SettingsApp = lazy(() => import('./SettingsApp'));
 
 const manifest: AppManifest = {
 	id: 'settings',
-	name: 'Settings',
-	version: '1.0.0',
+	name: 'Настройки',
+	version: '1.1.0',
 	icon: SettingsIcon,
 	component: SettingsApp,
-	defaultSize: { width: 480, height: 560 },
-	minSize: { width: 360, height: 400 },
+	defaultSize: { width: 520, height: 640 },
+	minSize: { width: 400, height: 420 },
 	wmGroup: 'system',
+	wmSort: 10,
+	startMenuGroup: 'system',
+	startMenuSort: 10,
 	singleInstance: true,
-	startMenuList: false
+	startMenuList: false,
 };
 
 export default manifest;

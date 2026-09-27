@@ -59,11 +59,15 @@ Trello-like планирование: workspaces → boards → lists → cards 
 
 Upload: module `board` в UploadPathResolver.
 
-## 6. Out of scope / backlog
+## 6. Реализовано сверх MVP / backlog
 
-Mercure/SSE, conflict UI, Trello import, email — [APP_IDEAS.md](../APP_IDEAS.md), [ROADMAP_WAVES.md](../ROADMAP_WAVES.md) (W3b).
+| Статус | Тема |
+|--------|------|
+| DONE | SSE `/boards/{id}/events`, optional Mercure, polling fallback |
+| DONE | Conflict `expected_updated_at` → 409; global search |
+| Backlog | Trello import, email notify — [APP_IDEAS.md](../APP_IDEAS.md) |
 
-Global search и polling — **DONE**.
+UI prefs: `board.ui.*` в `user_app_data` (`getOptional`).
 
 ## 7. Критерии приёмки (MVP)
 
@@ -72,9 +76,11 @@ Global search и polling — **DONE**.
 - [x] Filters on board
 - [x] Calendar due overlay
 - [x] PermissionResolver + roles
+- [x] SSE / conflict 409
 
 ## 8. Связанные документы
 
 - [README.md](README.md)
 - [calendar/TZ.md](../calendar/TZ.md)
 - [APP_IDEAS.md](../APP_IDEAS.md)
+- [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md)

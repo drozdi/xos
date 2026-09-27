@@ -53,6 +53,7 @@ client/src/features/pkb/
 - Шаблоны заметок, bookmarks
 - `encrypt_at_rest`, plugins_json, ZIP export
 - Remote sync: `remote_sync_url` + `POST /vaults/{id}/remote-sync`
+- UI prefs: `pkb.ui.*` → `user_app_data` (`getOptional`)
 
 ## Документы
 

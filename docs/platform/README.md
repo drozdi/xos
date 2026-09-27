@@ -2,13 +2,16 @@
 
 Документы уровня desktop-shell, не привязанные к одному business-приложению.
 
-## ADR и планы
+## ADR (канон в ARCHITECTURE)
 
-| Документ | Тема | Статус |
-|----------|------|--------|
-| [ADR-desktop-state-batch.md](../ADR-desktop-state-batch.md) | GET/PUT `/api/desktop-state`, debounce save | DONE |
-| [ADR-desktop-ux-sync.md](../ADR-desktop-ux-sync.md) | Hydrate settings, explorer last_path | DONE |
-| [ADR-user-app-data.md](../ADR-user-app-data.md) | KV `/api/user-data` для prefs приложений | DONE |
+| Тема | Раздел | Статус |
+|------|--------|--------|
+| Desktop state batch | [ARCHITECTURE.md](../ARCHITECTURE.md) § Desktop state batch | DONE |
+| Desktop UX sync | [ARCHITECTURE.md](../ARCHITECTURE.md) § Desktop UX sync | DONE |
+| user_app_data KV | [ARCHITECTURE.md](../ARCHITECTURE.md) § user_app_data | DONE |
+
+As-is wire: [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) § Desktop UX sync / Desktop state batch.  
+Системные apps / widgets: [system/README.md](../system/README.md).
 
 ## Компоненты
 
@@ -16,7 +19,8 @@
 |---------|--------------|
 | Window Manager | `client/src/core/windowManager/` |
 | App Manager | `client/src/core/appManager/` |
-| Desktop state | `client/src/core/desktopState/` |
+| Desktop / widgets | `client/src/core/desktop/` (`desktopWidgets.ts`, `widgetPrefs.ts`) |
+| Desktop state | `client/src/core/settings/desktopStatePersister.ts` |
 | Auth | `client/src/core/auth/` |
 | Theme | `client/src/core/theme/` |
 
@@ -24,13 +28,13 @@
 
 | Endpoint | Назначение |
 |----------|------------|
-| `GET/PUT /api/desktop-state` | Snapshot окон и layout |
-| `GET/POST/DELETE /api/user-data` | KV prefs (`code` + JSON `value`) |
-| `GET/POST /api/settings` | Legacy settings adapter |
+| `GET/PUT /api/desktop-state` | Snapshot USER/APP/WIN + `explorerLastPath` |
+| `GET/PUT/DELETE /api/user-data` | KV prefs; optional — client `getOptional` (list+prefix) |
+| `GET/PUT /api/settings` | Adhoc / non-desktop settings |
 | `POST /api/login`, `/api/token/refresh` | JWT |
 
 ## Связанные документы
 
-- [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) — регистрация приложений
+- [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md) — регистрация приложений, maniphest `shellRole` / `startMenuList`
+- [system/README.md](../system/README.md) — settings, widgets, session
 - [explorer/TZ.md](../explorer/TZ.md) — VFS / viewers
-- ADR в `docs/ADR-*.md` (desktop-state, UX sync, user_app_data)

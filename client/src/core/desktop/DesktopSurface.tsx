@@ -11,6 +11,8 @@ import {
 } from '@/core/desktop/desktopWidgets';
 import { useSetting } from '@/core/settings/hooks';
 
+const EMPTY_WIDGETS: DesktopWidgetEntry[] = [];
+
 /**
  * Full-area desktop layer under WM windows. RMB → widget catalog toggles.
  */
@@ -18,7 +20,7 @@ export function DesktopSurface() {
 	const [catalog, setCatalog] = useSetting<DesktopWidgetEntry[]>(
 		'USER',
 		DESKTOP_WIDGETS_SETTING_KEY,
-		[],
+		EMPTY_WIDGETS,
 	);
 	const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
 	const entries = normalizeDesktopWidgets(catalog);

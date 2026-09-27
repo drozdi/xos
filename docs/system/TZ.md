@@ -10,20 +10,25 @@
 
 | ID | Название | Назначение |
 |----|----------|------------|
-| settings | Settings | Тема, prefs, desktop-state, быстрый доступ |
+| settings | Настройки | Вкладки profile/date/shell/OU/widgets; `startMenuList: false` |
+| shell-settings | Alias | → `settings?tab=shell`; `startMenuList: false` |
 | browser | Браузер | Просмотр web через server proxy |
 | demo-calculator | Calculator | Пример для разработчиков |
-| chess | Шахматы | Локальная игра |
-| tic-tac-toe | Крестики-нолики | Локальная игра |
-| sudoku | Судоку | Локальная игра |
+| chess…snake | Игры | Локальные (см. APPS.md) |
+| widget-* | Виджеты | clock / weather / reminders на столе |
 
 ## 3. Функциональные требования
 
 ### Settings
-- Загрузка/сохранение пользовательских настроек
-- Переключение темы (light/dark)
-- Управление pinned apps в меню «Пуск»
-- Интеграция с `desktopStateApi` при `VITE_USE_API_SETTINGS=true`
+- Вкладки: профиль (account API), дата/время, макет оболочки, OU, виджеты
+- Только левый сайдбар Пуска (`startMenuList: false`), не колонка «Все приложения»
+- USER/APP/WIN через `desktopStateApi` при `VITE_USE_API_SETTINGS=true`
+- Сессия: launchHistory + WIN (позиция, min/max); close убирает из обоих; закрытое не восстанавливается
+
+### Widgets
+- `shellRole: 'widget'`, frameless, каталог USER `desktop.widgets`
+- Prefs в `user_app_data` (`widget.clock` / `widget.weather` / `widget.reminders`), чтение через `getOptional`
+- Weather: click expands; drag ≥5px не открывает details
 
 ### Browser
 - URL-строка, back/forward/reload
@@ -50,6 +55,8 @@
 ## 6. Критерии приёмки
 
 - [x] Settings сохраняет тему и восстанавливает после reload
+- [x] Settings / shell-settings не в «Все приложения»; виджеты — вкладка / ПКМ
+- [x] Close окна синхронизирует launchHistory+WIN; widgets prefs через user-data
 - [x] Browser открывает внешние URL через proxy
 - [x] Игры запускаются из меню «Пуск»
 - [x] demo-calculator — reference для DEVELOPER_GUIDE

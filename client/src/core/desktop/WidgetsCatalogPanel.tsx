@@ -11,12 +11,14 @@ import {
 } from '@/core/desktop/desktopWidgets';
 import { useSetting } from '@/core/settings/hooks';
 
+const EMPTY_WIDGETS: DesktopWidgetEntry[] = [];
+
 /** Shared catalog UI for shell-settings and other hosts. */
 export function WidgetsCatalogPanel() {
 	const [catalog, setCatalog] = useSetting<DesktopWidgetEntry[]>(
 		'USER',
 		DESKTOP_WIDGETS_SETTING_KEY,
-		[],
+		EMPTY_WIDGETS,
 	);
 	const entries = normalizeDesktopWidgets(catalog);
 	const widgets = AppRegistry.getWidgets();

@@ -18,7 +18,7 @@
 | Board | `server/src/Board/` | Kanban-доски |
 | Pkb | `server/src/Pkb/` | База знаний (vaults) |
 
-Клиент: `client/src/apps/*` — окна рабочего стола (55 приложений, см. [APPS.md](APPS.md)); `client/src/core/*` — auth, API, theme.
+Клиент: `client/src/apps/*` — окна рабочего стола (100+, см. [APPS.md](APPS.md)); `client/src/core/*` — auth, API, theme, desktop widgets.
 
 ## Безопасность API
 
@@ -151,7 +151,7 @@ Sync при записи в БД **всегда** нормализует к obje
 - Sync: **все** модули из glob `src/*/setting.json` (включая Todo, IBlock).
 - UI «Доступ к приложениям»: только `ProtectedAppModules` (Todo **не** включать, пока явно не попросят; `iblock` — включён).
 
-### API (см. `docs/API_SPEC.md`)
+### API (claimants)
 
 - `GET /api/main/claimant/app-access-modules` — у `root` и каждого `children[]` поле `access_options` из БД.
 - list (`t=list`) / detail — то же поле.
@@ -174,7 +174,7 @@ Sync при записи в БД **всегда** нормализует к obje
 
 ## ADR: per-user app data KV (`user_app_data`)
 
-Полный текст: **`docs/ADR-user-app-data.md`** (Accepted, 2026-08-06).
+Accepted, 2026-08-06 (канон — этот раздел + [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)).
 
 Реализовано: таблица `user_app_data` / entity `UserAppData` / API `/api/user-data` (`ApiUserDataController`) — opaque prefs/drafts/UI-state приложений.
 
@@ -182,31 +182,34 @@ Sync при записи в БД **всегда** нормализует к obje
 
 | Хранилище | Назначение |
 |-----------|------------|
-| `user_settings` (`/api/settings`) | Shell: USER / WIN / APP / HKEY_CONFIG |
+| `user_settings` (`/api/settings` / desktop-state) | Shell: USER / WIN / APP / HKEY_CONFIG |
 | `user_app_data` (`/api/user-data`) | Opaque per-user app prefs / drafts / UI-state |
 | Доменные API | Бизнес-сущности + scopes |
 | `User.options` (`/api/account/options`) | **Legacy only** — новые app-ключи **запрещены** |
 
-Только CurrentUser; ROOT без чужих KV; non-secret `value`; single PUT upsert (full replace) + `GET ?prefix=`; soft quota 500 keys; value ≤ 64 KB → 400. Клиент: `userData.ts`. См. также `DATABASE_SCHEMA.md`, `API_SPEC.md`, `DEVELOPER_GUIDE.md`.
+Только CurrentUser; ROOT без чужих KV; non-secret `value`; single PUT upsert (full replace) + `GET ?prefix=`; soft quota 500 keys; value ≤ 64 KB → 400.
+
+Клиент: `userData.ts` — `get` (404 если нет), **`getOptional`** (list+exact match, без GET 404) для optional prefs (`widget.*`, `board.ui.*`, `pkb.ui.*`, …). См. [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md), [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
 
 ---
 
 ## ADR: Desktop UX sync (cross-browser)
 
-Полный текст: **`docs/ADR-desktop-ux-sync.md`** (Accepted, 2026-08-06) — **DONE** (hydrate / SoT / LWW / Explorer path).  
-Гайд: **`docs/DEVELOPER_GUIDE.md`** § Desktop UX sync / Desktop state batch.
+Accepted, 2026-08-06 — **DONE** (hydrate / SoT / LWW / Explorer path).  
+Гайд: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) § Desktop UX sync / Desktop state batch.
 
 ### Цель
 
-После login в другом браузере восстановить shell UX «почти как есть»: pinned Start Menu, `APP.launchHistory` / открытые apps, WIN geometry, global last folder Explorer.
+После login в другом браузере восстановить shell UX «почти как есть»: theme / pinned Start Menu, `APP.launchHistory` / открытые apps, WIN geometry, каталог виджетов, global last folder Explorer.
 
 ### Границы хранилищ
 
 | Данные | Куда |
 |--------|------|
-| Theme, pinned Start Menu, desktop layout | `user_settings` **USER** |
+| Theme, pinned Start Menu, `desktop.widgets` | `user_settings` **USER** (через desktop-state) |
 | Launch history | `user_settings` **APP** |
 | Window geometry / min/max | `user_settings` **WIN** |
+| Widget prefs (`widget.clock` / …) | **`user_app_data`** (не desktop-state) |
 | Explorer last folder | **`user_app_data`** `explorer.last_path` → `{ "path": string }` |
 | Clipboard, secrets, tokens | **Не sync** |
 
@@ -233,26 +236,26 @@ CRUD `/api/settings` и `/api/user-data` **сохраняются**. Целев�
 
 - MVP: **last-write-wins** (последний успешный upsert побеждает).
 - `updatedAt` — **информативный**; не lock, не merge UI.
-- Согласовано с `ADR-user-app-data`.
+- Согласовано с § user_app_data выше.
 
 ---
 
 ## ADR: Desktop state batch (один запрос)
 
-Полный текст: **`docs/ADR-desktop-state-batch.md`** (Accepted, 2026-08-06).  
-План: **[platform/README.md](platform/README.md)**. Спека: **`docs/API_SPEC.md`** § Desktop state.
+Accepted, 2026-08-06. Обзор: [platform/README.md](platform/README.md); as-is: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
 
-**Выбор (A):** `GET` + `PUT /api/desktop-state` — aggregate над `user_settings` (managed) + `user_app_data` `explorer.last_path`. Вариант (B) (всё в settings) отклонён: ломает границы KV / миграция path.
+**Выбор (A):** `GET` + `PUT /api/desktop-state` — aggregate над `user_settings` **USER/APP/WIN** + `user_app_data` `explorer.last_path`. Вариант (B) (всё в settings) отклонён: ломает границы KV / миграция path.
 
-Статус реализации: backend и client wire внедрены; regression по целевому набору тестов green. Полные full-suite прогоны пока имеют внешние blockers вне `desktop-state`.
+Статус: backend и client wire внедрены.
 
 | | |
 |--|--|
-| Client | `desktopStateApi.load()` / `save(snapshot)` |
+| Client | `desktopStateApi.load()` / `save(snapshot)` · `desktopStatePersister.ts` |
 | Hydrate | один `GET /api/desktop-state`, затем clear-then-seed local cache |
-| Save | Upsert body + server orphan-delete managed WIN / omitted allowlist / `explorerLastPath: null` |
+| Save | Snapshot всех локальных USER/APP/WIN + server orphan-delete отсутствующих ключей; `explorerLastPath: null` → delete |
 | Debounce | 2500 ms один save; без N× PUT per key |
-| Managed writes | `CompositeAdapter` роутит managed keys в `DesktopStatePersister`, не в `/api/settings` batch |
+| Managed writes | `CompositeAdapter` → `DesktopStatePersister`, не `/api/settings` batch |
+| Session | Close окна → remove из `APP.launchHistory` + `WIN.*` (не при unload/refresh) |
 | Guest / flag off | local-only, без `/api/desktop-state` |
 | Схема БД | Без новых таблиц |
 | CRUD | `/api/settings`, `/api/user-data` остаются рядом |

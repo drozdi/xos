@@ -69,6 +69,8 @@ interface WindowProps {
 }
 
 const MOBILE_BREAKPOINT = '(max-width: 767px)';
+/** Emit window `dragStart` only after the window moved this many px (click ≠ drag). */
+const DRAG_START_EMIT_PX = 5;
 
 function WindowComponent({ windowId, children }: WindowProps) {
 	const windowState = useWmStore((state) => state.windows[windowId]);
@@ -85,6 +87,9 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const rndRef = useRef<Rnd>(null);
 	const shellRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
+	/** Rnd fires onDragStart on mousedown; emit app `dragStart` only after real move. */
+	const dragOriginRef = useRef<{ x: number; y: number } | null>(null);
+	const dragStartEmittedRef = useRef(false);
 	const isWidget = windowState?.shellRole === 'widget';
 	const titlebarHeight = isWidget ? 0 : isMobile ? 44 : 36;
 	const taskbarHeight = HKEY_CONFIG_DEFAULTS.taskbar.height;
@@ -335,15 +340,37 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		focusWindow(windowId);
 	}, [focusWindow, windowId]);
 
-	const handleDragStart = useCallback(() => {
-		setIsDragging(true);
-		handleFocus();
-		emitWindowDragStart(windowId);
-	}, [handleFocus, windowId]);
+	const handleDragStart = useCallback(
+		(_event: unknown, data: { x: number; y: number }) => {
+			setIsDragging(true);
+			handleFocus();
+			dragOriginRef.current = { x: data.x, y: data.y };
+			dragStartEmittedRef.current = false;
+		},
+		[handleFocus],
+	);
+
+	const handleDrag = useCallback(
+		(_event: unknown, data: { x: number; y: number }) => {
+			if (dragStartEmittedRef.current || !dragOriginRef.current) {
+				return;
+			}
+			const dx = data.x - dragOriginRef.current.x;
+			const dy = data.y - dragOriginRef.current.y;
+			if (dx * dx + dy * dy < DRAG_START_EMIT_PX * DRAG_START_EMIT_PX) {
+				return;
+			}
+			dragStartEmittedRef.current = true;
+			emitWindowDragStart(windowId);
+		},
+		[windowId],
+	);
 
 	const handleDragStop = useCallback(
 		(_event: unknown, data: { x: number; y: number }) => {
 			setIsDragging(false);
+			dragOriginRef.current = null;
+			dragStartEmittedRef.current = false;
 			if (isMobile || windowState?.maximized || windowState?.positionFixed) {return;}
 			const nextPosition = clampDragPosition(data.x, data.y);
 			if (
@@ -536,6 +563,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 				willChange: !isWidget && isDragging ? 'transform' : undefined,
 			}}
 			onDragStart={handleDragStart}
+			onDrag={handleDrag}
 			onResizeStart={handleFocus}
 			onDragStop={handleDragStop}
 			onResizeStop={handleResizeStop}

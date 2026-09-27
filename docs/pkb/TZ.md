@@ -38,9 +38,11 @@ Obsidian-like база знаний: vaults с markdown-заметками, wiki
 - Vault search
 - Bookmarks
 
-### v2 (частично)
-- Search/replace across vault
-- Templates, sharing vaults
+### Сверх MVP (DONE)
+- Search/replace across vault, templates, sharing
+- FULLTEXT search, `encrypt_at_rest`, `plugins_json`, ZIP export
+- Remote sync: `remote_sync_url` + `POST /vaults/{id}/remote-sync`
+- UI prefs `pkb.ui.*` в `user_app_data` (`getOptional`)
 
 ## 5. Архитектура данных
 
@@ -51,13 +53,11 @@ Obsidian-like база знаний: vaults с markdown-заметками, wiki
 
 ## 6. API
 
-**Prefix:** `/api/pkb/`
-
-Детали: [API_SPEC.md](API_SPEC.md)
+**Prefix:** `/api/pkb/` — см. контроллеры `server/src/Pkb/Controller/`, обзор [README.md](README.md).
 
 ## 7. Out of scope / backlog
 
-Plugin API, encryption, mobile, real-time co-editing — [APP_IDEAS.md](../APP_IDEAS.md), [ROADMAP_WAVES.md](../ROADMAP_WAVES.md) (W3b).
+Mobile, real-time co-editing, plugin marketplace — [APP_IDEAS.md](../APP_IDEAS.md).
 
 ## 8. Критерии приёмки (MVP)
 
@@ -66,9 +66,10 @@ Plugin API, encryption, mobile, real-time co-editing — [APP_IDEAS.md](../APP_I
 - [x] Wikilinks + backlinks + graph
 - [x] Search within vault
 - [x] ProtectedAppModules + claimant
+- [x] Remote sync / ZIP / encrypt_at_rest (см. README)
 
 ## 9. Связанные документы
 
 - [README.md](README.md)
-- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) · [API_SPEC.md](API_SPEC.md)
+- [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md)
 - [APP_IDEAS.md](../APP_IDEAS.md)

@@ -1318,7 +1318,7 @@ MD,
                 'title' => 'System',
                 'notePath' => 'Notes/Apps/System.md',
                 'labels' => ['system'],
-                'cardDescription' => "Settings, shell layout, browser, games, widgets.\n\nЗаметка: [[System]]",
+                'cardDescription' => "Настройки (вкладки), browser, games, widgets, desktop-state session.\n\nЗаметка: [[System]]",
                 'body' => <<<'MD'
 # System
 
@@ -1328,8 +1328,8 @@ MD,
 
 | ID | Название |
 |----|----------|
-| `settings` | Settings (тема, desktop-state, mobile) |
-| `shell-settings` | Макет оболочки (панель / меню) |
+| `settings` | Настройки (вкладки: профиль, дата, оболочка, OU, виджеты) |
+| `shell-settings` | Alias → settings tab=shell |
 | `browser` | Браузер (`/api/browser/proxy`) |
 | `chess` | Шахматы |
 | `tic-tac-toe` | Крестики-нолики |
@@ -1345,10 +1345,14 @@ MD,
 | `widget-reminders` | Напоминания (лента + local reminders) |
 | `demo-calculator` | Calculator (демо) |
 
+## Sync (desktop-state)
+
+При `VITE_USE_API_SETTINGS`: USER/APP/WIN на сервере. Сессия: `launchHistory` + WIN (позиция, min/max). Закрытое окно не восстанавливается.
+
 ## Виджеты на столе
 
-- `shellRole: widget` — компактный chrome, без taskbar, z-tier ниже окон
-- USER `desktop.widgets` — add/remove (ПКМ по столу / shell-settings)
+- `shellRole: widget` — frameless, без taskbar, z-tier ниже окон
+- USER `desktop.widgets` — add/remove (ПКМ / вкладка Виджеты)
 - Prefs в `user_app_data`: `widget.clock`, `widget.weather`, `widget.reminders`
 
 PWA: vite-plugin-pwa (shell + SW); NetworkFirst GET `/api/*`; offline banner + write outbox — **DONE**.
@@ -1787,7 +1791,7 @@ MD,
 
 | Домен | Claimant | Apps (id) |
 |-------|----------|-----------|
-| System | — | settings, shell-settings, browser, games, sticky-note, **widget-clock/weather/reminders**, demo-calculator |
+| System | — | **settings** (tabs), shell-settings alias, browser, games, widgets, demo-calculator |
 | Main | main | main-users, main-user, main-groups, main-group, main-ous, main-ou, main-claimants, main-claimant, main-audit |
 | Device | device | device-devices…device-license-key (17) |
 | Explorer | explorer | explorer + pickers + notepad/markdown/code/pdf/office/diff/map/image/archiver/video/audio (14) |
