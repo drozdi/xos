@@ -1,62 +1,13 @@
-# SchoolTask — школьное расписание
+# Школа
 
-Предметы, классы, календари занятий, журнал учителя.
+Классы, параллели, предметы, расписание и домашние задания.
 
-## Claimant
-
-- **Код:** `schooltask`
-- **Под-claimants:** `schooltask.subject`, `schooltask.class`, `schooltask.event`, `schooltask.zam`
-- **Роль:** `ROLE_SCHOOLTASK`
+Доступ: `ROLE_SCHOOLTASK`. Отдельный вход для стенда: `/api/schooltask/auth`.
 
 ## Приложения
 
-| ID | Название | Тип | Описание |
-|----|----------|-----|----------|
-| schooltask-subjects | Предметы | regular | Справочник предметов |
-| schooltask-subject | Предмет | sub-app | Карточка предмета |
-| schooltask-classes | Классы | regular | Список классов/параллелей |
-| schooltask-class | Класс | sub-app | Карточка класса, ученики |
-| schooltask-calendars | Расписание | regular | Список календарей классов |
-| schooltask-calendar | Календарь класса | sub-app | Просмотр сетки занятий |
-| schooltask-calendar-editor | Редактор расписания | sub-app | Редактирование шаблона недели |
-| schooltask-calendar-teacher | Мои уроки | regular | Календарь учителя, темы уроков |
-| schooltask-homeworks | Домашние задания | regular | Агрегатор ДЗ (`EpEvent.ht`) |
+Календари и редактор расписания, классы, предметы, домашние задания, карточки этих сущностей. Виджет «Уроки» показывает события учителя на сегодня.
 
-## Backend
+Код: `server/src/SchoolTask`, `client/src/apps/schooltask-*`.
 
-```
-server/src/SchoolTask/
-├── Controller/
-│   ├── EpSubjectController.php    # /api/schooltask/subjects
-│   ├── EpClassController.php      # + shares (parent invite)
-│   ├── EpEventController.php      # занятия (+ ht = ДЗ)
-│   ├── HomeworkController.php     # GET /homework
-│   └── AuthController.php         # /api/schooltask/auth/me
-└── setting.json
-```
-
-**API prefix:** `/api/schooltask/`
-
-Parent read-only: `st_ep_group_share`, вкладка «Родители» в классе.
-
-## Frontend
-
-```
-client/src/apps/schooltask-*/
-client/src/features/schooltask/    # EventTeacherModal, LessonFilesPanel, …
-```
-
-Утилиты sub-app: `schooltaskAppUtils.ts`.
-
-## Интеграция с Calendar
-
-Приложение **Календарь** показывает overlay «Моё расписание» — события из `schooltaskCalendarApi.teacherEvents()` для пользователей с правами `schooltask.event`.
-
-## Файлы уроков
-
-`EventLessonFilesPanel` — прикрепление файлов из Explorer к занятию.
-
-## Документы
-
-- [TZ.md](TZ.md) — техническое задание
-- [APP_IDEAS.md](../APP_IDEAS.md) — идеи следующих apps
+См. [TZ.md](TZ.md), [API.md](API.md).

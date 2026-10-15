@@ -1,86 +1,31 @@
-# ТЗ — Board (Kanban-доска)
+# ТЗ — доска
 
-> Версия: 1.0 · Дата: 2026-08-18 · Статус: **MVP реализован**
+## 1. Структура
 
-## 1. Назначение
+Пространство содержит доски. Доска содержит колонки. Колонка содержит карточки. Карточку можно переносить и менять порядок колонок.
 
-Trello-like планирование: workspaces → boards → lists → cards с коллаборацией и правами.
+## 2. Карточка
 
-## 2. Пользователи и доступ
+Название, описание, срок, цвет обложки, метки, исполнители, чеклисты, комментарии, вложения. Срок виден в календаре. Если он близко, оболочка пишет уведомление.
 
-- **Роль:** `ROLE_BOARD` (`ProtectedAppModules`); манифест `requiredRole: 'board'`
-- **Claimant:** `board` — `can_read`, `can_write`
-- Роли workspace/board: owner, admin, editor, observer
-- Проверка: `canUseBoard()`
+В карточке есть поле ссылки на GitHub или TeamStorm. Оно хранится в user-data `board.cardLink.{id}`, не в таблице карточки.
 
-## 3. Приложения
+Комментарий с `@alias` текущего пользователя, когда карточка открыта, попадает в ленту оболочки.
 
-| ID | Название | Описание |
-|----|----------|----------|
-| board | Доска | Dashboard + Kanban view |
+## 3. Колонка
 
-## 4. Функциональные требования
+Лимит числа карточек задаётся в user-data `board.wipLimits` как объект `{ "<id колонки>": число }`. Сверх лимита новая карточка не создаётся.
 
-### Workspace / Board
-- CRUD workspaces и boards
-- Invite по email, роли
-- Background (color/image/gradient), visibility private/workspace
+Шаблоны — список названий `board.cardTemplates`. Кнопка шаблона создаёт карточку в первой колонке.
 
-### Kanban
-- Lists + cards, DnD reorder (`@dnd-kit`)
-- Quick add list/card
-- Filters: assignee, labels, due range, search
+## 4. Совместная работа
 
-### Card
-- title, description (Markdown), due_date, cover_color
-- Labels, assignees (multi)
-- Checklists + items (checked)
-- Comments, attachments
-- CardModal
+Участников приглашают по почте. Журнал доски только дополняется. Изменения приходят по SSE `/boards/{id}/events`, при наличии — через Mercure, иначе опрос `/changes`. Правка с устаревшим `expected_updated_at` отвечает `409`.
 
-### Activity
-- Append-only log per board
+## 5. Критерии
 
-### Интеграция
-- Cards с `due_date` → Calendar overlay «Доска»
-
-## 5. API
-
-**Prefix:** `/api/board/`
-
-| Группа | Endpoints |
-|--------|-----------|
-| Workspaces | CRUD, members |
-| Boards | CRUD, members, activity, filter |
-| Lists | CRUD, reorder |
-| Cards | CRUD, move, `GET /cards/due` |
-| Checklists | CRUD items |
-| Comments / Attachments | CRUD |
-
-Upload: module `board` в UploadPathResolver.
-
-## 6. Реализовано сверх MVP / backlog
-
-| Статус | Тема |
-|--------|------|
-| DONE | SSE `/boards/{id}/events`, optional Mercure, polling fallback |
-| DONE | Conflict `expected_updated_at` → 409; global search |
-| Backlog | Trello import, email notify — [APP_IDEAS.md](../APP_IDEAS.md) |
-
-UI prefs: `board.ui.*` в `user_app_data` (`getOptional`).
-
-## 7. Критерии приёмки (MVP)
-
-- [x] Full Kanban CRUD + DnD
-- [x] Card modal: checklists, comments, attachments
-- [x] Filters on board
-- [x] Calendar due overlay
-- [x] PermissionResolver + roles
-- [x] SSE / conflict 409
-
-## 8. Связанные документы
-
-- [README.md](README.md)
-- [calendar/TZ.md](../calendar/TZ.md)
-- [APP_IDEAS.md](../APP_IDEAS.md)
-- [DEVELOPER_GUIDE.md](../DEVELOPER_GUIDE.md)
+- [x] CRUD пространства, доски, колонки, карточки
+- [x] Метки, исполнители, чеклисты, комментарии, файлы
+- [x] Поиск карточек
+- [x] Лента сроков и упоминание себя
+- [x] Лимит колонки и шаблоны названий

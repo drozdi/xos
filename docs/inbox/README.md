@@ -1,40 +1,11 @@
-# Inbox — внутренние сообщения
+# Почта
 
-User→User почта внутри XOS (не IMAP).
+Письма между пользователями XOS. Это не внешний ящик.
 
-## Claimant
+Доступ: `ROLE_INBOX`.
 
-- **Код:** `inbox`
-- **Роль:** `ROLE_INBOX`
+Окна: список `inbox` и карточка `inbox-message`. Непрочитанные попадают в ленту оболочки. К письму можно приложить файл: он грузится с `module=inbox` и вставляется ссылкой в текст.
 
-## Приложения
+Код: `server/src/Inbox`, `client/src/apps/inbox`.
 
-| ID | Название | Тип | Описание |
-|----|----------|-----|----------|
-| inbox | Inbox | regular | Список входящих/исходящих |
-| inbox-message | Сообщение | sub-app | Карточка письма |
-
-## Backend
-
-```
-server/src/Inbox/
-├── Controller/MessageController.php
-├── Entity/Message.php
-├── Service/InboxManager.php
-└── setting.json
-```
-
-**API prefix:** `/api/inbox/`
-
-## Frontend
-
-```
-client/src/apps/inbox/
-client/src/apps/inbox-message/
-client/src/features/inbox/
-```
-
-## Документы
-
-- [APP_IDEAS.md](../APP_IDEAS.md) — IMAP/SMTP (бэклог)
-- [APPS.md](../APPS.md)
+См. [TZ.md](TZ.md), [API.md](API.md).

@@ -1,81 +1,24 @@
-# ТЗ — Explorer (файловый менеджер)
+# ТЗ — проводник
 
-> Версия: 1.1 · Дата: 2026-08-18 · Статус: **реализовано** (pickers — см. PLAN)
+## 1. Диски
 
-## 1. Назначение
+Системный дом `home://` и личные диски. Личный диск создаётся и удаляется, если у пользователя есть право записи.
 
-Виртуальная файловая система пользователя, просмотрщики и редакторы файлов, интеграция с другими приложениями через picker.
+## 2. Навигация
 
-## 2. Пользователи и доступ
+Список каталога, дерево, карточка файла. Сортировка по имени, дате, размеру. Двойной щелчок открывает файл подходящим приложением.
 
-- **Claimant:** `explorer`
-- **Права:** `can_read`, `can_write`, `can_delete`
-- **Роль:** `ROLE_EXPLORER`
+## 3. Операции
 
-## 3. Приложения (9)
+Копирование, перемещение, переименование, удаление в корзину, восстановление, загрузка и скачивание. Архив собирается и распаковывается отдельными методами.
 
-| ID | Тип | Назначение |
-|----|-----|------------|
-| explorer | regular | Файловый менеджер |
-| explorer-open-picker | picker | Диалог «Открыть» |
-| explorer-save-picker | picker | Диалог «Сохранить как» |
-| explorer-notepad | regular | `.txt` редактор |
-| explorer-markdown-viewer | regular | Markdown live/source/reading |
-| explorer-image-viewer | regular | Изображения, zoom |
-| explorer-archiver | regular | zip pack/unpack |
-| explorer-video-player | regular | Видео + плейлисты |
-| explorer-audio-player | regular | Аудио + плейлисты |
+## 4. Сессия
 
-## 4. Функциональные требования
+Последний открытый путь возвращается при новом входе. Виджет позволяет закрепить путь и открыть проводник на нём.
 
-### Проводник
-- Навигация по VFS (`home://`, диски)
-- CRUD: list, read, write, mkdir, rename, delete
-- Контекстное меню, ассоциации типов файлов
-- Multi-instance, per-window folder (`documentPath`)
+## 5. Критерии
 
-### Pickers
-- Отдельные окна, `skipHistory`
-- Закрытие после выбора/отмены
-- Window-scoped consumer для Open
-
-### Satellite apps
-- Открытие по типу файла / двойной клик
-- Persist последнего файла per window
-- Media: singleInstance; notepad/md: multi uuid
-
-### Плейлисты
-- Формат `.xos-playlist`
-- Меню: Открыть / Сохранить / Сохранить как
-
-## 5. API
-
-**Prefix:** `/api/explorer/`
-
-| Endpoint | Описание |
-|----------|----------|
-| `GET/POST …/list` | Листинг |
-| read/write/rename/delete | Файловые операции |
-| `/disks` | Пользовательские диски |
-| `/archive/pack`, `/unpack` | Архиватор |
-
-## 6. Backend
-
-```
-server/src/Explorer/
-├── Controller/
-└── setting.json
-```
-
-## 7. Критерии приёмки
-
-- [x] CRUD файлов с ACL
-- [x] Pickers не в launch history
-- [x] 2+ независимых explorer/notepad окон
-- [x] Audio/video — один экземпляр, reload файла
-- [x] Dirty-close notepad/md — implemented (taskbar `getWindowApi().close()` + cancel)
-
-## 8. Связанные документы
-
-- [README.md](README.md)
-- [TZ.md](../TZ.md)
+- [x] Список и дерево `home://`
+- [x] Загрузка и скачивание
+- [x] Корзина
+- [x] Просмотрщики по типу файла

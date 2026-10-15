@@ -1,7 +1,7 @@
 # Идеи приложений и улучшений XOS
 
 > Открытый бэклог. Не ТЗ.  
-> Каталог сделанного: [APPS.md](APPS.md) · разбор улучшений: [IMPROVEMENTS.md](IMPROVEMENTS.md) · индекс: [README.md](README.md)
+> Улучшения: [IMPROVEMENTS.md](IMPROVEMENTS.md) · индекс: [README.md](README.md)
 
 ---
 

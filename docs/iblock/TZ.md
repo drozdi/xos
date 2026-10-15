@@ -1,81 +1,22 @@
-# ТЗ — IBlock (информационные блоки)
+# ТЗ — инфоблоки
 
-> Версия: 1.0 · Статус: **реализовано**
+## 1. Модель
 
-## 1. Назначение
+Тип задаёт класс блоков. Блок принадлежит типу. Раздел — дерево внутри блока. Свойство имеет код и тип поля: строка, число, файл, список, привязка к элементу или разделу. Элемент хранит значения свойств и может лежать в нескольких разделах.
 
-Гибкое хранение структурированных данных по модели Bitrix Infoblock: тип → инфоблок → разделы/элементы → свойства (в т.ч. списки с enum) → значения свойств элемента.
+## 2. Контентные каталоги
 
-## 2. Доступ
+Заметки, статьи, FAQ, галерея, рецепты, услуги, события, контакты, идеи, лиды. У них общий список: поиск, раздел, теги, избранное. Избранное — массив id в user-data `iblock.favorites.{block}`.
 
-| Claimant | Назначение |
-|----------|------------|
-| `iblock.type` | Типы |
-| `iblock.block` | Блоки |
-| `iblock.section` | Разделы |
-| `iblock.element` | Элементы |
-| `iblock.property` | Свойства и enum |
+Карточка умеет обложку, текст и шаринг на другого пользователя. Рецепт дополнительно хранит время, порции и ингредиенты.
 
-Права: `can_create`, `can_read`, `can_update`, `can_delete`.
+## 3. Права элемента
 
-Desktop-app и claimant для enum отдельно **не** требуются.
+Владелец правит. Получатель шаринга читает или тоже правит, как записано в share.
 
-## 3. Функциональные требования
+## 4. Критерии
 
-### Сущности
-- CRUD Type, Block, Section, Property, PropertyEnum, Element
-- Property связан **только** с Block (`block_id` required); связи с Type нет
-- Element хранит `ElementPropertyValue` (cascade persist/remove, orphanRemoval)
-
-### Element PROPERTY_VALUES
-- Приём `PROPERTY_VALUES` / `properties` на create/update: `{CODE: value|value[]}`
-- Типы: `S`/`N`/`F`/`L`/`E`/`G`
-- `L` — резолв enum по id или code
-- `F` — id `main_file` (upload module `iblock`)
-- `E`/`G` — id element/section только из `link_iblock_id`
-- Сериализация в detail; фильтр `PROPERTY_{CODE}` (в т.ч. по FK)
-- Фильтр `active_now`
-
-### Managers
-Фасады `IBlock\Service\*Manager` с API Bitrix-style.
-
-## 4. API
-
-См. [API.md](API.md). Prefix: `/api/iblock/`.
-
-## 5. Backend
-
-```
-server/src/IBlock/
-├── Controller/
-├── Entity/
-├── Repository/
-├── Service/
-└── setting.json
-```
-
-Миграция: `Version20260915120000` — `iblock_property.block_id`, таблица `iblock_element_property`.
-
-## 6. Критерии приёмки
-
-- [x] Property ↔ Block, Element ↔ propertyValues
-- [x] Managers для всех сущностей
-- [x] Element/Property/PropertyEnum контроллеры через managers + PROPERTY_VALUES
-- [x] Фильтры `PROPERTY_*` и `active_now`
-- [x] Тест `testElementPropertyValuesAndFilter`
-- [x] Документация `docs/iblock/`
-- [x] Desktop apps + `ROLE_IBLOCK` (`ProtectedAppModules`)
-- [x] Типы свойств S/N/F/L/E/G + `link_iblock_id` + FK file/element/section
-- [x] Property только через Block (`block_id` required; без Type)
-- [x] M:N `section_element`, `section_mode`, `element_filter` + inheritance
-- [x] Составные unique code; list filters type→block
-- [x] Developer guide + seed PKB/Board
-
-## 7. Связанные документы
-
-- [README.md](README.md)
-- [API.md](API.md)
-- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
-- [../API_SPEC.md](../API_SPEC.md)
-- [../DATABASE_SCHEMA.md](../DATABASE_SCHEMA.md)
-- Bitrix: [fields](https://dev.1c-bitrix.ru/api_help/iblock/fields.php), [D7](https://dev.1c-bitrix.ru/api_help/iblock/iblock_d7.php)
+- [x] CRUD типа, блока, раздела, свойства, элемента
+- [x] Фильтр раздела
+- [x] Контентные каталоги на общем UI
+- [x] Шаринг элемента

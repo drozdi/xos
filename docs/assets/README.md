@@ -1,52 +1,22 @@
-# Assets — склад, автопарк, договоры
+# Склад и имущество
 
-Учёт складских позиций, транспорта, контрагентов, договоров, помещений и ПО.
+Склад, автопарк, контрагенты, договоры, помещения и программы.
 
-## Claimant
-
-- **Код:** `assets`
-- **Под-claimants:** `assets.warehouse`, `assets.fleet`, `assets.party`, `assets.contract`, `assets.room`, `assets.software`
-- **Роль:** `ROLE_ASSETS`
+Доступ: `ROLE_ASSETS`. Списки учитывают активное подразделение.
 
 ## Приложения
 
-### Списки (regular)
+| Список | Карточка |
+|--------|----------|
+| assets-warehouse | assets-warehouse-item |
+| assets-fleet | assets-fleet-vehicle |
+| assets-parties | assets-party |
+| assets-contracts | assets-contract |
+| assets-rooms | assets-room |
+| assets-software | assets-software-item |
 
-| ID | Сущность |
-|----|----------|
-| assets-warehouse | Склад |
-| assets-fleet | Автопарк |
-| assets-parties | Контрагенты |
-| assets-contracts | Договоры |
-| assets-rooms | Помещения |
-| assets-software | ПО |
+Связь с устройством задаётся на карточке устройства, не здесь.
 
-### Карточки (sub-app)
+Код: `server/src/Assets`, `client/src/apps/assets-*`.
 
-| ID | Открывается из |
-|----|----------------|
-| assets-warehouse-item | assets-warehouse |
-| assets-fleet-vehicle | assets-fleet |
-| assets-party | assets-parties |
-| assets-contract | assets-contracts |
-| assets-room | assets-rooms |
-| assets-software-item | assets-software |
-
-## Backend
-
-```
-server/src/Assets/
-```
-
-**API prefix:** `/api/assets/*`
-
-## Frontend
-
-```
-client/src/apps/assets-*/
-client/src/features/assets/   # AssetsCatalog*
-```
-
-## Документы
-
-- [APPS.md](../APPS.md)
+См. [TZ.md](TZ.md), [API.md](API.md).

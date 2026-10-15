@@ -1,23 +1,9 @@
-# Habits — трекер привычек
+# Привычки
 
-Обёртка над Todo: ежедневные/повторяющиеся привычки без отдельной сущности `habit_log` (v1).
+Отметки дней и серия. Окно доступно вместе с задачами, своей роли нет.
 
-## Приложения
+Серия лежит в user-data `habits.streaks`. Виджет «Сегодня» показывает наибольшее число.
 
-| ID | Название | Описание |
-|----|----------|----------|
-| habits | Привычки | UI поверх Todo API |
+Код: `client/src/apps/habits`, `client/src/features/habits`.
 
-## Frontend
-
-```
-client/src/apps/habits/
-client/src/features/habits/habitUtils.ts
-```
-
-Доступ: как Todo — любой авторизованный (`canUseTodo()`), без `ROLE_TODO`.
-
-## Документы
-
-- [todo/README.md](../todo/README.md)
-- [APPS.md](../APPS.md)
+См. [TZ.md](TZ.md), [API.md](API.md).

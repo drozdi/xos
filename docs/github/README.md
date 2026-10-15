@@ -1,40 +1,11 @@
-# GitHub — Issues proxy
+# GitHub
 
-Подключение Personal Access Token и просмотр/правка Issues через backend-proxy.
+Просмотр и правка Issues через сервер. Токен пользователя хранится зашифрованным.
 
-## Claimant
+Доступ: `ROLE_GITHUB`.
 
-- **Код:** `github`
-- **Роль:** `ROLE_GITHUB`
+Окно `github`. Виджет «Внешние задачи» показывает несколько открытых issues.
 
-## Приложения
+Код: `server/src/Github`, `client/src/apps/github`.
 
-| ID | Название | Описание |
-|----|----------|----------|
-| github | GitHub | Credentials + список/деталь Issues |
-
-## Backend
-
-```
-server/src/Github/
-├── Controller/   # credentials, connection, issues
-├── Entity/UserGithubCredential.php
-├── Service/      # token cipher, API client, issues
-└── setting.json
-```
-
-**API prefix:** `/api/github/`
-
-At rest: `GITHUB_TOKEN_SECRET` → AES (как Ts/IncCom).
-
-## Frontend
-
-```
-client/src/apps/github/
-client/src/features/github/
-```
-
-## Документы
-
-- [APPS.md](../APPS.md)
-- [APP_IDEAS.md](../APP_IDEAS.md)
+См. [TZ.md](TZ.md), [API.md](API.md).

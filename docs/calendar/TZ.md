@@ -1,78 +1,22 @@
-# ТЗ — Calendar (календарь)
+# ТЗ — календарь
 
-> Версия: 1.0 · Дата: 2026-08-18 · Статус: **реализовано**
+## 1. Календари
 
-## 1. Назначение
+У календаря название и цвет. Его можно отдать пользователю или группе на чтение или запись. Чужой календарь виден, если есть share.
 
-Личные и shared-календари, события, агрегация дедлайнов из Todo, Board и расписания SchoolTask.
+## 2. События
 
-## 2. Пользователи и доступ
+Событие: календарь, название, описание, начало, конец, признак всего дня. Интервал запрашивается одним методом на сетку.
 
-- **Claimant:** `calendar`
-- **Права:** `can_read`, `can_write`
-- Проверка: `canUseCalendar()`
+Повтор «каждый день» создаёт ещё шесть событий, «каждую неделю» — ещё три. Это отдельные записи, не один ряд.
 
-## 3. Приложения
+## 3. Слои
 
-| ID | Название | Описание |
-|----|----------|----------|
-| calendar | Календарь | День / неделя / месяц |
+Поверх своих событий показываются сроки задач, карточек и школьные уроки, если у пользователя есть соответствующая роль. Слой можно скрыть. Выбор запоминается.
 
-## 4. Функциональные требования
-
-### Собственные календари
-- CRUD календарей (title, color)
-- CRUD событий: title, start/end, all_day, description, color
-- Drag/create в grid (editable events)
-
-### Шаринг
-- По email (read/write)
-- Через группу
-
-### Overlay (read-only)
-| Источник | Условие |
-|----------|---------|
-| Заметки (Todo) | `due_at`, overlay «Заметки» |
-| Доска (Board) | `due_date`, overlay «Доска» |
-| SchoolTask | teacher events, overlay «Моё расписание» |
-
-### UI
-- Sidebar: visibility toggles
-- Клик overlay → модалка деталей
-- Refresh invalidates all sources
-
-## 5. API
-
-**Prefix:** `/api/calendar/`
-
-| Endpoint | Описание |
-|----------|----------|
-| `GET/POST /calendars` | Календари |
-| `GET/POST/PUT/DELETE /events` | События |
-| `POST /events/query` | Диапазон + calendar_ids |
-| Share endpoints | email / group |
-
-**Overlay (другие модули):**
-- `GET /api/todo/due`
-- `GET /api/board/cards/due`
-- `GET /api/schooltask/calendar/teacher-events`
-
-## 6. Backend / Frontend
-
-```
-server/src/Calendar/
-client/src/apps/calendar/
-client/src/features/calendar/
-```
-
-## 7. Критерии приёмки
+## 4. Критерии
 
 - [x] CRUD календарей и событий
-- [x] Sharing read/write
-- [x] Overlay Todo + Board + SchoolTask
-- [x] Visibility persist в localStorage
-
-## 8. Связанные документы
-
-- [README.md](README.md)
-- [todo/TZ.md](../todo/TZ.md) · [board/TZ.md](../board/TZ.md)
+- [x] Шаринг человеку и группе
+- [x] Слои задач, доски и школы
+- [x] Повтор несколькими записями

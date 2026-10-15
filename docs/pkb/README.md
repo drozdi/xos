@@ -1,67 +1,9 @@
-# PKB — база знаний
+# База знаний
 
-Personal Knowledge Base: vaults, markdown-заметки, wikilinks, граф, поиск.
+Хранилища заметок в Markdown: дерево, ссылки, граф, поиск.
 
-## Доступ
+Доступ: `ROLE_PKB`. Заметки лежат в проводнике, индекс — в таблицах модуля.
 
-- **Роль:** `ROLE_PKB` (`ProtectedAppModules`)
-- **Манифест:** `requiredRole: 'pkb'`, `canAccess: canUsePkb()`
-- **Claimant:** `pkb` — `can_read`, `can_write`
-- Vault ACL (owner / reader / editor) — sharing
+Код: `server/src/Pkb`, `client/src/apps/pkb`.
 
-## Приложения
-
-| ID | Название | Описание |
-|----|----------|----------|
-| pkb | База знаний | Vaults, редактор, graph view |
-
-## Backend
-
-```
-server/src/Pkb/
-├── Controller/
-├── Entity/          # Vault, NoteIndex, PkbLink, VaultMember
-├── Service/
-│   ├── PkbManager.php
-│   ├── VaultFileService.php
-│   ├── LinkIndexService.php
-│   ├── SearchService.php
-│   └── GraphService.php
-└── setting.json
-```
-
-**API prefix:** `/api/pkb/`
-
-Файлы vault хранятся на диске Explorer (не в БД).
-
-## Frontend
-
-```
-client/src/apps/pkb/PkbApp.tsx
-client/src/features/pkb/
-├── components/NoteEditorPanel.tsx
-├── components/VaultSearchBar.tsx
-└── pkbAccess.ts
-```
-
-## Функции
-
-- Несколько vault (private / shared)
-- Markdown + wikilinks `[[note]]` (+ ambiguous picker)
-- Backlinks, graph view, FULLTEXT search
-- Search & replace по vault
-- Шаблоны заметок, bookmarks
-- `encrypt_at_rest`, plugins_json, ZIP export
-- Remote sync: `remote_sync_url` + `POST /vaults/{id}/remote-sync`
-- UI prefs: `pkb.ui.*` → `user_app_data` (`getOptional`)
-
-## Документы
-
-| Файл | Содержание |
-|------|------------|
-| [TZ.md](TZ.md) | Техническое задание |
-| [APP_IDEAS.md](../APP_IDEAS.md) | Бэклог (co-edit, marketplace) |
-
-## Доступ
-
-`canUsePkb()` — права модуля pkb.
+См. [TZ.md](TZ.md), [API.md](API.md).

@@ -1,67 +1,11 @@
-# Calendar — календарь
+# Календарь
 
-Личные календари, события, шаринг и overlay из других модулей.
+Личные календари и события. На сетку можно наложить сроки задач, карточек доски и уроки.
 
-## Доступ
+Доступ: `ROLE_CALENDAR`. Стенд логинится через `/api/calendar/auth`.
 
-- **Роль:** `ROLE_CALENDAR` (`ProtectedAppModules`)
-- **Манифест:** `requiredRole: 'calendar'`, `canAccess: canUseCalendar()`
-- **Claimant:** `calendar` — `can_read`, `can_write`
+Видимость слоёв хранится в `calendar.visibility`.
 
-## Приложения
+Код: `server/src/Calendar`, `client/src/apps/calendar`.
 
-| ID | Название | Описание |
-|----|----------|----------|
-| calendar | Календарь | День / неделя / месяц, CRUD событий |
-
-## Backend
-
-```
-server/src/Calendar/
-├── Controller/
-│   ├── CalendarController.php     # CRUD календарей
-│   └── EventController.php        # CRUD событий, query по диапазону
-├── Entity/
-└── setting.json
-```
-
-**API prefix:** `/api/calendar/`
-
-## Frontend
-
-```
-client/src/apps/calendar/CalendarApp.tsx
-client/src/features/calendar/
-├── components/CalendarShell.tsx   # основной UI
-├── mappers.ts                   # own / todo / board / schooltask
-├── visibilityStore.ts           # overlay toggles
-└── calendarAccess.ts
-```
-
-## Режимы просмотра
-
-- **День / неделя / месяц** — `CalendarGrid`
-- **Сайдбар** — список календарей + системные overlay
-
-## Системные overlay
-
-| Overlay | ID | Источник API |
-|---------|-----|--------------|
-| Заметки | `overlay:todo` | `GET /api/todo/due` |
-| Доска | `overlay:board` | `GET /api/board/cards/due` |
-| Моё расписание | `overlay:schooltask` | teacher events |
-
-Карточки с `due_date` / `due_at` отображаются как read-only события; клик — модалка деталей.
-
-## Шаринг
-
-- По email (как Todo)
-- Через группу с правами read/write
-
-## Доступ
-
-`canUseCalendar()` — авторизованный пользователь с правами модуля calendar.
-
-## Документы
-
-- [TZ.md](TZ.md) — техническое задание
+См. [TZ.md](TZ.md), [API.md](API.md).

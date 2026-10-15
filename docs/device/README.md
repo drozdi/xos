@@ -1,75 +1,17 @@
-# Device — учёт оборудования
+# Устройства
 
-CRM-модуль учёта устройств, комплектующих, ПО, лицензий и справочников.
+Учёт техники, комплектующих, программ, лицензий и свойств.
 
-## Claimant
-
-- **Код:** `device`
-- **Под-claimants:** `device.device`, `device.subDevice`, `device.type`, `device.property`, `device.component`, `device.software`, `device.software.type`, `device.license`
-- **Роль:** `ROLE_DEVICE`
+Доступ: `ROLE_DEVICE`. Списки фильтруются активным подразделением.
 
 ## Приложения
 
-### Списки (regular)
+Списки: устройства, комплектующие, типы, свойства, типы комплектующих, программы, типы программ, лицензии.
 
-| ID | Сущность |
-|----|----------|
-| device-devices | Устройства |
-| device-sub-devices | Комплектующие |
-| device-types | Типы устройств |
-| device-properties | Свойства (справочник) |
-| device-components | Типы комплектующих |
-| device-softwares | Программы |
-| device-software-types | Типы программ |
-| device-licenses | Лицензии |
+Карточки открываются из списков: `device-device`, `device-sub-device`, `device-type`, `device-property`, `device-component`, `device-software`, `device-software-type`, `device-license`, `device-license-key`.
 
-### Карточки (sub-app)
+На карточке устройства есть поле «Позиция склада»: id записи Assets, ключ `device.asset.{id}` в user-data.
 
-| ID | Открывается из |
-|----|----------------|
-| device-device | device-devices |
-| device-sub-device | device-sub-devices |
-| device-type | device-types |
-| device-property | device-properties |
-| device-component | device-components |
-| device-software | device-softwares |
-| device-software-type | device-software-types |
-| device-license | device-licenses |
-| device-license-key | device-license (вкладка ключей) |
+Код: `server/src/Device`, `client/src/apps/device-*`.
 
-## Backend
-
-```
-server/src/Device/
-├── Controller/
-│   ├── DeviceController.php      # /api/device/device
-│   ├── ComponentController.php   # комплектующие
-│   ├── LicenseController.php
-│   ├── SoftwareController.php
-│   └── …
-├── Entity/
-└── setting.json
-```
-
-**API prefix:** `/api/device/`
-
-Загрузка файлов/изображений: `POST /api/device/device/upload`, модуль `device` в `UploadPathResolver`.
-
-## Frontend
-
-```
-client/src/apps/device-*/
-client/src/features/device/       # DeviceAccountingFields, editors, gallery
-```
-
-Утилиты sub-app: `deviceAppUtils.ts`.
-
-## Карточка устройства (device-device)
-
-Вкладки: общие данные, свойства, комплектующие, ремонты, лицензии, изображения, файлы.
-
-Дополнительные scope: `can_mod`, `can_location`, `can_write_off`, `can_repair` — см. `setting.json`.
-
-## Документы
-
-- [TZ.md](TZ.md) — техническое задание
+См. [TZ.md](TZ.md), [API.md](API.md).

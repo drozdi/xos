@@ -114,6 +114,7 @@ final class SeedXosProjectCommand extends Command
 
         $vault = $this->vaults->findOneByOwnerAndSlug($user, self::VAULT_SLUG);
         if ($vault instanceof Vault) {
+            $this->ensureDocumentationFolders($vault, $user);
             $written = 0;
             foreach ($this->vaultNotes() as $path => $content) {
                 $this->vaultFiles->putContent($vault, $user, $path, $content);
@@ -654,8 +655,7 @@ MD,
             'slug' => self::VAULT_SLUG,
         ]);
 
-        $this->vaultFiles->createFolder($vault, $user, 'Notes/Apps');
-        $this->vaultFiles->createFolder($vault, $user, 'Notes/Apps/IBlock');
+        $this->ensureDocumentationFolders($vault, $user);
 
         foreach ($this->vaultNotes() as $path => $content) {
             $this->vaultFiles->putContent($vault, $user, $path, $content);
@@ -859,7 +859,7 @@ MD, ['pkb', 'mvp']);
 MD, ['docs', 'mvp', 'schooltask']);
 
         $card('Документация приложений', <<<'MD'
-Каталог `docs/APPS.md`, ТЗ по доменам, индекс `docs/README.md`. Связано с [[AppsCatalog]], [[Changelog]] и vault XOS.
+Каталог `docs/README.md`, ТЗ по доменам, индекс `docs/README.md`. Связано с [[AppsCatalog]], [[Changelog]] и vault XOS.
 MD, ['docs', 'mvp'], [
             'title' => 'Осталось',
             'items' => [
@@ -932,7 +932,7 @@ MD,
                 'notePath' => 'Notes/AppsCatalog.md',
                 'boardList' => 'Обзор',
                 'labels' => ['docs'],
-                'description' => "Реестр 100+ приложений (System…Assets) и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/APPS.md`.",
+                'description' => "Реестр 100+ приложений (System…Assets) и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/README.md`.",
             ],
             [
                 'title' => 'App Ideas',
@@ -999,7 +999,140 @@ MD,
             ];
         }
 
-        return array_merge($overview, $modules, $iblockDocs);
+        return array_merge($overview, $modules, $iblockDocs, $this->repoDocCards());
+    }
+
+    /**
+     * Карточки на файлы docs/: продукт и README/TZ/API каждого домена.
+     *
+     * @return list<array{title: string, notePath: string, boardList: string, labels: list<string>, description: string}>
+     */
+    private function repoDocCards(): array
+    {
+        $cards = [
+            [
+                'title' => 'Документация продукта',
+                'notePath' => 'Notes/Docs/README.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs'],
+                'description' => "Индекс docs/README.md.\n\nЗаметка: Notes/Docs/README.md",
+            ],
+            [
+                'title' => 'ТЗ продукта',
+                'notePath' => 'Notes/Docs/TZ.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs'],
+                'description' => "ТЗ на продукт целиком.\n\nЗаметка: Notes/Docs/TZ.md",
+            ],
+            [
+                'title' => 'API продукта',
+                'notePath' => 'Notes/Docs/API.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs'],
+                'description' => "Вход, права, настройки, файлы.\n\nЗаметка: Notes/Docs/API.md",
+            ],
+            [
+                'title' => 'Идеи улучшений',
+                'notePath' => 'Notes/Improvements.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs', 'v2'],
+                'description' => "Открытые улучшения.\n\nЗаметка: Notes/Improvements.md · [[AppIdeas]]",
+            ],
+        ];
+
+        $kindTitle = ['README.md' => 'обзор', 'TZ.md' => 'ТЗ', 'API.md' => 'API'];
+        foreach ($this->documentationDomains() as $domain => $meta) {
+            foreach ($kindTitle as $file => $kind) {
+                $cards[] = [
+                    'title' => $meta['title'].' — '.$kind,
+                    'notePath' => 'Notes/Apps/'.$meta['folder'].'/'.$file,
+                    'boardList' => 'Модули',
+                    'labels' => ['docs', $meta['label']],
+                    'description' => "docs/{$domain}/{$file}\n\nЗаметка модуля: [[".$meta['title'].']]',
+                ];
+            }
+        }
+
+        return $cards;
+    }
+
+    /**
+     * @return array<string, array{folder: string, label: string, title: string}>
+     */
+    private function documentationDomains(): array
+    {
+        return [
+            'system' => ['folder' => 'System', 'label' => 'system', 'title' => 'System'],
+            'main' => ['folder' => 'Main', 'label' => 'main', 'title' => 'Main'],
+            'device' => ['folder' => 'Device', 'label' => 'device', 'title' => 'Device'],
+            'explorer' => ['folder' => 'Explorer', 'label' => 'explorer', 'title' => 'Explorer'],
+            'schooltask' => ['folder' => 'SchoolTask', 'label' => 'schooltask', 'title' => 'SchoolTask'],
+            'iblock' => ['folder' => 'IBlock', 'label' => 'iblock', 'title' => 'IBlock'],
+            'inccom' => ['folder' => 'IncCom', 'label' => 'inccom', 'title' => 'IncCom'],
+            'calendar' => ['folder' => 'Calendar', 'label' => 'calendar', 'title' => 'Calendar'],
+            'todo' => ['folder' => 'Todo', 'label' => 'todo', 'title' => 'Todo'],
+            'habits' => ['folder' => 'Habits', 'label' => 'todo', 'title' => 'Habits'],
+            'board' => ['folder' => 'Board', 'label' => 'board', 'title' => 'Board'],
+            'pkb' => ['folder' => 'PKB', 'label' => 'pkb', 'title' => 'PKB'],
+            'ts' => ['folder' => 'TeamStorm', 'label' => 'system', 'title' => 'TeamStorm'],
+            'inbox' => ['folder' => 'Inbox', 'label' => 'inbox', 'title' => 'Inbox'],
+            'assets' => ['folder' => 'Assets', 'label' => 'assets', 'title' => 'Assets'],
+            'github' => ['folder' => 'GitHub', 'label' => 'github', 'title' => 'GitHub'],
+        ];
+    }
+
+    private function ensureDocumentationFolders(Vault $vault, User $user): void
+    {
+        $paths = ['Notes/Docs', 'Notes/Apps', 'Notes/Apps/IBlock'];
+        foreach ($this->documentationDomains() as $meta) {
+            $paths[] = 'Notes/Apps/'.$meta['folder'];
+        }
+        foreach (array_unique($paths) as $path) {
+            try {
+                $this->vaultFiles->createFolder($vault, $user, $path);
+            } catch (\Throwable) {
+            }
+        }
+    }
+
+    /** @return array<string, string> */
+    private function repoDocumentationNotes(): array
+    {
+        $root = dirname(__DIR__, 4).DIRECTORY_SEPARATOR.'docs';
+        $map = [
+            'README.md' => 'Notes/Docs/README.md',
+            'TZ.md' => 'Notes/Docs/TZ.md',
+            'API.md' => 'Notes/Docs/API.md',
+            'APP_IDEAS.md' => 'Notes/AppIdeas.md',
+            'IMPROVEMENTS.md' => 'Notes/Improvements.md',
+        ];
+        foreach ($this->documentationDomains() as $domain => $meta) {
+            foreach (['README.md', 'TZ.md', 'API.md'] as $file) {
+                $map[$domain.'/'.$file] = 'Notes/Apps/'.$meta['folder'].'/'.$file;
+            }
+        }
+
+        $notes = [];
+        foreach ($map as $relative => $vaultPath) {
+            $full = $root.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+            if (!is_file($full)) {
+                continue;
+            }
+            $raw = file_get_contents($full);
+            if (false === $raw || '' === trim($raw)) {
+                continue;
+            }
+            $hub = 'Home';
+            foreach ($this->documentationDomains() as $meta) {
+                if (str_contains($vaultPath, '/'.$meta['folder'].'/')) {
+                    $hub = $meta['title'];
+                    break;
+                }
+            }
+            $notes[$vaultPath] = trim($raw)."\n\n← [[Home]] · [[".$hub."]] · [[AppsCatalog]]\n";
+        }
+
+        return $notes;
     }
 
     /**
@@ -1272,7 +1405,9 @@ DX: PHPUnit `BoardManagerTest::testPkbNoteLinkSerializeAndLinkedLookup`; см. [
 
 Realtime: SSE `GET /boards/{id}/events`; optional Mercure (`MERCURE_URL`+`MERCURE_JWT_SECRET`, `GET …/realtime`); polling fallback. Conflict: `expected_updated_at` → 409.
 
-Также: `GET /boards/{id}/changes`, `GET /search`.
+Также: `GET /boards/{id}/changes`, `GET /search`. WIP и шаблоны названий — user-data `board.wipLimits`, `board.cardTemplates`. Ссылка карточки — `board.cardLink.{id}`. Упоминание `@alias` в комментарии попадает в ленту оболочки.
+
+Полные документы: `Notes/Apps/Board/README.md`, `TZ.md`, `API.md`.
 
 Документы: `docs/board/README.md`, `TZ.md` · журнал: [[Changelog]]
 
@@ -1301,7 +1436,9 @@ Vault = папка [[Explorer]] + индекс в БД. Wikilinks `[[Note]]`, ba
 
 Deep-link окна PKB: props `vaultId`, `notePath`. Связанные карточки [[Board]]: `GET /api/board/cards/linked`.
 
-Фичи: FULLTEXT; ambiguous wikilink; `encrypt_at_rest`; plugins; ZIP export; `remote_sync_url` + `POST /vaults/{id}/remote-sync`.
+Фичи: FULLTEXT; ambiguous wikilink; `encrypt_at_rest`; plugins; ZIP export; `remote_sync_url` + `POST /vaults/{id}/remote-sync`. Кнопки: заметка дня `Daily/`, шаблон встречи, приглашение читателя.
+
+Полные документы: `Notes/Apps/PKB/README.md`, `TZ.md`, `API.md` и `Notes/Docs/` по продукту.
 
 Документация в vault обновляется через seed: `php bin/console xos:seed-project --force`.
 
@@ -1340,9 +1477,14 @@ MD,
 | `memory` | Memory |
 | `snake` | Змейка |
 | `sticky-note` | Стикер (multi) |
-| `widget-clock` | Часы (desktop widget) |
-| `widget-weather` | Погода (desktop widget) |
-| `widget-reminders` | Напоминания (лента + local reminders) |
+| `widget-clock` | Часы, пояс |
+| `widget-weather` | Погода, °C/°F, кэш |
+| `widget-reminders` | Напоминания, повтор по дням |
+| `widget-upcoming` | Лента сроков и писем |
+| `widget-today` | Задачи на сегодня и серия привычек |
+| `widget-school` | Уроки учителя на сегодня |
+| `widget-external` | Issues GitHub и задачи TeamStorm |
+| `widget-explorer` | Последний путь и закреплённые папки |
 | `demo-calculator` | Calculator (демо) |
 
 ## Sync (desktop-state)
@@ -1357,7 +1499,7 @@ MD,
 
 PWA: vite-plugin-pwa (shell + SW); NetworkFirst GET `/api/*`; offline banner + write outbox — **DONE**.
 
-Документы: `docs/system/README.md`, `docs/APPS.md`
+Документы: `docs/system/README.md`, `docs/README.md`
 
 ← [[Home]] · [[AppsCatalog]]
 MD,
@@ -1394,7 +1536,7 @@ Claimant в основном `iblock`; рецепты — `recipe` (`ROLE_RECIPE
 
 - Hub инфоблоков: [[IBlock]]
 - Теги / избранное в ContentCatalog — **DONE**
-- Документы: `docs/iblock/README.md`, `docs/APPS.md`
+- Документы: `docs/iblock/README.md`, `docs/README.md`
 
 ← [[Home]] · [[IBlock]] · [[AppsCatalog]]
 MD,
@@ -1430,7 +1572,7 @@ Prefix `/api/assets/*`. Claimants: `assets.warehouse`, `assets.fleet`, …
 
 Multi-OU: nullable `ou_id` на каталогах; list/create через `OuScope`.
 
-Документы: `docs/APPS.md` § Assets
+Документы: `docs/README.md` § Assets
 
 ← [[Home]] · [[AppsCatalog]] · [[Changelog]]
 MD,
@@ -1575,7 +1717,7 @@ Prefix API: `/api/iblock/`.
 
 ## Документы в репо
 
-`docs/iblock/README.md` · `TZ.md` · `docs/APPS.md`
+`docs/iblock/README.md` · `TZ.md` · `docs/README.md`
 
 ## Вне scope (как в Bitrix, но не в XOS)
 
@@ -1631,7 +1773,7 @@ MD,
 
 ## Документы в репозитории
 
-Индекс: `docs/README.md` · каталог: `docs/APPS.md` · идеи: `docs/APP_IDEAS.md`
+Полные README, ТЗ и API: `Notes/Docs/` и `Notes/Apps/<модуль>/`. Идеи: [[AppIdeas]] · улучшения: Notes/Improvements.md
 
 Seed: `php bin/console xos:seed-project [--login=] [--force]`
 MD,
@@ -1684,7 +1826,7 @@ Polling `…/changes` + `/api/board/search` — **DONE**.
 - Platform: PWA shell; `shell-settings`; `main-audit`; OU list filter
 - [[Explorer]] viewers; [[System]] games/widgets
 
-См. [[AppsCatalog]], `docs/APPS.md`.
+См. [[AppsCatalog]], `docs/README.md`.
 
 ## Apps wave (DONE)
 
@@ -1699,7 +1841,7 @@ MD,
             'Notes/AppIdeas.md' => <<<'MD'
 # App Ideas
 
-Открытый бэклог. Не ТЗ. Каталог сделанного: [[AppsCatalog]] · `docs/APPS.md`.
+Открытый бэклог. Не ТЗ. Каталог сделанного: [[AppsCatalog]] · `docs/README.md`.
 
 Полный текст в репо: `docs/APP_IDEAS.md`.
 
@@ -1768,12 +1910,12 @@ MD,
 
 Связано: [[Home]], [[AppsCatalog]], [[Board]], [[PKB]], [[Assets]], [[Content]]
 
-См. также `docs/APPS.md`, `docs/README.md`
+См. также `docs/README.md`, `docs/README.md`
 MD,
             'Notes/AppsCatalog.md' => <<<'MD'
 # Apps Catalog
 
-Реестр приложений XOS (см. `docs/APPS.md`). Источник правды по app id: `client/src/apps/*/index.ts`.
+Реестр приложений XOS (см. `docs/README.md`). Источник правды по app id: `client/src/apps/*/index.ts`.
 
 ## Как устроены приложения
 
@@ -1791,7 +1933,7 @@ MD,
 
 | Домен | Claimant | Apps (id) |
 |-------|----------|-----------|
-| System | — | **settings** (tabs), shell-settings alias, browser, games, widgets, demo-calculator |
+| System | — | settings, shell-settings, browser, games, sticky-note, widget-clock/weather/reminders/upcoming/today/school/external/explorer, demo-calculator |
 | Main | main | main-users, main-user, main-groups, main-group, main-ous, main-ou, main-claimants, main-claimant, main-audit |
 | Device | device | device-devices…device-license-key (17) |
 | Explorer | explorer | explorer + pickers + notepad/markdown/code/pdf/office/diff/map/image/archiver/video/audio (14) |
@@ -1813,7 +1955,7 @@ MD,
 
 [[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[Assets]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]]
 
-Полный каталог: `docs/APPS.md` · идеи: [[AppIdeas]]
+Полный каталог: `docs/README.md` · идеи: [[AppIdeas]]
 
 ← [[Home]] · [[Architecture]] · [[Changelog]]
 MD,
@@ -2001,6 +2143,10 @@ MD,
 
         foreach ($this->moduleCatalog() as $mod) {
             $notes[$mod['notePath']] = $mod['body'];
+        }
+
+        foreach ($this->repoDocumentationNotes() as $path => $content) {
+            $notes[$path] = $content;
         }
 
         return $notes;
