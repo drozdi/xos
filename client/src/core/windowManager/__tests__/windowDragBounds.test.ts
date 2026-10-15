@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getWindowDragBounds } from '../windowDragBounds';
+import { getContainedDragBounds, getWindowDragBounds } from '../windowDragBounds';
 
 describe('getWindowDragBounds', () => {
 	it('keeps at least margin px visible on each edge', () => {
@@ -20,6 +20,30 @@ describe('getWindowDragBounds', () => {
 
 	it('returns zero bounds for empty viewport', () => {
 		expect(getWindowDragBounds({ width: 0, height: 0 }, { width: 400, height: 300 }, 50)).toEqual({
+			left: 0,
+			top: 0,
+			right: 0,
+			bottom: 0,
+		});
+	});
+});
+
+describe('getContainedDragBounds', () => {
+	it('keeps the widget fully inside the desktop', () => {
+		expect(
+			getContainedDragBounds({ width: 1000, height: 700 }, { width: 220, height: 96 }),
+		).toEqual({
+			left: 0,
+			top: 0,
+			right: 780,
+			bottom: 604,
+		});
+	});
+
+	it('pins to the origin when the widget is larger than the desktop', () => {
+		expect(
+			getContainedDragBounds({ width: 200, height: 80 }, { width: 220, height: 300 }),
+		).toEqual({
 			left: 0,
 			top: 0,
 			right: 0,

@@ -40,7 +40,7 @@ import {
 	XOS_WINDOW_NO_DRAG_CLASS,
 	XOS_WINDOW_TITLEBAR_CLASS,
 } from './windowDrag';
-import { getWindowDragBounds } from './windowDragBounds';
+import { getContainedDragBounds, getWindowDragBounds } from './windowDragBounds';
 import { getMaximizedBounds } from './windowLayout';
 
 const ChildWindowPortal = lazy(() =>
@@ -309,15 +309,16 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		if (!windowState || isMaximizedLayout || !boundsReady) {
 			return undefined;
 		}
-		return getWindowDragBounds(
-			viewport,
-			{ width: windowState.width, height: windowState.height },
-			dragMargin,
-		);
+		const size = { width: windowState.width, height: windowState.height };
+		if (isWidget) {
+			return getContainedDragBounds(viewport, size);
+		}
+		return getWindowDragBounds(viewport, size, dragMargin);
 	}, [
 		boundsReady,
 		dragMargin,
 		isMaximizedLayout,
+		isWidget,
 		viewport.height,
 		viewport.width,
 		windowState?.height,
@@ -335,6 +336,26 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		},
 		[dragBounds],
 	);
+
+	useEffect(() => {
+		if (!isWidget || !windowState || !dragBounds) {
+			return;
+		}
+		const next = clampDragPosition(windowState.x, windowState.y);
+		if (next.x === windowState.x && next.y === windowState.y) {
+			return;
+		}
+		updateWindow(windowId, next);
+		rndRef.current?.updatePosition(next);
+	}, [
+		clampDragPosition,
+		dragBounds,
+		isWidget,
+		updateWindow,
+		windowId,
+		windowState?.x,
+		windowState?.y,
+	]);
 
 	const handleFocus = useCallback(() => {
 		focusWindow(windowId);
@@ -549,6 +570,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			default={defaultBounds}
 			minWidth={rndMinWidth}
 			minHeight={rndMinHeight}
+			bounds={isWidget ? 'parent' : undefined}
 			dragHandleClassName={XOS_WINDOW_DRAG_HANDLE_CLASS}
 			cancel={dragCancelSelector}
 			disableDragging={!canDrag}

@@ -1,0 +1,1 @@
+{"version":2,"defects":[],"times":{"App\\Tests\\Pkb\\PkbBodyCipherTest::testEncryptDecryptRoundTrip":0.005,"App\\Tests\\Pkb\\PkbBodyCipherTest::testWithoutSecretStoresPlaintext":0,"App\\Tests\\Pkb\\PkbBodyCipherTest::testDecryptRequiresSecret":0.001}}

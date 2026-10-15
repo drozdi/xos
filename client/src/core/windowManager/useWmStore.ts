@@ -67,12 +67,14 @@ function defaultWindowBounds(): Pick<WindowState, 'x' | 'y' | 'width' | 'height'
 	};
 }
 
-/** Top-right stack for desktop widgets (no persisted geometry). */
-function defaultWidgetPosition(width: number, _height: number): { x: number; y: number } {
+/** Top-right stack for desktop widgets (no persisted geometry). Stays inside the desktop. */
+function defaultWidgetPosition(width: number, height: number): { x: number; y: number } {
 	const margin = 16;
 	const gap = 10;
-	const vw =
-		typeof window !== 'undefined' ? window.innerWidth : 1280;
+	const taskbarHeight = HKEY_CONFIG_DEFAULTS.taskbar.height;
+	const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+	const vh =
+		typeof window !== 'undefined' ? Math.max(0, window.innerHeight - taskbarHeight) : 800;
 	const widgets = Object.values(useWmStore.getState().windows).filter(
 		(w) => w.shellRole === 'widget' && !w.minimized,
 	);
@@ -83,9 +85,11 @@ function defaultWidgetPosition(width: number, _height: number): { x: number; y: 
 			y = Math.max(y, w.y + w.height + gap);
 		}
 	}
+	const maxX = Math.max(0, vw - width);
+	const maxY = Math.max(0, vh - height);
 	return {
-		x: Math.max(margin, vw - width - margin),
-		y,
+		x: Math.min(maxX, Math.max(0, vw - width - margin)),
+		y: Math.min(maxY, Math.max(0, y)),
 	};
 }
 

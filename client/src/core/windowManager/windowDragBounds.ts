@@ -27,3 +27,23 @@ export function getWindowDragBounds(
 		bottom: Math.max(minY, maxY),
 	};
 }
+
+/** Widget must stay fully inside the desktop (top-left cannot leave this box). */
+export function getContainedDragBounds(
+	viewport: Size,
+	windowSize: Size,
+): { left: number; top: number; right: number; bottom: number } {
+	const { width: viewportWidth, height: viewportHeight } = viewport;
+	const { width: windowWidth, height: windowHeight } = windowSize;
+
+	if (viewportWidth <= 0 || viewportHeight <= 0) {
+		return { left: 0, top: 0, right: 0, bottom: 0 };
+	}
+
+	return {
+		left: 0,
+		top: 0,
+		right: Math.max(0, viewportWidth - windowWidth),
+		bottom: Math.max(0, viewportHeight - windowHeight),
+	};
+}
