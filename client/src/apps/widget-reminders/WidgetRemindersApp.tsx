@@ -3,9 +3,11 @@ import {
 	Badge,
 	Box,
 	Button,
+	Checkbox,
 	Group,
 	Modal,
 	ScrollArea,
+	Select,
 	Stack,
 	Text,
 	TextInput,
@@ -37,6 +39,8 @@ export default function WidgetRemindersApp() {
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [text, setText] = useState('');
 	const [at, setAt] = useState<Date | null>(() => dayjs().add(1, 'hour').toDate());
+	const [daily, setDaily] = useState(false);
+	const [openApp, setOpenApp] = useState<'calendar' | 'todo' | ''>('');
 
 	useWidgetSettingsTick(useCallback(() => setSettingsOpen(true), []));
 
@@ -62,6 +66,8 @@ export default function WidgetRemindersApp() {
 			id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
 			at: dayjs(at).format('YYYY-MM-DDTHH:mm:ss'),
 			text: text.trim(),
+			repeat: daily ? 'daily' : 'none',
+			...(openApp ? { openApp } : {}),
 		};
 		await saveRemindersPrefs({ items: [item, ...prefs.items] });
 		setText('');
@@ -152,6 +158,7 @@ export default function WidgetRemindersApp() {
 											</Text>
 											<Text size="xs" c="dimmed" style={{ opacity: 0.7 }}>
 												{dayjs(r.at).format('DD.MM HH:mm')}
+												{r.repeat === 'daily' ? ' · ежедневно' : ''}
 											</Text>
 										</Stack>
 										<ActionIcon
@@ -200,6 +207,21 @@ export default function WidgetRemindersApp() {
 						onChange={(value) => {
 							setAt(value ? dayjs(value).toDate() : null);
 						}}
+					/>
+					<Checkbox
+						label="Каждый день"
+						checked={daily}
+						onChange={(event) => setDaily(event.currentTarget.checked)}
+					/>
+					<Select
+						label="Открыть"
+						data={[
+							{ value: '', label: 'Ленту' },
+							{ value: 'calendar', label: 'Календарь' },
+							{ value: 'todo', label: 'Задачи' },
+						]}
+						value={openApp}
+						onChange={(value) => setOpenApp(value === 'calendar' || value === 'todo' ? value : '')}
 					/>
 					<Button onClick={() => void addReminder()} disabled={!text.trim() || !at}>
 						Сохранить

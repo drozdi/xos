@@ -19,6 +19,7 @@ import {
 	upsert,
 	userAppDataDtoSchema,
 	userAppDataListResponseSchema,
+	resetUserDataCache,
 	userDataApi,
 	userDataEndpoints,
 } from '@/core/api/endpoints/userData';
@@ -53,6 +54,7 @@ describe('userData endpoints schemas', () => {
 
 describe('userData endpoints helpers', () => {
 	beforeEach(() => {
+		resetUserDataCache();
 		get.mockReset();
 		put.mockReset();
 		del.mockReset();
@@ -72,7 +74,7 @@ describe('userData endpoints helpers', () => {
 
 		await list('todo.');
 
-		expect(get).toHaveBeenCalledWith('/api/user-data', { params: { prefix: 'todo.' } });
+		expect(get).toHaveBeenCalledWith('/api/user-data', { params: undefined });
 	});
 
 	it('get URL-encodes code', async () => {
@@ -91,9 +93,17 @@ describe('userData endpoints helpers', () => {
 		const dto = await userDataApi.getOptional('board.ui.lastBoardId');
 
 		expect(dto).toBeNull();
-		expect(get).toHaveBeenCalledWith('/api/user-data', {
-			params: { prefix: 'board.ui.lastBoardId' },
-		});
+		expect(get).toHaveBeenCalledTimes(1);
+		expect(get).toHaveBeenCalledWith('/api/user-data', { params: undefined });
+	});
+
+	it('getOptional reuses the session list', async () => {
+		get.mockResolvedValue({ data: { items: [sampleDto] } });
+
+		await userDataApi.getOptional('todo.ui.filters');
+		await userDataApi.getOptional('missing.code');
+
+		expect(get).toHaveBeenCalledTimes(1);
 	});
 
 	it('getOptional returns exact match from list', async () => {

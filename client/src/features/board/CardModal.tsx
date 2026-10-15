@@ -38,6 +38,8 @@ import {
 import { AuthFileImage } from '@/core/api/AuthFileImage';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useAuthStore } from '@/core/auth/authStore';
+import { userDataApi } from '@/core/api/endpoints/userData';
+import { useShellNotifications } from '@/core/notifications/shellNotificationsStore';
 import { confirmAction } from '@/core/confirm/confirmAction';
 import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
@@ -86,6 +88,9 @@ export function CardModal({
 }: CardModalProps) {
 	const queryClient = useQueryClient();
 	const currentUserId = useAuthStore((s) => s.user?.id ?? null);
+	const alias = useAuthStore((s) => s.user?.alias || s.user?.login || '');
+	const pushNotice = useShellNotifications((s) => s.push);
+	const [externalLink, setExternalLink] = useState('');
 	const opened = cardId != null;
 
 	const cardQuery = useQuery({
@@ -93,6 +98,35 @@ export function CardModal({
 		queryFn: () => boardApi.card(cardId!),
 		enabled: opened,
 	});
+
+	useEffect(() => {
+		if (!cardId) {
+			return;
+		}
+		void userDataApi.getOptional(`board.cardLink.${cardId}`).then((row) => {
+			setExternalLink(typeof row?.value === 'string' ? row.value : '');
+		});
+	}, [cardId]);
+
+	useEffect(() => {
+		const card = cardQuery.data;
+		if (!alias || !card) {
+			return;
+		}
+		const token = `@${alias}`;
+		for (const comment of card.comments) {
+			if (!comment.text.includes(token)) {
+				continue;
+			}
+			pushNotice({
+				kind: 'info',
+				title: 'Вас упомянули',
+				body: comment.text,
+				dedupeKey: `mention:${comment.id}`,
+				launch: { appId: 'board', props: { boardId } },
+			});
+		}
+	}, [alias, boardId, cardQuery.data, pushNotice]);
 
 	const invalidateCard = async () => {
 		if (cardId != null) {
@@ -386,6 +420,21 @@ export function CardModal({
 									}
 								}}
 								readOnly={!canEdit}
+							/>
+							<TextInput
+								label="GitHub / TeamStorm"
+								placeholder="https://"
+								value={externalLink}
+								onChange={(event) => setExternalLink(event.currentTarget.value)}
+								onBlur={() => {
+									if (cardId == null) {
+										return;
+									}
+									void userDataApi.upsert({
+										code: `board.cardLink.${cardId}`,
+										value: externalLink.trim(),
+									});
+								}}
 							/>
 
 							<Stack gap="xs">

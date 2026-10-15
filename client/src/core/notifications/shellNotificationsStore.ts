@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type ShellNotificationKind = 'todo_due' | 'local_reminder' | 'info' | 'system';
+export type ShellNotificationKind =
+	| 'todo_due'
+	| 'board_due'
+	| 'inbox'
+	| 'local_reminder'
+	| 'info'
+	| 'system';
 
 export interface ShellNotification {
 	id: string;

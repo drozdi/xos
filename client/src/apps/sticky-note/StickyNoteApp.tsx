@@ -6,7 +6,7 @@ import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
 import {
 	STICKY_COLORS,
-	loadStickyNote,
+	hydrateStickyNote,
 	saveStickyNote,
 	type StickyColor,
 } from './stickyStorage';
@@ -19,10 +19,19 @@ export default function StickyNoteApp() {
 	const [color, setColor] = useState<StickyColor>(STICKY_COLORS[0]);
 
 	useEffect(() => {
-		const data = loadStickyNote(instanceKey);
-		setText(data.text);
-		setColor(data.color);
-		setReady(true);
+		let alive = true;
+		setReady(false);
+		void hydrateStickyNote(instanceKey).then((data) => {
+			if (!alive) {
+				return;
+			}
+			setText(data.text);
+			setColor(data.color);
+			setReady(true);
+		});
+		return () => {
+			alive = false;
+		};
 	}, [instanceKey]);
 
 	useEffect(() => {

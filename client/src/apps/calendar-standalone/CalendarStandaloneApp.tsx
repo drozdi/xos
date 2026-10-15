@@ -23,7 +23,7 @@ function StandaloneRouterInner() {
 /** Полноэкранный Календарь на /calendar с входом по email. */
 export default function CalendarStandaloneApp() {
 	useEffect(() => {
-		registerAllApps();
+		void registerAllApps();
 		document.title = 'Календарь';
 
 		let cancelled = false;

@@ -62,6 +62,7 @@ export function EventFormModal({
 	const [start, setStart] = useState<string | null>(null);
 	const [end, setEnd] = useState<string | null>(null);
 	const [allDayDate, setAllDayDate] = useState<string | null>(null);
+	const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>('none');
 
 	useEffect(() => {
 		if (!opened) {
@@ -123,7 +124,17 @@ export function EventFormModal({
 			if (isEdit && event) {
 				return calendarApi.updateEvent(event.id, payload);
 			}
-			return calendarApi.createEvent(payload);
+			const created = await calendarApi.createEvent(payload);
+			const extra = repeat === 'daily' ? 6 : repeat === 'weekly' ? 3 : 0;
+			const step = repeat === 'weekly' ? 'week' : 'day';
+			for (let i = 1; i <= extra; i += 1) {
+				await calendarApi.createEvent({
+					...payload,
+					start_at: dayjs(startAt).add(i, step).format('YYYY-MM-DDTHH:mm:ss'),
+					end_at: dayjs(endAt).add(i, step).format('YYYY-MM-DDTHH:mm:ss'),
+				});
+			}
+			return created;
 		},
 		onSuccess: () => {
 			invalidate();
@@ -200,6 +211,20 @@ export function EventFormModal({
 					onChange={(e) => setDescription(e.currentTarget.value)}
 					minRows={2}
 				/>
+				{isEdit ? null : (
+					<Select
+						label="Повтор"
+						data={[
+							{ value: 'none', label: 'Не повторять' },
+							{ value: 'daily', label: 'Каждый день, 7 раз' },
+							{ value: 'weekly', label: 'Каждую неделю, 4 раза' },
+						]}
+						value={repeat}
+						onChange={(value) =>
+							setRepeat(value === 'daily' || value === 'weekly' ? value : 'none')
+						}
+					/>
+				)}
 				<Group justify="space-between">
 					{isEdit ? (
 						<Button

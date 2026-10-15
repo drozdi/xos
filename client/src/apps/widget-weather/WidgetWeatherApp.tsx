@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useWidgetSettingsTick } from '@/core/desktop/useWidgetSettingsTick';
 import { WidgetBody, WidgetSkeleton } from '@/core/desktop/WidgetSurface';
-import { loadWeatherPrefs, saveWeatherPrefs } from '@/core/desktop/widgetPrefs';
+import { loadWeatherPrefs, saveWeatherPrefs, type WidgetWeatherPrefs } from '@/core/desktop/widgetPrefs';
 import { useCoreApi } from '@/core/hooks/useCoreApi';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { useWmStore } from '@/core/windowManager/useWmStore';
@@ -26,6 +26,8 @@ export default function WidgetWeatherApp() {
 	const coreApi = useCoreApi();
 	const updateWindow = useWmStore((s) => s.updateWindow);
 	const [city, setCity] = useState('');
+	const [cities, setCities] = useState<string[]>([]);
+	const [unit, setUnit] = useState<WidgetWeatherPrefs['unit']>('c');
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
@@ -56,11 +58,11 @@ export default function WidgetWeatherApp() {
 		});
 	}, [collapseDetails, coreApi.window]);
 
-	const loadByCoords = useCallback(async (lat: number, lon: number, placeName: string) => {
+	const loadByCoords = useCallback(async (lat: number, lon: number, placeName: string, nextUnit: WidgetWeatherPrefs['unit']) => {
 		setLoading(true);
 		setError(null);
 		try {
-			const snapshot = await fetchWeather(lat, lon, placeName);
+			const snapshot = await fetchWeather(lat, lon, placeName, nextUnit);
 			setWeather(snapshot);
 			setLoading(false);
 		} catch {
@@ -69,7 +71,7 @@ export default function WidgetWeatherApp() {
 		}
 	}, []);
 
-	const loadByCity = useCallback(async (cityName: string) => {
+	const loadByCity = useCallback(async (cityName: string, nextUnit: WidgetWeatherPrefs['unit'], knownCities: string[]) => {
 		const trimmed = cityName.trim();
 		if (!trimmed) {
 			setError('Укажите город');
@@ -79,14 +81,17 @@ export default function WidgetWeatherApp() {
 		setLoading(true);
 		setError(null);
 		try {
-			await saveWeatherPrefs({ city: trimmed });
+			const nextCities = knownCities.includes(trimmed) ? knownCities : [...knownCities, trimmed];
+			setCities(nextCities);
+			setUnit(nextUnit);
+			await saveWeatherPrefs({ city: trimmed, cities: nextCities, unit: nextUnit });
 			const place = await geocodeCity(trimmed);
 			if (!place) {
 				setError('Город не найден');
 				setLoading(false);
 				return;
 			}
-			const snapshot = await fetchWeather(place.lat, place.lon, place.name);
+			const snapshot = await fetchWeather(place.lat, place.lon, place.name, nextUnit);
 			setWeather(snapshot);
 			setLoading(false);
 		} catch {
@@ -95,12 +100,12 @@ export default function WidgetWeatherApp() {
 		}
 	}, []);
 
-	const loadByGeo = useCallback(async () => {
+	const loadByGeo = useCallback(async (nextUnit: WidgetWeatherPrefs['unit']) => {
 		setLoading(true);
 		setError(null);
 		try {
 			const coords = await readCoordsFromGeolocation();
-			await loadByCoords(coords.lat, coords.lon, 'Рядом');
+			await loadByCoords(coords.lat, coords.lon, 'Рядом', nextUnit);
 		} catch {
 			setError('Нет гео');
 			setLoading(false);
@@ -116,10 +121,12 @@ export default function WidgetWeatherApp() {
 					return;
 				}
 				setCity(prefs.city);
+				setCities(prefs.cities);
+				setUnit(prefs.unit);
 				if (prefs.city.trim()) {
-					await loadByCity(prefs.city);
+					await loadByCity(prefs.city, prefs.unit, prefs.cities);
 				} else {
-					await loadByGeo();
+					await loadByGeo(prefs.unit);
 				}
 			} catch {
 				if (alive) {
@@ -268,6 +275,31 @@ export default function WidgetWeatherApp() {
 				size="sm"
 			>
 				<Stack gap="sm">
+					<Group gap="xs">
+						<Button size="xs" variant={unit === 'c' ? 'filled' : 'default'} onClick={() => setUnit('c')}>
+							°C
+						</Button>
+						<Button size="xs" variant={unit === 'f' ? 'filled' : 'default'} onClick={() => setUnit('f')}>
+							°F
+						</Button>
+					</Group>
+					{cities.length > 0 ? (
+						<Group gap={4}>
+							{cities.map((name) => (
+								<Button
+									key={name}
+									size="compact-xs"
+									variant={name === city ? 'light' : 'subtle'}
+									onClick={() => {
+										setCity(name);
+										void loadByCity(name, unit, cities);
+									}}
+								>
+									{name}
+								</Button>
+							))}
+						</Group>
+					) : null}
 					<Group align="flex-end" wrap="nowrap">
 						<TextInput
 							label="Город"
@@ -277,16 +309,16 @@ export default function WidgetWeatherApp() {
 							style={{ flex: 1 }}
 							onKeyDown={(e) => {
 								if (e.key === 'Enter') {
-									void loadByCity(city);
+									void loadByCity(city, unit, cities);
 								}
 							}}
 						/>
-						<Button size="sm" loading={loading} onClick={() => void loadByCity(city)}>
+						<Button size="sm" loading={loading} onClick={() => void loadByCity(city, unit, cities)}>
 							OK
 						</Button>
 					</Group>
 					<Group gap="xs">
-						<Button size="xs" variant="light" loading={loading} onClick={() => void loadByGeo()}>
+						<Button size="xs" variant="light" loading={loading} onClick={() => void loadByGeo(unit)}>
 							Геолокация
 						</Button>
 						<Button
@@ -295,9 +327,9 @@ export default function WidgetWeatherApp() {
 							loading={loading}
 							onClick={() => {
 								if (city.trim()) {
-									void loadByCity(city);
+									void loadByCity(city, unit, cities);
 								} else {
-									void loadByGeo();
+									void loadByGeo(unit);
 								}
 							}}
 						>

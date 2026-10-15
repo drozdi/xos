@@ -27,6 +27,7 @@ import type {
 import { Table, TableBodyCellSlot, TableEmpty, TableHeaderCellSlot, TablePagination } from "./ui";
 import { TableBulkActionsPanel, TableRowActionsPanel } from './ui/row-actions/panel';
 import { TableError } from './ui/TableError';
+import { scheduleInccomTableUpload } from './tablePrefs';
 import { calculateColspan, calculateIsColumns, convertNodes, getColumnFields, groupByFirstKey, limitBy, purgeRemovedColumnStorage, resolveColumnFlag, sortByRules } from './utils';
 import { calculateTableColspan, findColumnDeep, findGroupColumn, findGroupOnlyColumn, getHeaderCellKey, isFieldSplitColumn, orderColumnsTree } from './utils/column-fields';
 import { buildColumnOrderIndex } from './utils/column-order-index';
@@ -60,9 +61,11 @@ function genStorage(storageKey: string): TableStorage {
 			for (const key of keysToRemove) {
 				localStorage.removeItem(key);
 			}
+			scheduleInccomTableUpload(storageKey);
 		},
 		setItem(key, value) {
 			localStorage.setItem(keyStorage(key), JSON.stringify(value));
+			scheduleInccomTableUpload(storageKey);
 		},
 		getItem(key) {
 			const value = localStorage.getItem(keyStorage(key));
@@ -73,6 +76,7 @@ function genStorage(storageKey: string): TableStorage {
 		},
 		removeItem(key) {
 			localStorage.removeItem(keyStorage(key));
+			scheduleInccomTableUpload(storageKey);
 		},
 	};
 }

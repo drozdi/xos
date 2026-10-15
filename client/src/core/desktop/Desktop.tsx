@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react';
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { registerAllApps, useAppManager } from '@/core/appManager';
 import { DesktopSurface } from '@/core/desktop/DesktopSurface';
+import { readDesktopPage, switchDesktopPage } from '@/core/desktop/desktopWidgets';
+import { ShellSearch } from '@/core/desktop/ShellSearch';
 import { Layout, LayoutArea } from '@/core/layout';
 import {
 	attachPageLifecycleListeners,
@@ -35,18 +37,39 @@ export function Desktop() {
 	}, []);
 
 	useEffect(() => {
+		const onKey = (event: KeyboardEvent) => {
+			if (!event.ctrlKey || !event.altKey) {
+				return;
+			}
+			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+				return;
+			}
+			event.preventDefault();
+			void (async () => {
+				const current = await readDesktopPage();
+				const next = event.key === 'ArrowRight' ? current + 1 : current - 1;
+				await switchDesktopPage(next);
+			})();
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	}, []);
+
+	useEffect(() => {
 		if (initializedRef.current) {return;}
 		initializedRef.current = true;
 
-		registerAllApps();
-		// Канон ADR: только restoreFromHistory (не restoreWindows)
-		void restoreFromHistory();
+		void (async () => {
+			await registerAllApps();
+			await restoreFromHistory();
+		})();
 	}, [restoreFromHistory]);
 
 	return (
 		<>
 			<DueNotifyWatcher />
 			<LocalRemindersWatcher />
+			<ShellSearch />
 			<Layout
 				view={HKEY_CONFIG_DEFAULTS.layout.view}
 				mobileView={HKEY_CONFIG_DEFAULTS.layout.mobileView}

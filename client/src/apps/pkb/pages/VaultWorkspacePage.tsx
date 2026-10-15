@@ -27,7 +27,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { notifyApiError } from '@/core/api/apiError';
+import { apiClient } from '@/core/api/client';
 import { pkbApi } from '@/core/api/endpoints/pkbApi';
+import dayjs from 'dayjs';
 import { queryKeys } from '@/core/api/queryKeys';
 
 import { BacklinksPanel } from '@/features/pkb/components/BacklinksPanel';
@@ -293,6 +295,54 @@ export function VaultWorkspacePage({
 						Назад
 					</Button>
 					<Text fw={600}>{vaultQuery.data?.name ?? 'Vault'}</Text>
+					{canWrite ? (
+						<>
+							<Button
+								size="compact-xs"
+								variant="subtle"
+								onClick={() => {
+									const path = `Daily/${dayjs().format('YYYY-MM-DD')}.md`;
+									void pkbApi
+										.putFileContent(vaultId, path, `# ${dayjs().format('DD.MM.YYYY')}\n\n`)
+										.then(() => setSelectedPath(path));
+								}}
+							>
+								Сегодня
+							</Button>
+							<Button
+								size="compact-xs"
+								variant="subtle"
+								onClick={() => {
+									const path = 'Templates/Встреча.md';
+									void pkbApi
+										.putFileContent(
+											vaultId,
+											path,
+											'# Встреча\n\n- Участники:\n- Решения:\n- Дальше:\n',
+										)
+										.then(() => setSelectedPath(path));
+								}}
+							>
+								Встреча
+							</Button>
+							<Button
+								size="compact-xs"
+								variant="subtle"
+								onClick={() => {
+									const email = window.prompt('Email читателя');
+									if (!email?.trim()) {
+										return;
+									}
+									void apiClient.post(`/api/pkb/vaults/${vaultId}/members`, {
+										email: email.trim(),
+										role: 'reader',
+									});
+								}}
+							>
+								Читатель
+							</Button>
+						</>
+					) : null}
 					{canUpdate ? (
 						<ActionIcon
 							variant="subtle"

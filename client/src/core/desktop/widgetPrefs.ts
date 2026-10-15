@@ -5,12 +5,15 @@ import { userDataApi } from '@/core/api/endpoints/userData';
 export const widgetClockPrefsSchema = z.object({
 	hour12: z.boolean().default(false),
 	showDate: z.boolean().default(true),
+	timeZone: z.string().default(''),
 });
 
 export type WidgetClockPrefs = z.infer<typeof widgetClockPrefsSchema>;
 
 export const widgetWeatherPrefsSchema = z.object({
 	city: z.string().default(''),
+	cities: z.array(z.string()).default([]),
+	unit: z.enum(['c', 'f']).default('c'),
 });
 
 export type WidgetWeatherPrefs = z.infer<typeof widgetWeatherPrefsSchema>;
@@ -20,6 +23,8 @@ export const localReminderSchema = z.object({
 	at: z.string(),
 	text: z.string(),
 	firedAt: z.string().optional(),
+	repeat: z.enum(['none', 'daily']).optional(),
+	openApp: z.enum(['calendar', 'todo']).optional(),
 });
 
 export const widgetRemindersPrefsSchema = z.object({
@@ -45,7 +50,11 @@ async function loadPrefs<T>(code: string, schema: z.ZodType<T>, fallback: T): Pr
 }
 
 export async function loadClockPrefs(): Promise<WidgetClockPrefs> {
-	return loadPrefs(CODES.clock, widgetClockPrefsSchema, { hour12: false, showDate: true });
+	return loadPrefs(CODES.clock, widgetClockPrefsSchema, {
+		hour12: false,
+		showDate: true,
+		timeZone: '',
+	});
 }
 
 export async function saveClockPrefs(prefs: WidgetClockPrefs): Promise<void> {
@@ -53,12 +62,18 @@ export async function saveClockPrefs(prefs: WidgetClockPrefs): Promise<void> {
 }
 
 export async function loadWeatherPrefs(): Promise<WidgetWeatherPrefs> {
-	const prefs = await loadPrefs(CODES.weather, widgetWeatherPrefsSchema, { city: '' });
-	if (!prefs.city) {
+	const prefs = await loadPrefs(CODES.weather, widgetWeatherPrefsSchema, {
+		city: '',
+		cities: [],
+		unit: 'c',
+	});
+	const cities = prefs.cities.length > 0 ? prefs.cities : prefs.city ? [prefs.city] : [];
+	const normalized = { ...prefs, cities, city: prefs.city || cities[0] || '' };
+	if (!normalized.city) {
 		try {
 			const legacy = localStorage.getItem('xos.widget-weather.city');
 			if (legacy?.trim()) {
-				const migrated = { city: legacy.trim() };
+				const migrated = { city: legacy.trim(), cities: [legacy.trim()], unit: 'c' as const };
 				await saveWeatherPrefs(migrated);
 				localStorage.removeItem('xos.widget-weather.city');
 				return migrated;
@@ -67,7 +82,7 @@ export async function loadWeatherPrefs(): Promise<WidgetWeatherPrefs> {
 			/* ignore */
 		}
 	}
-	return prefs;
+	return normalized;
 }
 
 export async function saveWeatherPrefs(prefs: WidgetWeatherPrefs): Promise<void> {

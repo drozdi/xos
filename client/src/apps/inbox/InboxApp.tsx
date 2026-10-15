@@ -2,6 +2,7 @@ import {
 	Alert,
 	Badge,
 	Button,
+	FileButton,
 	Group,
 	Loader,
 	Modal,
@@ -17,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { extractApiErrorMessage } from '@/core/api/apiError';
+import { apiClient } from '@/core/api/client';
 import { inboxApi } from '@/core/api/endpoints/inboxApi';
 import { useAppManager } from '@/core/appManager/useAppManager';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
@@ -158,6 +160,31 @@ export default function InboxApp() {
 						value={body}
 						onChange={(e) => setBody(e.currentTarget.value)}
 					/>
+					<FileButton
+						onChange={(file) => {
+							if (!file) {
+								return;
+							}
+							const formData = new FormData();
+							formData.append('file', file);
+							formData.append('module', 'inbox');
+							void apiClient.post<Array<{ src?: string; name?: string }>>('/api/main/file/upload', formData).then(
+								({ data }) => {
+									const fileInfo = data[0];
+									if (!fileInfo?.src) {
+										return;
+									}
+									setBody((prev) => `${prev}\n\n[${fileInfo.name || file.name}](${fileInfo.src})`);
+								},
+							);
+						}}
+					>
+						{(props) => (
+							<Button variant="default" {...props}>
+								Вложение
+							</Button>
+						)}
+					</FileButton>
 					<Button
 						loading={createMutation.isPending}
 						onClick={() => createMutation.mutate()}

@@ -1,5 +1,6 @@
-import { Box, Collapse, Group, ScrollArea, Stack, Text, UnstyledButton } from '@mantine/core';
-import { useMemo, useState } from 'react';
+import { Box, Collapse, Group, ScrollArea, Stack, Text, TextInput, UnstyledButton } from '@mantine/core';
+import { useEffect, useMemo, useState } from 'react';
+import { List, type RowComponentProps } from 'react-window';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { useAppManager } from '@/core/appManager/useAppManager';
@@ -85,18 +86,58 @@ function AppListItem({
 	);
 }
 
+type AppRowProps = {
+	apps: StartMenuAppGroup['apps'];
+	isPinned: (appId: string) => boolean;
+	onLaunch: (appId: string) => void;
+	onPin: (appId: string) => void;
+};
+
+function AppRow({
+	index,
+	style,
+	apps,
+	isPinned,
+	onLaunch,
+	onPin,
+}: RowComponentProps<AppRowProps>) {
+	const app = apps[index];
+	if (!app) {
+		return null;
+	}
+	return (
+		<div style={style}>
+			<AppListItem
+				appId={app.id}
+				name={app.name}
+				borderTop={app.borderTop}
+				isPinned={isPinned(app.id)}
+				onLaunch={onLaunch}
+				onPin={onPin}
+			/>
+		</div>
+	);
+}
+
 function GroupSection({
 	group,
 	isPinned,
 	onLaunch,
 	onPin,
+	forceOpen = false,
 }: {
 	group: StartMenuAppGroup;
 	isPinned: (appId: string) => boolean;
 	onLaunch: (appId: string) => void;
 	onPin: (appId: string) => void;
+	forceOpen?: boolean;
 }) {
 	const [opened, setOpened] = useState(false);
+	useEffect(() => {
+		if (forceOpen) {
+			setOpened(true);
+		}
+	}, [forceOpen]);
 
 	return (
 		<Box>
@@ -129,19 +170,29 @@ function GroupSection({
 				</Group>
 			</UnstyledButton>
 			<Collapse expanded={opened}>
-				<Stack gap={2} pl="xs">
-					{group.apps.map((app) => (
-						<AppListItem
-							key={app.id}
-							appId={app.id}
-							name={app.name}
-							borderTop={app.borderTop}
-							isPinned={isPinned(app.id)}
-							onLaunch={onLaunch}
-							onPin={onPin}
-						/>
-					))}
-				</Stack>
+				{group.apps.length > 20 ? (
+					<List
+						rowComponent={AppRow}
+						rowCount={group.apps.length}
+						rowHeight={36}
+						rowProps={{ apps: group.apps, isPinned, onLaunch, onPin }}
+						style={{ height: Math.min(group.apps.length * 36, 280), width: '100%' }}
+					/>
+				) : (
+					<Stack gap={2} pl="xs">
+						{group.apps.map((app) => (
+							<AppListItem
+								key={app.id}
+								appId={app.id}
+								name={app.name}
+								borderTop={app.borderTop}
+								isPinned={isPinned(app.id)}
+								onLaunch={onLaunch}
+								onPin={onPin}
+							/>
+						))}
+					</Stack>
+				)}
 			</Collapse>
 		</Box>
 	);
@@ -150,6 +201,24 @@ function GroupSection({
 export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListProps) {
 	const launchApp = useAppManager((state) => state.launchApp);
 	const groups = buildAppTree(AppRegistry.getAvailable());
+	const [query, setQuery] = useState('');
+	const normalized = query.trim().toLocaleLowerCase('ru');
+	const visibleGroups = useMemo(() => {
+		if (!normalized) {
+			return groups;
+		}
+		return groups
+			.map((group) => {
+				const groupMatch = group.label.toLocaleLowerCase('ru').includes(normalized);
+				return {
+					...group,
+					apps: groupMatch
+						? group.apps
+						: group.apps.filter((app) => app.name.toLocaleLowerCase('ru').includes(normalized)),
+				};
+			})
+			.filter((group) => group.apps.length > 0);
+	}, [groups, normalized]);
 
 	const handleLaunch = (appId: string) => {
 		onClose();
@@ -169,21 +238,30 @@ export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListP
 				<Text size="sm" fw={600} c="dimmed">
 					Все приложения
 				</Text>
+				<TextInput
+					mt={8}
+					size="xs"
+					placeholder="Поиск"
+					value={query}
+					onChange={(event) => setQuery(event.currentTarget.value)}
+					autoFocus
+				/>
 			</Box>
 			<ScrollArea h={START_MENU_LIST_HEIGHT} type="auto" px="sm" pb="md">
-				{groups.length === 0 ? (
+				{visibleGroups.length === 0 ? (
 					<Text size="sm" c="dimmed" p="md">
-						Нет доступных приложений
+						{normalized ? 'Ничего не найдено' : 'Нет доступных приложений'}
 					</Text>
 				) : (
 					<Stack gap="sm">
-						{groups.map((group) => (
+						{visibleGroups.map((group) => (
 							<GroupSection
 								key={group.id}
 								group={group}
 								isPinned={isPinned}
 								onLaunch={handleLaunch}
 								onPin={onPin}
+								forceOpen={normalized.length > 0}
 							/>
 						))}
 					</Stack>

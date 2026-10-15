@@ -2,7 +2,8 @@
 
 | Документ | Назначение |
 |----------|------------|
-| [APP_IDEAS.md](APP_IDEAS.md) | Идеи новых приложений и улучшений |
+| [APP_IDEAS.md](APP_IDEAS.md) | Короткий бэклог новых приложений |
+| [IMPROVEMENTS.md](IMPROVEMENTS.md) | Улучшения, оптимизация, расширение |
 | [APPS.md](APPS.md) | Каталог всех desktop-приложений |
 
 ## Домены (описание приложений)
@@ -22,6 +23,7 @@
 | PKB | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) |
 | TeamStorm | [ts/README.md](ts/README.md) | — |
 | Inbox | [inbox/README.md](inbox/README.md) | — |
+| Assets | [assets/README.md](assets/README.md) | — |
 | GitHub | [github/README.md](github/README.md) | — |
 | Habits | [habits/README.md](habits/README.md) | — |
 | Platform | [platform/README.md](platform/README.md) | — |

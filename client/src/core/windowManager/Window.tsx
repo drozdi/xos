@@ -16,7 +16,9 @@ import { Rnd } from 'react-rnd';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { destroyCoreApi } from '@/core/context/coreApiRegistry';
+import { DESKTOP_WIDGET_SNAP_KEY, snapWidgetPoint } from '@/core/desktop/desktopWidgets';
 import { widgetSurfaceStyle } from '@/core/desktop/WidgetSurface';
+import { useSetting } from '@/core/settings/hooks';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 import { WindowContextMenu } from '@/core/contextMenu';
@@ -40,7 +42,12 @@ import {
 	XOS_WINDOW_NO_DRAG_CLASS,
 	XOS_WINDOW_TITLEBAR_CLASS,
 } from './windowDrag';
-import { getContainedDragBounds, getWindowDragBounds } from './windowDragBounds';
+import {
+	fitRectToDesktop,
+	getContainedDragBounds,
+	getWindowDragBounds,
+	snapAppToDesktopEdges,
+} from './windowDragBounds';
 import { getMaximizedBounds } from './windowLayout';
 
 const ChildWindowPortal = lazy(() =>
@@ -91,6 +98,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	const dragOriginRef = useRef<{ x: number; y: number } | null>(null);
 	const dragStartEmittedRef = useRef(false);
 	const isWidget = windowState?.shellRole === 'widget';
+	const [widgetSnap] = useSetting<boolean>('USER', DESKTOP_WIDGET_SNAP_KEY, false);
 	const titlebarHeight = isWidget ? 0 : isMobile ? 44 : 36;
 	const taskbarHeight = HKEY_CONFIG_DEFAULTS.taskbar.height;
 	const { minWidth, minHeight, dragMargin } = HKEY_CONFIG_DEFAULTS.window;
@@ -393,7 +401,21 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			dragOriginRef.current = null;
 			dragStartEmittedRef.current = false;
 			if (isMobile || windowState?.maximized || windowState?.positionFixed) {return;}
-			const nextPosition = clampDragPosition(data.x, data.y);
+			const snappedPoint = snapWidgetPoint(data.x, data.y, isWidget && widgetSnap === true);
+			const nextPosition = clampDragPosition(snappedPoint.x, snappedPoint.y);
+			if (!isWidget && windowState && viewport.width > 0 && viewport.height > 0) {
+				const edgeSnap = snapAppToDesktopEdges(viewport, nextPosition, {
+					width: windowState.width,
+					height: windowState.height,
+				});
+				if (edgeSnap) {
+					rndRef.current?.updatePosition({ x: edgeSnap.x, y: edgeSnap.y });
+					rndRef.current?.updateSize({ width: edgeSnap.width, height: edgeSnap.height });
+					updateWindow(windowId, edgeSnap);
+					emitWindowResize(windowId);
+					return;
+				}
+			}
 			if (
 				nextPosition.x !== data.x ||
 				nextPosition.y !== data.y
@@ -410,7 +432,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			updateWindow(windowId, nextPosition);
 			emitWindowResize(windowId);
 		},
-		[clampDragPosition, isMobile, updateWindow, windowId, windowState],
+		[clampDragPosition, isMobile, isWidget, updateWindow, viewport.height, viewport.width, widgetSnap, windowId, windowState],
 	);
 
 	const handleResizeStop = useCallback(
@@ -421,7 +443,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			_delta: unknown,
 			position: { x: number; y: number },
 		) => {
-			if (isMobile || windowState?.maximized || !windowState?.resizable) {return;}
+			if (isMobile || windowState?.maximized || (!isWidget && !windowState?.resizable)) {return;}
 			const nextWidth = ref.offsetWidth;
 			const nextHeight = ref.offsetHeight;
 			const nextPosition = clampDragPosition(position.x, position.y);
@@ -440,15 +462,34 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			) {
 				return;
 			}
-			updateWindow(windowId, {
-				x: nextPosition.x,
-				y: nextPosition.y,
-				width: nextWidth,
-				height: nextHeight,
-			});
+			const manifestMin = AppRegistry.get(windowState.appId)?.minSize;
+			const fitted = isWidget
+				? fitRectToDesktop(
+						viewport,
+						{
+							x: nextPosition.x,
+							y: nextPosition.y,
+							width: nextWidth,
+							height: nextHeight,
+						},
+						{ width: manifestMin?.width ?? 80, height: manifestMin?.height ?? 48 },
+					)
+				: {
+						x: nextPosition.x,
+						y: nextPosition.y,
+						width: nextWidth,
+						height: nextHeight,
+					};
+			if (fitted.x !== nextPosition.x || fitted.y !== nextPosition.y) {
+				rndRef.current?.updatePosition({ x: fitted.x, y: fitted.y });
+			}
+			if (fitted.width !== nextWidth || fitted.height !== nextHeight) {
+				rndRef.current?.updateSize({ width: fitted.width, height: fitted.height });
+			}
+			updateWindow(windowId, fitted);
 			emitWindowResize(windowId);
 		},
-		[clampDragPosition, isMobile, updateWindow, windowId, windowState],
+		[clampDragPosition, isMobile, isWidget, updateWindow, viewport.height, viewport.width, windowId, windowState],
 	);
 
 	const handleMinimize = useCallback(
@@ -550,7 +591,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 
 	const controlSize = isMobile ? 44 : 36;
 	const canDrag = !isMaximizedLayout && !positionFixed;
-	const canResize = !isMaximizedLayout && resizable && !isWidget;
+	const canResize = !isMaximizedLayout && (isWidget || resizable);
 	const manifestMin = AppRegistry.get(windowState.appId)?.minSize;
 	const rndMinWidth = isWidget
 		? (manifestMin?.width ?? 80)
@@ -570,6 +611,16 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			default={defaultBounds}
 			minWidth={rndMinWidth}
 			minHeight={rndMinHeight}
+			maxWidth={
+				isWidget && viewport.width > 0
+					? Math.max(rndMinWidth, viewport.width - Math.max(0, windowState.x))
+					: undefined
+			}
+			maxHeight={
+				isWidget && viewport.height > 0
+					? Math.max(rndMinHeight, viewport.height - Math.max(0, windowState.y))
+					: undefined
+			}
 			bounds={isWidget ? 'parent' : undefined}
 			dragHandleClassName={XOS_WINDOW_DRAG_HANDLE_CLASS}
 			cancel={dragCancelSelector}

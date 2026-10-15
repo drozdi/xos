@@ -45,7 +45,7 @@ export function LocalRemindersWatcher() {
 						continue;
 					}
 					// Fire once when due (or overdue within 24h)
-					if (now.diff(at, 'hour', true) > 24) {
+					if (now.diff(at, 'hour', true) > 24 && item.repeat !== 'daily') {
 						nextItems.push({ ...item, firedAt: now.toISOString() });
 						changed = true;
 						continue;
@@ -54,11 +54,13 @@ export function LocalRemindersWatcher() {
 						kind: 'local_reminder',
 						title: 'Напоминание',
 						body: item.text || 'Без текста',
-						dedupeKey: `local-reminder:${item.id}`,
-						launch: {
-							appId: 'widget-reminders',
-							instanceKey: 'default',
-						},
+						dedupeKey: `local-reminder:${item.id}:${item.at}`,
+						launch: item.openApp
+							? { appId: item.openApp, instanceKey: 'default' }
+							: {
+									appId: 'widget-reminders',
+									instanceKey: 'default',
+								},
 					});
 					if (added) {
 						notifications.show({
@@ -67,7 +69,19 @@ export function LocalRemindersWatcher() {
 							message: item.text || 'Без текста',
 						});
 					}
-					nextItems.push({ ...item, firedAt: now.toISOString() });
+					if (item.repeat === 'daily') {
+						let nextAt = at.add(1, 'day');
+						while (!nextAt.isAfter(now)) {
+							nextAt = nextAt.add(1, 'day');
+						}
+						nextItems.push({
+							...item,
+							at: nextAt.format('YYYY-MM-DDTHH:mm:ss'),
+							firedAt: undefined,
+						});
+					} else {
+						nextItems.push({ ...item, firedAt: now.toISOString() });
+					}
 					changed = true;
 				}
 

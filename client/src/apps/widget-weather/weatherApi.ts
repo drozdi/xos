@@ -59,7 +59,20 @@ export async function geocodeCity(city: string): Promise<{ lat: number; lon: num
 	};
 }
 
-export async function fetchWeather(lat: number, lon: number, placeName: string): Promise<WeatherSnapshot> {
+const weatherCache = new Map<string, { at: number; snapshot: WeatherSnapshot }>();
+const WEATHER_CACHE_MS = 10 * 60 * 1000;
+
+export async function fetchWeather(
+	lat: number,
+	lon: number,
+	placeName: string,
+	unit: 'c' | 'f' = 'c',
+): Promise<WeatherSnapshot> {
+	const cacheKey = `${lat.toFixed(2)}:${lon.toFixed(2)}:${unit}`;
+	const cached = weatherCache.get(cacheKey);
+	if (cached && Date.now() - cached.at < WEATHER_CACHE_MS) {
+		return { ...cached.snapshot, placeName };
+	}
 	const url = new URL('https://api.open-meteo.com/v1/forecast');
 	url.searchParams.set('latitude', String(lat));
 	url.searchParams.set('longitude', String(lon));
@@ -67,6 +80,7 @@ export async function fetchWeather(lat: number, lon: number, placeName: string):
 	url.searchParams.set('hourly', 'temperature_2m,weather_code,wind_speed_10m');
 	url.searchParams.set('forecast_days', '1');
 	url.searchParams.set('timezone', 'auto');
+	url.searchParams.set('temperature_unit', unit === 'f' ? 'fahrenheit' : 'celsius');
 	const res = await fetch(url);
 	if (!res.ok) {
 		throw new Error('Weather fetch failed');
@@ -111,13 +125,15 @@ export async function fetchWeather(lat: number, lon: number, placeName: string):
 		}
 	}
 
-	return {
+	const snapshot: WeatherSnapshot = {
 		temperature: data.current?.temperature_2m ?? 0,
 		weatherCode: data.current?.weather_code ?? 0,
 		windSpeed: data.current?.wind_speed_10m ?? 0,
 		placeName,
 		hourly,
 	};
+	weatherCache.set(cacheKey, { at: Date.now(), snapshot });
+	return snapshot;
 }
 
 export function readCoordsFromGeolocation(): Promise<{ lat: number; lon: number }> {

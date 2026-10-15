@@ -7,6 +7,7 @@ import {
 	ScrollArea,
 	Stack,
 	Text,
+	TextInput,
 } from '@mantine/core';
 import { IconArrowLeft, IconTags, IconTrash, IconUsers } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +18,7 @@ import {
 	type BoardList,
 	boardApi,
 } from '@/core/api/endpoints/boardApi';
+import { userDataApi } from '@/core/api/endpoints/userData';
 import { queryKeys } from '@/core/api/queryKeys';
 import { confirmAction } from '@/core/confirm/confirmAction';
 import { notifications } from '@mantine/notifications';
@@ -300,6 +302,15 @@ export function BoardViewPage({ boardId, initialCardId = null, onBack }: BoardVi
 			</Group>
 
 			<BoardFilters filters={filters} onChange={setFilters} members={members} labels={labels} />
+			<BoardTemplates
+				onUse={async (title) => {
+					const listId = lists[0]?.id;
+					if (!listId) {
+						return;
+					}
+					await createCardMutation.mutateAsync({ listId, title });
+				}}
+			/>
 
 			<Box style={{ flex: 1, minHeight: 0, overflow: 'hidden' }} p="md">
 				<BoardDndContext
@@ -333,6 +344,20 @@ export function BoardViewPage({ boardId, initialCardId = null, onBack }: BoardVi
 										});
 									}}
 									onAddCard={async (listId, title) => {
+										const list = lists.find((item) => item.id === listId);
+										const limits = await userDataApi.getOptional('board.wipLimits');
+										const raw =
+											limits?.value && typeof limits.value === 'object'
+												? (limits.value as Record<string, unknown>)[String(listId)]
+												: undefined;
+										const limit = typeof raw === 'number' ? raw : Number(raw);
+										if (Number.isFinite(limit) && limit > 0 && (list?.cards.length ?? 0) >= limit) {
+											notifications.show({
+												color: 'yellow',
+												message: `Лимит колонки: ${limit}`,
+											});
+											return;
+										}
 										await createCardMutation.mutateAsync({ listId, title });
 									}}
 									onCardClick={setSelectedCardId}
@@ -374,5 +399,52 @@ export function BoardViewPage({ boardId, initialCardId = null, onBack }: BoardVi
 				onClose={() => setMembersOpened(false)}
 			/>
 		</Stack>
+	);
+}
+
+function BoardTemplates({ onUse }: { onUse: (title: string) => Promise<void> }) {
+	const queryClient = useQueryClient();
+	const [draft, setDraft] = useState('');
+	const query = useQuery({
+		queryKey: ['user-data', 'board.cardTemplates'],
+		queryFn: async () => {
+			const row = await userDataApi.getOptional('board.cardTemplates');
+			return Array.isArray(row?.value)
+				? row.value.filter((item): item is string => typeof item === 'string')
+				: [];
+		},
+	});
+	const names = query.data ?? [];
+	return (
+		<Group gap="xs" px="md">
+			{names.map((name) => (
+				<Button key={name} size="compact-xs" variant="light" onClick={() => void onUse(name)}>
+					{name}
+				</Button>
+			))}
+			<TextInput
+				size="xs"
+				placeholder="Шаблон карточки"
+				value={draft}
+				onChange={(event) => setDraft(event.currentTarget.value)}
+			/>
+			<Button
+				size="compact-xs"
+				variant="default"
+				onClick={() => {
+					const title = draft.trim();
+					if (!title || names.includes(title)) {
+						return;
+					}
+					const next = [...names, title];
+					setDraft('');
+					void userDataApi.upsert({ code: 'board.cardTemplates', value: next }).then(() => {
+						void queryClient.invalidateQueries({ queryKey: ['user-data', 'board.cardTemplates'] });
+					});
+				}}
+			>
+				Запомнить
+			</Button>
+		</Group>
 	);
 }

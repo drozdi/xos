@@ -1,4 +1,4 @@
-import { Box, Checkbox, Modal, Stack, Text } from '@mantine/core';
+import { Box, Checkbox, Modal, Select, Stack, Text } from '@mantine/core';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -10,14 +10,20 @@ import { WidgetBody } from '@/core/desktop/WidgetSurface';
 import { useWidgetSettingsTick } from '@/core/desktop/useWidgetSettingsTick';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
-function pad(n: number): string {
-	return String(n).padStart(2, '0');
-}
+const CLOCK_ZONES = [
+	{ value: '', label: 'Локальное' },
+	{ value: 'UTC', label: 'UTC' },
+	{ value: 'Europe/Kaliningrad', label: 'Калининград' },
+	{ value: 'Europe/Moscow', label: 'Москва' },
+	{ value: 'Asia/Yekaterinburg', label: 'Екатеринбург' },
+	{ value: 'Asia/Novosibirsk', label: 'Новосибирск' },
+	{ value: 'Asia/Vladivostok', label: 'Владивосток' },
+];
 
 export default function WidgetClockApp() {
 	useWindowTitle('Часы');
 	const [now, setNow] = useState(() => new Date());
-	const [prefs, setPrefs] = useState<WidgetClockPrefs>({ hour12: false, showDate: true });
+	const [prefs, setPrefs] = useState<WidgetClockPrefs>({ hour12: false, showDate: true, timeZone: '' });
 	const [settingsOpen, setSettingsOpen] = useState(false);
 
 	useWidgetSettingsTick(useCallback(() => setSettingsOpen(true), []));
@@ -31,15 +37,20 @@ export default function WidgetClockApp() {
 		return () => window.clearInterval(id);
 	}, []);
 
-	const hours24 = now.getHours();
-	const hours = prefs.hour12 ? ((hours24 + 11) % 12) + 1 : hours24;
-	const suffix = prefs.hour12 ? (hours24 >= 12 ? ' PM' : ' AM') : '';
-	const time = `${pad(hours)}:${pad(now.getMinutes())}${suffix}`;
-	const date = now.toLocaleDateString('ru-RU', {
+	const zone = prefs.timeZone || undefined;
+	const timeParts = new Intl.DateTimeFormat('ru-RU', {
+		timeZone: zone,
+		hour: '2-digit',
+		minute: '2-digit',
+		hour12: prefs.hour12,
+	}).format(now);
+	const time = timeParts;
+	const date = new Intl.DateTimeFormat('ru-RU', {
+		timeZone: zone,
 		weekday: 'short',
 		day: 'numeric',
 		month: 'short',
-	});
+	}).format(now);
 
 	const persist = async (next: WidgetClockPrefs) => {
 		setPrefs(next);
@@ -99,6 +110,14 @@ export default function WidgetClockApp() {
 						checked={prefs.showDate}
 						onChange={(e) => {
 							void persist({ ...prefs, showDate: e.currentTarget.checked });
+						}}
+					/>
+					<Select
+						label="Часовой пояс"
+						data={CLOCK_ZONES}
+						value={prefs.timeZone}
+						onChange={(value) => {
+							void persist({ ...prefs, timeZone: value ?? '' });
 						}}
 					/>
 				</Stack>

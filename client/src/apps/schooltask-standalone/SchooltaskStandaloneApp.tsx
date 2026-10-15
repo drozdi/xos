@@ -23,7 +23,7 @@ function StandaloneRouterInner() {
 /** Полноэкранный SchoolTask на /schooltask с входом по email. */
 export default function SchooltaskStandaloneApp() {
 	useEffect(() => {
-		registerAllApps();
+		void registerAllApps();
 		document.title = 'Школа';
 
 		let cancelled = false;

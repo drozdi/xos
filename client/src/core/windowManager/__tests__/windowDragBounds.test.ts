@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getContainedDragBounds, getWindowDragBounds } from '../windowDragBounds';
+import {
+	fitRectToDesktop,
+	getContainedDragBounds,
+	getWindowDragBounds,
+	snapAppToDesktopEdges,
+} from '../windowDragBounds';
 
 describe('getWindowDragBounds', () => {
 	it('keeps at least margin px visible on each edge', () => {
@@ -40,6 +45,45 @@ describe('getContainedDragBounds', () => {
 		});
 	});
 
+	it('fits a widget rect inside the desktop', () => {
+		expect(
+			fitRectToDesktop(
+				{ width: 800, height: 600 },
+				{ x: 700, y: 500, width: 300, height: 200 },
+				{ width: 80, height: 48 },
+			),
+		).toEqual({ x: 500, y: 400, width: 300, height: 200 });
+	});
+});
+
+describe('snapAppToDesktopEdges', () => {
+	const viewport = { width: 1000, height: 800 };
+	const size = { width: 400, height: 300 };
+
+	it('snaps to the left half', () => {
+		expect(snapAppToDesktopEdges(viewport, { x: 0, y: 100 }, size)).toEqual({
+			x: 0,
+			y: 0,
+			width: 500,
+			height: 800,
+		});
+	});
+
+	it('snaps to the top-right quarter', () => {
+		expect(snapAppToDesktopEdges(viewport, { x: 700, y: 0 }, size)).toEqual({
+			x: 500,
+			y: 0,
+			width: 500,
+			height: 400,
+		});
+	});
+
+	it('leaves a window in the middle alone', () => {
+		expect(snapAppToDesktopEdges(viewport, { x: 200, y: 200 }, size)).toBeNull();
+	});
+});
+
+describe('getContainedDragBounds extra', () => {
 	it('pins to the origin when the widget is larger than the desktop', () => {
 		expect(
 			getContainedDragBounds({ width: 200, height: 80 }, { width: 220, height: 300 }),

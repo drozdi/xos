@@ -5,6 +5,7 @@ import {
 	attachPageLifecycleListeners,
 	isPageUnloading,
 } from '@/core/lifecycle/pageLifecycle';
+import { isWidgetPageSwitch } from '@/core/desktop/desktopWidgets';
 import { getDesktopStatePersister } from '@/core/settings/desktopStatePersister';
 import { settingManager } from '@/core/settings/SettingManager';
 import {
@@ -88,9 +89,12 @@ function initCloseCleanup(): void {
 					useAppManager.getState().removeRunning(windowId);
 					// Tab close/refresh unmounts windows — do not wipe server launchHistory
 					if (!isPageUnloading()) {
+						const skipCatalog = isWidgetPageSwitch();
 						void (async () => {
 							await removeFromLaunchHistory(closed.appId, closed.instanceKey);
-							await markWidgetClosedInCatalog(closed.appId, closed.instanceKey);
+							if (!skipCatalog) {
+								await markWidgetClosedInCatalog(closed.appId, closed.instanceKey);
+							}
 							// Push closed session to server promptly (not only after 2.5s debounce)
 							getDesktopStatePersister().schedule();
 							await getDesktopStatePersister().flush();

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { userDataApi } from '@/core/api/endpoints/userData';
+
 import {
 	OVERLAY_BOARD_ID,
 	OVERLAY_SCHOOLTASK_ID,
@@ -8,6 +10,7 @@ import {
 } from './types';
 
 const STORAGE_KEY = 'xos.calendar.visible';
+const REMOTE_CODE = 'calendar.visibility';
 
 type VisibilityState = {
 	hidden: Set<string>;
@@ -37,7 +40,27 @@ function loadHidden(): Set<string> {
 }
 
 function persist(hidden: Set<string>): void {
-	localStorage.setItem(STORAGE_KEY, JSON.stringify({ hidden: [...hidden] }));
+	const value = { hidden: [...hidden] };
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+	void userDataApi.upsert({ code: REMOTE_CODE, value });
+}
+
+export function hydrateCalendarVisibility(): void {
+	void userDataApi.getOptional(REMOTE_CODE).then((dto) => {
+		if (dto && dto.value && typeof dto.value === 'object') {
+			const hiddenRaw = (dto.value as { hidden?: unknown }).hidden;
+			const hidden = new Set(
+				Array.isArray(hiddenRaw) ? hiddenRaw.filter((v): v is string => typeof v === 'string') : [],
+			);
+			useCalendarVisibilityStore.setState({ hidden });
+			localStorage.setItem(STORAGE_KEY, JSON.stringify({ hidden: [...hidden] }));
+			return;
+		}
+		const local = loadHidden();
+		if (local.size > 0) {
+			void userDataApi.upsert({ code: REMOTE_CODE, value: { hidden: [...local] } });
+		}
+	});
 }
 
 export function ownCalendarVisibilityId(id: number): VisibilityId {

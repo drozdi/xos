@@ -10,7 +10,7 @@
 | shell-settings | Макет оболочки | Alias → `settings?tab=shell`; `startMenuList: false` | — |
 | browser | Браузер | Встроенный браузер с прокси | `/api/browser/proxy` |
 | chess…snake | Игры | Локальные игры | — |
-| sticky-note | Стикер | Multi-instance заметки | localStorage |
+| sticky-note | Стикер | Multi-instance заметки | `user_app_data` `sticky.*` (кэш localStorage) |
 | widget-clock | Часы | Desktop widget | `user_app_data` `widget.clock` |
 | widget-weather | Погода | Click expands details; drag ≥5px не открывает | `widget.weather` |
 | widget-reminders | Напоминания | Локальные reminders на столе | `widget.reminders` |

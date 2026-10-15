@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { toPersistedState } from '../persistWindow';
+import type { ISettingAdapter, SettingCategory } from '@/core/settings/adapters/ISettingAdapter';
+import { settingManager } from '@/core/settings/SettingManager';
+
+import { makeWinSettingKey, removePersistedWindow, toPersistedState } from '../persistWindow';
 import type { WindowState } from '../types';
 
 function makeWindow(overrides: Partial<WindowState> = {}): WindowState {
@@ -56,5 +59,41 @@ describe('toPersistedState', () => {
 		const persisted = toPersistedState(makeWindow({ minimized: true }));
 		expect(persisted.state.minimized).toBe(true);
 		expect(persisted.state.maximized).toBe(false);
+	});
+});
+
+class MemoryAdapter implements ISettingAdapter {
+	private store = new Map<string, unknown>();
+
+	private key(category: SettingCategory, settingKey: string): string {
+		return `${category}:${settingKey}`;
+	}
+
+	async get(category: SettingCategory, key: string): Promise<unknown | undefined> {
+		return this.store.get(this.key(category, key));
+	}
+
+	async set(category: SettingCategory, key: string, value: unknown): Promise<void> {
+		this.store.set(this.key(category, key), value);
+	}
+
+	async has(category: SettingCategory, key: string): Promise<boolean> {
+		return this.store.has(this.key(category, key));
+	}
+
+	async remove(category: SettingCategory, key: string): Promise<void> {
+		this.store.delete(this.key(category, key));
+	}
+}
+
+describe('removePersistedWindow', () => {
+	it('drops the WIN key when a window is closed', async () => {
+		settingManager.init(new MemoryAdapter());
+		const key = makeWinSettingKey('demo', 'demo__a');
+		await settingManager.set('WIN', key, { position: { x: 1, y: 2, width: 3, height: 4 } });
+
+		await removePersistedWindow('demo__a', 'demo');
+
+		await expect(settingManager.get('WIN', key)).resolves.toBeUndefined();
 	});
 });

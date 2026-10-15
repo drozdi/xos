@@ -2,7 +2,9 @@ import { Anchor, Button, FileButton, Group, NumberInput, Select, Stack, Text, Te
 import { notifications } from '@mantine/notifications';
 import { IconTrash, IconUpload } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { userDataApi } from '@/core/api/endpoints/userData';
 
 import type { DeviceDetail } from '@/core/api/endpoints/deviceApi';
 import { deviceApi } from '@/core/api/endpoints/deviceApi';
@@ -38,6 +40,16 @@ export function DeviceGeneralTab({ data, deviceId, errors, readOnly, setField }:
 		return options;
 	}, [filterQuery.data]);
 
+	const [assetId, setAssetId] = useState('');
+	useEffect(() => {
+		if (deviceId <= 0) {
+			return;
+		}
+		void userDataApi.getOptional(`device.asset.${deviceId}`).then((row) => {
+			setAssetId(typeof row?.value === 'string' || typeof row?.value === 'number' ? String(row.value) : '');
+		});
+	}, [deviceId]);
+
 	return (
 		<Stack gap="sm">
 			<TextInput
@@ -48,6 +60,21 @@ export function DeviceGeneralTab({ data, deviceId, errors, readOnly, setField }:
 				readOnly={readOnly}
 				onChange={(e) => setField('name', e.currentTarget.value)}
 			/>
+			{deviceId > 0 ? (
+				<TextInput
+					label="Позиция склада"
+					description="ID позиции Assets"
+					value={assetId}
+					readOnly={readOnly}
+					onChange={(event) => setAssetId(event.currentTarget.value)}
+					onBlur={() => {
+						void userDataApi.upsert({
+							code: `device.asset.${deviceId}`,
+							value: assetId.trim(),
+						});
+					}}
+				/>
+			) : null}
 			<TextInput
 				label="Код"
 				withAsterisk

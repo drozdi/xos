@@ -50,7 +50,8 @@ export function DesktopSurface() {
 			const enabled = await toggleDesktopWidget(appId, 'default');
 			const next = normalizeDesktopWidgets(catalog);
 			const without = next.filter((e) => !(e.appId === appId && e.instanceKey === 'default'));
-			without.push({ appId, instanceKey: 'default', enabled });
+			const prev = next.find((e) => e.appId === appId && e.instanceKey === 'default');
+			without.push({ appId, instanceKey: 'default', enabled, page: prev?.page ?? 0 });
 			setCatalog(without);
 		},
 		[catalog, setCatalog],

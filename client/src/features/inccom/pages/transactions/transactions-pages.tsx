@@ -16,6 +16,7 @@ import {
 	transferNewUrl,
 } from '@inccom/shared/lib/transaction-url';
 import { TransactionTableWidget } from '@inccom/widgets';
+import { InccomMonthTools } from './InccomMonthTools';
 import { Group, Select, Stack, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useEffect, useMemo, useState } from 'react';
@@ -120,6 +121,7 @@ export function TransactionsListPage() {
 	return (
 		<>
 			<Template.Title>История транзакций</Template.Title>
+			<InccomMonthTools accountId={accountId} />
 			<Stack gap="md">
 				<Stack gap="md" hiddenFrom="sm">
 					{accountSelect}

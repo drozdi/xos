@@ -24,6 +24,7 @@ import {
 	OVERLAY_SCHOOLTASK_ID,
 	OVERLAY_TODO_ID,
 	ownCalendarVisibilityId,
+	hydrateCalendarVisibility,
 	useCalendarVisibilityStore,
 } from '../visibilityStore';
 import { CalendarGrid, type CalendarSlotSelection } from './CalendarGrid';
@@ -55,6 +56,10 @@ export function CalendarShell({ initialDate }: { initialDate?: string }) {
 			setDate(initialDate);
 		}
 	}, [initialDate]);
+
+	useEffect(() => {
+		hydrateCalendarVisibility();
+	}, []);
 
 	const [shareCalendar, setShareCalendar] = useState<CalendarDto | null>(null);
 	const [deletingCalendarId, setDeletingCalendarId] = useState<number | null>(null);
