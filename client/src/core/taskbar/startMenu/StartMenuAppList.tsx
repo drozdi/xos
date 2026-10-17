@@ -1,6 +1,5 @@
 import { Box, Collapse, Group, ScrollArea, Stack, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { useEffect, useMemo, useState } from 'react';
-import { List, type RowComponentProps } from 'react-window';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { useAppManager } from '@/core/appManager/useAppManager';
@@ -86,39 +85,6 @@ function AppListItem({
 	);
 }
 
-type AppRowProps = {
-	apps: StartMenuAppGroup['apps'];
-	isPinned: (appId: string) => boolean;
-	onLaunch: (appId: string) => void;
-	onPin: (appId: string) => void;
-};
-
-function AppRow({
-	index,
-	style,
-	apps,
-	isPinned,
-	onLaunch,
-	onPin,
-}: RowComponentProps<AppRowProps>) {
-	const app = apps[index];
-	if (!app) {
-		return null;
-	}
-	return (
-		<div style={style}>
-			<AppListItem
-				appId={app.id}
-				name={app.name}
-				borderTop={app.borderTop}
-				isPinned={isPinned(app.id)}
-				onLaunch={onLaunch}
-				onPin={onPin}
-			/>
-		</div>
-	);
-}
-
 function GroupSection({
 	group,
 	isPinned,
@@ -170,29 +136,19 @@ function GroupSection({
 				</Group>
 			</UnstyledButton>
 			<Collapse expanded={opened}>
-				{group.apps.length > 20 ? (
-					<List
-						rowComponent={AppRow}
-						rowCount={group.apps.length}
-						rowHeight={36}
-						rowProps={{ apps: group.apps, isPinned, onLaunch, onPin }}
-						style={{ height: Math.min(group.apps.length * 36, 280), width: '100%' }}
-					/>
-				) : (
-					<Stack gap={2} pl="xs">
-						{group.apps.map((app) => (
-							<AppListItem
-								key={app.id}
-								appId={app.id}
-								name={app.name}
-								borderTop={app.borderTop}
-								isPinned={isPinned(app.id)}
-								onLaunch={onLaunch}
-								onPin={onPin}
-							/>
-						))}
-					</Stack>
-				)}
+				<Stack gap={2} pl="xs">
+					{group.apps.map((app) => (
+						<AppListItem
+							key={app.id}
+							appId={app.id}
+							name={app.name}
+							borderTop={app.borderTop}
+							isPinned={isPinned(app.id)}
+							onLaunch={onLaunch}
+							onPin={onPin}
+						/>
+					))}
+				</Stack>
 			</Collapse>
 		</Box>
 	);

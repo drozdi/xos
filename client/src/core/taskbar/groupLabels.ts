@@ -1,6 +1,6 @@
 export const TASKBAR_GROUP_LABELS: Record<string, string> = {
 	system: 'Система',
-	tools: 'Средства',
+	tools: 'Стандартные',
 	games: 'Игры',
 	admin: 'Администрирование',
 	default: 'Приложения',
