@@ -8,7 +8,7 @@ export const START_MENU_TILES_WIDTH = 248;
 
 export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	system: 'Система',
-	tools: 'Средства',
+	tools: 'Стандартные',
 	games: 'Игры',
 	admin: 'Администрирование',
 	device: 'Устройства',
@@ -22,10 +22,10 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 };
 
 export const START_MENU_GROUP_SORT: Record<string, number> = {
-	system: 0,
-	tools: 10,
-	games: 20,
-	admin: 30,
+	admin: 0,
+	system: 10,
+	tools: 20,
+	games: 30,
 	device: 40,
 	schooltask: 50,
 	inccom: 60,

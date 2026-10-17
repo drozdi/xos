@@ -108,7 +108,7 @@ describe('buildAppTree', () => {
 			mockApp({ id: 'a', name: 'Admin', startMenuGroup: 'admin' }),
 		]);
 
-		expect(tree.map((group) => group.id)).toEqual(['games', 'admin', 'device']);
+		expect(tree.map((group) => group.id)).toEqual(['admin', 'games', 'device']);
 	});
 
 	it('passes startMenuBorderTop into app tree items', () => {
