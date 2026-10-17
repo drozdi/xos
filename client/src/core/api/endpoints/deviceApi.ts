@@ -38,6 +38,7 @@ const filterOptionSchema: z.ZodType<FilterOption> = z.lazy(() =>
 
 export const deviceListItemSchema = z.object({
 	id: z.number(),
+	name: z.string().nullable().optional().transform((v) => v ?? ''),
 	code: z.string().nullable().optional().transform((v) => v ?? ''),
 	location: z.string().nullable().optional().transform((v) => v ?? ''),
 	inNo: z.string().nullable().optional().transform((v) => v ?? ''),

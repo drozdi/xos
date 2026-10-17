@@ -76,9 +76,17 @@ class DeviceRepository extends AbstractRepository
         } elseif (!empty($filters['accounting']) && is_int($filters['accounting']) && $filters['accounting'] > 0) {
             $query->andWhere($this->fieldVal($n.".accounting", $filters['accounting']));
         } elseif (!empty($filters['accounting']) && is_array($filter = $filters['accounting'])) {
-            $query->innerJoin($n.'.accounting', $n.'a');
+            $alias = $n.'a';
+            $hideDiscarded = array_key_exists('discarded', $filter) && false === $filter['discarded'];
+            if ($hideDiscarded) {
+                unset($filter['discarded']);
+                $query->leftJoin($n.'.accounting', $alias)
+                    ->andWhere(sprintf('(%s.id IS NULL OR %s.discarded = false)', $alias, $alias));
+            } else {
+                $query->innerJoin($n.'.accounting', $alias);
+            }
             foreach ($filter as $field => $val) {
-                $query->andWhere($this->fieldVal($n."a.{$field}", $val));
+                $query->andWhere($this->fieldVal($alias.".{$field}", $val));
             }
         }
         unset($filters['accounting']);

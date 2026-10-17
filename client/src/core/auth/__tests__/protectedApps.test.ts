@@ -23,7 +23,6 @@ describe('protectedApps', () => {
 			'github',
 			'iblock',
 			'recipe',
-			'assets',
 			'inbox',
 		]);
 	});
@@ -58,8 +57,6 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('iblock')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_RECIPE']);
 		expect(canUseAppModule('recipe')).toBe(true);
-		setUserRoles(['ROLE_USER', 'ROLE_ASSETS']);
-		expect(canUseAppModule('assets')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_INBOX']);
 		expect(canUseAppModule('inbox')).toBe(true);
 		resetUserRoles();

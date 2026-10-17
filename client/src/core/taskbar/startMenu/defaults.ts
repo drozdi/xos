@@ -17,7 +17,6 @@ export const START_MENU_GROUP_LABELS: Record<string, string> = {
 	ts: 'TeamStorm',
 	content: 'Контент',
 	iblock: 'Инфоблоки',
-	assets: 'Активы',
 	default: 'Приложения',
 };
 
@@ -32,7 +31,6 @@ export const START_MENU_GROUP_SORT: Record<string, number> = {
 	ts: 65,
 	content: 68,
 	iblock: 70,
-	assets: 72,
 	default: 100,
 };
 

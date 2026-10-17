@@ -1,5 +1,0 @@
-controllers:
-  resource:
-    path: '../Controller/'
-    namespace: Assets\Controller
-  type: attribute

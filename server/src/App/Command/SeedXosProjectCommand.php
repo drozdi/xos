@@ -728,7 +728,6 @@ MD,
             'pkb' => '#00838f',
             'system' => '#78909c',
             'iblock' => '#5d4037',
-            'assets' => '#455a64',
             'content' => '#6a1b9a',
             'github' => '#24292e',
             'inbox' => '#0277bd',
@@ -932,7 +931,7 @@ MD,
                 'notePath' => 'Notes/AppsCatalog.md',
                 'boardList' => 'Обзор',
                 'labels' => ['docs'],
-                'description' => "Реестр 100+ приложений (System…Assets) и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/README.md`.",
+                'description' => "Реестр приложений (System…Inbox) и типов манифестов.\n\nСм. [[AppsCatalog]] и `docs/README.md`.",
             ],
             [
                 'title' => 'App Ideas',
@@ -946,7 +945,7 @@ MD,
                 'notePath' => 'Notes/Changelog.md',
                 'boardList' => 'Обзор',
                 'labels' => ['docs', 'mvp'],
-                'description' => "Журнал сдач: волны 1–2, content/assets, bridges, platform.\n\nСм. [[Changelog]].",
+                'description' => "Журнал сдач: волны 1–2, content, bridges, platform.\n\nСм. [[Changelog]].",
             ],
         ];
 
@@ -1076,7 +1075,6 @@ MD,
             'pkb' => ['folder' => 'PKB', 'label' => 'pkb', 'title' => 'PKB'],
             'ts' => ['folder' => 'TeamStorm', 'label' => 'system', 'title' => 'TeamStorm'],
             'inbox' => ['folder' => 'Inbox', 'label' => 'inbox', 'title' => 'Inbox'],
-            'assets' => ['folder' => 'Assets', 'label' => 'assets', 'title' => 'Assets'],
             'github' => ['folder' => 'GitHub', 'label' => 'github', 'title' => 'GitHub'],
         ];
     }
@@ -1170,7 +1168,7 @@ Claimant `main` · роль `ROLE_MAIN` · `server/src/Main/` · `client/src/fea
 - JWT scopes из `setting.json` + sync в БД: `php bin/console main:claimant:sync`
 - UI прав: `access_options` в claimant после sync
 - Аудит: `AuditLog` + app `main-audit`
-- Multi-OU: `main.active_ou_id`; list/create scope (Device via createdBy.ou; Assets `ou_id`)
+- Multi-OU: `main.active_ou_id`; list/create scope (Device via createdBy.ou)
 - Документы: `docs/main/README.md`, `docs/main/TZ.md`
 
 ← [[Home]] · [[Architecture]] · [[AppsCatalog]]
@@ -1542,42 +1540,6 @@ Claimant в основном `iblock`; рецепты — `recipe` (`ROLE_RECIPE
 MD,
             ],
             [
-                'title' => 'Assets',
-                'notePath' => 'Notes/Apps/Assets.md',
-                'labels' => ['assets'],
-                'cardDescription' => "Склад, автопарк, контрагенты, договоры, помещения, ПО.\n\nЗаметка: [[Assets]] · API `/api/assets/`",
-                'body' => <<<'MD'
-# Assets
-
-Claimant `assets` · `ROLE_ASSETS` · `server/src/Assets/` · `client/src/features/assets/` · apps `assets-*`
-
-## Назначение
-
-CRUD-справочники: склад, автопарк, контрагенты, договоры, помещения, ПО. Shared UI `AssetsCatalog*`.
-
-## Приложения
-
-| ID | Scope |
-|----|-------|
-| `assets-warehouse` / `assets-warehouse-item` | warehouse |
-| `assets-fleet` / `assets-fleet-vehicle` | fleet |
-| `assets-parties` / `assets-party` | party |
-| `assets-contracts` / `assets-contract` | contract |
-| `assets-rooms` / `assets-room` | room |
-| `assets-software` / `assets-software-item` | software |
-
-## API
-
-Prefix `/api/assets/*`. Claimants: `assets.warehouse`, `assets.fleet`, …
-
-Multi-OU: nullable `ou_id` на каталогах; list/create через `OuScope`.
-
-Документы: `docs/README.md` § Assets
-
-← [[Home]] · [[AppsCatalog]] · [[Changelog]]
-MD,
-            ],
-            [
                 'title' => 'TeamStorm',
                 'notePath' => 'Notes/Apps/TeamStorm.md',
                 'labels' => ['system'],
@@ -1758,7 +1720,6 @@ MD,
 - [[System]] — settings, shell, games, widgets, PWA
 - [[IBlock]] — инфоблоки (API + apps)
 - [[Content]] — IBlock consumers (notes…recipes)
-- [[Assets]] — склад / автопарк / договоры…
 - [[TeamStorm]] — TeamStorm proxy
 - [[GitHub]] — Issues
 - [[Inbox]] — внутренние сообщения
@@ -1813,15 +1774,14 @@ Polling `…/changes` + `/api/board/search` — **DONE**.
 
 - [[Board]]: SSE `/boards/{id}/events` + optional Mercure (`MERCURE_URL`+`MERCURE_JWT_SECRET`, `/realtime`) + conflict UI
 - [[PKB]]: FULLTEXT; encrypt_at_rest; plugins; ZIP export; `remote_sync_url` + POST `/remote-sync`
-- Multi-OU: Main users/groups; Device via `createdBy.ou`; Assets `ou_id`
+- Multi-OU: Main users/groups; Device via `createdBy.ou`
 - PWA: NetworkFirst GET `/api/*` + offline banner + write outbox
 
 Остаток: Board email/Trello; PKB co-edit; IMAP/Open Banking — [[AppIdeas]]
 
-## Content + Assets + bridges + platform (DONE)
+## Content + bridges + platform (DONE)
 
 - [[Content]]: articles, FAQ, gallery, events, contacts, services, ideas, notebooks (+ notes/recipes)
-- [[Assets]]: warehouse, fleet, parties, contracts, rooms, software — `/api/assets/*`
 - Bridges: [[Todo]]↔[[Board]] (`board_card_id`); due-notify; Device↔[[IncCom]] (`deviceId`)
 - Platform: PWA shell; `shell-settings`; `main-audit`; OU list filter
 - [[Explorer]] viewers; [[System]] games/widgets
@@ -1879,7 +1839,6 @@ MD,
 | Main | `Main/` | Пользователи, OU, claimants, audit |
 | Device | `Device/` | Оборудование |
 | IBlock | `IBlock/` | Инфоблоки |
-| Assets | `Assets/` | Склад / автопарк / … |
 | IncCom | `IncCom/` | Доходы/расходы |
 | SchoolTask | `SchoolTask/` | Расписание |
 | Explorer | `Explorer/` | Файлы |
@@ -1894,7 +1853,7 @@ MD,
 ## Клиент
 
 - `client/src/apps/*` — манифесты окон (120+)
-- `client/src/features/*` — доменная логика (`iblock-content`, `assets`, `github`, `inbox`, …)
+- `client/src/features/*` — доменная логика (`iblock-content`, `github`, `inbox`, …)
 - `client/src/core/*` — auth, API, offline outbox, window manager, theme
 
 ## Безопасность API
@@ -1908,7 +1867,7 @@ MD,
 - Legacy: `limit` / `offset` + `Content-Range`
 - 400: `{ message, violations }`
 
-Связано: [[Home]], [[AppsCatalog]], [[Board]], [[PKB]], [[Assets]], [[Content]]
+Связано: [[Home]], [[AppsCatalog]], [[Board]], [[PKB]], [[Content]]
 
 См. также `docs/README.md`, `docs/README.md`
 MD,
@@ -1949,11 +1908,10 @@ MD,
 | Inbox | inbox | inbox, inbox-message |
 | IBlock | iblock | iblock-types…iblock-property (10) |
 | Content | iblock / recipe | notes, notebooks, articles, faqs, galleries, announcements, contacts, services, ideas, **leads**, recipes (+ categories) |
-| Assets | assets | warehouse/fleet/parties/contracts/rooms/software × list+detail (12) |
 
 ## Модули в vault
 
-[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[Assets]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]]
+[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]]
 
 Полный каталог: `docs/README.md` · идеи: [[AppIdeas]]
 
