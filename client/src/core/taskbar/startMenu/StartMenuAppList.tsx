@@ -186,6 +186,9 @@ export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListP
 			style={{
 				flex: 1,
 				minWidth: 0,
+				minHeight: 0,
+				display: 'flex',
+				flexDirection: 'column',
 				borderRight: '1px solid var(--xos-shell-border)',
 				background: 'var(--xos-shell-bg)',
 			}}
@@ -203,7 +206,7 @@ export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListP
 					autoFocus
 				/>
 			</Box>
-			<ScrollArea h={START_MENU_LIST_HEIGHT} type="auto" px="sm" pb="md">
+			<ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto" px="sm" pb="md">
 				{visibleGroups.length === 0 ? (
 					<Text size="sm" c="dimmed" p="md">
 						{normalized ? 'Ничего не найдено' : 'Нет доступных приложений'}
@@ -226,5 +229,3 @@ export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListP
 		</Box>
 	);
 }
-
-const START_MENU_LIST_HEIGHT = 468;

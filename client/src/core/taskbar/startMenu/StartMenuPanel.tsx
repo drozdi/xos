@@ -80,7 +80,7 @@ export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
 			}}
 		>
 			<StartMenuSidebar onClose={onClose} />
-			<Box style={{ display: 'flex', flex: 1, minWidth: 0 }}>
+			<Box style={{ display: 'flex', flex: 1, minWidth: 0, minHeight: 0 }}>
 				<StartMenuAppList
 					onClose={onClose}
 					isPinned={(appId) => pinnedIdSet.has(appId)}
