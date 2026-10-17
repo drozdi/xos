@@ -24,13 +24,13 @@ export const START_MENU_GROUP_SORT: Record<string, number> = {
 	admin: 0,
 	system: 10,
 	tools: 20,
+	iblock: 25,
 	games: 30,
 	device: 40,
 	schooltask: 50,
 	inccom: 60,
 	ts: 65,
 	content: 68,
-	iblock: 70,
 	default: 100,
 };
 

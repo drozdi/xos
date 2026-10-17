@@ -27,6 +27,9 @@ export function StartMenuTiles({ apps, onClose, onUnpin }: StartMenuTilesProps) 
 			w={START_MENU_TILES_WIDTH}
 			style={{
 				flexShrink: 0,
+				minHeight: 0,
+				display: 'flex',
+				flexDirection: 'column',
 				background: 'var(--xos-shell-bg)',
 			}}
 		>
@@ -35,7 +38,7 @@ export function StartMenuTiles({ apps, onClose, onUnpin }: StartMenuTilesProps) 
 					Быстрый доступ
 				</Text>
 			</Box>
-			<ScrollArea h={468} px="md" pb="md" type="auto">
+			<ScrollArea style={{ flex: 1, minHeight: 0 }} px="md" pb="md" type="auto">
 				{apps.length === 0 ? (
 					<Text size="sm" c="dimmed">
 						Добавьте приложения из списка через контекстное меню
