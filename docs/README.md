@@ -28,6 +28,5 @@
 | База знаний | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) | [pkb/API.md](pkb/API.md) |
 | TeamStorm | [ts/README.md](ts/README.md) | [ts/TZ.md](ts/TZ.md) | [ts/API.md](ts/API.md) |
 | Почта | [inbox/README.md](inbox/README.md) | [inbox/TZ.md](inbox/TZ.md) | [inbox/API.md](inbox/API.md) |
-| Склад и имущество | [assets/README.md](assets/README.md) | [assets/TZ.md](assets/TZ.md) | [assets/API.md](assets/API.md) |
 | GitHub | [github/README.md](github/README.md) | [github/TZ.md](github/TZ.md) | [github/API.md](github/API.md) |
 | Привычки | [habits/README.md](habits/README.md) | [habits/TZ.md](habits/TZ.md) | [habits/API.md](habits/API.md) |

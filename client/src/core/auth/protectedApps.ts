@@ -14,7 +14,6 @@ export const PROTECTED_APP_MODULES = [
 	'github',
 	'iblock',
 	'recipe',
-	'assets',
 	'inbox',
 ] as const;
 

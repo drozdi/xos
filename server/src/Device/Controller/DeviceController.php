@@ -128,8 +128,6 @@ class DeviceController extends AbstractController {
         Request $request,
         DeviceRepository $DeviceRepository,
         LocationRepository $LocationRepository,
-        OuScope $ouScope,
-        #[CurrentUser] User $user,
     ): JsonResponse {
         /*throw $this->createNotFoundException(
             'No product found for id'
@@ -161,8 +159,7 @@ class DeviceController extends AbstractController {
         if (!is_array($req['filters'] ?? null)) {
             $req['filters'] = [];
         }
-        // Multi-OU list filter via createdBy.ou (Device has no ou_id column)
-        $req['filters'] = $ouScope->applyListFilter($user, $req['filters']);
+        unset($req['filters']['ou'], $req['filters']['ou_id']);
         $totalItems = $DeviceRepository->cnt($req['filters']);
         $query = $DeviceRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -180,6 +177,7 @@ class DeviceController extends AbstractController {
             }
             $items[] = array(
                 'id' => $device->getId(),
+                'name' => $device->getName(),
                 'code' => $device->getCode(),
                 'location' => $loc,
                 'inNo' => $device->getAccounting()? $device->getAccounting()->getInNo(): null,

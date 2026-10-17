@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
- * Multi-OU: Board remains global — no OuScope / ou_id tenancy (unlike Main/Device/Assets).
+ * Multi-OU: Board remains global — no OuScope / ou_id tenancy (unlike Main/Device).
  */
 #[Route('/api/board')]
 #[Access('board')]

@@ -354,67 +354,6 @@ export function NotebooksIcon({ size = 32 }: { size?: number }) {
 	);
 }
 
-export function AssetsWarehouseIcon({ size = 32 }: { size?: number }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-			<path d="M3 21V8l9-5 9 5v13" />
-			<path d="M9 21V12h6v9" />
-		</svg>
-	);
-}
-
-export function AssetsFleetIcon({ size = 32 }: { size?: number }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-			<path d="M3 14h13l3-5H8l-2 5z" />
-			<path d="M5 14v3h2M16 14v3h2" />
-			<circle cx="7" cy="18" r="1.5" />
-			<circle cx="17" cy="18" r="1.5" />
-		</svg>
-	);
-}
-
-export function AssetsPartyIcon({ size = 32 }: { size?: number }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-			<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-			<circle cx="9" cy="7" r="3" />
-			<path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-			<path d="M16 3.13a3 3 0 0 1 0 5.75" />
-		</svg>
-	);
-}
-
-export function AssetsContractIcon({ size = 32 }: { size?: number }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-			<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-			<path d="M14 2v6h6" />
-			<path d="M8 13h8M8 17h5" />
-		</svg>
-	);
-}
-
-export function AssetsRoomIcon({ size = 32 }: { size?: number }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-			<path d="M3 21h18" />
-			<path d="M5 21V8l7-4 7 4v13" />
-			<path d="M9 21v-6h6v6" />
-		</svg>
-	);
-}
-
-export function AssetsSoftwareIcon({ size = 32 }: { size?: number }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-			<rect x="3" y="4" width="18" height="14" rx="2" />
-			<path d="M8 21h8M12 18v3" />
-			<path d="M8 9l2 2-2 2M12 13h4" />
-		</svg>
-	);
-}
-
 export function GithubIcon({ size = 32 }: { size?: number }) {
 	return (
 		<svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>

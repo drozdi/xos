@@ -29,7 +29,7 @@ export function ActiveOuPanel() {
 		<Stack gap="md">
 			<Text size="sm" c="dimmed">
 				Активное подразделение хранится в user_app_data (сервер) и применяется к
-				Users/Groups/Device/Assets.
+				Users/Groups/Device.
 			</Text>
 			<Select
 				label="Активное подразделение (OU)"

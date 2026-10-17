@@ -20,11 +20,7 @@ import {
 } from '@/features/device/deviceFilterUtils';
 import { useLaunchDeviceApp } from '@/features/device/deviceAppUtils';
 import { MainListLayout } from '@/features/main/MainListLayout';
-import { useActiveOuId } from '@/features/main/useActiveOuId';
 
-/**
- * Multi-OU: list respects main.active_ou_id (server forces via createdBy.ou).
- */
 export default function DeviceDevicesApp() {
 	useWindowTitle('Устройства');
 	const launchApp = useLaunchDeviceApp();
@@ -33,22 +29,18 @@ export default function DeviceDevicesApp() {
 	const canCreate = useCanCreateDevice();
 	const canUpdate = useCanUpdateDevice();
 	const canDelete = useCanDeleteDevice();
-	const { activeOuId, restored } = useActiveOuId();
 	const [typeId, setTypeId] = useState<string | null>(null);
 	const [discardedOnly, setDiscardedOnly] = useState(false);
 
 	const listFilters = useMemo(() => {
-		const filters: Record<string, unknown> = {};
-		if (typeId) {
-			filters.type = Number(typeId);
-			filters.accounting = { discarded: discardedOnly };
+		if (!typeId) {
+			return {};
 		}
-		if (activeOuId && activeOuId > 0) {
-			filters.ou = activeOuId;
-			filters.ou_id = activeOuId;
-		}
-		return filters;
-	}, [typeId, discardedOnly, activeOuId]);
+		return {
+			type: Number(typeId),
+			accounting: { discarded: discardedOnly },
+		};
+	}, [typeId, discardedOnly]);
 
 	const pagination = usePaginatedList({
 		sortBy: [{ key: 'sort', order: 'ASC' }],
@@ -64,7 +56,7 @@ export default function DeviceDevicesApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.device.devices(pagination.listRequest),
 		queryFn: () => deviceApi.list(pagination.listRequest),
-		enabled: canRead && restored && typeId !== null,
+		enabled: canRead && typeId !== null,
 	});
 
 	const deleteMutation = useMutation({
@@ -94,6 +86,7 @@ export default function DeviceDevicesApp() {
 	const columns = useMemo(
 		() => [
 			{ field: 'id' as const, header: 'ID', width: 70 },
+			{ field: 'name' as const, header: 'Название' },
 			{ field: 'code' as const, header: 'Код' },
 			{ field: 'location' as const, header: 'Расположение' },
 			{ field: 'inNo' as const, header: 'Инв. №' },

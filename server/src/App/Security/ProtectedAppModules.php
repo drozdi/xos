@@ -18,7 +18,6 @@ final class ProtectedAppModules
         'github',
         'iblock',
         'recipe',
-        'assets',
         'inbox',
     ];
 

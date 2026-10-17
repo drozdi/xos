@@ -157,18 +157,4 @@ export const queryKeys = {
 		members: (vaultId: number) => ['pkb', 'members', vaultId] as const,
 		bookmarks: (vaultId: number) => ['pkb', 'bookmarks', vaultId] as const,
 	},
-	assets: {
-		warehouse: (filters: ListRequest) => ['assets', 'warehouse', filters] as const,
-		warehouseItem: (id: number) => ['assets', 'warehouse', id] as const,
-		fleet: (filters: ListRequest) => ['assets', 'fleet', filters] as const,
-		fleetVehicle: (id: number) => ['assets', 'fleet', id] as const,
-		parties: (filters: ListRequest) => ['assets', 'parties', filters] as const,
-		party: (id: number) => ['assets', 'party', id] as const,
-		contracts: (filters: ListRequest) => ['assets', 'contracts', filters] as const,
-		contract: (id: number) => ['assets', 'contract', id] as const,
-		rooms: (filters: ListRequest) => ['assets', 'rooms', filters] as const,
-		room: (id: number) => ['assets', 'room', id] as const,
-		software: (filters: ListRequest) => ['assets', 'software', filters] as const,
-		softwareItem: (id: number) => ['assets', 'software', id] as const,
-	},
 } as const;
