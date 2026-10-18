@@ -1,26 +1,38 @@
 # API — продукт
 
-Базовый URL — корень сервера. Кроме входа, методы требуют `Authorization: Bearer <access>`.
+Базовый URL — корень сервера. Кроме входа и обновления токена, методы требуют `Authorization: Bearer <access>`.
 
 Ошибки: `400` с `message` и `violations`, `401` без токена, `403` без права, `404` если запись не найдена.
+
+Схемы тел в OpenAPI не опубликованы. Полный перечень путей: `php bin/console debug:router` или `php bin/console app:openapi:dump` → `server/var/openapi.json`. API модулей — в `docs/<модуль>/API.md`.
 
 ## Вход
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
 | POST | `/api/login` | Логин и пароль, выдаёт access-токен |
+| GET | `/api/login-check` | Проверка, что сессия ещё жива |
 | POST | `/api/token/refresh` | Новый access по refresh-токену |
 | POST | `/api/logout` | Выход |
+| GET | `/api/user` | Краткие данные текущего пользователя |
+| GET | `/api/protected` | Проверка, что токен принят |
+| GET | `/api/health` | Живость API |
+
+У календаря, школы и IncCom есть собственные `POST /api/<модуль>/auth/login|logout` и `POST /api/<модуль>/token/refresh`. Рабочий стол пользуется общим `/api/login`.
 
 ## Аккаунт и права
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
 | GET | `/api/account` | Текущий профиль |
-| PUT | `/api/account` | Правка профиля и пароля |
+| PUT, PATCH | `/api/account` | Правка профиля и пароля |
 | GET | `/api/account/accesses` | Числовые scope пользователя |
 | GET | `/api/account/map` | Карта claimants |
-| GET | `/api/scope` | Справочник scope |
+| GET | `/api/account/roles` | Роли текущего пользователя |
+| GET | `/api/account/options` | Опции профиля |
+| PUT, PATCH | `/api/account/options` | Запись опций |
+| GET | `/api/scope/map` | Справочник claimants |
+| GET | `/api/scope/accesses` | Справочник scope |
 
 ## Настройки стола
 
@@ -51,8 +63,8 @@
 | Метод | Путь | Назначение |
 |-------|------|------------|
 | POST | `/api/main/file/upload` | `multipart`: поле `file` и `module` |
-| GET | `/api/main/file/{id}` | Метаданные |
-| GET | `/api/main/file/{id}/download` | Содержимое |
+| GET | `/api/main/file/{id}` | Метаданные и скачивание по id |
+| GET | `/uploads/{module}/{subDir}/{fileName}` | Прямая отдача загруженного файла |
 
 `module` только из списка: `device`, `common`, `task`, `main`, `board`, `iblock`, `inbox`.
 
@@ -62,6 +74,6 @@
 |-------|------|------------|
 | GET | `/api/browser/proxy` | Прокси страницы встроенного браузера |
 
-Полный перечень путей без схем тел: `php bin/console app:openapi:dump` пишет `server/var/openapi.json`.
+## Списки
 
-API модулей — в `docs/<модуль>/API.md`.
+Новые списки читают `page` и `size`. Старые каталоги (устройства, пользователи, инфоблоки) принимают в теле `limit`, `offset`, `sortBy`, `filters`. Разбор: `App\Http\PageQuery`.

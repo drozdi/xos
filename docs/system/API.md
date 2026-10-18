@@ -1,21 +1,26 @@
 # API — оболочка
 
-Общие методы — в [../API.md](../API.md). Здесь то, чем пользуется стол.
+Своего префикса нет. Оболочка пользуется общим API из [../API.md](../API.md).
 
-## Состояние
+| Метод | Путь | Кто вызывает |
+|-------|------|----------------|
+| POST | `/api/login` | Экран входа |
+| POST | `/api/token/refresh` | Обновление access |
+| POST | `/api/logout` | Выход |
+| GET | `/api/account` | Вкладка профиля |
+| PUT, PATCH | `/api/account` | Сохранение профиля и пароля |
+| GET | `/api/account/accesses` | Какие приложения показать |
+| GET | `/api/account/map` | Карта прав |
+| GET | `/api/desktop-state` | Старт стола |
+| PUT | `/api/desktop-state` | Сохранение окон, темы, виджетов, истории |
+| GET | `/api/user-data` | Снимок prefs, в том числе активное подразделение и стикеры |
+| PUT | `/api/user-data` | Запись ключа `{ code, value }` |
+| DELETE | `/api/user-data/{code}` | Удаление ключа |
+| GET | `/api/settings` | Отдельные ключи, если экран их читает |
+| POST | `/api/settings` | Запись ключа |
+| DELETE | `/api/settings/{category}/{key}` | Удаление ключа |
+| GET | `/api/browser/proxy` | Окно `browser` |
 
-| Метод | Путь | Назначение |
-|-------|------|------------|
-| GET, PUT | `/api/desktop-state` | USER, APP, WIN, `explorerLastPath` |
-| GET | `/api/user-data?prefix=` | Prefs виджетов, стикеров, календаря |
-| PUT | `/api/user-data` | Запись prefs |
+Категории снимка: `USER`, `APP` (`launchHistory`), `WIN` (`{appId}/{windowId}`).
 
-Ключи: `widget.clock`, `widget.weather`, `widget.reminders`, `sticky.{instance}`, `calendar.visibility`, `explorer.pins`, `explorer.last_path`, `desktop.widgets`, `desktop.page`, `desktop.widgetSnap`.
-
-## Браузер
-
-| Метод | Путь | Назначение |
-|-------|------|------------|
-| GET | `/api/browser/proxy` | HTML страницы по query URL |
-
-Погода ходит во внешний Open-Meteo с клиента, не через этот API.
+Поиск Ctrl+K не имеет метода. Он вызывает списки задач, доски, PKB и проводника, описанные в их API.

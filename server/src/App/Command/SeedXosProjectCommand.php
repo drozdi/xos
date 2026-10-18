@@ -1168,7 +1168,7 @@ Claimant `main` · роль `ROLE_MAIN` · `server/src/Main/` · `client/src/fea
 - JWT scopes из `setting.json` + sync в БД: `php bin/console main:claimant:sync`
 - UI прав: `access_options` в claimant после sync
 - Аудит: `AuditLog` + app `main-audit`
-- Multi-OU: `main.active_ou_id`; list/create scope (Device via createdBy.ou)
+- Multi-OU: `main.active_ou_id` в user-data. Список устройств его не применяет
 - Документы: `docs/main/README.md`, `docs/main/TZ.md`
 
 ← [[Home]] · [[Architecture]] · [[AppsCatalog]]
@@ -1195,8 +1195,9 @@ Claimant `device` · `server/src/Device/` · `client/src/features/device/` · ap
 ## Ключевое
 
 - Карточка устройства: свойства, ремонты, изображения, файлы
-- Multi-OU list: filter через `createdBy.ou` + `main.active_ou_id`
-- Документы: `docs/device/README.md`, `docs/device/TZ.md`
+- Список: первый тип, без «Все типы». `POST /api/device/device/list` снимает `ou` и `ou_id`. Списанные скрыты, пока не включён «Списан»
+- `select` по-прежнему учитывает активное подразделение
+- Документы: `docs/device/README.md`, `docs/device/TZ.md`, `docs/device/API.md`
 
 ← [[Home]] · [[AppsCatalog]]
 MD,
@@ -1774,7 +1775,7 @@ Polling `…/changes` + `/api/board/search` — **DONE**.
 
 - [[Board]]: SSE `/boards/{id}/events` + optional Mercure (`MERCURE_URL`+`MERCURE_JWT_SECRET`, `/realtime`) + conflict UI
 - [[PKB]]: FULLTEXT; encrypt_at_rest; plugins; ZIP export; `remote_sync_url` + POST `/remote-sync`
-- Multi-OU: Main users/groups; Device via `createdBy.ou`
+- Multi-OU: Main users/groups. Список устройств подразделение не фильтрует
 - PWA: NetworkFirst GET `/api/*` + offline banner + write outbox
 
 Остаток: Board email/Trello; PKB co-edit; IMAP/Open Banking — [[AppIdeas]]
@@ -1892,22 +1893,24 @@ MD,
 
 | Домен | Claimant | Apps (id) |
 |-------|----------|-----------|
-| System | — | settings, shell-settings, browser, games, sticky-note, widget-clock/weather/reminders/upcoming/today/school/external/explorer, demo-calculator |
+| System | — | settings, shell-settings, browser, sticky-note, demo-calculator |
+| Виджеты | — | widget-clock, widget-weather, widget-reminders, widget-upcoming, widget-today, widget-school, widget-external, widget-explorer |
+| Игры | — | chess, solitaire, minesweeper, game-2048, sudoku, memory, snake, tic-tac-toe |
 | Main | main | main-users, main-user, main-groups, main-group, main-ous, main-ou, main-claimants, main-claimant, main-audit |
-| Device | device | device-devices…device-license-key (17) |
-| Explorer | explorer | explorer + pickers + notepad/markdown/code/pdf/office/diff/map/image/archiver/video/audio (14) |
-| SchoolTask | schooltask | subjects/classes/calendars/teacher + **homeworks** (9) |
+| Device | device | device-devices, device-device, device-sub-devices, device-sub-device, device-types, device-type, device-properties, device-property, device-components, device-component, device-softwares, device-software, device-software-types, device-software-type, device-licenses, device-license, device-license-key |
+| Explorer | explorer | explorer, explorer-open-picker, explorer-save-picker, explorer-notepad, explorer-markdown-viewer, explorer-code-viewer, explorer-pdf-viewer, explorer-office-viewer, explorer-diff, explorer-map-viewer, explorer-image-viewer, explorer-archiver, explorer-video-player, explorer-audio-player |
+| SchoolTask | schooltask | schooltask-subjects, schooltask-subject, schooltask-classes, schooltask-class, schooltask-calendars, schooltask-calendar, schooltask-calendar-editor, schooltask-calendar-teacher, schooltask-homeworks |
 | IncCom | inccom | inccom |
 | Calendar | calendar | calendar |
-| Todo | todo | todo |
-| Habits | todo | habits |
+| Todo | todo | todo (окно «Заметки», модуль не в ProtectedAppModules) |
+| Habits | — | habits |
 | Board | board | board |
 | PKB | pkb | pkb |
 | TeamStorm | ts | teamstorm |
 | GitHub | github | github |
 | Inbox | inbox | inbox, inbox-message |
-| IBlock | iblock | iblock-types…iblock-property (10) |
-| Content | iblock / recipe | notes, notebooks, articles, faqs, galleries, announcements, contacts, services, ideas, **leads**, recipes (+ categories) |
+| IBlock | iblock | iblock-types, iblock-type, iblock-blocks, iblock-block, iblock-sections, iblock-section, iblock-elements, iblock-element, iblock-properties, iblock-property |
+| Content | iblock / recipe | notes, note, notebooks, articles, article, faqs, faq, galleries, gallery, announcements, announcement, contacts, contact, services, service, ideas, idea, leads, lead, recipes, recipe, recipe-categories |
 
 ## Модули в vault
 

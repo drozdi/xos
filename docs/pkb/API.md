@@ -1,28 +1,52 @@
 # API — база знаний
 
-Префикс `/api/pkb`. Роль `ROLE_PKB`.
+Префикс `/api/pkb`. Роль `ROLE_PKB`. `{id}` — id хранилища.
+
+## Хранилище
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
-| GET | `/health` | Проверка |
-| GET, POST | `/vaults` | Хранилища |
-| GET, PUT, DELETE | `/vaults/{id}` | Карточка |
-| GET | `/vaults/{id}/export` | ZIP |
-| POST | `/vaults/{id}/remote-sync` | Отправить копию |
-| GET, POST | `/vaults/{id}/members` | Участники |
-| PUT, DELETE | `/vaults/{id}/members/{userId}` | Роль |
-| GET | `/vaults/{id}/files/tree` | Дерево |
-| GET, PUT | `/vaults/{id}/files/content` | Текст файла |
-| POST | `/vaults/{id}/files/upload` | Файл |
-| POST | `/vaults/{id}/files/folder` | Каталог |
-| DELETE | `/vaults/{id}/files/item` | Удалить |
-| PATCH | `/vaults/{id}/files/rename` | Переименовать |
-| GET | `/vaults/{id}/notes` | Индекс заметок |
-| GET | `/vaults/{id}/notes/by-title` | Заметка по заголовку |
-| GET | `/vaults/{id}/backlinks` | Обратные ссылки |
-| GET | `/vaults/{id}/graph` | Граф |
-| GET | `/vaults/{id}/search` | Поиск, query `q` |
-| POST | `/vaults/{id}/search/replace` | Замена |
-| GET | `/vaults/{id}/index/status` | Свежесть индекса |
-| POST | `/vaults/{id}/index/rebuild` | Пересобрать |
-| GET, PUT | `/vaults/{id}/bookmarks` | Закладки |
+| GET | `/api/pkb/health` | Живость |
+| GET | `/api/pkb/vaults` | Список |
+| POST | `/api/pkb/vaults` | Создать |
+| GET | `/api/pkb/vaults/{id}` | Карточка |
+| PUT | `/api/pkb/vaults/{id}` | Изменить |
+| DELETE | `/api/pkb/vaults/{id}` | Удалить |
+| GET | `/api/pkb/vaults/{id}/export` | Экспорт |
+| POST | `/api/pkb/vaults/{id}/remote-sync` | Внешняя синхронизация |
+| GET | `/api/pkb/vaults/{id}/bookmarks` | Закладки |
+| PUT | `/api/pkb/vaults/{id}/bookmarks` | Записать закладки |
+
+## Участники
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| GET | `/api/pkb/vaults/{id}/members` | Список |
+| POST | `/api/pkb/vaults/{id}/members` | Пригласить |
+| PUT | `/api/pkb/vaults/{id}/members/{userId}` | Сменить роль |
+| DELETE | `/api/pkb/vaults/{id}/members/{userId}` | Убрать |
+
+## Файлы
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| GET | `/api/pkb/vaults/{id}/files/tree` | Дерево |
+| GET | `/api/pkb/vaults/{id}/files/content` | Прочитать |
+| PUT | `/api/pkb/vaults/{id}/files/content` | Записать |
+| POST | `/api/pkb/vaults/{id}/files/upload` | Загрузить |
+| POST | `/api/pkb/vaults/{id}/files/folder` | Папка |
+| PATCH | `/api/pkb/vaults/{id}/files/rename` | Переименовать |
+| DELETE | `/api/pkb/vaults/{id}/files/item` | Удалить |
+
+## Индекс
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| GET | `/api/pkb/vaults/{id}/notes` | Заметки |
+| GET | `/api/pkb/vaults/{id}/notes/by-title` | Заметка по заголовку |
+| GET | `/api/pkb/vaults/{id}/backlinks` | Обратные ссылки |
+| GET | `/api/pkb/vaults/{id}/graph` | Граф |
+| GET | `/api/pkb/vaults/{id}/search` | Поиск |
+| POST | `/api/pkb/vaults/{id}/search/replace` | Замена |
+| GET | `/api/pkb/vaults/{id}/index/status` | Статус индекса |
+| POST | `/api/pkb/vaults/{id}/index/rebuild` | Пересобрать |

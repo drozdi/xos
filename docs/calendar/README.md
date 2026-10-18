@@ -1,11 +1,9 @@
 # Календарь
 
-Личные календари и события. На сетку можно наложить сроки задач, карточек доски и уроки.
+Календари, события и доступ людям и группам.
 
-Доступ: `ROLE_CALENDAR`. Стенд логинится через `/api/calendar/auth`.
+Доступ: `ROLE_CALENDAR`. Код: `server/src/Calendar`, `client/src/apps/calendar`.
 
-Видимость слоёв хранится в `calendar.visibility`.
-
-Код: `server/src/Calendar`, `client/src/apps/calendar`.
+Одно окно календаря. События запрашиваются пачкой на интервал, а не по одному дню.
 
 См. [TZ.md](TZ.md), [API.md](API.md).

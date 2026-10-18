@@ -2,44 +2,82 @@
 
 Префикс `/api/board`. Роль `ROLE_BOARD`.
 
+## Пространство
+
 | Метод | Путь | Назначение |
 |-------|------|------------|
-| GET | `/health` | Проверка модуля |
-| GET, POST | `/workspaces` | Пространства |
-| GET, PUT, DELETE | `/workspaces/{id}` | Карточка |
-| GET, POST | `/workspaces/{id}/members` | Участники |
-| PUT, DELETE | `/workspaces/{id}/members/{userId}` | Роль |
-| POST | `/workspaces/{wsId}/boards` | Создать доску |
-| GET, PUT, DELETE | `/boards/{id}` | Доска |
-| GET | `/boards/{id}/cards` | Карточки доски |
-| GET, POST | `/boards/{id}/members` | Участники доски |
-| PUT, DELETE | `/boards/{id}/members/{userId}` | Роль |
-| GET | `/boards/{id}/activity` | Журнал |
-| GET | `/boards/{id}/changes` | Изменения с `since` |
-| GET | `/boards/{id}/realtime` | Mercure или SSE |
-| GET | `/boards/{id}/events` | Поток SSE |
-| GET | `/search` | Поиск, query `q` и `limit` |
-| POST | `/boards/{id}/lists` | Колонка |
-| PUT, DELETE | `/lists/{id}` | Правка колонки |
-| PUT | `/boards/{id}/lists/reorder` | Порядок колонок |
-| GET | `/cards/due` | Сроки, query `start` и `end` |
-| GET | `/cards/linked` | Связанные карточки |
-| POST | `/lists/{listId}/cards` | Создать карточку |
-| GET, PUT, DELETE | `/cards/{id}` | Карточка |
-| PUT | `/cards/{id}/move` | Перенос |
-| PUT | `/cards/{id}/assignees` | Исполнители |
-| PUT | `/cards/{id}/labels` | Метки |
-| POST | `/boards/{id}/labels` | Создать метку |
-| PUT, DELETE | `/labels/{id}` | Метка |
-| POST | `/cards/{cardId}/checklists` | Чеклист |
-| PUT, DELETE | `/checklists/{id}` | Чеклист |
-| POST | `/checklists/{id}/items` | Пункт |
-| PUT, DELETE | `/checklist-items/{id}` | Пункт |
-| GET, POST | `/cards/{cardId}/comments` | Комментарии |
-| PUT, DELETE | `/comments/{id}` | Комментарий |
-| GET, POST | `/cards/{cardId}/attachments` | Файлы |
-| POST | `/cards/{cardId}/attachments/import` | Импорт файла |
-| GET | `/attachments/{id}/download` | Скачать |
-| DELETE | `/attachments/{id}` | Удалить файл |
+| GET | `/api/board/workspaces` | Список |
+| POST | `/api/board/workspaces` | Создать |
+| GET | `/api/board/workspaces/{id}` | Карточка |
+| PUT | `/api/board/workspaces/{id}` | Изменить |
+| DELETE | `/api/board/workspaces/{id}` | Удалить |
+| GET | `/api/board/workspaces/{id}/members` | Участники |
+| POST | `/api/board/workspaces/{id}/members` | Пригласить |
+| PUT | `/api/board/workspaces/{id}/members/{userId}` | Сменить роль |
+| DELETE | `/api/board/workspaces/{id}/members/{userId}` | Убрать |
+| GET | `/api/board/health` | Живость модуля |
 
-Лимит колонки, шаблоны и внешняя ссылка в этот API не входят: это `/api/user-data`.
+## Доска
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| POST | `/api/board/workspaces/{wsId}/boards` | Создать в пространстве |
+| GET | `/api/board/boards/{id}` | Карточка |
+| PUT | `/api/board/boards/{id}` | Изменить |
+| DELETE | `/api/board/boards/{id}` | Удалить |
+| GET | `/api/board/boards/{id}/cards` | Карточки с фильтром |
+| GET | `/api/board/boards/{id}/members` | Участники |
+| POST | `/api/board/boards/{id}/members` | Добавить |
+| PUT | `/api/board/boards/{id}/members/{userId}` | Сменить роль |
+| DELETE | `/api/board/boards/{id}/members/{userId}` | Убрать |
+| GET | `/api/board/boards/{id}/activity` | Активность |
+| GET | `/api/board/boards/{id}/changes` | Изменения |
+| GET | `/api/board/boards/{id}/realtime` | Канал realtime |
+| GET | `/api/board/boards/{id}/events` | События |
+| GET | `/api/board/search` | Поиск |
+
+## Колонки и метки
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| POST | `/api/board/boards/{id}/lists` | Создать колонку |
+| PUT | `/api/board/lists/{id}` | Изменить |
+| DELETE | `/api/board/lists/{id}` | Удалить |
+| PUT | `/api/board/boards/{id}/lists/reorder` | Порядок колонок |
+| POST | `/api/board/boards/{id}/labels` | Создать метку |
+| PUT | `/api/board/labels/{id}` | Изменить |
+| DELETE | `/api/board/labels/{id}` | Удалить |
+
+## Карточки
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| POST | `/api/board/lists/{listId}/cards` | Создать в колонке |
+| GET | `/api/board/cards/{id}` | Карточка |
+| PUT | `/api/board/cards/{id}` | Изменить |
+| DELETE | `/api/board/cards/{id}` | Удалить |
+| PUT | `/api/board/cards/{id}/move` | Перенести |
+| PUT | `/api/board/cards/{id}/assignees` | Исполнители |
+| PUT | `/api/board/cards/{id}/labels` | Метки |
+| GET | `/api/board/cards/due` | Карточки со сроком |
+| GET | `/api/board/cards/linked` | Связанные |
+
+## Чеклисты, комментарии, вложения
+
+| Метод | Путь | Назначение |
+|-------|------|------------|
+| POST | `/api/board/cards/{cardId}/checklists` | Создать чеклист |
+| PUT | `/api/board/checklists/{id}` | Изменить |
+| DELETE | `/api/board/checklists/{id}` | Удалить |
+| POST | `/api/board/checklists/{id}/items` | Пункт |
+| PUT | `/api/board/checklist-items/{id}` | Изменить пункт |
+| DELETE | `/api/board/checklist-items/{id}` | Удалить пункт |
+| GET | `/api/board/cards/{cardId}/comments` | Комментарии |
+| POST | `/api/board/cards/{cardId}/comments` | Написать |
+| PUT | `/api/board/comments/{id}` | Изменить |
+| DELETE | `/api/board/comments/{id}` | Удалить |
+| GET | `/api/board/cards/{cardId}/attachments` | Вложения |
+| POST | `/api/board/cards/{cardId}/attachments` | Загрузить |
+| POST | `/api/board/cards/{cardId}/attachments/import` | Импорт |
+| GET | `/api/board/attachments/{id}/download` | Скачать |
+| DELETE | `/api/board/attachments/{id}` | Удалить |

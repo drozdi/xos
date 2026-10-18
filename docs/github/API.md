@@ -1,11 +1,13 @@
 # API — GitHub
 
-Роль `ROLE_GITHUB`. Сервер ходит в GitHub сам.
+Префикс `/api/github`. Роль `ROLE_GITHUB`.
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
-| GET, PUT, DELETE | `/api/github/credentials` | Токен и репозиторий по умолчанию |
-| POST | `/api/github/connection/test` | Проверка |
-| GET | `/api/github/issues` | Список. Query: `owner`, `repo`, `state`, `page`, `per_page` |
+| GET | `/api/github/credentials` | Учётные данные |
+| PUT | `/api/github/credentials` | Записать |
+| DELETE | `/api/github/credentials` | Удалить |
+| POST | `/api/github/connection/test` | Проверить токен |
+| GET | `/api/github/issues` | Список issues |
 | GET | `/api/github/issues/{number}` | Карточка |
-| PATCH | `/api/github/issues/{number}` | Название, текст, состояние |
+| PATCH | `/api/github/issues/{number}` | Изменить |

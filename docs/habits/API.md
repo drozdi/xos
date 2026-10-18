@@ -1,10 +1,11 @@
 # API — привычки
 
-Своего префикса нет.
+Своих маршрутов нет.
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
-| GET | `/api/user-data?prefix=habits.` | Прочитать серии |
-| PUT | `/api/user-data` | Тело `{ "code": "habits.streaks", "value": { } }` |
+| GET | `/api/user-data` | Снимок, в нём ключ `habits.streaks` |
+| PUT | `/api/user-data` | Запись `{ code: "habits.streaks", value }` |
+| DELETE | `/api/user-data/habits.streaks` | Сброс |
 
-Значение — объект, где ключ привычки и число дней серии.
+`GET /api/user-data/habits.streaks` отвечает `404`, пока ключ не создан. Клиент поэтому читает общий список.

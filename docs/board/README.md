@@ -1,9 +1,9 @@
 # Доска
 
-Пространства, доски, колонки и карточки.
+Пространства, доски, колонки, карточки, метки, чеклисты, комментарии и вложения.
 
-Доступ: `ROLE_BOARD`, claimant `board` с `can_read` и `can_write`. На пространстве и доске роли: владелец, администратор, редактор, наблюдатель.
+Доступ: `ROLE_BOARD`. Доска общая, активное подразделение её не режет. Код: `server/src/Board`, `client/src/apps/board`.
 
-Код: `server/src/Board`, `client/src/apps/board`, `client/src/features/board`.
+Живые изменения: `GET /api/board/boards/{id}/changes`, `/realtime`, `/events`.
 
 См. [TZ.md](TZ.md), [API.md](API.md).

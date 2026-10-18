@@ -1,11 +1,7 @@
 # TeamStorm
 
-Клиент локального TeamStorm: адрес, токен, список задач.
+Просмотр пространств и задач внешнего TeamStorm. XOS хранит только учётные данные и ходит в API TeamStorm.
 
-Доступ: `ROLE_TS`. Токен на диске зашифрован.
-
-Окно `teamstorm`: вкладки связи и задач. Фильтр «Мои» сопоставляет логин TeamStorm с пользователем XOS. Виджет «Внешние задачи» берёт первые задачи первого пространства.
-
-Код: `server/src/Ts`, `client/src/apps/teamstorm`.
+Доступ: `ROLE_TS`, claimant `ts`. Код: `server/src/Ts`, `client/src/apps/teamstorm`. Виджет `widget-external` показывает те же задачи.
 
 См. [TZ.md](TZ.md), [API.md](API.md).
