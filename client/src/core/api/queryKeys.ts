@@ -147,6 +147,11 @@ export const queryKeys = {
 		vault: (id: number) => ['pkb', 'vault', id] as const,
 		fileTree: (vaultId: number, path?: string) =>
 			['pkb', 'fileTree', vaultId, path ?? ''] as const,
+		/** One folder level (depth 1) of the sidebar tree, loaded on expand. */
+		fileTreeLevel: (vaultId: number, path: string) =>
+			['pkb', 'fileTree', vaultId, path, 'level'] as const,
+		/** Prefix for every fileTree/fileTreeLevel query of the vault. */
+		fileTreeAll: (vaultId: number) => ['pkb', 'fileTree', vaultId] as const,
 		notes: (vaultId: number) => ['pkb', 'notes', vaultId] as const,
 		backlinks: (vaultId: number, path: string) => ['pkb', 'backlinks', vaultId, path] as const,
 		noteByTitle: (vaultId: number, title: string) =>

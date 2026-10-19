@@ -12,7 +12,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconStar, IconStarFilled } from '@tabler/icons-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -101,6 +101,7 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 	const listQuery = useQuery({
 		queryKey: queryKeys.iblock.elements(pagination.listRequest),
 		queryFn: () => iblockElementApi.list(pagination.listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead && isReady && Boolean(userQuery.data?.id),
 	});
 
@@ -176,6 +177,7 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 					const cover = row.cover as { id: number; src: string; name: string } | null | undefined;
 					return cover?.id ? (
 						<AuthFileImage
+							lazy
 							fileId={cover.id}
 							h={32}
 							w={32}

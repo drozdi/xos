@@ -1,6 +1,6 @@
 import { Alert, Button, Group, Select, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 
@@ -48,6 +48,7 @@ export default function SchooltaskHomeworksApp() {
 				to,
 				class_id: classId ? Number(classId) : undefined,
 			}),
+		placeholderData: keepPreviousData,
 		enabled: canAccess && Boolean(from && to),
 	});
 

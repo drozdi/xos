@@ -15,9 +15,9 @@ import { Window } from './Window';
 import { WindowErrorBoundary } from './WindowErrorBoundary';
 import { WindowManagerViewportContext } from './WindowManagerContext';
 import { useWmStore } from './useWmStore';
-import type { WindowState } from './types';
+import { selectContentWindow, selectVisibleWindowIds, type ContentWindow } from './windowSelectors';
 
-const AppWindowContent = memo(({ window }: { window: WindowState }) => {
+const AppWindowContent = memo(({ window }: { window: ContentWindow }) => {
 	const manifest = AppRegistry.get(window.appId);
 	const coreApi = getOrCreateCoreApi(window.id, window.appId);
 	const isWidget = (window.shellRole ?? manifest?.shellRole) === 'widget';
@@ -54,7 +54,7 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 	const AppComponent = manifest.component;
 
 	const fallback = isWidget ? (
-		<WidgetSkeleton compact={window.height < 90} />
+		<WidgetSkeleton compact={window.compact} />
 	) : (
 		<Box p="md">
 			<Loader size="sm" />
@@ -81,26 +81,41 @@ const AppWindowContent = memo(({ window }: { window: WindowState }) => {
 	);
 });
 
+function resetWindowContent(windowId: string) {
+	const current = useWmStore.getState().windows[windowId];
+	if (!current) {return;}
+	useWmStore.getState().updateWindow(windowId, {
+		contentKey: current.contentKey + 1,
+	});
+}
+
+const WindowSlot = memo(({ windowId }: { windowId: string }) => {
+	const content = useWmStore(useShallow((state) => selectContentWindow(state.windows[windowId])));
+	const handleReset = useCallback(() => resetWindowContent(windowId), [windowId]);
+
+	if (!content) {
+		return null;
+	}
+
+	return (
+		<Window windowId={windowId}>
+			<WindowErrorBoundary onReset={handleReset}>
+				<AppWindowContent key={content.contentKey} window={content} />
+			</WindowErrorBoundary>
+		</Window>
+	);
+});
+
 export function WindowManager() {
 	const { ref: containerRef, width, height } = useElementSize<HTMLDivElement>();
+	const roundedWidth = Math.round(width ?? 0);
+	const roundedHeight = Math.round(height ?? 0);
 	const viewport = useMemo(
-		() => ({ width: width ?? 0, height: height ?? 0 }),
-		[width, height],
+		() => ({ width: roundedWidth, height: roundedHeight }),
+		[roundedWidth, roundedHeight],
 	);
 
-	const visibleWindows = useWmStore(
-		useShallow((state) =>
-			Object.values(state.windows).filter((window) => !window.minimized),
-		),
-	);
-
-	const resetWindowContent = useCallback((windowId: string) => {
-		const current = useWmStore.getState().windows[windowId];
-		if (!current) {return;}
-		useWmStore.getState().updateWindow(windowId, {
-			contentKey: current.contentKey + 1,
-		});
-	}, []);
+	const visibleWindowIds = useWmStore(useShallow(selectVisibleWindowIds));
 
 	return (
 		<WindowManagerViewportContext.Provider value={viewport}>
@@ -112,12 +127,8 @@ export function WindowManager() {
 					pointerEvents: 'none',
 				}}
 			>
-				{visibleWindows.map((window) => (
-					<Window key={window.id} windowId={window.id}>
-						<WindowErrorBoundary onReset={() => resetWindowContent(window.id)}>
-							<AppWindowContent key={window.contentKey} window={window} />
-						</WindowErrorBoundary>
-					</Window>
+				{visibleWindowIds.map((windowId) => (
+					<WindowSlot key={windowId} windowId={windowId} />
 				))}
 			</Box>
 		</WindowManagerViewportContext.Provider>

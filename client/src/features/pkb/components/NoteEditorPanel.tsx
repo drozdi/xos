@@ -392,7 +392,7 @@ export function NoteEditorPanel({
 		mutationFn: ({ folderPath, file }: { folderPath: string; file: File }) =>
 			pkbApi.uploadFile(vaultId, folderPath, file),
 		onSuccess: async (entry) => {
-			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTree(vaultId) });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTreeAll(vaultId) });
 			if (!filePath) {
 				return;
 			}

@@ -1,6 +1,6 @@
 import { Box, Loader, Paper, Stack, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { type BoardSearchCard, boardApi } from '@/core/api/endpoints/boardApi';
@@ -23,6 +23,7 @@ export function BoardGlobalSearch({ onOpenCard }: BoardGlobalSearchProps) {
 	const searchQuery = useQuery({
 		queryKey: queryKeys.board.search(debounced),
 		queryFn: () => boardApi.search(debounced),
+		placeholderData: keepPreviousData,
 		enabled: debounced.length >= 2,
 	});
 

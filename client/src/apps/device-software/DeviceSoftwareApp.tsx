@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { deviceSoftwareApi, deviceSoftwareTypeApi, type SoftwareDetail } from '@/core/api/endpoints/deviceApi';
+import { queryKeys } from '@/core/api/queryKeys';
 import {
 	canCreateDeviceSoftware,
 	useCanDeleteDeviceSoftware,
@@ -31,7 +32,7 @@ export default function DeviceSoftwareApp() {
 	const isNew = entityId === 0;
 
 	const typesQuery = useQuery({
-		queryKey: ['device', 'softwareTypes', 'select'],
+		queryKey: queryKeys.device.softwareTypes({ limit: -1, offset: 1 }),
 		queryFn: () => deviceSoftwareTypeApi.list({ limit: -1, offset: 1 }),
 	});
 

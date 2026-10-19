@@ -1,6 +1,6 @@
 import { Alert, Badge, Button, Group, Select, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -54,6 +54,7 @@ export default function RecipesApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.iblock.elements(pagination.listRequest),
 		queryFn: () => iblockElementApi.list(pagination.listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead && isReady && Boolean(userQuery.data?.id),
 	});
 
@@ -75,6 +76,7 @@ export default function RecipesApp() {
 				render: (row: { cover?: { id: number; src: string; name: string } | null }) =>
 					row.cover?.id ? (
 						<AuthFileImage
+							lazy
 							fileId={row.cover.id}
 							alt={row.cover.name}
 							h={32}

@@ -2,6 +2,7 @@ import {
 	ActionIcon,
 	Box,
 	Group,
+	Loader,
 	Menu,
 	Text,
 	TextInput,
@@ -17,11 +18,14 @@ import {
 	IconPhoto,
 	IconPencil,
 } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-import type { PkbFileTreeNode } from '@/core/api/endpoints/pkbApi';
+import { pkbApi, type PkbFileTreeNode } from '@/core/api/endpoints/pkbApi';
+import { queryKeys } from '@/core/api/queryKeys';
 
 interface VaultFileTreeProps {
+	vaultId: number;
 	nodes: PkbFileTreeNode[];
 	selectedPath: string | null;
 	onSelectFile: (path: string) => void;
@@ -57,6 +61,7 @@ function buildSiblingPath(fromPath: string, newName: string): string {
 }
 
 function VaultFileTreeNode({
+	vaultId,
 	node,
 	selectedPath,
 	onSelectFile,
@@ -69,6 +74,7 @@ function VaultFileTreeNode({
 	onStartRename,
 	onCancelRename,
 }: {
+	vaultId: number;
 	node: PkbFileTreeNode;
 	selectedPath: string | null;
 	onSelectFile: (path: string) => void;
@@ -127,6 +133,25 @@ function VaultFileTreeNode({
 	};
 
 	const indent = level === 0 ? 0 : `calc(0.5rem * ${level})`;
+
+	const renderChildren = (children: PkbFileTreeNode[]) =>
+		children.map((child) => (
+			<VaultFileTreeNode
+				key={child.path || child.name}
+				vaultId={vaultId}
+				node={child}
+				selectedPath={selectedPath}
+				onSelectFile={onSelectFile}
+				onToggleFolder={onToggleFolder}
+				expandedPaths={expandedPaths}
+				level={level + 1}
+				canEdit={canEdit}
+				onRename={onRename}
+				renamingPath={renamingPath}
+				onStartRename={onStartRename}
+				onCancelRename={onCancelRename}
+			/>
+		));
 
 	return (
 		<Box>
@@ -233,29 +258,59 @@ function VaultFileTreeNode({
 					</>
 				)}
 			</Group>
-			{isFolder &&
-				isExpanded &&
-				node.children?.map((child) => (
-					<VaultFileTreeNode
-						key={child.path || child.name}
-						node={child}
-						selectedPath={selectedPath}
-						onSelectFile={onSelectFile}
-						onToggleFolder={onToggleFolder}
-						expandedPaths={expandedPaths}
+			{isFolder && isExpanded ? (
+				node.children ? (
+					renderChildren(node.children)
+				) : (
+					<LazyFolderChildren
+						vaultId={vaultId}
+						path={node.path}
 						level={level + 1}
-						canEdit={canEdit}
-						onRename={onRename}
-						renamingPath={renamingPath}
-						onStartRename={onStartRename}
-						onCancelRename={onCancelRename}
+						renderChildren={renderChildren}
 					/>
-				))}
+				)
+			) : null}
 		</Box>
 	);
 }
 
+/** Folders past the loaded depth come without `children`; fetch one level on expand. */
+function LazyFolderChildren({
+	vaultId,
+	path,
+	level,
+	renderChildren,
+}: {
+	vaultId: number;
+	path: string;
+	level: number;
+	renderChildren: (children: PkbFileTreeNode[]) => ReactNode;
+}) {
+	const query = useQuery({
+		queryKey: queryKeys.pkb.fileTreeLevel(vaultId, path),
+		queryFn: () => pkbApi.fileTree(vaultId, path, 1),
+	});
+	const indent = `calc(0.5rem * ${level} + 20px)`;
+
+	if (query.isPending) {
+		return (
+			<Box py={4} style={{ paddingLeft: indent }}>
+				<Loader size="xs" />
+			</Box>
+		);
+	}
+	if (query.isError) {
+		return (
+			<Text size="xs" c="red" py={2} style={{ paddingLeft: indent }}>
+				Не удалось загрузить папку
+			</Text>
+		);
+	}
+	return <>{renderChildren(query.data.children ?? [])}</>;
+}
+
 export function VaultFileTree({
+	vaultId,
 	nodes,
 	selectedPath,
 	onSelectFile,
@@ -272,6 +327,7 @@ export function VaultFileTree({
 			{nodes.map((node) => (
 				<VaultFileTreeNode
 					key={node.path || node.name}
+					vaultId={vaultId}
 					node={node}
 					selectedPath={selectedPath}
 					onSelectFile={onSelectFile}

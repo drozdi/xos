@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useDebouncedValue } from '@mantine/hooks';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { boardApi } from '@/core/api/endpoints/boardApi';
@@ -13,6 +14,8 @@ import {
 	emptyBoardUiFilters,
 	type BoardUiFilters,
 } from '../boardPrefs';
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 export function useBoardFilters(boardId: number) {
 	const [filters, setFiltersState] = useState<BoardUiFilters>(emptyBoardUiFilters);
@@ -70,12 +73,15 @@ export function useBoardFilters(boardId: number) {
 		return () => window.clearTimeout(timer);
 	}, [boardId, filters, restored]);
 
-	const hasActiveFilters = isBoardFiltersActive(filters);
-	const apiParams = useMemo(() => toBoardFilterApiParams(filters), [filters]);
+	const [debouncedQ] = useDebouncedValue(filters.q, SEARCH_DEBOUNCE_MS);
+	const queryFilters = useMemo(() => ({ ...filters, q: debouncedQ }), [filters, debouncedQ]);
+	const hasActiveFilters = isBoardFiltersActive(queryFilters);
+	const apiParams = useMemo(() => toBoardFilterApiParams(queryFilters), [queryFilters]);
 
 	const filterQuery = useQuery({
 		queryKey: queryKeys.board.filter(boardId, apiParams),
 		queryFn: () => boardApi.filterCards(boardId, apiParams),
+		placeholderData: keepPreviousData,
 		enabled: restored && hasActiveFilters,
 	});
 

@@ -3,8 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SettingCategory } from './adapters/ISettingAdapter';
 import { settingManager } from './SettingManager';
 
+/** Pending call is flushed on unmount so closing a panel never drops a write. */
 function useDebouncedCallback<T extends (...args: never[]) => void>(callback: T, delay: number): T {
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pendingArgsRef = useRef<Parameters<T> | null>(null);
 	const callbackRef = useRef(callback);
 
 	useEffect(() => {
@@ -16,6 +18,11 @@ function useDebouncedCallback<T extends (...args: never[]) => void>(callback: T,
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
 			}
+			const pending = pendingArgsRef.current;
+			pendingArgsRef.current = null;
+			if (pending) {
+				callbackRef.current(...pending);
+			}
 		},
 		[],
 	);
@@ -25,7 +32,9 @@ function useDebouncedCallback<T extends (...args: never[]) => void>(callback: T,
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
 			}
+			pendingArgsRef.current = args;
 			timeoutRef.current = setTimeout(() => {
+				pendingArgsRef.current = null;
 				callbackRef.current(...args);
 			}, delay);
 		}) as T,
@@ -181,6 +190,9 @@ export function useSetState<T>(
 	}, [category, key]);
 
 	const persist = useDebouncedCallback((next: T) => {
+		if (!settingManager.isInitialized()) {
+			return;
+		}
 		void settingManager.set(category, key, next);
 	}, 300);
 

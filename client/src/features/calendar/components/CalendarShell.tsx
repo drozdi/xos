@@ -1,6 +1,6 @@
 import { Alert, Group, Loader, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { isAxiosError } from 'axios';
 
@@ -106,18 +106,21 @@ export function CalendarShell({ initialDate }: { initialDate?: string }) {
 				end: range!.end,
 				calendar_ids: visibleOwnIds,
 			}),
+		placeholderData: keepPreviousData,
 		enabled: canUseCalendar() && range !== null && visibleOwnIds.length > 0,
 	});
 
 	const dueQuery = useQuery({
 		queryKey: queryKeys.calendar.dueItems(range ?? { start: '', end: '' }),
 		queryFn: () => todoApi.dueItems(range!.start, range!.end),
+		placeholderData: keepPreviousData,
 		enabled: canUseCalendar() && range !== null && isVisible(OVERLAY_TODO_ID),
 	});
 
 	const boardDueQuery = useQuery({
 		queryKey: queryKeys.calendar.boardDueCards(range ?? { start: '', end: '' }),
 		queryFn: () => boardApi.dueCards(range!.start, range!.end),
+		placeholderData: keepPreviousData,
 		enabled: canUseCalendar() && canUseBoard() && range !== null && isVisible(OVERLAY_BOARD_ID),
 	});
 

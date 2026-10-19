@@ -1,6 +1,6 @@
 import { Alert } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -32,6 +32,7 @@ export default function DeviceTypesApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.device.types(pagination.listRequest),
 		queryFn: () => deviceTypeApi.list(pagination.listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead,
 	});
 

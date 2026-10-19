@@ -1,6 +1,6 @@
 import { Alert } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -30,6 +30,7 @@ export default function MainOusApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.ous(pagination.listRequest),
 		queryFn: () => mainOuApi.list(pagination.listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead,
 	});
 

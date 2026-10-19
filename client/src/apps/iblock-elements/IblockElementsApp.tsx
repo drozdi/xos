@@ -1,6 +1,6 @@
 import { Alert, Select, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -56,6 +56,7 @@ export default function IblockElementsApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.iblock.elements(pagination.listRequest),
 		queryFn: () => iblockElementApi.list(pagination.listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead,
 	});
 

@@ -1,5 +1,5 @@
 import { Alert, Box } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
@@ -22,6 +22,7 @@ export default function SchooltaskCalendarTeacherApp() {
 	const eventsQuery = useQuery({
 		queryKey: queryKeys.schooltask.teacherEvents(range),
 		queryFn: () => schooltaskCalendarApi.teacherEvents(range),
+		placeholderData: keepPreviousData,
 		enabled: canRead || canUpdate,
 	});
 

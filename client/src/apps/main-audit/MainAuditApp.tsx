@@ -1,5 +1,5 @@
 import { Alert, Select, Stack, TextInput } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -38,6 +38,7 @@ export default function MainAuditApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.main.audit(pagination.listRequest),
 		queryFn: () => mainAuditApi.list(pagination.listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead,
 	});
 

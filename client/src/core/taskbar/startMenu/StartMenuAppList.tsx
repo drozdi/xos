@@ -156,7 +156,7 @@ function GroupSection({
 
 export function StartMenuAppList({ onClose, isPinned, onPin }: StartMenuAppListProps) {
 	const launchApp = useAppManager((state) => state.launchApp);
-	const groups = buildAppTree(AppRegistry.getAvailable());
+	const groups = useMemo(() => buildAppTree(AppRegistry.getAvailable()), []);
 	const [query, setQuery] = useState('');
 	const normalized = query.trim().toLocaleLowerCase('ru');
 	const visibleGroups = useMemo(() => {

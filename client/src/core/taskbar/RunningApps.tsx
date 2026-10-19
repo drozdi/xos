@@ -6,6 +6,7 @@ import { useContextMenuAnchor, useContextMenuItems } from '@/core/contextMenu';
 import { getWindowApi } from '@/core/windowManager/windowApiRegistry';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 import type { WindowState } from '@/core/windowManager/types';
+import { selectTaskbarSignature } from '@/core/windowManager/windowSelectors';
 
 import { getTaskbarGroupLabel } from './groupLabels';
 import {
@@ -174,16 +175,13 @@ function TaskbarGroupButton({
 }
 
 export function RunningApps() {
-	const windows = useWmStore((state) => state.windows);
+	const signature = useWmStore(selectTaskbarSignature);
 	const activeWindowId = useWmStore((state) => state.activeWindowId);
-	const focusWindow = useWmStore((state) => state.focusWindow);
-	const restoreWindow = useWmStore((state) => state.restoreWindow);
-	const minimizeGroup = useWmStore((state) => state.minimizeGroup);
-	const restoreGroup = useWmStore((state) => state.restoreGroup);
+	const { focusWindow, restoreWindow, minimizeGroup, restoreGroup } = useWmStore.getState();
 
 	const groups = useMemo(
-		() => groupWindowsByTaskbarGroup(Object.values(windows)),
-		[windows],
+		() => groupWindowsByTaskbarGroup(Object.values(useWmStore.getState().windows)),
+		[signature],
 	);
 
 	if (groups.length === 0) {

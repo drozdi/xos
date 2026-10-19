@@ -14,24 +14,27 @@ interface WindowContextMenuProps {
 
 export function WindowContextMenu({ windowId, windowState, children }: WindowContextMenuProps) {
 	const manifest = AppRegistry.get(windowState.appId);
+	const { appId, instanceKey, title, minimized, maximized, props } = windowState;
+	// Geometry and zIndex change on every drag/focus; menu items depend only on these fields.
+	const menuWindow = useMemo(() => windowState, [appId, instanceKey, title, minimized, maximized, props]);
 	const items = useContextMenuItems({
 		scope: 'window',
-		appId: windowState.appId,
+		appId,
 		windowId,
-		instanceKey: windowState.instanceKey,
-		window: windowState,
+		instanceKey,
+		window: menuWindow,
 	});
 
 	const context = useMemo(
 		() => ({
 			scope: 'window' as const,
-			appId: windowState.appId,
+			appId,
 			manifest: manifest!,
 			windowId,
-			instanceKey: windowState.instanceKey,
-			window: windowState,
+			instanceKey,
+			window: menuWindow,
 		}),
-		[manifest, windowId, windowState],
+		[manifest, windowId, appId, instanceKey, menuWindow],
 	);
 
 	if (!manifest) {

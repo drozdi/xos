@@ -3,7 +3,7 @@ import { Text } from '@mantine/core';
 import type { WindowState } from './types';
 
 interface DemoWindowContentProps {
-	window: WindowState;
+	window: Pick<WindowState, 'appId' | 'title'>;
 }
 
 export function DemoWindowContent({ window }: DemoWindowContentProps) {

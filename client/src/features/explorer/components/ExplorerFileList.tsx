@@ -1,5 +1,7 @@
 import { Box, ScrollArea, Table } from '@mantine/core';
-import type { MouseEvent } from 'react';
+import { memo, useMemo, type MouseEvent, type Ref } from 'react';
+
+import { useWindowedRows } from '@/components/table/hooks/use-windowed-rows';
 
 import type { ExplorerEntry } from '../explorerApi';
 import { isExplorerParentEntry } from '../explorerPathUtils';
@@ -21,6 +23,46 @@ interface ExplorerFileListProps {
 	onOpen: (entry: ExplorerEntry) => void | Promise<void>;
 }
 
+const COLUMN_COUNT = 4;
+
+function SpacerRow({ ref, height }: { ref?: Ref<HTMLTableRowElement>; height: number }) {
+	return (
+		<tr ref={ref} aria-hidden style={{ height }}>
+			<td colSpan={COLUMN_COUNT} style={{ padding: 0, border: 0 }} />
+		</tr>
+	);
+}
+
+const ExplorerFileRow = memo(({
+	entry,
+	path,
+	index,
+	selected,
+	onSelect,
+	onOpen,
+}: {
+	entry: ExplorerEntry;
+	path: string;
+	index: number;
+	selected: boolean;
+	onSelect: ExplorerFileListProps['onSelect'];
+	onOpen: ExplorerFileListProps['onOpen'];
+}) => {
+	const isParent = isExplorerParentEntry(entry);
+	return (
+		<Table.Tr
+			bg={selected ? 'var(--mantine-color-blue-light)' : undefined}
+			onClick={(event) => onSelect(path, index, event)}
+			onDoubleClick={() => void onOpen(entry)}
+		>
+			<Table.Td>{isParent ? '..' : entry.name}</Table.Td>
+			<Table.Td>{entry.type === 'folder' ? 'Папка' : entry.fileType}</Table.Td>
+			<Table.Td>{entry.type === 'folder' ? '—' : entry.size}</Table.Td>
+			<Table.Td>{isParent ? '—' : entry.permissions.join(', ')}</Table.Td>
+		</Table.Tr>
+	);
+});
+
 export function ExplorerFileList({
 	items,
 	currentPath,
@@ -32,12 +74,22 @@ export function ExplorerFileList({
 	onSelect,
 	onOpen,
 }: ExplorerFileListProps) {
-	const rows = items.map((entry, index) => {
-		const path = entry.path ?? `${parseDisk(currentPath)}://${entry.relativePath}`;
-		return { entry, path, index };
-	});
+	const rows = useMemo(() => {
+		const disk = parseDisk(currentPath);
+		return items.map((entry, index) => ({
+			entry,
+			path: entry.path ?? `${disk}://${entry.relativePath}`,
+			index,
+		}));
+	}, [items, currentPath, parseDisk]);
 
-	const selectedEntries = rows.filter((row) => selected.includes(row.path)).map((row) => row.entry);
+	const selectedSet = useMemo(() => new Set(selected), [selected]);
+	const selectedEntries = useMemo(
+		() => rows.filter((row) => selectedSet.has(row.path)).map((row) => row.entry),
+		[rows, selectedSet],
+	);
+	const windowed = useWindowedRows(rows.length, viewMode !== 'icons');
+	const visibleRows = windowed.active ? rows.slice(windowed.start, windowed.end) : rows;
 
 	const { onContextMenu, menu } = useExplorerContextMenu({
 		...menuContext,
@@ -55,7 +107,7 @@ export function ExplorerFileList({
 				{viewMode === 'icons' ? (
 					<ExplorerFileIconGrid
 						rows={rows}
-						selected={selected}
+						selected={selectedSet}
 						onSelect={onSelect}
 						onOpen={onOpen}
 					/>
@@ -70,22 +122,26 @@ export function ExplorerFileList({
 							</Table.Tr>
 						</Table.Thead>
 						<Table.Tbody>
-							{rows.map(({ entry, path, index }) => {
-								const isSelected = selected.includes(path);
-								return (
-									<Table.Tr
-										key={path}
-										bg={isSelected ? 'var(--mantine-color-blue-light)' : undefined}
-										onClick={(event) => onSelect(path, index, event)}
-										onDoubleClick={() => void onOpen(entry)}
-									>
-										<Table.Td>{isExplorerParentEntry(entry) ? '..' : entry.name}</Table.Td>
-										<Table.Td>{entry.type === 'folder' ? 'Папка' : entry.fileType}</Table.Td>
-										<Table.Td>{entry.type === 'folder' ? '—' : entry.size}</Table.Td>
-										<Table.Td>{isExplorerParentEntry(entry) ? '—' : entry.permissions.join(', ')}</Table.Td>
-									</Table.Tr>
-								);
-							})}
+							{windowed.active && (
+								<>
+									<SpacerRow height={0} />
+									<SpacerRow ref={windowed.topSpacerRef} height={windowed.topHeight} />
+								</>
+							)}
+							{visibleRows.map(({ entry, path, index }) => (
+								<ExplorerFileRow
+									key={path}
+									entry={entry}
+									path={path}
+									index={index}
+									selected={selectedSet.has(path)}
+									onSelect={onSelect}
+									onOpen={onOpen}
+								/>
+							))}
+							{windowed.active && (
+								<SpacerRow ref={windowed.bottomSpacerRef} height={windowed.bottomHeight} />
+							)}
 						</Table.Tbody>
 					</Table>
 				)}

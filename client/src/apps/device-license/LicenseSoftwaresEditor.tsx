@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { deviceSoftwareApi, deviceSoftwareTypeApi } from '@/core/api/endpoints/deviceApi';
+import { queryKeys } from '@/core/api/queryKeys';
 import { nextTempId } from '@/features/device/deviceAppUtils';
 
 import {
@@ -35,7 +36,7 @@ export function LicenseSoftwaresEditor({
 	onChange,
 }: LicenseSoftwaresEditorProps) {
 	const typesQuery = useQuery({
-		queryKey: ['device', 'softwareTypes', 'license-editor'],
+		queryKey: queryKeys.device.softwareTypes({ limit: -1, offset: 1 }),
 		queryFn: () => deviceSoftwareTypeApi.list({ limit: -1, offset: 1 }),
 	});
 

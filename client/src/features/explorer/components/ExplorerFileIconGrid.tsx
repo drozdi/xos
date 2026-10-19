@@ -8,7 +8,7 @@ import { ExplorerEntryThumbnail } from './ExplorerEntryThumbnail';
 
 interface ExplorerFileIconGridProps {
 	rows: Array<{ entry: ExplorerEntry; path: string; index: number }>;
-	selected: string[];
+	selected: ReadonlySet<string>;
 	onSelect: (path: string, index: number, event: MouseEvent) => void;
 	onOpen: (entry: ExplorerEntry) => void | Promise<void>;
 }
@@ -24,7 +24,7 @@ export function ExplorerFileIconGrid({ rows, selected, onSelect, onOpen }: Explo
 			}}
 		>
 			{rows.map(({ entry, path, index }) => {
-				const isSelected = selected.includes(path);
+				const isSelected = selected.has(path);
 
 				return (
 					<UnstyledButton

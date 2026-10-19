@@ -1,8 +1,7 @@
 import { Box } from '@mantine/core';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
-import { settingManager } from '@/core/settings/SettingManager';
 import { useSetState } from '@/core/settings/hooks';
 
 import { resolvePinnedApps } from './buildAppTree';
@@ -20,15 +19,8 @@ interface StartMenuPanelProps {
 	onClose: () => void;
 }
 
-function persistPinnedIds(next: string[]) {
-	if (!settingManager.isInitialized()) {
-		return;
-	}
-	void settingManager.set('USER', START_MENU_SETTING_KEYS.pinnedApps, next);
-}
-
 export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
-	const availableApps = AppRegistry.getAvailable();
+	const availableApps = useMemo(() => AppRegistry.getAvailable(), []);
 	const [pinnedIds, setPinnedIds] = useSetState<string[]>(
 		'USER',
 		START_MENU_SETTING_KEYS.pinnedApps,
@@ -44,9 +36,7 @@ export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
 				if (prev.includes(appId)) {
 					return prev;
 				}
-				const next = [...prev, appId];
-				persistPinnedIds(next);
-				return next;
+				return [...prev, appId];
 			});
 		},
 		[setPinnedIds],
@@ -56,11 +46,7 @@ export function StartMenuPanel({ onClose }: StartMenuPanelProps) {
 		(appId: string) => {
 			setPinnedIds((prev) => {
 				const next = prev.filter((id) => id !== appId);
-				if (next.length === prev.length) {
-					return prev;
-				}
-				persistPinnedIds(next);
-				return next;
+				return next.length === prev.length ? prev : next;
 			});
 		},
 		[setPinnedIds],

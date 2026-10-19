@@ -1,6 +1,6 @@
 import { Box, Group, Text } from '@mantine/core';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
 
@@ -8,7 +8,7 @@ import { RunningApps } from './RunningApps';
 import { StartMenu } from './StartMenu';
 import { NotificationCenterButton } from '@/core/notifications';
 
-export function Taskbar() {
+const TaskbarClock = memo(() => {
 	const [now, setNow] = useState(() => dayjs());
 
 	useEffect(() => {
@@ -16,6 +16,14 @@ export function Taskbar() {
 		return () => window.clearInterval(timer);
 	}, []);
 
+	return (
+		<Text size="xs" c="dimmed">
+			{now.format('HH:mm')}
+		</Text>
+	);
+});
+
+export function Taskbar() {
 	return (
 		<Box
 			style={{
@@ -35,9 +43,7 @@ export function Taskbar() {
 				<RunningApps />
 				<Group gap="sm" wrap="nowrap" ml="auto">
 					<NotificationCenterButton />
-					<Text size="xs" c="dimmed">
-						{now.format('HH:mm')}
-					</Text>
+					<TaskbarClock />
 				</Group>
 			</Group>
 		</Box>

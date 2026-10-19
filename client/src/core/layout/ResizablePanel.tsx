@@ -73,6 +73,19 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 		[widthCollapsed, width],
 	);
 
+	const pendingWidth = useRef<number | null>(null);
+	const frame = useRef(0);
+
+	const flushPendingWidth = useCallback(() => {
+		frame.current = 0;
+		if (pendingWidth.current === null) {return;}
+		const next = pendingWidth.current;
+		pendingWidth.current = null;
+		applyWidth(next);
+	}, [applyWidth]);
+
+	useEffect(() => () => cancelAnimationFrame(frame.current), []);
+
 	const handlePointerMove = useCallback(
 		(event: React.PointerEvent<HTMLDivElement>) => {
 			if (!dragging.current) {return;}
@@ -80,15 +93,20 @@ export function ResizablePanel({ side, areaName, children }: ResizablePanelProps
 			const delta = side === 'left'
 				? event.clientX - dragStartX.current
 				: dragStartX.current - event.clientX;
-			applyWidth(dragStartWidth.current + delta);
+			pendingWidth.current = Math.round(dragStartWidth.current + delta);
+			if (frame.current === 0) {
+				frame.current = requestAnimationFrame(flushPendingWidth);
+			}
 		},
-		[applyWidth, side],
+		[flushPendingWidth, side],
 	);
 
 	const handlePointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
 		dragging.current = false;
+		cancelAnimationFrame(frame.current);
+		flushPendingWidth();
 		event.currentTarget.releasePointerCapture(event.pointerId);
-	}, []);
+	}, [flushPendingWidth]);
 
 	const expandFromCollapsed = useCallback(() => {
 		const restored = Math.max(lastExpandedWidth.current, MIN_PANEL_WIDTH);

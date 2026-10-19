@@ -119,8 +119,8 @@ export function VaultWorkspacePage({
 	const vaultReady = vaultQuery.isSuccess;
 
 	const treeQuery = useQuery({
-		queryKey: queryKeys.pkb.fileTree(vaultId),
-		queryFn: () => pkbApi.fileTree(vaultId, undefined, 8),
+		queryKey: queryKeys.pkb.fileTreeLevel(vaultId, ''),
+		queryFn: () => pkbApi.fileTree(vaultId, undefined, 1),
 		enabled: vaultReady,
 	});
 
@@ -168,7 +168,7 @@ export function VaultWorkspacePage({
 			return path;
 		},
 		onSuccess: async (path) => {
-			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTree(vaultId) });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTreeAll(vaultId) });
 			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.notes(vaultId) });
 			handleNavigateNote(path);
 		},
@@ -182,7 +182,7 @@ export function VaultWorkspacePage({
 		mutationFn: ({ fromPath, toPath }: { fromPath: string; toPath: string }) =>
 			pkbApi.renameFile(vaultId, fromPath, toPath),
 		onSuccess: async (entry, { fromPath }) => {
-			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTree(vaultId) });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTreeAll(vaultId) });
 			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.notes(vaultId) });
 			if (selectedPath === fromPath || selectedPath?.startsWith(`${fromPath}/`)) {
 				const nextPath =
@@ -453,6 +453,7 @@ export function VaultWorkspacePage({
 							</Alert>
 						) : (
 							<VaultFileTree
+								vaultId={vaultId}
 								nodes={treeNodes}
 								selectedPath={selectedPath}
 								onSelectFile={setSelectedPath}

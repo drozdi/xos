@@ -81,12 +81,9 @@ const DRAG_START_EMIT_PX = 5;
 
 function WindowComponent({ windowId, children }: WindowProps) {
 	const windowState = useWmStore((state) => state.windows[windowId]);
-	const focusWindow = useWmStore((state) => state.focusWindow);
-	const updateWindow = useWmStore((state) => state.updateWindow);
-	const minimizeWindow = useWmStore((state) => state.minimizeWindow);
-	const maximizeWindow = useWmStore((state) => state.maximizeWindow);
-	const restoreWindow = useWmStore((state) => state.restoreWindow);
-	const activeWindowId = useWmStore((state) => state.activeWindowId);
+	const isActive = useWmStore((state) => state.activeWindowId === windowId);
+	const { focusWindow, updateWindow, minimizeWindow, maximizeWindow, restoreWindow } =
+		useWmStore.getState();
 
 	const isMobile = useMediaQuery(MOBILE_BREAKPOINT, false, { getInitialValueInEffect: true });
 	const [isDragging, setIsDragging] = useState(false);
@@ -220,10 +217,10 @@ function WindowComponent({ windowId, children }: WindowProps) {
 	}, [contentSizeValue.width, contentSizeValue.height, windowId]);
 
 	useEffect(() => {
-		if (activeWindowId === windowId) {
+		if (isActive) {
 			emitWindowFocus(windowId);
 		}
-	}, [activeWindowId, windowId]);
+	}, [isActive, windowId]);
 
 	const resizable = windowState?.resizable ?? true;
 	const positionFixed = windowState?.positionFixed ?? false;
@@ -269,22 +266,30 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		if (!outer) {
 			return;
 		}
+		let frame = 0;
 		const sync = () => {
 			rndRef.current?.updateSize({
 				width: windowState.width,
 				height: windowState.height,
 			});
 		};
-		const ro = new ResizeObserver(() => {
-			sync();
-		});
+		const scheduleSync = () => {
+			if (frame !== 0) {
+				return;
+			}
+			frame = requestAnimationFrame(() => {
+				frame = 0;
+				sync();
+			});
+		};
+		const ro = new ResizeObserver(scheduleSync);
 		ro.observe(outer);
-		const mo = new MutationObserver(() => {
-			sync();
-		});
+		// Lazy content swaps skeleton → app without resizing the outer box.
+		const mo = new MutationObserver(scheduleSync);
 		mo.observe(outer, { childList: true, subtree: true });
 		sync();
 		return () => {
+			cancelAnimationFrame(frame);
 			ro.disconnect();
 			mo.disconnect();
 		};

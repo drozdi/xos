@@ -1,6 +1,6 @@
 import { Alert, Button, Checkbox, Group } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -42,6 +42,7 @@ export default function SchooltaskClassesApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.schooltask.classes(listRequest),
 		queryFn: () => schooltaskClassApi.list(listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead,
 	});
 
@@ -80,9 +81,7 @@ export default function SchooltaskClassesApp() {
 		mutationFn: (id: number) => schooltaskClassApi.remove(id),
 		onSuccess: () => {
 			notifications.show({ message: 'Удалено', color: 'green' });
-			void queryClient.invalidateQueries({
-				queryKey: queryKeys.schooltask.classes(pagination.listRequest),
-			});
+			void queryClient.invalidateQueries({ queryKey: ['schooltask', 'classes'] });
 		},
 		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
 	});

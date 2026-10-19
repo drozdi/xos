@@ -1,7 +1,7 @@
 import { ActionIcon, Box, Button, Group, Stack, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { queryKeys } from '@/core/api/queryKeys';
@@ -182,6 +182,7 @@ export function ExplorerWorkspace({ initialPath, pickerMode }: ExplorerWorkspace
 			: queryKeys.explorer.list(currentPath, sortBy, sortDir),
 		queryFn: () =>
 			isTrashView ? fetchExplorerTrash(diskRoot).then((data) => ({ items: data.items })) : fetchExplorerList(currentPath, sortBy, sortDir),
+		placeholderData: keepPreviousData,
 	});
 
 	const items = listQuery.data?.items ?? [];

@@ -11,6 +11,8 @@ import { canUseBoard } from '@/features/board/boardAccess';
 import { canUseInbox } from '@/features/inbox/inboxAccess';
 import { canUseTodo } from '@/features/todo/todoAccess';
 
+const POLL_MS = 60_000;
+
 /** Polls todo, board dues and unread inbox into the shell notification feed. */
 export function DueNotifyWatcher() {
 	const push = useShellNotifications((s) => s.push);
@@ -25,7 +27,8 @@ export function DueNotifyWatcher() {
 		queryKey: ['shell', 'todo-due', start.slice(0, 13)],
 		queryFn: () => todoApi.dueItems(start, end),
 		enabled,
-		refetchInterval: 60_000,
+		refetchInterval: POLL_MS,
+		refetchOnWindowFocus: false,
 		staleTime: 30_000,
 	});
 
@@ -65,7 +68,8 @@ export function DueNotifyWatcher() {
 		queryKey: ['shell', 'board-due', start.slice(0, 13)],
 		queryFn: () => boardApi.dueCards(start, end),
 		enabled: boardEnabled,
-		refetchInterval: 60_000,
+		refetchInterval: POLL_MS,
+		refetchOnWindowFocus: false,
 		staleTime: 30_000,
 	});
 
@@ -106,10 +110,12 @@ export function DueNotifyWatcher() {
 	}, [boardQuery.data, push]);
 
 	const inboxQuery = useQuery({
-		queryKey: ['shell', 'inbox-unread'],
+		// Same key as InboxApp: one request feeds both, and inbox mutations refresh the feed.
+		queryKey: ['inbox', 'messages', 'inbox'],
 		queryFn: () => inboxApi.list('inbox'),
 		enabled: inboxEnabled,
-		refetchInterval: 60_000,
+		refetchInterval: POLL_MS,
+		refetchOnWindowFocus: false,
 		staleTime: 30_000,
 	});
 

@@ -5,6 +5,9 @@ import { AppRegistry } from '@/core/appManager/AppRegistry';
 import { clampWindowSize, type WindowAutoSizeMode, type WindowLayoutBounds } from './windowLayout';
 import { useWmStore } from './useWmStore';
 
+/** Sub-pixel jitter from scrollbars/fonts would otherwise loop resize ↔ observe. */
+const AUTO_SIZE_THRESHOLD_PX = 1;
+
 interface UseWindowAutoSizeOptions {
 	windowId: string;
 	appId: string;
@@ -88,8 +91,8 @@ export function useWindowAutoSize({
 			const clamped = clampWindowSize(nextWidth, nextHeight, bounds);
 
 			if (
-				clamped.width === windowState.width &&
-				clamped.height === windowState.height
+				Math.abs(clamped.width - windowState.width) <= AUTO_SIZE_THRESHOLD_PX &&
+				Math.abs(clamped.height - windowState.height) <= AUTO_SIZE_THRESHOLD_PX
 			) {
 				return;
 			}

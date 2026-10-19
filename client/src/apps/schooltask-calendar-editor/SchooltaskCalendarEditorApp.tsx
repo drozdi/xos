@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Group, Stack, Text } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useCallback, useState } from 'react';
 
@@ -37,6 +37,7 @@ export default function SchooltaskCalendarEditorApp() {
 	const eventsQuery = useQuery({
 		queryKey: queryKeys.schooltask.editorEvents(classId, range),
 		queryFn: () => schooltaskCalendarApi.editorEvents(classId, range),
+		placeholderData: keepPreviousData,
 		enabled: canAccess && classId > 0,
 	});
 

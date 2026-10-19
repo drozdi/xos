@@ -62,7 +62,7 @@ export function NewFromTemplateModal({
 			return targetPath;
 		},
 		onSuccess: async (path) => {
-			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTree(vaultId) });
+			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.fileTreeAll(vaultId) });
 			await queryClient.invalidateQueries({ queryKey: queryKeys.pkb.notes(vaultId) });
 			notifications.show({ color: 'green', message: 'Заметка создана из шаблона' });
 			onCreated(path);

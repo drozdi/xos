@@ -14,7 +14,7 @@ import {
 	TextInput,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { extractApiErrorMessage } from '@/core/api/apiError';
@@ -37,6 +37,7 @@ export default function InboxApp() {
 	const listQuery = useQuery({
 		queryKey: ['inbox', 'messages', box],
 		queryFn: () => inboxApi.list(box),
+		placeholderData: keepPreviousData,
 		enabled: canUseInbox(),
 	});
 

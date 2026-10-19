@@ -18,6 +18,7 @@ import {
 	deviceSoftwareApi,
 	deviceSoftwareTypeApi,
 } from '@/core/api/endpoints/deviceApi';
+import { queryKeys } from '@/core/api/queryKeys';
 import { nextTempId, normalizeIdRecord } from '@/features/device/deviceAppUtils';
 
 type LicenseRecord = Record<string, unknown>;
@@ -64,7 +65,7 @@ export function DeviceLicensesTab({ licenses, readOnly, onChange }: DeviceLicens
 	const [oemRtlKey, setOemRtlKey] = useState('');
 
 	const typesQuery = useQuery({
-		queryKey: ['device', 'softwareTypes', 'device-licenses'],
+		queryKey: queryKeys.device.softwareTypes({ limit: -1, offset: 1 }),
 		queryFn: () => deviceSoftwareTypeApi.list({ limit: -1, offset: 1 }),
 	});
 

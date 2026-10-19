@@ -1,6 +1,6 @@
 import { Alert, Checkbox, Select, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { DataTable, usePaginatedList } from '@/components/table';
@@ -56,6 +56,7 @@ export default function DeviceDevicesApp() {
 	const listQuery = useQuery({
 		queryKey: queryKeys.device.devices(pagination.listRequest),
 		queryFn: () => deviceApi.list(pagination.listRequest),
+		placeholderData: keepPreviousData,
 		enabled: canRead && typeId !== null,
 	});
 
