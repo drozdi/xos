@@ -290,6 +290,84 @@ class ExplorerApiTest extends AuthWebTestCase
         self::assertResponseStatusCodeSame(204);
     }
 
+    public function testYandexDiskCreateDoesNotExposeToken(): void
+    {
+        $client = static::createClient();
+        $this->prepareExplorerDatabase($client);
+        $user = $this->createTestUser($client, 'explorer_yandex', 'password', ['ROLE_USER']);
+        $this->grantExplorerScope($client, $user, self::SCOPE_ALL);
+        $headers = $this->jsonAuthHeaders($this->login($client, 'explorer_yandex', 'password')['token']);
+
+        $client->request(
+            'POST',
+            '/api/explorer/disks',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'code' => 'yandex',
+                'label' => 'Яндекс',
+                'adapter' => 'yandex_disk',
+                'oauthToken' => 'secret_yandex_token_value',
+            ], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(201);
+        /** @var array{id: int, adapter: string, config: array<string, mixed>} $created */
+        $created = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('yandex_disk', $created['adapter']);
+        self::assertArrayNotHasKey('accessToken', $created['config']);
+        self::assertSame('alue', $created['config']['tokenHint'] ?? null);
+
+        $client->request('GET', '/api/explorer/disks', [], [], $headers);
+        self::assertResponseIsSuccessful();
+        /** @var list<array{code: string, config: array<string, mixed>}> $list */
+        $list = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $yandex = null;
+        foreach ($list as $disk) {
+            if ('yandex' === $disk['code']) {
+                $yandex = $disk;
+                break;
+            }
+        }
+        self::assertNotNull($yandex);
+        self::assertArrayNotHasKey('accessToken', $yandex['config']);
+
+        /** @var EntityManagerInterface $em */
+        $em = $client->getContainer()->get('doctrine')->getManager();
+        /** @var UserDisk|null $entity */
+        $entity = $em->getRepository(UserDisk::class)->find($created['id']);
+        self::assertNotNull($entity);
+        self::assertArrayHasKey('accessToken', $entity->getConfig());
+        self::assertSame('secret_yandex_token_value', $entity->getConfig()['accessToken']);
+
+        $client->request('DELETE', '/api/explorer/disks/'.$created['id'], [], [], $headers);
+        self::assertResponseStatusCodeSame(204);
+    }
+
+    public function testYandexDiskRejectsReservedCode(): void
+    {
+        $client = static::createClient();
+        $this->prepareExplorerDatabase($client);
+        $user = $this->createTestUser($client, 'explorer_yandex_reserved', 'password', ['ROLE_USER']);
+        $this->grantExplorerScope($client, $user, self::SCOPE_ALL);
+        $headers = $this->jsonAuthHeaders($this->login($client, 'explorer_yandex_reserved', 'password')['token']);
+
+        $client->request(
+            'POST',
+            '/api/explorer/disks',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'code' => 'home',
+                'label' => 'Bad',
+                'adapter' => 'yandex_disk',
+                'oauthToken' => 'token',
+            ], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(400);
+    }
+
     public function testUploadsDiskIsReadOnly(): void
     {
         $client = static::createClient();

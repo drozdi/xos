@@ -2,6 +2,7 @@
 
 namespace Explorer\Service;
 
+use Explorer\Adapter\VolumeAdapterInterface;
 use Explorer\Model\ExplorerPath;
 use Main\Entity\User;
 
@@ -99,9 +100,12 @@ final class TrashService
         } catch (\Throwable) {
         }
 
-        $items = $adapter->list(self::TRASH_FOLDER);
-        foreach ($items as &$item) {
+        $items = [];
+        foreach ($adapter->list(self::TRASH_FOLDER) as $item) {
             $relative = (string) ($item['relativePath'] ?? '');
+            if (str_ends_with($relative, self::META_SUFFIX)) {
+                continue;
+            }
             $item['path'] = (new ExplorerPath($path->disk, $relative))->toUri();
             $item['disk'] = $path->disk;
             $item['trashed'] = true;
@@ -110,6 +114,7 @@ final class TrashService
                 $item['originalPath'] = $meta['originalUri'] ?? null;
                 $item['deletedAt'] = $meta['deletedAt'] ?? null;
             }
+            $items[] = $item;
         }
 
         return $items;
@@ -123,7 +128,13 @@ final class TrashService
 
         foreach ($adapter->list(self::TRASH_FOLDER) as $item) {
             $relative = (string) ($item['relativePath'] ?? '');
-            if ('' === $relative || self::TRASH_FOLDER === $relative) {
+            if ('' === $relative || self::TRASH_FOLDER === $relative || str_ends_with($relative, self::META_SUFFIX)) {
+                if (str_ends_with($relative, self::META_SUFFIX)) {
+                    try {
+                        $adapter->delete($relative);
+                    } catch (\Throwable) {
+                    }
+                }
                 continue;
             }
             $this->deleteMeta($adapter, $relative);
@@ -146,27 +157,18 @@ final class TrashService
     /**
      * @param array<string, mixed> $data
      */
-    private function writeMeta(object $adapter, string $trashRelative, array $data): void
+    private function writeMeta(VolumeAdapterInterface $adapter, string $trashRelative, array $data): void
     {
-        if (!method_exists($adapter, 'resolveAbsolutePath')) {
-            return;
-        }
-
-        $metaRelative = $trashRelative.self::META_SUFFIX;
-        /** @var \Explorer\Adapter\LocalVolumeAdapter $adapter */
-        $absolute = $adapter->resolveAbsolutePath($metaRelative);
-        $dir = dirname($absolute);
-        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
-            throw new \RuntimeException('Unable to write trash metadata');
-        }
-
-        file_put_contents($absolute, json_encode($data, JSON_THROW_ON_ERROR));
+        $adapter->writeContents(
+            $trashRelative.self::META_SUFFIX,
+            json_encode($data, JSON_THROW_ON_ERROR),
+        );
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function readMeta(object $adapter, string $trashRelative): array
+    private function readMeta(VolumeAdapterInterface $adapter, string $trashRelative): array
     {
         $meta = $this->tryReadMeta($adapter, $trashRelative);
         if (null === $meta) {
@@ -179,34 +181,30 @@ final class TrashService
     /**
      * @return array<string, mixed>|null
      */
-    private function tryReadMeta(object $adapter, string $trashRelative): ?array
+    private function tryReadMeta(VolumeAdapterInterface $adapter, string $trashRelative): ?array
     {
-        if (!method_exists($adapter, 'resolveAbsolutePath')) {
+        try {
+            $raw = $adapter->readContents($trashRelative.self::META_SUFFIX);
+        } catch (\Throwable) {
             return null;
         }
 
-        /** @var \Explorer\Adapter\LocalVolumeAdapter $adapter */
-        $absolute = $adapter->resolveAbsolutePath($trashRelative.self::META_SUFFIX);
-        if (!is_file($absolute)) {
+        try {
+            /** @var array<string, mixed> $decoded */
+            $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+
+            return $decoded;
+        } catch (\JsonException) {
             return null;
         }
-
-        /** @var array<string, mixed> $decoded */
-        $decoded = json_decode((string) file_get_contents($absolute), true, 512, JSON_THROW_ON_ERROR);
-
-        return $decoded;
     }
 
-    private function deleteMeta(object $adapter, string $trashRelative): void
+    private function deleteMeta(VolumeAdapterInterface $adapter, string $trashRelative): void
     {
-        if (!method_exists($adapter, 'resolveAbsolutePath')) {
-            return;
-        }
-
-        /** @var \Explorer\Adapter\LocalVolumeAdapter $adapter */
-        $absolute = $adapter->resolveAbsolutePath($trashRelative.self::META_SUFFIX);
-        if (is_file($absolute)) {
-            unlink($absolute);
+        try {
+            $adapter->delete($trashRelative.self::META_SUFFIX);
+        } catch (\Throwable) {
+            // meta may be missing
         }
     }
 }

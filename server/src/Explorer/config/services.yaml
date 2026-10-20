@@ -15,6 +15,7 @@ services:
         exclude:
             - '../Service/FileTypeRegistry.php'
             - '../Service/DiskRegistry.php'
+            - '../Service/YandexDiskApiClient.php'
 
     Explorer\Service\FileTypeRegistry:
         arguments:

@@ -170,19 +170,7 @@ final class ExplorerManager
     public function writeText(User $user, string $uri, string $content): array
     {
         $resolved = $this->resolve($user, $uri);
-        $adapter = $resolved['adapter'];
-        if (!method_exists($adapter, 'resolveAbsolutePath')) {
-            throw new \RuntimeException('Adapter does not support direct writes');
-        }
-        /** @var \Explorer\Adapter\LocalVolumeAdapter $adapter */
-        $absolute = $adapter->resolveAbsolutePath($resolved['relativePath']);
-        $dir = dirname($absolute);
-        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
-            throw new \RuntimeException('Unable to create directory');
-        }
-        if (false === file_put_contents($absolute, $content)) {
-            throw new \RuntimeException('Unable to write file');
-        }
+        $resolved['adapter']->writeContents($resolved['relativePath'], $content);
 
         return $this->info($user, $uri);
     }
@@ -197,6 +185,23 @@ final class ExplorerManager
         /** @var \Explorer\Adapter\LocalVolumeAdapter $adapter */
 
         return $adapter->resolveAbsolutePath($resolved['relativePath']);
+    }
+
+    /**
+     * @return resource
+     */
+    public function openDownload(User $user, string $uri)
+    {
+        $resolved = $this->resolve($user, $uri);
+
+        return $resolved['adapter']->openDownload($resolved['relativePath']);
+    }
+
+    public function readContents(User $user, string $uri): string
+    {
+        $resolved = $this->resolve($user, $uri);
+
+        return $resolved['adapter']->readContents($resolved['relativePath']);
     }
 
     /**
@@ -238,37 +243,84 @@ final class ExplorerManager
      */
     private function transferAcrossDisks(array $from, array $to, bool $overwrite, bool $deleteSource): void
     {
+        /** @var \Explorer\Adapter\VolumeAdapterInterface $fromAdapter */
         $fromAdapter = $from['adapter'];
+        /** @var \Explorer\Adapter\VolumeAdapterInterface $toAdapter */
         $toAdapter = $to['adapter'];
 
-        if (!method_exists($fromAdapter, 'resolveAbsolutePath') || !method_exists($toAdapter, 'resolveAbsolutePath')) {
-            throw new \RuntimeException('Cross-disk transfer is not supported for this adapter');
-        }
-
-        /** @var \Explorer\Adapter\LocalVolumeAdapter $fromAdapter */
-        /** @var \Explorer\Adapter\LocalVolumeAdapter $toAdapter */
-        $fromAbs = $fromAdapter->resolveAbsolutePath($from['relativePath']);
-        if (!file_exists($fromAbs)) {
-            throw new \RuntimeException('Source not found');
-        }
-
-        $toAbs = $toAdapter->resolveAbsolutePath($to['relativePath']);
-        if (!$overwrite && file_exists($toAbs)) {
-            throw new \RuntimeException('Target already exists');
-        }
-
-        $toAdapter->assertWritableDisk();
-
-        if (is_dir($fromAbs)) {
-            $this->filesystem->mkdir(dirname($toAbs), 0775);
-            $this->filesystem->mirror($fromAbs, $toAbs, null, ['override' => $overwrite]);
-        } else {
-            $this->filesystem->mkdir(dirname($toAbs), 0775);
-            $this->filesystem->copy($fromAbs, $toAbs, $overwrite);
-        }
+        $this->copyBetweenAdapters(
+            $fromAdapter,
+            (string) $from['relativePath'],
+            $toAdapter,
+            (string) $to['relativePath'],
+            $overwrite,
+        );
 
         if ($deleteSource) {
-            $fromAdapter->delete($from['relativePath']);
+            $fromAdapter->delete((string) $from['relativePath']);
+        }
+    }
+
+    private function copyBetweenAdapters(
+        \Explorer\Adapter\VolumeAdapterInterface $fromAdapter,
+        string $fromRelative,
+        \Explorer\Adapter\VolumeAdapterInterface $toAdapter,
+        string $toRelative,
+        bool $overwrite,
+    ): void {
+        $info = $fromAdapter->info($fromRelative);
+        if ('folder' === ($info['type'] ?? '')) {
+            try {
+                $toAdapter->mkdir($toRelative);
+            } catch (\Throwable) {
+                if (!$overwrite) {
+                    throw new \RuntimeException('Target already exists');
+                }
+            }
+            foreach ($fromAdapter->list($fromRelative) as $child) {
+                $childRelative = (string) ($child['relativePath'] ?? '');
+                $name = (string) ($child['name'] ?? basename($childRelative));
+                $this->copyBetweenAdapters(
+                    $fromAdapter,
+                    $childRelative,
+                    $toAdapter,
+                    '' === $toRelative ? $name : $toRelative.'/'.$name,
+                    $overwrite,
+                );
+            }
+
+            return;
+        }
+
+        $temp = $fromAdapter->readAbsolutePath($fromRelative);
+        $cleanup = !method_exists($fromAdapter, 'resolveAbsolutePath')
+            || $temp !== $fromAdapter->resolveAbsolutePath($fromRelative);
+        try {
+            $parent = dirname(str_replace('\\', '/', $toRelative));
+            $parent = ('.' === $parent) ? '' : $parent;
+            $name = basename(str_replace('\\', '/', $toRelative));
+            if ('' !== $parent) {
+                try {
+                    $toAdapter->mkdir($parent);
+                } catch (\Throwable) {
+                }
+            }
+            if (!$overwrite) {
+                try {
+                    $toAdapter->info($toRelative);
+                    $exists = true;
+                } catch (\Throwable) {
+                    $exists = false;
+                }
+                if ($exists) {
+                    throw new \RuntimeException('Target already exists');
+                }
+            }
+            $toAdapter->writeUpload($parent, $temp, $name);
+        } finally {
+            if ($cleanup && is_file($temp)) {
+                @unlink($temp);
+            }
         }
     }
 }

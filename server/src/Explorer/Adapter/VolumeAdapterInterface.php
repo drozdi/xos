@@ -34,4 +34,15 @@ interface VolumeAdapterInterface
     public function readAbsolutePath(string $relativePath): string;
 
     public function writeUpload(string $relativePath, string $tempFilePath, string $originalName): array;
+
+    public function readContents(string $relativePath): string;
+
+    public function writeContents(string $relativePath, string $contents): void;
+
+    /**
+     * Open a readable stream for the file (caller must fclose).
+     *
+     * @return resource
+     */
+    public function openDownload(string $relativePath);
 }

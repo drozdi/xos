@@ -130,7 +130,9 @@ export async function createUserDisk(payload: {
 	code: string;
 	label: string;
 	adapter: string;
-	root: string;
+	root?: string;
+	oauthToken?: string;
+	rootPath?: string;
 }) {
 	const { data } = await apiClient.post<unknown>(`${BASE}/disks`, payload);
 	return data;
@@ -165,7 +167,12 @@ export interface UserDiskRecord {
 	code: string;
 	label: string;
 	adapter: string;
-	config: { root?: string; readOnly?: boolean };
+	config: {
+		root?: string;
+		rootPath?: string;
+		tokenHint?: string;
+		readOnly?: boolean;
+	};
 	sort?: number;
 }
 

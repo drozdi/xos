@@ -189,6 +189,47 @@ final class LocalVolumeAdapter implements VolumeAdapterInterface
         return $this->buildEntry($targetRelative);
     }
 
+    public function readContents(string $relativePath): string
+    {
+        $absolute = $this->absolutePath($relativePath);
+        if (!is_file($absolute)) {
+            throw new \RuntimeException('File not found');
+        }
+        $contents = file_get_contents($absolute);
+        if (false === $contents) {
+            throw new \RuntimeException('Unable to read file');
+        }
+
+        return $contents;
+    }
+
+    public function writeContents(string $relativePath, string $contents): void
+    {
+        $this->assertWritable();
+        $absolute = $this->absolutePath($relativePath);
+        $dir = dirname($absolute);
+        if (!is_dir($dir)) {
+            $this->filesystem->mkdir($dir, 0775);
+        }
+        if (false === file_put_contents($absolute, $contents)) {
+            throw new \RuntimeException('Unable to write file');
+        }
+    }
+
+    public function openDownload(string $relativePath)
+    {
+        $absolute = $this->absolutePath($relativePath);
+        if (!is_file($absolute)) {
+            throw new \RuntimeException('File not found');
+        }
+        $handle = fopen($absolute, 'rb');
+        if (false === $handle) {
+            throw new \RuntimeException('Unable to open file');
+        }
+
+        return $handle;
+    }
+
     private function absolutePath(string $relativePath): string
     {
         $relativePath = trim(str_replace('\\', '/', $relativePath), '/');

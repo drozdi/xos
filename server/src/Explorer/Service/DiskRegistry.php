@@ -4,6 +4,7 @@ namespace Explorer\Service;
 
 use Explorer\Adapter\LocalVolumeAdapter;
 use Explorer\Adapter\VolumeAdapterInterface;
+use Explorer\Adapter\YandexDiskVolumeAdapter;
 use Explorer\Entity\UserDisk;
 use Explorer\Model\ExplorerPath;
 use Explorer\Model\FilePermissions;
@@ -22,6 +23,7 @@ final class DiskRegistry
         private readonly FileTypeRegistry $fileTypeRegistry,
         private readonly ExplorerPathValidator $pathValidator,
         private readonly UserDiskRepository $userDiskRepository,
+        private readonly YandexDiskTokenCipher $yandexDiskTokenCipher,
     ) {
         $this->systemDisks = [
             'img' => [
@@ -125,20 +127,51 @@ final class DiskRegistry
     private function createAdapterFromUserDisk(UserDisk $disk): VolumeAdapterInterface
     {
         $config = $disk->getConfig();
+
+        return match ($disk->getAdapter()) {
+            'local', 'local_readonly' => $this->createLocalAdapterFromConfig($disk->getAdapter(), $config),
+            'yandex_disk' => $this->createYandexAdapter($config),
+            default => throw new \RuntimeException('Adapter is not implemented yet: '.$disk->getAdapter()),
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function createLocalAdapterFromConfig(string $adapter, array $config): LocalVolumeAdapter
+    {
         $root = (string) ($config['root'] ?? '');
         if ('' === $root) {
             throw new \RuntimeException('User disk root is not configured');
         }
 
-        return match ($disk->getAdapter()) {
-            'local', 'local_readonly' => $this->createLocalAdapter([
-                'adapter' => $disk->getAdapter(),
-                'root' => $root,
-                'permissions' => (int) ($config['permissions'] ?? FilePermissions::ALL),
-                'readOnly' => 'local_readonly' === $disk->getAdapter() || (bool) ($config['readOnly'] ?? false),
-            ]),
-            default => throw new \RuntimeException('Adapter is not implemented yet: '.$disk->getAdapter()),
-        };
+        return $this->createLocalAdapter([
+            'adapter' => $adapter,
+            'root' => $root,
+            'permissions' => (int) ($config['permissions'] ?? FilePermissions::ALL),
+            'readOnly' => 'local_readonly' === $adapter || (bool) ($config['readOnly'] ?? false),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function createYandexAdapter(array $config): YandexDiskVolumeAdapter
+    {
+        $token = (string) ($config['accessToken'] ?? '');
+        if ('' === trim($token)) {
+            throw new \RuntimeException('Yandex Disk access token is not configured');
+        }
+
+        $client = new YandexDiskApiClient($this->yandexDiskTokenCipher->decrypt($token));
+
+        return new YandexDiskVolumeAdapter(
+            $client,
+            $this->fileTypeRegistry,
+            (int) ($config['permissions'] ?? FilePermissions::ALL),
+            (bool) ($config['readOnly'] ?? false),
+            (string) ($config['rootPath'] ?? 'disk:/'),
+        );
     }
 
     /**

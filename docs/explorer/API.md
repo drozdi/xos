@@ -22,6 +22,15 @@
 | POST | `/api/explorer/disks` | Создать диск |
 | DELETE | `/api/explorer/disks/{id}` | Удалить диск |
 
+### POST `/api/explorer/disks`
+
+Общие поля: `code`, `label`, `adapter`.
+
+- `local` / `local_readonly` — обязателен `root` (абсолютный путь на сервере).
+- `yandex_disk` — обязателен `oauthToken`; опционально `rootPath` (по умолчанию `disk:/`). В ответе `config` содержит `tokenHint` и `rootPath`, без `accessToken`.
+
+Коды `home`, `img`, `uploads` зарезервированы.
+
 ## Операции
 
 | Метод | Путь | Назначение |

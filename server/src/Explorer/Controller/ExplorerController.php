@@ -7,11 +7,11 @@ use App\Http\ApiResponse;
 use Explorer\Service\ExplorerManager;
 use Main\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
@@ -91,18 +91,7 @@ class ExplorerController extends AbstractController
         }
 
         try {
-            $absolute = $manager->readAbsolutePath($user, $path);
-            if (is_dir($absolute)) {
-                return ApiResponse::badRequest('Cannot download a folder');
-            }
-
-            $response = new BinaryFileResponse($absolute);
-            $response->setContentDisposition(
-                ResponseHeaderBag::DISPOSITION_ATTACHMENT,
-                basename($absolute),
-            );
-
-            return $response;
+            return $this->streamFile($manager, $user, $path, ResponseHeaderBag::DISPOSITION_ATTACHMENT);
         } catch (\Throwable $e) {
             return ApiResponse::badRequest($e->getMessage());
         }
@@ -118,21 +107,39 @@ class ExplorerController extends AbstractController
         }
 
         try {
-            $absolute = $manager->readAbsolutePath($user, $path);
-            if (is_dir($absolute)) {
-                return ApiResponse::badRequest('Cannot read folder as content');
-            }
-
-            $response = new BinaryFileResponse($absolute);
-            $response->setContentDisposition(
-                ResponseHeaderBag::DISPOSITION_INLINE,
-                basename($absolute),
-            );
-
-            return $response;
+            return $this->streamFile($manager, $user, $path, ResponseHeaderBag::DISPOSITION_INLINE);
         } catch (\Throwable $e) {
             return ApiResponse::badRequest($e->getMessage());
         }
+    }
+
+    private function streamFile(ExplorerManager $manager, User $user, string $path, string $disposition): StreamedResponse
+    {
+        $info = $manager->info($user, $path);
+        if ('folder' === ($info['type'] ?? '')) {
+            throw new \InvalidArgumentException(
+                ResponseHeaderBag::DISPOSITION_ATTACHMENT === $disposition
+                    ? 'Cannot download a folder'
+                    : 'Cannot read folder as content',
+            );
+        }
+
+        $fileName = (string) ($info['name'] ?? 'file');
+        $stream = $manager->openDownload($user, $path);
+        $response = new StreamedResponse(static function () use ($stream): void {
+            try {
+                fpassthru($stream);
+            } finally {
+                fclose($stream);
+            }
+        });
+        $response->headers->set('Content-Type', 'application/octet-stream');
+        $response->headers->set(
+            'Content-Disposition',
+            $response->headers->makeDisposition($disposition, $fileName),
+        );
+
+        return $response;
     }
 
     private function buildItemPath(string $folderUri, string $relativePath): string

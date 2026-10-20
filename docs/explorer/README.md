@@ -6,4 +6,8 @@
 
 Последний путь хранится в снимке стола, чтобы виджет проводника и окно открывались там же.
 
+## Облачные диски
+
+Пользователь может добавить 0..N своих дисков. Адаптер `yandex_disk` хранит OAuth-токен в `explorer_user_disk.config` (шифрование через `YANDEX_DISK_TOKEN_SECRET`). Токен вставляется вручную в «Управление дисками»; API-ответы отдают только `tokenHint`, не сам токен. Права OAuth: `cloud_api:disk.read` и `cloud_api:disk.write` — см. [документацию Яндекс.Диска](https://yandex.ru/dev/disk-api/doc/ru/concepts/quickstart.md).
+
 См. [TZ.md](TZ.md), [API.md](API.md).
