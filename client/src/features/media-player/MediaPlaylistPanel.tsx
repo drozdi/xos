@@ -19,6 +19,7 @@ import {
 	IconPlaylistAdd,
 	IconTrash,
 	IconVideo,
+	IconX,
 } from '@tabler/icons-react';
 
 import { useAppContext } from '@/core/context/AppContext';
@@ -29,9 +30,10 @@ import type { MediaPlayerKind } from './playlistFormat';
 
 interface MediaPlaylistPanelProps {
 	kind: MediaPlayerKind;
+	variant?: 'panel' | 'sidebar' | 'list';
 }
 
-export function MediaPlaylistPanel({ kind }: MediaPlaylistPanelProps) {
+export function MediaPlaylistPanel({ kind, variant = 'panel' }: MediaPlaylistPanelProps) {
 	const { windowId } = useAppContext();
 	const session = useMediaPlayerStore((state) => state.getSession(windowId, kind));
 	const patchSession = useMediaPlayerStore((state) => state.patchSession);
@@ -42,6 +44,147 @@ export function MediaPlaylistPanel({ kind }: MediaPlaylistPanelProps) {
 	const requestNewPlaylist = useMediaPlayerStore((state) => state.requestNewPlaylist);
 
 	const MediaIcon = kind === 'audio' ? IconMusic : IconVideo;
+
+	if (variant === 'list') {
+		return (
+			<Box
+				h="100%"
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					minHeight: 0,
+					background: 'var(--xos-shell-bg)',
+				}}
+			>
+				<ScrollArea style={{ flex: 1 }} type="auto">
+					<Stack gap={0}>
+						{session.items.length === 0 ? (
+							<Text size="xs" c="dimmed" ta="center" py="md" px="sm">
+								Плейлист пуст
+							</Text>
+						) : (
+							session.items.map((item, index) => {
+								const active = item === session.currentPath;
+								return (
+									<Group
+										key={item}
+										gap={6}
+										wrap="nowrap"
+										px={6}
+										py={2}
+										style={{
+											cursor: 'pointer',
+											background: active ? 'var(--xos-shell-hover)' : 'transparent',
+										}}
+										onClick={() => setCurrentPath(windowId, item)}
+									>
+										<Text size="xs" style={{ flex: 1 }} truncate title={item}>
+											{index + 1}. {getExplorerFileName(item)}
+										</Text>
+										<ActionIcon
+											size="xs"
+											variant="subtle"
+											color="gray"
+											aria-label={`Удалить ${getExplorerFileName(item)} из плейлиста`}
+											onClick={(event) => {
+												event.stopPropagation();
+												removeItem(windowId, item);
+											}}
+										>
+											<IconX size={12} />
+										</ActionIcon>
+									</Group>
+								);
+							})
+						)}
+					</Stack>
+				</ScrollArea>
+				<Group gap={4} justify="flex-end" px={4} py={4} style={{ borderTop: '1px solid var(--xos-shell-border)' }}>
+					<Tooltip label="Добавить">
+						<ActionIcon
+							variant="subtle"
+							color="gray"
+							size="sm"
+							aria-label="Добавить в плейлист"
+							onClick={() => requestAddFiles(windowId)}
+						>
+							<IconPlaylistAdd size={14} />
+						</ActionIcon>
+					</Tooltip>
+				</Group>
+			</Box>
+		);
+	}
+
+	if (variant === 'sidebar') {
+		return (
+			<Box
+				h="100%"
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					minHeight: 0,
+					background: 'var(--xos-shell-bg)',
+				}}
+			>
+				<ScrollArea style={{ flex: 1 }} type="auto">
+					<Stack gap={0} py={4}>
+						{session.items.length === 0 ? (
+							<Text size="sm" c="dimmed" ta="center" py="md" px="sm">
+								Плейлист пуст
+							</Text>
+						) : (
+							session.items.map((item) => {
+								const active = item === session.currentPath;
+								return (
+									<Group
+										key={item}
+										gap={4}
+										wrap="nowrap"
+										px="sm"
+										py={4}
+										style={{
+											cursor: 'pointer',
+											background: active ? 'var(--xos-shell-hover)' : 'transparent',
+										}}
+										onClick={() => setCurrentPath(windowId, item)}
+									>
+										<Text size="sm" truncate title={item} style={{ flex: 1 }}>
+											{getExplorerFileName(item)}
+										</Text>
+										<ActionIcon
+											size="sm"
+											variant="subtle"
+											color="gray"
+											aria-label={`Удалить ${getExplorerFileName(item)} из плейлиста`}
+											onClick={(event) => {
+												event.stopPropagation();
+												removeItem(windowId, item);
+											}}
+										>
+											<IconX size={14} />
+										</ActionIcon>
+									</Group>
+								);
+							})
+						)}
+					</Stack>
+				</ScrollArea>
+				<Group gap={4} justify="flex-end" px="xs" py={6} style={{ borderTop: '1px solid var(--xos-shell-border)' }}>
+					<Tooltip label="Добавить">
+						<ActionIcon
+							variant="subtle"
+							color="gray"
+							aria-label="Добавить в плейлист"
+							onClick={() => requestAddFiles(windowId)}
+						>
+							<IconPlaylistAdd size={16} />
+						</ActionIcon>
+					</Tooltip>
+				</Group>
+			</Box>
+		);
+	}
 
 	return (
 		<Paper withBorder radius="md" p="sm" h="100%" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>

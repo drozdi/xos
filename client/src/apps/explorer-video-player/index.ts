@@ -22,7 +22,7 @@ const manifest: AppManifest = {
 	version: '1.0.0',
 	icon: VideoPlayerIcon,
 	component: ExplorerVideoPlayerApp,
-	defaultSize: { width: 960, height: 720 },
+	defaultSize: { width: 1100, height: 640 },
 	minSize: { width: 520, height: 480 },
 	wmGroup: 'tools',
 	startMenuGroup: 'tools',
