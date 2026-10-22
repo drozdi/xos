@@ -185,7 +185,6 @@ export function AudioTransportBar({ audioRef, mediaUrl }: AudioTransportBarProps
 					<ActionIcon
 						variant="subtle"
 						color="gray"
-						size="sm"
 						aria-label={muted || volume === 0 ? 'Включить звук' : 'Выключить звук'}
 						onClick={() => {
 							const audio = audioRef.current;
@@ -195,7 +194,7 @@ export function AudioTransportBar({ audioRef, mediaUrl }: AudioTransportBarProps
 							audio.muted = !audio.muted;
 						}}
 					>
-						{muted || volume === 0 ? <IconVolumeOff size={14} /> : <IconVolume size={14} />}
+						{muted || volume === 0 ? <IconVolumeOff size={16} /> : <IconVolume size={16} />}
 					</ActionIcon>
 					<Slider
 						aria-label="Громкость"
@@ -203,9 +202,9 @@ export function AudioTransportBar({ audioRef, mediaUrl }: AudioTransportBarProps
 						min={0}
 						max={1}
 						step={0.01}
-						w={64}
+						w={72}
 						size="xs"
-						color="gray"
+						label={(value) => `${Math.round(value * 100)}%`}
 						onChange={(value) => {
 							const audio = audioRef.current;
 							if (!audio) {

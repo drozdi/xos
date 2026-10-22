@@ -190,6 +190,7 @@ export function VideoTransportBar({
 				step={0.01}
 				w={72}
 				size="xs"
+				label={(value) => `${Math.round(value * 100)}%`}
 				onChange={(value) => {
 					const video = videoRef.current;
 					if (!video) {
