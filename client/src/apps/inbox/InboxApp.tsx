@@ -10,7 +10,6 @@ import {
 	Stack,
 	Table,
 	Text,
-	Textarea,
 	TextInput,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';

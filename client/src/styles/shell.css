@@ -13,6 +13,7 @@
 	--xos-window-titlebar-bg: #f5f5f5;
 	--xos-window-border: #d9d9d9;
 	--xos-window-titlebar-border: #d9d9d9;
+	--xos-window-stripe: rgba(0, 0, 0, 0.15);
 	--xos-window-chrome-hover: #f0f0f0;
 	--xos-window-text: rgba(0, 0, 0, 0.88);
 	--xos-window-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);

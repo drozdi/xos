@@ -11,6 +11,7 @@ use Todo\Repository\TodoListRepository;
 
 #[ORM\Entity(repositoryClass: TodoListRepository::class)]
 #[ORM\Table(name: 'todo_list')]
+#[ORM\Index(name: 'IDX_TODO_LIST_DUE', columns: ['due_at'])]
 #[ORM\HasLifecycleCallbacks]
 class TodoList
 {
@@ -29,12 +30,16 @@ class TodoList
     #[ORM\Column(length: 255)]
     private string $title = '';
 
-    #[ORM\Column(length: 32, options: ['default' => '#fff59d'])]
-    private string $color = '#fff59d';
+    #[ORM\Column(length: 32, options: ['default' => ''])]
+    private string $color = '';
 
     /** Свободные заметки в Markdown (ниже чеклиста). */
     #[ORM\Column(name: 'notes_md', type: Types::TEXT, nullable: true)]
     private ?string $notesMd = null;
+
+    /** Срок всей заметки. */
+    #[ORM\Column(name: 'due_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $dueAt = null;
 
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $createdAt = null;
@@ -135,6 +140,22 @@ class TodoList
     public function setNotesMd(?string $notesMd): self
     {
         $this->notesMd = $notesMd;
+
+        return $this;
+    }
+
+    public function getDueAt(?string $format = null): \DateTimeInterface|string|null
+    {
+        if (null !== $format && null !== $this->dueAt) {
+            return $this->dueAt->format($format);
+        }
+
+        return $this->dueAt;
+    }
+
+    public function setDueAt(?\DateTimeInterface $dueAt): self
+    {
+        $this->dueAt = $dueAt;
 
         return $this;
     }

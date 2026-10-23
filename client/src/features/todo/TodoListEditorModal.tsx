@@ -5,32 +5,21 @@ import {
 	Group,
 	Loader,
 	Modal,
-	SegmentedControl,
 	Stack,
 	Text,
-	Textarea,
 	TextInput,
-	Tooltip,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconCalendar, IconCalendarPlus, IconLayoutKanban, IconPlus, IconShare, IconTrash } from '@tabler/icons-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { IconListCheck, IconPlus, IconTrash } from '@tabler/icons-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { calendarApi } from '@/core/api/endpoints/calendarApi';
-import { boardApi } from '@/core/api/endpoints/boardApi';
-import { todoApi, type TodoListDetail } from '@/core/api/endpoints/todoApi';
-import { useAppManager } from '@/core/appManager/useAppManager';
+import { todoApi } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
-import { confirmAction } from '@/core/confirm';
-import { DateTimeField } from '@/core/dates/DateTimeField';
+import { MarkdownPreview } from '@/features/markdown';
+import { MarkdownWysiwygEditor } from '@/features/markdown/MarkdownWysiwygEditor';
 
-import { TODO_COLORS, itemsToMarkdown, parseMarkdown, type TodoDraftItem } from './todoMarkdown';
-import { TodoShareModal } from './TodoShareModal';
-import { ConvertTodoToBoardModal } from './ConvertTodoToBoardModal';
+import type { TodoDraftItem } from './todoMarkdown';
 
 interface TodoListEditorModalProps {
 	listId: number | null;
@@ -38,19 +27,44 @@ interface TodoListEditorModalProps {
 	onClose: () => void;
 }
 
+const SAVE_DELAY_MS = 3000;
+
+function emptyItem(): TodoDraftItem {
+	return { text: '', done: false, due_at: null };
+}
+
+function draftSnapshot(state: {
+	title: string;
+	notesMd: string;
+	items: TodoDraftItem[];
+}): string {
+	return JSON.stringify({
+		title: state.title,
+		notesMd: state.notesMd,
+		items: state.items
+			.filter((item) => item.text.trim() !== '')
+			.map((item) => ({
+				id: item.id ?? null,
+				text: item.text.trim(),
+				done: item.done,
+				due_at: item.due_at,
+				calendar_event_id: item.calendar_event_id ?? null,
+				board_card_id: item.board_card_id ?? null,
+			})),
+	});
+}
+
 export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorModalProps) {
 	const queryClient = useQueryClient();
-	const launchApp = useAppManager((s) => s.launchApp);
+	const hydratedId = useRef<number | null>(null);
+	const savedSnapshot = useRef('');
+	const saveTimer = useRef<number | null>(null);
+	const saveQueue = useRef(Promise.resolve());
 	const [title, setTitle] = useState('');
-	const [color, setColor] = useState<string>(TODO_COLORS[0]);
 	const [items, setItems] = useState<TodoDraftItem[]>([]);
 	const [notesMd, setNotesMd] = useState('');
-	const [mode, setMode] = useState<'checklist' | 'markdown' | 'preview'>('checklist');
-	const [markdown, setMarkdown] = useState('');
-	const [shareOpened, setShareOpened] = useState(false);
-	const [detail, setDetail] = useState<TodoListDetail | null>(null);
-	const [linkingIndex, setLinkingIndex] = useState<number | null>(null);
-	const [boardConvertIndex, setBoardConvertIndex] = useState<number | null>(null);
+	const [showChecklist, setShowChecklist] = useState(false);
+	const [hydratedFor, setHydratedFor] = useState<number | null>(null);
 
 	const detailQuery = useQuery({
 		queryKey: queryKeys.todo.list(listId ?? 0),
@@ -58,204 +72,141 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 		enabled: opened && listId !== null,
 	});
 
+	const canWrite = detailQuery.data?.can_write ?? false;
+	const latestRef = useRef({ listId, canWrite, title, notesMd, items });
+	latestRef.current = { listId, canWrite, title, notesMd, items };
+
 	useEffect(() => {
-		if (!detailQuery.data) {
+		if (!opened) {
+			hydratedId.current = null;
+			setHydratedFor(null);
+		}
+	}, [opened]);
+
+	useEffect(() => {
+		const data = detailQuery.data;
+		if (!opened || !data || hydratedId.current === data.id) {
 			return;
 		}
-		const data = detailQuery.data;
-		setDetail(data);
+		hydratedId.current = data.id;
+		const nextItems = data.items.map((item) => ({
+			id: item.id ?? null,
+			text: item.text,
+			done: item.done,
+			due_at: item.due_at ?? null,
+			calendar_event_id: item.calendar_event_id ?? null,
+			board_card_id: item.board_card_id ?? null,
+		}));
+		const nextNotes = data.notes_md ?? '';
+		savedSnapshot.current = draftSnapshot({
+			title: data.title,
+			notesMd: nextNotes,
+			items: nextItems,
+		});
 		setTitle(data.title);
-		setColor(data.color);
-		setItems(
-			data.items.map((item) => ({
-				id: item.id ?? null,
-				text: item.text,
-				done: item.done,
-				due_at: item.due_at ?? null,
-				calendar_event_id: item.calendar_event_id ?? null,
-				board_card_id: item.board_card_id ?? null,
-			})),
-		);
-		setNotesMd(data.notes_md ?? '');
-		setMarkdown(data.markdown);
-	}, [detailQuery.data]);
+		setNotesMd(nextNotes);
+		setItems(nextItems);
+		setShowChecklist(nextItems.length > 0);
+		setHydratedFor(data.id);
+	}, [detailQuery.data, opened]);
 
-	const saveMutation = useMutation({
-		mutationFn: async () => {
-			if (!listId) {
-				throw new Error('no list');
+	const persist = useCallback(() => {
+		const run = async () => {
+			const current = latestRef.current;
+			if (!current.listId || !current.canWrite) {
+				return;
 			}
-			if (mode === 'markdown') {
-				return todoApi.update(listId, { title, color, markdown });
+			const snap = draftSnapshot(current);
+			if (snap === savedSnapshot.current) {
+				return;
 			}
-			return todoApi.update(listId, {
-				title,
-				color,
-				notes_md: notesMd || null,
-				items: items
-					.filter((item) => item.text.trim() !== '')
-					.map((item, position) => ({
-						id: item.id ?? null,
-						text: item.text.trim(),
-						done: item.done,
-						due_at: item.due_at,
-						calendar_event_id: item.calendar_event_id ?? null,
-						board_card_id: item.board_card_id ?? null,
-						position,
-					})),
+			const parsed = JSON.parse(snap) as {
+				title: string;
+				notesMd: string;
+				items: Array<{
+					id: number | null;
+					text: string;
+					done: boolean;
+					due_at: string | null;
+					calendar_event_id: number | null;
+					board_card_id: number | null;
+				}>;
+			};
+			await todoApi.update(current.listId, {
+				title: parsed.title,
+				notes_md: parsed.notesMd || null,
+				items: parsed.items.map((item, position) => ({ ...item, position })),
 			});
-		},
-		onSuccess: (data) => {
-			setDetail(data);
-			setMarkdown(data.markdown);
-			setItems(
-				data.items.map((item) => ({
-					id: item.id ?? null,
-					text: item.text,
-					done: item.done,
-					due_at: item.due_at ?? null,
-					calendar_event_id: item.calendar_event_id ?? null,
-				})),
-			);
-			setNotesMd(data.notes_md ?? '');
+			savedSnapshot.current = snap;
 			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.lists });
-			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.list(listId!) });
-			void queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] });
-			void queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
-			notifications.show({ color: 'green', message: 'Сохранено' });
-		},
-		onError: () => {
-			notifications.show({ color: 'red', message: 'Не удалось сохранить' });
-		},
-	});
+		};
+		const next = saveQueue.current.then(run, run);
+		saveQueue.current = next.then(
+			() => undefined,
+			() => undefined,
+		);
+		return next;
+	}, [queryClient]);
 
-	const deleteMutation = useMutation({
-		mutationFn: () => todoApi.remove(listId!),
-		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.lists });
-			void queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] });
-			onClose();
-		},
-	});
+	useEffect(() => {
+		if (!opened || !canWrite || hydratedFor !== listId) {
+			return;
+		}
+		if (draftSnapshot(latestRef.current) === savedSnapshot.current) {
+			return;
+		}
+		saveTimer.current = window.setTimeout(() => {
+			saveTimer.current = null;
+			void persist().catch(() => {
+				notifications.show({ color: 'red', message: 'Не удалось сохранить' });
+			});
+		}, SAVE_DELAY_MS);
+		return () => {
+			if (saveTimer.current !== null) {
+				window.clearTimeout(saveTimer.current);
+				saveTimer.current = null;
+			}
+		};
+	}, [opened, canWrite, hydratedFor, listId, title, notesMd, items, persist]);
 
-	const canWrite = detail?.can_write ?? false;
-	const isOwner = detail?.is_owner ?? false;
+	const closingRef = useRef(false);
 
-	const switchMode = (next: string) => {
-		const value = next as 'checklist' | 'markdown' | 'preview';
-		if (mode === 'markdown' && value !== 'markdown') {
-			const parsed = parseMarkdown(markdown);
-			setItems(parsed.items);
-			setNotesMd(parsed.notes_md ?? '');
+	const handleClose = () => {
+		if (closingRef.current) {
+			return;
 		}
-		if (mode !== 'markdown' && value === 'markdown') {
-			setMarkdown(itemsToMarkdown(items, notesMd));
+		closingRef.current = true;
+		if (saveTimer.current !== null) {
+			window.clearTimeout(saveTimer.current);
+			saveTimer.current = null;
 		}
-		if (value === 'preview' && mode === 'checklist') {
-			setMarkdown(itemsToMarkdown(items, notesMd));
-		}
-		setMode(value);
+		void persist()
+			.catch(() => {
+				notifications.show({ color: 'red', message: 'Не удалось сохранить' });
+			})
+			.finally(() => {
+				closingRef.current = false;
+				onClose();
+			});
 	};
 
 	const updateItem = (index: number, patch: Partial<TodoDraftItem>) => {
 		setItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
 	};
 
-	const linkToCalendar = async (index: number) => {
-		const item = items[index];
-		if (!item?.due_at || !listId || !canWrite) {
-			return;
-		}
-		setLinkingIndex(index);
-		try {
-			const calendars = await calendarApi.calendars();
-			const writable = calendars.find((c) => c.can_write || c.is_owner);
-			if (!writable) {
-				notifications.show({ color: 'yellow', message: 'Нет календаря с правом записи' });
-				return;
-			}
-			const due = dayjs(item.due_at);
-			const allDay = due.hour() === 0 && due.minute() === 0 && due.second() === 0;
-			const start = due.format('YYYY-MM-DD HH:mm:ss');
-			const end = allDay
-				? start
-				: due.add(30, 'minute').format('YYYY-MM-DD HH:mm:ss');
-			const event = await calendarApi.createEvent({
-				calendar_id: writable.id,
-				title: item.text.trim() || 'Дело',
-				description: `Из списка «${title}»`,
-				start_at: start,
-				end_at: end,
-				all_day: allDay,
-			});
-			const nextItems = items.map((row, i) =>
-				i === index ? { ...row, calendar_event_id: event.id } : row,
-			);
-			setItems(nextItems);
-			await todoApi.update(listId, {
-				title,
-				color,
-				notes_md: notesMd || null,
-				items: nextItems
-					.filter((row) => row.text.trim() !== '')
-					.map((row, position) => ({
-						id: row.id ?? null,
-						text: row.text.trim(),
-						done: row.done,
-						due_at: row.due_at,
-						calendar_event_id: row.calendar_event_id ?? null,
-						position,
-					})),
-			});
-			void queryClient.invalidateQueries({ queryKey: queryKeys.todo.list(listId) });
-			void queryClient.invalidateQueries({ queryKey: ['calendar', 'dueItems'] });
-			void queryClient.invalidateQueries({ queryKey: ['calendar', 'events'] });
-			notifications.show({ color: 'green', message: 'Событие создано в календаре' });
-		} catch {
-			notifications.show({ color: 'red', message: 'Не удалось создать событие' });
-		} finally {
-			setLinkingIndex(null);
-		}
-	};
-
-	const openInCalendar = (item: TodoDraftItem) => {
-		if (!item.due_at) {
-			return;
-		}
-		void launchApp('calendar', {
-			props: { focusDate: dayjs(item.due_at).format('YYYY-MM-DD') },
-		});
-	};
-
-	const openInBoard = async (item: TodoDraftItem) => {
-		if (!item.board_card_id) return;
-		try {
-			let boardId = item.board_id ?? null;
-			if (!boardId) {
-				const card = await boardApi.card(item.board_card_id);
-				boardId = card.board_id ?? null;
-			}
-			if (!boardId) {
-				notifications.show({ color: 'yellow', message: 'Не удалось определить доску' });
-				return;
-			}
-			void launchApp('board', {
-				props: { boardId, cardId: item.board_card_id },
-			});
-		} catch (error) {
-			notifications.show({ color: 'red', message: 'Карточка недоступна' });
-		}
+	const addItem = () => {
+		setShowChecklist(true);
+		setItems((prev) => [...prev, emptyItem()]);
 	};
 
 	return (
-		<>
-			<Modal
-				opened={opened}
-				onClose={onClose}
-				title={detailQuery.isLoading ? 'Загрузка…' : title || 'Список'}
-				size="lg"
-				centered
-			>
+		<Modal
+			opened={opened}
+			onClose={handleClose}
+			title={detailQuery.isLoading ? 'Загрузка…' : title || 'Заметка'}
+			size="lg"
+			centered
+		>
 				{detailQuery.isLoading ? (
 					<Group justify="center" py="md">
 						<Loader size="sm" />
@@ -263,139 +214,68 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 				) : (
 					<Stack gap="sm">
 						<TextInput
-							label="Название"
+							placeholder="Заголовок"
 							value={title}
 							disabled={!canWrite}
 							onChange={(e) => setTitle(e.currentTarget.value)}
-						/>
-						<Group gap={6}>
-							{TODO_COLORS.map((c) => (
-								<button
-									key={c}
-									type="button"
-									disabled={!canWrite}
-									aria-label={`Цвет ${c}`}
-									onClick={() => setColor(c)}
-									style={{
-										width: 22,
-										height: 22,
-										borderRadius: '50%',
-										background: c,
-										border:
-											color === c
-												? '2px solid var(--mantine-color-text)'
-												: '1px solid var(--mantine-color-default-border)',
-										cursor: canWrite ? 'pointer' : 'default',
-									}}
-								/>
-							))}
-						</Group>
-
-						<SegmentedControl
-							value={mode}
-							onChange={switchMode}
-							data={[
-								{ label: 'Список', value: 'checklist' },
-								{ label: 'Markdown', value: 'markdown' },
-								{ label: 'Просмотр', value: 'preview' },
-							]}
+							styles={{
+								input: {
+									background: 'transparent',
+									fontWeight: 600,
+									fontSize: 20,
+									border: 'none',
+									paddingLeft: 0,
+								},
+							}}
 						/>
 
-						{mode === 'checklist' ? (
-							<Stack gap="xs">
+						{canWrite ? (
+							<MarkdownWysiwygEditor
+								content={notesMd}
+								onChange={setNotesMd}
+								formatNonce={0}
+								formatCommand={null}
+								undoNonce={0}
+								redoNonce={0}
+								onFormatHandled={() => undefined}
+								embedded
+								minHeight={160}
+							/>
+						) : notesMd.trim() ? (
+							<MarkdownPreview content={notesMd} />
+						) : (
+							<Text size="sm" c="dimmed">
+								Нет текста
+							</Text>
+						)}
+
+						{showChecklist ? (
+							<Stack gap={6}>
 								{items.map((item, index) => (
-									<Group key={index} align="flex-start" wrap="nowrap" gap="xs">
+									<Group key={item.id ?? `new-${index}`} wrap="nowrap" gap="xs">
 										<Checkbox
-											mt={8}
 											checked={item.done}
 											disabled={!canWrite}
 											onChange={(e) => updateItem(index, { done: e.currentTarget.checked })}
 										/>
-										<Stack gap={4} style={{ flex: 1 }}>
-											<TextInput
-												value={item.text}
-												disabled={!canWrite}
-												placeholder="Дело…"
-												onChange={(e) => updateItem(index, { text: e.currentTarget.value })}
-											/>
-											<DateTimeField
-												label="Срок"
-												value={item.due_at}
-												readOnly={!canWrite}
-												onChange={(value) => {
-													updateItem(index, {
-														due_at: value
-															? dayjs(value).format('YYYY-MM-DD HH:mm:ss')
-															: null,
-														...(value ? {} : { calendar_event_id: null }),
-													});
-												}}
-											/>
-											{item.due_at ? (
-												<Group gap={4}>
-													{item.calendar_event_id ? (
-														<Text size="xs" c="dimmed">
-															Связано с событием #{item.calendar_event_id}
-														</Text>
-													) : null}
-													{canWrite && !item.calendar_event_id ? (
-														<Tooltip label="Создать событие в календаре">
-															<ActionIcon
-																variant="subtle"
-																aria-label="В календарь"
-																loading={linkingIndex === index}
-																onClick={() => void linkToCalendar(index)}
-															>
-																<IconCalendarPlus size={16} />
-															</ActionIcon>
-														</Tooltip>
-													) : null}
-													<Tooltip label="Открыть календарь">
-														<ActionIcon
-															variant="subtle"
-															aria-label="Календарь"
-															onClick={() => openInCalendar(item)}
-														>
-															<IconCalendar size={16} />
-														</ActionIcon>
-													</Tooltip>
-												</Group>
-											) : null}
-											<Group gap={4}>
-												{item.board_card_id ? (
-													<>
-														<Text size="xs" c="dimmed">
-															Карточка #{item.board_card_id}
-														</Text>
-														<Tooltip label="Открыть на доске">
-															<ActionIcon
-																variant="subtle"
-																aria-label="Board"
-																onClick={() => openInBoard(item)}
-															>
-																<IconLayoutKanban size={16} />
-															</ActionIcon>
-														</Tooltip>
-													</>
-												) : canWrite && item.text.trim() ? (
-													<Tooltip label="Создать карточку Board">
-														<ActionIcon
-															variant="subtle"
-															aria-label="В Board"
-															onClick={() => setBoardConvertIndex(index)}
-														>
-															<IconLayoutKanban size={16} />
-														</ActionIcon>
-													</Tooltip>
-												) : null}
-											</Group>
-										</Stack>
+										<TextInput
+											value={item.text}
+											disabled={!canWrite}
+											placeholder="Пункт"
+											style={{ flex: 1 }}
+											onChange={(e) => updateItem(index, { text: e.currentTarget.value })}
+											onKeyDown={(event) => {
+												if (event.key === 'Enter' && canWrite && index === items.length - 1) {
+													event.preventDefault();
+													addItem();
+												}
+											}}
+										/>
 										{canWrite ? (
 											<ActionIcon
-												mt={6}
 												variant="subtle"
 												color="red"
-												aria-label="Удалить"
+												aria-label="Удалить пункт"
 												onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
 											>
 												<IconTrash size={16} />
@@ -404,154 +284,23 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 									</Group>
 								))}
 								{canWrite ? (
-									<Button
-										variant="light"
-										leftSection={<IconPlus size={16} />}
-										onClick={() => setItems((prev) => [...prev, { text: '', done: false, due_at: null }])}
-									>
-										Добавить дело
+									<Button variant="subtle" color="dark" leftSection={<IconPlus size={16} />} onClick={addItem}>
+										Пункт
 									</Button>
 								) : null}
-								<Textarea
-									label="Заметки (Markdown)"
-									minRows={3}
-									value={notesMd}
-									disabled={!canWrite}
-									onChange={(e) => setNotesMd(e.currentTarget.value)}
-								/>
 							</Stack>
+						) : canWrite ? (
+							<Button
+								variant="subtle"
+								color="dark"
+								leftSection={<IconListCheck size={16} />}
+								onClick={addItem}
+							>
+								Чеклист
+							</Button>
 						) : null}
-
-						{mode === 'markdown' ? (
-							<Textarea
-								minRows={12}
-								autosize
-								value={markdown}
-								disabled={!canWrite}
-								description="Чеклист: - [ ] текст | due:YYYY-MM-DD HH:mm. Заметки — после ---"
-								onChange={(e) => setMarkdown(e.currentTarget.value)}
-							/>
-						) : null}
-
-						{mode === 'preview' ? (
-							<Stack gap="xs">
-								{items.length === 0 && !notesMd.trim() ? (
-									<Text c="dimmed">Пустой список</Text>
-								) : (
-									<>
-										{items.map((item, index) => (
-											<Group key={index} gap="xs">
-												<Checkbox checked={item.done} readOnly />
-												<Text td={item.done ? 'line-through' : undefined}>{item.text}</Text>
-												{item.due_at ? (
-													<Text size="xs" c="dimmed">
-														до {dayjs(item.due_at).format('DD.MM.YYYY HH:mm')}
-													</Text>
-												) : null}
-											</Group>
-										))}
-										{notesMd.trim() ? (
-											<div>
-												<ReactMarkdown remarkPlugins={[remarkGfm]}>{notesMd}</ReactMarkdown>
-											</div>
-										) : null}
-									</>
-								)}
-							</Stack>
-						) : null}
-
-						<Group justify="space-between" mt="sm">
-							<Group gap="xs">
-								{isOwner ? (
-									<>
-										<Button
-											variant="light"
-											leftSection={<IconShare size={16} />}
-											onClick={() => setShareOpened(true)}
-										>
-											Поделиться
-										</Button>
-										<Tooltip label="Удалить список">
-											<ActionIcon
-												variant="light"
-												color="red"
-												aria-label="Удалить"
-												loading={deleteMutation.isPending}
-												onClick={() => {
-													confirmAction({
-														title: 'Удалить список?',
-														message:
-															'Список и все дела будут удалены без возможности восстановления.',
-														confirmLabel: 'Удалить',
-														cancelLabel: 'Отмена',
-														confirmColor: 'red',
-														onConfirm: () => deleteMutation.mutate(),
-													});
-												}}
-											>
-												<IconTrash size={16} />
-											</ActionIcon>
-										</Tooltip>
-									</>
-								) : null}
-							</Group>
-							<Group gap="xs">
-								<Button variant="default" onClick={onClose}>
-									Закрыть
-								</Button>
-								{canWrite ? (
-									<Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-										Сохранить
-									</Button>
-								) : null}
-							</Group>
-						</Group>
 					</Stack>
 				)}
-			</Modal>
-
-			{detail && isOwner ? (
-				<TodoShareModal
-					list={detail}
-					opened={shareOpened}
-					onClose={() => setShareOpened(false)}
-					onUpdated={(next) => setDetail(next)}
-				/>
-			) : null}
-
-			{boardConvertIndex !== null && items[boardConvertIndex] ? (
-				<ConvertTodoToBoardModal
-					opened
-					onClose={() => setBoardConvertIndex(null)}
-					title={items[boardConvertIndex]!.text}
-					dueAt={items[boardConvertIndex]!.due_at}
-					onLinked={(cardId, boardId) => {
-						const index = boardConvertIndex;
-						const nextItems = items.map((row, i) =>
-							i === index ? { ...row, board_card_id: cardId, board_id: boardId } : row,
-						);
-						setItems(nextItems);
-						if (listId) {
-							void todoApi.update(listId, {
-								title,
-								color,
-								notes_md: notesMd || null,
-								items: nextItems
-									.filter((row) => row.text.trim() !== '')
-									.map((row, position) => ({
-										id: row.id ?? null,
-										text: row.text.trim(),
-										done: row.done,
-										due_at: row.due_at,
-										calendar_event_id: row.calendar_event_id ?? null,
-										board_card_id: row.board_card_id ?? null,
-										position,
-									})),
-							});
-						}
-					}}
-				/>
-			) : null}
-		</>
+		</Modal>
 	);
 }

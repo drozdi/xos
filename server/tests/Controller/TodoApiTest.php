@@ -94,6 +94,20 @@ class TodoApiTest extends AuthWebTestCase
         $updated = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
         self::assertTrue($updated['items'][0]['done']);
 
+        $client->request(
+            'PUT',
+            '/api/todo/lists/'.$listId,
+            [],
+            [],
+            $headers,
+            json_encode(['due_at' => '2026-08-01 09:30:00'], JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseIsSuccessful();
+        /** @var array{due_at: ?string} $withDue */
+        $withDue = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertNotEmpty($withDue['due_at']);
+        self::assertStringContainsString('2026-08-01', (string) $withDue['due_at']);
+
         $client->request('GET', '/api/todo/users/by-email?email=owner@example.com', [], [], $guestHeaders);
         self::assertResponseIsSuccessful();
     }

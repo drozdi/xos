@@ -68,7 +68,15 @@ export function TodoShareModal({ list, opened, onClose, onUpdated }: TodoShareMo
 	};
 
 	return (
-		<Modal opened={opened} onClose={onClose} title="Поделиться списком" centered>
+		<Modal
+			opened={opened}
+			onClose={onClose}
+			title="Поделиться списком"
+			centered
+			styles={{
+				title: { color: 'var(--mantine-color-text)' },
+			}}
+		>
 			<Stack gap="sm">
 				<Text size="sm" c="dimmed">
 					Найдите пользователя по email и выдайте доступ.

@@ -29,4 +29,21 @@ class TodoListRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /** @return list<TodoList> */
+    public function findDueInRange(User $user, \DateTimeInterface $start, \DateTimeInterface $end): array
+    {
+        return $this->createQueryBuilder('l')
+            ->leftJoin('l.shares', 's')
+            ->andWhere('l.owner = :user OR s.user = :user')
+            ->andWhere('l.dueAt IS NOT NULL')
+            ->andWhere('l.dueAt >= :start AND l.dueAt <= :end')
+            ->setParameter('user', $user)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->orderBy('l.dueAt', 'ASC')
+            ->addOrderBy('l.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
