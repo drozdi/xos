@@ -111,6 +111,9 @@ export default defineConfig(({ mode }) => ({
 					) {
 						return 'vendor';
 					}
+					if (id.includes('node_modules/@mantine/')) {
+						return 'mantine';
+					}
 					if (id.includes('node_modules/@tanstack/react-query')) {
 						return 'query';
 					}

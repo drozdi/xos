@@ -159,7 +159,6 @@ class DeviceController extends AbstractController {
         if (!is_array($req['filters'] ?? null)) {
             $req['filters'] = [];
         }
-        unset($req['filters']['ou'], $req['filters']['ou_id']);
         $totalItems = $DeviceRepository->cnt($req['filters']);
         $query = $DeviceRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();

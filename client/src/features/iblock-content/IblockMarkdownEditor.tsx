@@ -17,7 +17,6 @@ import { uploadIblockFile } from '@/core/api/endpoints/iblockApi';
 import {
 	MARKDOWN_VIEW_MODE_LABELS,
 	MarkdownPreview,
-	MarkdownWysiwygEditor,
 	defaultMarkdownViewMode,
 	normalizeMarkdownViewMode,
 	showsMarkdownPreview,
@@ -25,6 +24,7 @@ import {
 	showsMarkdownWysiwyg,
 	type MarkdownViewMode,
 } from '@/features/markdown';
+import { MarkdownWysiwygEditor } from '@/features/markdown/MarkdownWysiwygEditor';
 
 import { insertMarkdownImage } from './insertMarkdownImage';
 
