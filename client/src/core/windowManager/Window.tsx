@@ -648,7 +648,11 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		>
 			<Box
 				ref={shellRef}
-				className={isWidget ? `xos-widget-shell ${XOS_WINDOW_DRAG_HANDLE_CLASS}` : undefined}
+				className={
+					isWidget
+						? `xos-widget-shell ${XOS_WINDOW_DRAG_HANDLE_CLASS}`
+						: `xos-window-shell${isActive ? ' xos-window-shell--active' : ''}`
+				}
 				data-xos-window-id={windowId}
 				data-xos-shell-role={windowState.shellRole ?? 'app'}
 				style={{

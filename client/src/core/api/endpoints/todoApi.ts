@@ -37,6 +37,8 @@ export const todoListSummarySchema = z.object({
 	owner: ownerSchema.optional(),
 	items_count: z.number().optional(),
 	items_preview: z.array(itemSchema).optional().default([]),
+	notes_preview: z.string().nullable().optional(),
+	due_at: z.string().nullable().optional(),
 	updated_at: z.string().nullable().optional(),
 });
 
@@ -45,6 +47,7 @@ export const todoListDetailSchema = z.object({
 	title: z.string(),
 	color: z.string(),
 	notes_md: z.string().nullable().optional(),
+	due_at: z.string().nullable().optional(),
 	markdown: z.string(),
 	is_owner: z.boolean(),
 	can_write: z.boolean(),
@@ -85,6 +88,7 @@ export type TodoListWritePayload = {
 	color?: string;
 	markdown?: string;
 	notes_md?: string | null;
+	due_at?: string | null;
 	items?: Array<{
 		id?: number | null;
 		text: string;

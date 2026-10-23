@@ -9,3 +9,44 @@
 	container-type: inline-size;
 	container-name: window;
 }
+
+/* Top stripe from xos.ui .xWindow:before/:after */
+.xos-window-shell::before,
+.xos-window-shell::after {
+	content: '';
+	position: absolute;
+	z-index: 6;
+	height: 0;
+	pointer-events: none;
+	box-sizing: border-box;
+	border-style: solid;
+	border-bottom-width: 0;
+	border-left-color: transparent;
+	border-right-color: transparent;
+}
+
+.xos-window-shell::before {
+	top: 0;
+	left: 8rem;
+	right: 8rem;
+	height: 9px;
+	border-top-width: 9px;
+	border-left-width: 9px;
+	border-right-width: 9px;
+	border-top-color: var(--xos-window-stripe, rgba(255, 255, 255, 0.15));
+}
+
+.xos-window-shell::after {
+	top: 1px;
+	left: calc(8rem + 1px);
+	right: calc(8rem + 1px);
+	height: 8px;
+	border-top-width: 8px;
+	border-left-width: 8px;
+	border-right-width: 8px;
+	border-top-color: color-mix(in srgb, #2196f3 50%, transparent);
+}
+
+.xos-window-shell--active::after {
+	border-top-color: #2633e7;
+}

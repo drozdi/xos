@@ -17,17 +17,6 @@ use Todo\Repository\TodoListRepository;
 
 class TodoManager extends AbstractManager
 {
-    private const COLORS = [
-        '#fff59d',
-        '#ffcc80',
-        '#ef9a9a',
-        '#ce93d8',
-        '#90caf9',
-        '#a5d6a7',
-        '#e0e0e0',
-        '#ffffff',
-    ];
-
     public function __construct(
         ValidatorInterface $validator,
         private readonly TodoMarkdownSync $markdownSync,
@@ -54,7 +43,7 @@ class TodoManager extends AbstractManager
     {
         $items = $this->getItemRepository()->findDueInRange($user, $start, $end);
 
-        return array_map(function (TodoItem $item): array {
+        $rows = array_map(function (TodoItem $item): array {
             $list = $item->getList();
 
             return [
@@ -72,6 +61,24 @@ class TodoManager extends AbstractManager
             $items,
             static fn (TodoItem $item): bool => null === $item->getCalendarEventId() && !$item->isDone(),
         )));
+
+        foreach ($this->getListRepository()->findDueInRange($user, $start, $end) as $list) {
+            $rows[] = [
+                'id' => -1 * (int) $list->getId(),
+                'list_id' => $list->getId(),
+                'list_title' => $list->getTitle(),
+                'list_color' => $list->getColor(),
+                'text' => $list->getTitle(),
+                'done' => false,
+                'due_at' => $list->getDueAt('Y-m-d\TH:i:s'),
+                'calendar_event_id' => null,
+                'board_card_id' => null,
+            ];
+        }
+
+        usort($rows, static fn (array $a, array $b): int => strcmp((string) $a['due_at'], (string) $b['due_at']));
+
+        return $rows;
     }
 
     /** @return list<array<string, mixed>> */
@@ -102,6 +109,10 @@ class TodoManager extends AbstractManager
         $list->setTitle(trim((string) ($data['title'] ?? 'Без названия')) ?: 'Без названия');
         $list->setColor($this->normalizeColor($data['color'] ?? null));
 
+        if (array_key_exists('due_at', $data)) {
+            $list->setDueAt($this->parseDue($data['due_at']));
+        }
+
         if (!empty($data['markdown']) && is_string($data['markdown'])) {
             $parsed = $this->markdownSync->parseMarkdown($data['markdown']);
             $this->markdownSync->applyParsedItems($list, $parsed['items']);
@@ -111,6 +122,8 @@ class TodoManager extends AbstractManager
             if (array_key_exists('notes_md', $data)) {
                 $list->setNotesMd(null !== $data['notes_md'] ? (string) $data['notes_md'] : null);
             }
+        } elseif (array_key_exists('notes_md', $data)) {
+            $list->setNotesMd(null !== $data['notes_md'] ? (string) $data['notes_md'] : null);
         }
 
         $em = $this->getEntityManager();
@@ -132,6 +145,9 @@ class TodoManager extends AbstractManager
         }
         if (array_key_exists('color', $data)) {
             $list->setColor($this->normalizeColor($data['color']));
+        }
+        if (array_key_exists('due_at', $data)) {
+            $list->setDueAt($this->parseDue($data['due_at']));
         }
 
         if (array_key_exists('markdown', $data) && is_string($data['markdown'])) {
@@ -308,6 +324,8 @@ class TodoManager extends AbstractManager
             ],
             'items_count' => $list->getItems()->count(),
             'items_preview' => $preview,
+            'notes_preview' => $this->notesPreview($list->getNotesMd()),
+            'due_at' => $list->getDueAt('Y-m-d H:i:s'),
             'updated_at' => $list->getXTimestamp('Y-m-d H:i:s'),
         ];
     }
@@ -337,6 +355,7 @@ class TodoManager extends AbstractManager
             'title' => $list->getTitle(),
             'color' => $list->getColor(),
             'notes_md' => $list->getNotesMd(),
+            'due_at' => $list->getDueAt('Y-m-d H:i:s'),
             'markdown' => $this->markdownSync->itemsToMarkdown($list),
             'is_owner' => $this->isOwner($list, $viewer),
             'can_write' => $this->canWrite($list, $viewer),
@@ -366,10 +385,38 @@ class TodoManager extends AbstractManager
         ];
     }
 
+    private function parseDue(mixed $raw): ?\DateTimeInterface
+    {
+        if (!is_string($raw) || '' === trim($raw)) {
+            return null;
+        }
+        try {
+            return new \DateTime($raw);
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    private function notesPreview(?string $notes): ?string
+    {
+        if (null === $notes) {
+            return null;
+        }
+        $text = trim((string) preg_replace('/[#>*_`\[\]]+/u', '', $notes));
+        if ('' === $text) {
+            return null;
+        }
+        if (mb_strlen($text) > 140) {
+            return mb_substr($text, 0, 140).'…';
+        }
+
+        return $text;
+    }
+
     private function normalizeColor(mixed $color): string
     {
         if (!is_string($color) || !preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
-            return self::COLORS[0];
+            return '';
         }
 
         return strtolower($color);

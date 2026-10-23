@@ -72,8 +72,9 @@ export function OverlayDetailModal({ event, opened, onClose }: OverlayDetailModa
 				</Text>
 				{todoPayload ? (
 					<>
-						<Text size="sm">Список: {todoPayload.list_title ?? '—'}</Text>
-						<Text size="sm">Статус: {todoPayload.done ? 'выполнено' : 'не выполнено'}</Text>
+						{todoPayload.id > 0 ? (
+							<Text size="sm">Статус: {todoPayload.done ? 'выполнено' : 'не выполнено'}</Text>
+						) : null}
 						{todoPayload.list_id ? (
 							<Button
 								size="xs"
@@ -85,7 +86,7 @@ export function OverlayDetailModal({ event, opened, onClose }: OverlayDetailModa
 									});
 								}}
 							>
-								Открыть список
+								Открыть заметку
 							</Button>
 						) : null}
 					</>
