@@ -25,7 +25,6 @@ import {
 	MARKDOWN_SAVE_AS_CONSUMER,
 	MARKDOWN_VIEW_MODE_LABELS,
 	MarkdownPreview,
-	MarkdownWysiwygEditor,
 	normalizeMarkdownViewMode,
 	showsMarkdownPreview,
 	showsMarkdownSource,
@@ -33,6 +32,7 @@ import {
 	useMarkdownEditorStore,
 	type MarkdownViewMode,
 } from '@/features/markdown';
+import { MarkdownWysiwygEditor } from '@/features/markdown/MarkdownWysiwygEditor';
 
 const MARKDOWN_FILE_TYPES = ['markdown'];
 const MARKDOWN_EXTENSIONS = ['md', 'markdown', 'mdown'];

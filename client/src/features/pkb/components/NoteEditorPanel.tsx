@@ -29,7 +29,6 @@ import {
 	EMPTY_MARKDOWN_SESSION,
 	MARKDOWN_VIEW_MODE_LABELS,
 	MarkdownPreview,
-	MarkdownWysiwygEditor,
 	normalizeMarkdownViewMode,
 	showsMarkdownPreview,
 	showsMarkdownSource,
@@ -37,6 +36,7 @@ import {
 	useMarkdownEditorStore,
 	type MarkdownViewMode,
 } from '@/features/markdown';
+import { MarkdownWysiwygEditor } from '@/features/markdown/MarkdownWysiwygEditor';
 import { WikilinkAutocompleteMenu } from '@/features/pkb/editor/WikilinkAutocompleteMenu';
 import { useWikilinkNavigate, parseIblockWikilink } from '@/features/pkb/editor/useWikilinkNavigate';
 import { applyPkbRenderPlugins, applyPkbSavePlugins } from '@/features/pkb/plugins/pkbPlugins';

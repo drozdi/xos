@@ -8,7 +8,6 @@ export {
 	type MarkdownViewMode,
 } from './markdownEditorStore';
 export { MarkdownPreview } from './MarkdownPreview';
-export { MarkdownWysiwygEditor } from './MarkdownWysiwygEditor';
 export {
 	defaultMarkdownViewMode,
 	MARKDOWN_VIEW_MODE_LABELS,
