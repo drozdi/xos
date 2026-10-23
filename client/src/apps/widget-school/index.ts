@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canAccessSchooltaskCalendars } from '@/features/schooltask/schooltaskAccess';
 
 import { WidgetUpcomingIcon } from '../widget-upcoming/WidgetUpcomingIcon';
 
@@ -16,6 +17,7 @@ const manifest: AppManifest = {
 	minSize: { width: 180, height: 120 },
 	wmGroup: 'tools',
 	startMenuGroup: 'tools',
+	canAccess: () => canAccessSchooltaskCalendars(),
 	singleInstance: true,
 	shellRole: 'widget',
 	showInTaskbar: false,

@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
+import { canReadExplorer } from '@/features/explorer/explorerAccess';
 
 import { WidgetUpcomingIcon } from '../widget-upcoming/WidgetUpcomingIcon';
 
@@ -16,6 +17,8 @@ const manifest: AppManifest = {
 	minSize: { width: 180, height: 120 },
 	wmGroup: 'tools',
 	startMenuGroup: 'tools',
+	requiredRole: 'explorer',
+	canAccess: canReadExplorer,
 	singleInstance: true,
 	shellRole: 'widget',
 	showInTaskbar: false,
