@@ -267,7 +267,7 @@ MD,
         $this->ensureProperty($notesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
         $this->ensureProperty($notesBlock, 'TAGS', 'Теги', 'S', true, 20);
 
-        $this->ensureProperty($recipesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
+        $this->ensureProperty($recipesBlock, 'COVER', 'Галерея', 'F', true, 10, 'image');
         $this->ensureProperty($recipesBlock, 'PREP_MIN', 'Подготовка (мин)', 'N', false, 20);
         $this->ensureProperty($recipesBlock, 'COOK_MIN', 'Готовка (мин)', 'N', false, 30);
         $this->ensureProperty($recipesBlock, 'SERVINGS', 'Порции', 'N', false, 40);

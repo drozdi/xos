@@ -26,7 +26,6 @@ import {
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import {
 	canCreateRecipe,
-	useCanDeleteRecipe,
 	useCanReadRecipe,
 	useCanUpdateRecipe,
 } from '@/features/iblock-content/recipeAccess';
@@ -34,6 +33,7 @@ import { useEntityId, useIblockLaunchProps } from '@/features/iblock/iblockAppUt
 import {
 	CONTENT_PROPS,
 	CoverField,
+	IblockImageField,
 	IblockMarkdownEditor,
 	RECIPES_BLOCK_CODE,
 	RecipeShareModal,
@@ -57,6 +57,10 @@ const initialData: IblockElementDetail = {
 	description: '',
 	preview_text: '',
 	detail_text: '',
+	preview_image: null,
+	detail_image: null,
+	preview_image_id: null,
+	detail_image_id: null,
 	sort: 0,
 	active: true,
 	active_from: '',
@@ -80,10 +84,11 @@ export default function RecipeApp() {
 	const launchProps = useIblockLaunchProps();
 	const canRead = useCanReadRecipe();
 	const canUpdate = useCanUpdateRecipe();
-	const canDelete = useCanDeleteRecipe();
 	const canCreate = canCreateRecipe();
 	const isNew = entityId === 0;
-	const [mode, setMode] = useState<'view' | 'edit'>(isNew ? 'edit' : 'view');
+	const [mode, setMode] = useState<'view' | 'edit'>(() =>
+		isNew || launchProps.mode === 'edit' ? 'edit' : 'view',
+	);
 	const [shareOpen, setShareOpen] = useState(false);
 	const {
 		blockId,
@@ -106,6 +111,15 @@ export default function RecipeApp() {
 			setViewData(detailQuery.data);
 		}
 	}, [detailQuery.data]);
+
+	useEffect(() => {
+		if (isNew || mode !== 'edit' || !viewData) {
+			return;
+		}
+		if (!(canUpdate && viewData.can_write)) {
+			setMode('view');
+		}
+	}, [isNew, mode, viewData, canUpdate]);
 
 	useWindowTitle(
 		isNew
@@ -188,7 +202,9 @@ export default function RecipeApp() {
 				<RecipeView
 					data={viewData}
 					difficultyLabel={difficultyLabel}
-					onEdit={viewData.is_owner ? () => setMode('edit') : undefined}
+					onEdit={
+						canUpdate && viewData.can_write ? () => setMode('edit') : undefined
+					}
 					onShare={viewData.is_owner ? () => setShareOpen(true) : undefined}
 				/>
 				{viewData.is_owner ? (
@@ -205,7 +221,14 @@ export default function RecipeApp() {
 
 	const canSave =
 		(isNew ? canCreate : canUpdate && (viewData?.can_write ?? true)) && isReady;
-	const canRemove = !isNew && canDelete && (viewData?.is_owner ?? false);
+
+	const goToView = async () => {
+		const result = await detailQuery.refetch();
+		if (result.data) {
+			setViewData(result.data);
+		}
+		setMode('view');
+	};
 
 	return (
 		<>
@@ -219,30 +242,27 @@ export default function RecipeApp() {
 				create={async (data) =>
 					iblockElementApi.create(await serializeRecipePayload(data, { allocateCode: true }))
 				}
-				remove={iblockElementApi.remove}
 				initialData={initialData}
 				buildNewData={buildNewData}
 				validate={validateRecipeForm}
 				canSave={canSave}
-				canDelete={canRemove}
-				headerNote={
+				canDelete={false}
+				autoSaveMs={3000}
+				headerActions={
 					!isNew
-						? () => (
-								<Group gap="xs">
+						? ({ flushSave }) => (
+								<>
 									<Button
 										size="xs"
-										variant="subtle"
+										variant="default"
 										leftSection={<IconArrowLeft size={14} />}
 										onClick={() => {
-											void detailQuery.refetch().then((r) => {
-												if (r.data) setViewData(r.data);
-												setMode('view');
-											});
+											void flushSave().then(() => goToView());
 										}}
 									>
-										К просмотру
+										Просмотр
 									</Button>
-									{(viewData?.is_owner ?? false) && (
+									{(viewData?.is_owner ?? false) ? (
 										<ActionIcon
 											variant="light"
 											aria-label="Поделиться"
@@ -250,8 +270,8 @@ export default function RecipeApp() {
 										>
 											<IconShare size={16} />
 										</ActionIcon>
-									)}
-								</Group>
+									) : null}
+								</>
 							)
 						: undefined
 				}
@@ -304,6 +324,8 @@ async function serializeRecipePayload(
 		name: data.name,
 		preview_text: data.preview_text,
 		detail_text: data.detail_text,
+		detail_image: data.detail_image,
+		detail_image_id: data.detail_image?.id ?? data.detail_image_id ?? null,
 		sort: data.sort,
 		active: data.active,
 		block_id: data.block_id,
@@ -392,10 +414,21 @@ function RecipeFormFields({
 						searchable
 						clearable
 					/>
+					<IblockImageField
+						label="Картинка"
+						value={data.detail_image}
+						readOnly={readOnly}
+						onChange={(next) => {
+							setField('detail_image', next);
+							setField('detail_image_id', next?.id ?? null);
+						}}
+					/>
 					<CoverField
 						values={data.PROPERTY_VALUES}
 						readOnly={readOnly}
 						multiple
+						label="Галерея"
+						emptyLabel="Нет фото в галерее"
 						onChange={(next) => setField('PROPERTY_VALUES', next)}
 					/>
 					<Group grow>

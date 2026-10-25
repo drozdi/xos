@@ -15,17 +15,23 @@ export function CoverField({
 	values,
 	readOnly,
 	multiple = false,
+	label,
+	emptyLabel,
 	onChange,
 }: {
 	values: Values | undefined;
 	readOnly?: boolean;
 	/** Multiple file property (recipes COVER). */
 	multiple?: boolean;
+	label?: string;
+	emptyLabel?: string;
 	onChange: (next: Values) => void;
 }) {
 	const [uploading, setUploading] = useState(false);
 	const items = fileItemsFromProperty(values?.[CONTENT_PROPS.COVER]);
 	const hasFile = items.length > 0;
+	const title = label ?? (multiple ? 'Обложки' : 'Обложка');
+	const emptyText = emptyLabel ?? 'Нет изображения';
 
 	const setItems = (next: FileItem[]) => {
 		if (multiple) {
@@ -52,7 +58,7 @@ export function CoverField({
 				setItems(uploaded.slice(0, 1));
 			}
 		} catch (error) {
-			notifyApiError(error, 'Ошибка загрузки обложки');
+			notifyApiError(error, `Ошибка загрузки: ${title}`);
 		} finally {
 			setUploading(false);
 		}
@@ -61,7 +67,7 @@ export function CoverField({
 	return (
 		<Stack gap="xs">
 			<Text size="sm" fw={500}>
-				{multiple ? 'Обложки' : 'Обложка'}
+				{title}
 			</Text>
 			{items.length > 0 ? (
 				<Group gap="sm" wrap="wrap">
@@ -69,7 +75,7 @@ export function CoverField({
 						<Stack key={item.id} gap={4} align="flex-start">
 							<AuthFileImage
 								fileId={item.id}
-								alt={item.name || 'cover'}
+								alt={item.name || title}
 								h={120}
 								w="auto"
 								fit="contain"
@@ -90,7 +96,7 @@ export function CoverField({
 				</Group>
 			) : (
 				<Text size="sm" c="dimmed">
-					Нет изображения
+					{emptyText}
 				</Text>
 			)}
 			{!readOnly && (

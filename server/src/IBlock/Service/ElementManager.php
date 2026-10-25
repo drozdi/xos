@@ -754,6 +754,11 @@ class ElementManager extends AbstractIBlockManager
     /** @return array{id: int, name: string, src: string}|null */
     private function serializeCoverFile(Element $element): ?array
     {
+        $detail = IblockImageRef::serialize($element->getDetailImage());
+        if (null !== $detail) {
+            return $detail;
+        }
+
         foreach ($element->getPropertyValues() as $row) {
             $property = $row->getProperty();
             if (!$property || 'COVER' !== strtoupper((string) $property->getCode())) {

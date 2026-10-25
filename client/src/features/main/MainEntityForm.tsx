@@ -10,7 +10,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import {
@@ -23,6 +23,13 @@ import { useAppContext } from '@/core/context/AppContext';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 
 import { useEntityId } from './mainAppUtils';
+
+interface MainEntityFormHeaderActionsContext<T> {
+	data: T;
+	isNew: boolean;
+	isSaving: boolean;
+	flushSave: () => Promise<void>;
+}
 
 interface MainEntityFormProps<T> {
 	title: string;
@@ -41,12 +48,16 @@ interface MainEntityFormProps<T> {
 		errors: Partial<Record<keyof T & string, string>>;
 	}) => ReactNode;
 	headerNote?: (props: { data: T; isNew: boolean }) => ReactNode;
+	/** Replaces the default Save button when provided (e.g. View / Share). */
+	headerActions?: (props: MainEntityFormHeaderActionsContext<T>) => ReactNode;
 	initialData: T;
 	buildNewData?: () => Promise<T>;
 	validate?: (data: T) => Partial<Record<keyof T & string, string>>;
 	transformBeforeSave?: (data: T) => T;
 	canSave?: boolean;
 	canDelete?: boolean;
+	/** Debounced autosave for existing records (ms). Notes-style: 3000. */
+	autoSaveMs?: number;
 }
 
 export function MainEntityForm<T extends Record<string, unknown>>({
@@ -60,12 +71,14 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	remove,
 	children,
 	headerNote,
+	headerActions,
 	initialData,
 	buildNewData,
 	validate,
 	transformBeforeSave,
 	canSave = true,
 	canDelete = false,
+	autoSaveMs,
 }: MainEntityFormProps<T>) {
 	const { windowId } = useAppContext();
 	const closeWindow = useWmStore((state) => state.closeWindow);
@@ -74,6 +87,14 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	const queryClient = useQueryClient();
 	const [form, setForm] = useState<T>(initialData);
 	const [errors, setErrors] = useState<Partial<Record<keyof T & string, string>>>({});
+	const [hydratedFor, setHydratedFor] = useState<number | null>(null);
+	const savedSnapshot = useRef('');
+	const saveTimer = useRef<number | null>(null);
+	const saveQueue = useRef(Promise.resolve());
+	const formRef = useRef(form);
+	formRef.current = form;
+	const canSaveRef = useRef(canSave);
+	canSaveRef.current = canSave;
 
 	useWindowTitle(isNew ? `${title} (новый)` : `${title} #${entityId}`);
 
@@ -83,10 +104,101 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	});
 
 	useEffect(() => {
-		if (data) {
-			setForm(data);
+		if (!data) {
+			return;
 		}
-	}, [data]);
+		setForm(data);
+		savedSnapshot.current = JSON.stringify(data);
+		setHydratedFor(isNew ? 0 : entityId);
+	}, [data, entityId, isNew]);
+
+	const invalidateAfterSave = useCallback(() => {
+		void queryClient.invalidateQueries({ queryKey });
+		if (listQueryKey) {
+			void queryClient.invalidateQueries({ queryKey: listQueryKey });
+		}
+		for (const key of invalidateQueryKeys ?? []) {
+			void queryClient.invalidateQueries({ queryKey: key });
+		}
+	}, [invalidateQueryKeys, listQueryKey, queryClient, queryKey]);
+
+	const persistExisting = useCallback(
+		async (options?: { silent?: boolean }) => {
+			if (isNew || !canSaveRef.current) {
+				return;
+			}
+			const current = formRef.current;
+			const snap = JSON.stringify(current);
+			if (snap === savedSnapshot.current) {
+				return;
+			}
+			if (validate) {
+				const nextErrors = validate(current);
+				if (Object.keys(nextErrors).length > 0) {
+					setErrors(nextErrors);
+					return;
+				}
+			}
+			setErrors({});
+			const payload = transformBeforeSave ? transformBeforeSave(current) : current;
+			await save(entityId, payload);
+			savedSnapshot.current = snap;
+			invalidateAfterSave();
+			if (!options?.silent) {
+				notifications.show({ message: 'Сохранено', color: 'green' });
+			}
+		},
+		[entityId, invalidateAfterSave, isNew, save, transformBeforeSave, validate],
+	);
+
+	const flushSave = useCallback(() => {
+		if (saveTimer.current !== null) {
+			window.clearTimeout(saveTimer.current);
+			saveTimer.current = null;
+		}
+		const next = saveQueue.current.then(
+			() => persistExisting({ silent: true }),
+			() => persistExisting({ silent: true }),
+		);
+		saveQueue.current = next.then(
+			() => undefined,
+			() => undefined,
+		);
+		return next;
+	}, [persistExisting]);
+
+	useEffect(() => {
+		if (!autoSaveMs || isNew || !canSave || hydratedFor !== entityId) {
+			return;
+		}
+		if (JSON.stringify(form) === savedSnapshot.current) {
+			return;
+		}
+		saveTimer.current = window.setTimeout(() => {
+			saveTimer.current = null;
+			const next = saveQueue.current.then(
+				() => persistExisting({ silent: true }),
+				() => persistExisting({ silent: true }),
+			);
+			saveQueue.current = next.then(
+				() => undefined,
+				() => undefined,
+			);
+			void next.catch((err: unknown) => {
+				const fieldErrors = extractApiFieldErrors(err);
+				if (Object.keys(fieldErrors).length > 0) {
+					setErrors(fieldErrors as Partial<Record<keyof T & string, string>>);
+				}
+				notifyApiError(err, 'Не удалось сохранить');
+			});
+		}, autoSaveMs);
+		return () => {
+			if (saveTimer.current !== null) {
+				window.clearTimeout(saveTimer.current);
+				saveTimer.current = null;
+			}
+		};
+	}, [autoSaveMs, canSave, entityId, form, hydratedFor, isNew, persistExisting]);
 
 	const mutation = useMutation({
 		mutationFn: async () => {
@@ -109,13 +221,8 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 		},
 		onSuccess: () => {
 			notifications.show({ message: 'Сохранено', color: 'green' });
-			void queryClient.invalidateQueries({ queryKey });
-			if (listQueryKey) {
-				void queryClient.invalidateQueries({ queryKey: listQueryKey });
-			}
-			for (const key of invalidateQueryKeys ?? []) {
-				void queryClient.invalidateQueries({ queryKey: key });
-			}
+			savedSnapshot.current = JSON.stringify(formRef.current);
+			invalidateAfterSave();
 		},
 		onError: (err: unknown) => {
 			const fieldErrors = extractApiFieldErrors(err);
@@ -174,6 +281,7 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 	};
 
 	const readOnly = !isNew && !canSave;
+	const showDefaultSave = canSave && (isNew || !autoSaveMs) && !headerActions;
 
 	return (
 		<ScrollArea h="100%" p="md">
@@ -203,7 +311,18 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 								Удалить
 							</Button>
 						) : null}
-						{canSave ? (
+						{headerActions
+							? headerActions({
+									data: form,
+									isNew,
+									isSaving: mutation.isPending,
+									flushSave: () =>
+										flushSave().catch((err: unknown) => {
+											notifyApiError(err, 'Не удалось сохранить');
+										}),
+								})
+							: null}
+						{showDefaultSave ? (
 							<Button
 								size="xs"
 								loading={mutation.isPending}
@@ -221,6 +340,11 @@ export function MainEntityForm<T extends Record<string, unknown>>({
 								}}
 							>
 								Сохранить
+							</Button>
+						) : null}
+						{canSave && isNew && headerActions ? (
+							<Button size="xs" loading={mutation.isPending} onClick={() => mutation.mutate()}>
+								Создать
 							</Button>
 						) : null}
 					</Group>

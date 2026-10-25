@@ -37,7 +37,10 @@ interface RecipeViewProps {
 
 export function RecipeView({ data, difficultyLabel, onEdit, onShare }: RecipeViewProps) {
 	const values = data.PROPERTY_VALUES ?? {};
-	const coverItems = fileItemsFromProperty(values[CONTENT_PROPS.COVER]);
+	const detailImage = data.detail_image;
+	const coverItems = fileItemsFromProperty(values[CONTENT_PROPS.COVER]).filter(
+		(item) => item.id !== detailImage?.id,
+	);
 	const ingredients = stringListFromProperty(values[CONTENT_PROPS.INGREDIENTS]).filter(Boolean);
 	const prep = numberFromProperty(values[CONTENT_PROPS.PREP_MIN]);
 	const cook = numberFromProperty(values[CONTENT_PROPS.COOK_MIN]);
@@ -58,14 +61,14 @@ export function RecipeView({ data, difficultyLabel, onEdit, onShare }: RecipeVie
 					) : null}
 				</div>
 				<Group gap="xs">
-					{data.is_owner && onShare ? (
+					{onShare ? (
 						<Tooltip label="Поделиться">
 							<ActionIcon variant="light" aria-label="Поделиться" onClick={onShare}>
 								<IconShare size={18} />
 							</ActionIcon>
 						</Tooltip>
 					) : null}
-					{data.is_owner && onEdit ? (
+					{onEdit ? (
 						<Button size="xs" leftSection={<IconEdit size={14} />} onClick={onEdit}>
 							Редактировать
 						</Button>
@@ -78,19 +81,35 @@ export function RecipeView({ data, difficultyLabel, onEdit, onShare }: RecipeVie
 				</Group>
 			</Group>
 
+			{detailImage?.id ? (
+				<AuthFileImage
+					fileId={detailImage.id}
+					alt={data.name || detailImage.name || 'Картинка'}
+					mah={360}
+					w="100%"
+					fit="contain"
+					radius="sm"
+				/>
+			) : null}
+
 			{coverItems.length > 0 ? (
-				<Group gap="sm" wrap="wrap">
-					{coverItems.map((item) => (
-						<AuthFileImage
-							key={item.id}
-							fileId={item.id}
-							alt={data.name || item.name || 'cover'}
-							mah={280}
-							fit="contain"
-							radius="sm"
-						/>
-					))}
-				</Group>
+				<Box>
+					<Text fw={600} mb="xs">
+						Галерея
+					</Text>
+					<Group gap="sm" wrap="wrap">
+						{coverItems.map((item) => (
+							<AuthFileImage
+								key={item.id}
+								fileId={item.id}
+								alt={data.name || item.name || 'gallery'}
+								mah={200}
+								fit="contain"
+								radius="sm"
+							/>
+						))}
+					</Group>
+				</Box>
 			) : null}
 
 			<Group gap="sm" wrap="wrap">
