@@ -162,4 +162,8 @@ export const queryKeys = {
 		members: (vaultId: number) => ['pkb', 'members', vaultId] as const,
 		bookmarks: (vaultId: number) => ['pkb', 'bookmarks', vaultId] as const,
 	},
+	ssh: {
+		connections: ['ssh', 'connections'] as const,
+		keys: ['ssh', 'keys'] as const,
+	},
 } as const;

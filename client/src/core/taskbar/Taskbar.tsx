@@ -1,27 +1,11 @@
-import { Box, Group, Text } from '@mantine/core';
-import dayjs from 'dayjs';
-import { memo, useEffect, useState } from 'react';
+import { Box, Group } from '@mantine/core';
 
 import { HKEY_CONFIG_DEFAULTS } from '@/config/defaults';
+import { NotificationCenterButton } from '@/core/notifications';
 
 import { RunningApps } from './RunningApps';
 import { StartMenu } from './StartMenu';
-import { NotificationCenterButton } from '@/core/notifications';
-
-const TaskbarClock = memo(() => {
-	const [now, setNow] = useState(() => dayjs());
-
-	useEffect(() => {
-		const timer = window.setInterval(() => setNow(dayjs()), 30_000);
-		return () => window.clearInterval(timer);
-	}, []);
-
-	return (
-		<Text size="xs" c="dimmed">
-			{now.format('HH:mm')}
-		</Text>
-	);
-});
+import { TaskbarClock } from './TaskbarClock';
 
 export function Taskbar() {
 	return (

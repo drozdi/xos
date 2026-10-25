@@ -1,0 +1,10 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Ssh\:
+        resource: '../'
+        exclude:
+            - '../Entity/'
+            - '../config/'
