@@ -15,6 +15,7 @@ export const PROTECTED_APP_MODULES = [
 	'iblock',
 	'recipe',
 	'inbox',
+	'ssh',
 ] as const;
 
 export type ProtectedAppModule = (typeof PROTECTED_APP_MODULES)[number];

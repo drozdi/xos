@@ -25,7 +25,6 @@ import {
 	iblockSectionApi,
 	uploadIblockFile,
 	type IblockElementDetail,
-	type IblockPropertyDetail,
 } from '@/core/api/endpoints/iblockApi';
 import {
 	canCreateIblockElement,
@@ -75,13 +74,46 @@ type PropertyValueObject = {
 	src?: string;
 };
 
+type PrototypeTuple = Record<string, PropertyValue>;
+
 type PropertyValue =
 	| string
 	| number
 	| boolean
 	| null
 	| PropertyValueObject
-	| Array<string | number | boolean | null | PropertyValueObject>;
+	| PrototypeTuple
+	| Array<string | number | boolean | null | PropertyValueObject | PrototypeTuple>;
+
+type PropertyFieldModel = {
+	id: number;
+	code?: string | null;
+	name?: string | null;
+	field_type?: string | null;
+	multiple?: boolean | null;
+	required?: boolean | null;
+	file_type?: string | null;
+	link_iblock_id?: number | null;
+	children?: PropertyFieldModel[];
+};
+
+function isPrototypeTuple(value: PropertyValue): value is PrototypeTuple {
+	return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function prototypeTuples(value: PropertyValue | undefined, multiple: boolean): PrototypeTuple[] {
+	if (multiple) {
+		if (!Array.isArray(value)) {
+			return [{}];
+		}
+		const tuples = value.filter(isPrototypeTuple);
+		return tuples.length > 0 ? tuples : [{}];
+	}
+	if (value != null && isPrototypeTuple(value)) {
+		return [value];
+	}
+	return [{}];
+}
 
 function toIdString(value: PropertyValue | undefined): string | null {
 	if (value == null || value === '') return null;
@@ -130,11 +162,13 @@ function PropertyValueField({
 	property,
 	value,
 	readOnly,
+	required = false,
 	onChange,
 }: {
-	property: IblockPropertyDetail;
+	property: PropertyFieldModel;
 	value: PropertyValue | undefined;
 	readOnly: boolean;
+	required?: boolean;
 	onChange: (next: PropertyValue) => void;
 }) {
 	const fieldType = (property.field_type ?? '').toUpperCase();
@@ -237,10 +271,74 @@ function PropertyValueField({
 		onSettled: () => setUploading(false),
 	});
 
+	if (fieldType === 'P') {
+		const children = property.children ?? [];
+		const multiple = Boolean(property.multiple);
+		const tuples = prototypeTuples(value, multiple);
+		const writeTuples = (nextTuples: PrototypeTuple[]) => {
+			onChange(multiple ? nextTuples : (nextTuples[0] ?? {}));
+		};
+		return (
+			<Stack gap="xs">
+				<Text size="sm" fw={500}>
+					{label}
+					{required ? ' *' : ''}
+				</Text>
+				{children.length === 0 ? (
+					<Text size="sm" c="dimmed">
+						У прототипа нет полей
+					</Text>
+				) : (
+					tuples.map((tuple, index) => (
+						<Stack
+							key={`${property.id}-${index}`}
+							gap="xs"
+							p="xs"
+							style={{ border: '1px solid var(--mantine-color-default-border)', borderRadius: 8 }}
+						>
+							{children.map((child) => {
+								const childCode = child.code || String(child.id);
+								return (
+									<PropertyValueField
+										key={child.id}
+										property={child}
+										value={tuple[childCode]}
+										readOnly={readOnly}
+										required={required}
+										onChange={(next) => {
+											const nextTuple = { ...tuple, [childCode]: next };
+											writeTuples(tuples.map((item, itemIndex) => (itemIndex === index ? nextTuple : item)));
+										}}
+									/>
+								);
+							})}
+							{multiple && !readOnly ? (
+								<Button
+									size="compact-xs"
+									variant="subtle"
+									color="red"
+									onClick={() => writeTuples(tuples.filter((_, itemIndex) => itemIndex !== index))}
+								>
+									Удалить
+								</Button>
+							) : null}
+						</Stack>
+					))
+				)}
+				{multiple && !readOnly ? (
+					<Button size="compact-xs" variant="light" onClick={() => writeTuples([...tuples, {}])}>
+						Добавить
+					</Button>
+				) : null}
+			</Stack>
+		);
+	}
+
 	if (fieldType === 'N') {
 		return (
 			<NumberInput
 				label={label}
+				withAsterisk={required}
 				value={
 					typeof value === 'number'
 						? value
@@ -259,6 +357,7 @@ function PropertyValueField({
 			return (
 				<MultiSelect
 					label={label}
+					withAsterisk={required}
 					data={enumOptions}
 					value={toIdStringList(value)}
 					disabled={readOnly}
@@ -271,6 +370,7 @@ function PropertyValueField({
 		return (
 			<Select
 				label={label}
+				withAsterisk={required}
 				data={enumOptions}
 				value={toIdString(value)}
 				readOnly={readOnly}
@@ -288,6 +388,7 @@ function PropertyValueField({
 			<Stack gap={4}>
 				<Text size="sm" fw={500}>
 					{label}
+					{required ? ' *' : ''}
 				</Text>
 				{displayName ? (
 					<Text size="sm" c="dimmed">
@@ -348,6 +449,7 @@ function PropertyValueField({
 			return (
 				<MultiSelect
 					label={label}
+					withAsterisk={required}
 					data={elementOptions}
 					value={toIdStringList(value)}
 					disabled={readOnly}
@@ -360,6 +462,7 @@ function PropertyValueField({
 		return (
 			<Select
 				label={label}
+				withAsterisk={required}
 				data={elementOptions}
 				value={toIdString(value)}
 				readOnly={readOnly}
@@ -382,6 +485,7 @@ function PropertyValueField({
 			return (
 				<MultiSelect
 					label={label}
+					withAsterisk={required}
 					data={sectionOptions}
 					value={toIdStringList(value)}
 					disabled={readOnly}
@@ -394,6 +498,7 @@ function PropertyValueField({
 		return (
 			<Select
 				label={label}
+				withAsterisk={required}
 				data={sectionOptions}
 				value={toIdString(value)}
 				readOnly={readOnly}
@@ -408,6 +513,7 @@ function PropertyValueField({
 		return (
 			<TextInput
 				label={label}
+				withAsterisk={required}
 				value={
 					value == null || Array.isArray(value) || typeof value === 'object'
 						? ''
@@ -422,6 +528,7 @@ function PropertyValueField({
 	return (
 		<TextInput
 			label={`${label} (${property.field_type})`}
+			withAsterisk={required}
 			value={
 				value == null || Array.isArray(value) || typeof value === 'object'
 					? ''
@@ -493,6 +600,7 @@ function PropertyValuesEditor({
 						property={property}
 						value={values[code]}
 						readOnly={readOnly}
+						required={Boolean(property.required)}
 						onChange={(next) => onChange({ ...values, [code]: next })}
 					/>
 				);

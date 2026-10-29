@@ -72,7 +72,7 @@ class PropertyEnumController extends AbstractController
         return $this->json($payload);
     }
 
-    #[Route('/', name: 'create', methods: ['POST'])]
+    #[Route('', name: 'create', methods: ['POST'])]
     #[Access('can_create')]
     public function createAction(Request $request): JsonResponse
     {

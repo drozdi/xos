@@ -24,6 +24,7 @@ describe('protectedApps', () => {
 			'iblock',
 			'recipe',
 			'inbox',
+			'ssh',
 		]);
 	});
 
@@ -59,6 +60,9 @@ describe('protectedApps', () => {
 		expect(canUseAppModule('recipe')).toBe(true);
 		setUserRoles(['ROLE_USER', 'ROLE_INBOX']);
 		expect(canUseAppModule('inbox')).toBe(true);
+		expect(canUseAppModule('ssh')).toBe(false);
+		setUserRoles(['ROLE_USER', 'ROLE_SSH']);
+		expect(canUseAppModule('ssh')).toBe(true);
 		resetUserRoles();
 	});
 });

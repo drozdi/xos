@@ -1,7 +1,13 @@
 import { ActionIcon, Box, Center, Group, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import { IconChevronLeft, IconChevronRight, IconZoomIn, IconZoomOut } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
-import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy } from 'pdfjs-dist';
+import {
+	getDocument,
+	GlobalWorkerOptions,
+	type PDFDocumentProxy,
+	type PDFDocumentLoadingTask,
+	type RenderTask,
+} from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
@@ -28,6 +34,8 @@ export default function ExplorerPdfViewerApp() {
 
 	useWindowTitle(currentPath ? getExplorerFileName(currentPath) : 'PDF');
 
+	const showLoader = Boolean(currentPath) && !error && (loading || !url || !doc);
+
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
@@ -46,13 +54,20 @@ export default function ExplorerPdfViewerApp() {
 			setPage(1);
 			return;
 		}
+
 		let cancelled = false;
 		setLoading(true);
 		setError(null);
-		void getDocument(url)
-			.promise.then((pdf) => {
+		setDoc(null);
+		setPageCount(0);
+		setPage(1);
+
+		// pdfjs-dist v6: getDocument only accepts DocumentInitParameters;
+		// tear down via loadingTask.destroy() (PDFDocumentProxy.destroy was removed).
+		const loadingTask: PDFDocumentLoadingTask = getDocument({ url });
+		void loadingTask.promise
+			.then((pdf) => {
 				if (cancelled) {
-					void pdf.destroy();
 					return;
 				}
 				setDoc(pdf);
@@ -70,8 +85,13 @@ export default function ExplorerPdfViewerApp() {
 					setLoading(false);
 				}
 			});
+
 		return () => {
 			cancelled = true;
+			setDoc(null);
+			void loadingTask.destroy().catch(() => {
+				/* ignore teardown races */
+			});
 		};
 	}, [url]);
 
@@ -80,26 +100,29 @@ export default function ExplorerPdfViewerApp() {
 			return;
 		}
 		let cancelled = false;
+		let renderTask: RenderTask | null = null;
 		void (async () => {
-			const pdfPage = await doc.getPage(page);
-			if (cancelled) {
-				return;
+			try {
+				const pdfPage = await doc.getPage(page);
+				if (cancelled) {
+					return;
+				}
+				const viewport = pdfPage.getViewport({ scale });
+				const canvas = canvasRef.current;
+				if (!canvas) {
+					return;
+				}
+				canvas.width = viewport.width;
+				canvas.height = viewport.height;
+				renderTask = pdfPage.render({ canvas, viewport });
+				await renderTask.promise;
+			} catch {
+				// Cancelled / destroyed document — ignore.
 			}
-			const viewport = pdfPage.getViewport({ scale });
-			const canvas = canvasRef.current;
-			if (!canvas) {
-				return;
-			}
-			const context = canvas.getContext('2d');
-			if (!context) {
-				return;
-			}
-			canvas.width = viewport.width;
-			canvas.height = viewport.height;
-			await pdfPage.render({ canvas, canvasContext: context, viewport }).promise;
 		})();
 		return () => {
 			cancelled = true;
+			renderTask?.cancel();
 		};
 	}, [doc, page, scale]);
 
@@ -154,23 +177,40 @@ export default function ExplorerPdfViewerApp() {
 					</ActionIcon>
 				</Group>
 			</Group>
-			<Box style={{ flex: 1, minHeight: 0, overflow: 'auto', background: 'var(--mantine-color-gray-2)' }}>
+			<Box
+				style={{
+					flex: 1,
+					minHeight: 0,
+					overflow: 'auto',
+					background: 'var(--mantine-color-gray-2)',
+					position: 'relative',
+				}}
+			>
 				{!currentPath ? (
 					<Center h="100%" p="md">
 						<Text c="dimmed">Файл → Открыть… или откройте PDF из Проводника</Text>
 					</Center>
-				) : loading ? (
-					<Center h="100%">
-						<Loader size="sm" />
-					</Center>
-				) : error ? (
-					<Center h="100%">
-						<Text c="red">{error}</Text>
-					</Center>
 				) : (
-					<Center p="md">
-						<canvas ref={canvasRef} style={{ maxWidth: '100%', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }} />
-					</Center>
+					<>
+						{showLoader || error ? (
+							<Center
+								style={{
+									position: 'absolute',
+									inset: 0,
+									zIndex: 1,
+									background: 'var(--mantine-color-gray-2)',
+								}}
+							>
+								{error ? <Text c="red">{error}</Text> : <Loader size="sm" />}
+							</Center>
+						) : null}
+						<Center p="md" style={{ visibility: showLoader || error ? 'hidden' : 'visible' }}>
+							<canvas
+								ref={canvasRef}
+								style={{ maxWidth: '100%', boxShadow: '0 2px 12px rgba(0,0,0,0.15)' }}
+							/>
+						</Center>
+					</>
 				)}
 			</Box>
 		</Stack>

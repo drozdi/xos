@@ -71,6 +71,27 @@ final class SshClient
         return 'SHA256:'.rtrim(strtr(base64_encode(hash('sha256', $raw, true)), '+/', '-_'), '=');
     }
 
+    /** Local address of the outbound SSH socket, without the port. */
+    public static function localAddress(SSH2 $ssh): ?string
+    {
+        $socket = $ssh->fsock;
+        if (!is_resource($socket)) {
+            return null;
+        }
+        $name = stream_socket_get_name($socket, false);
+        if (!is_string($name) || '' === $name) {
+            return null;
+        }
+        if (str_starts_with($name, '[')) {
+            $end = strpos($name, ']');
+
+            return false === $end ? null : substr($name, 1, $end - 1);
+        }
+        $port = strrpos($name, ':');
+
+        return false === $port ? $name : substr($name, 0, $port);
+    }
+
     private function login(SSH2 $ssh, SshConnection $connection): bool
     {
         if ('key' === $connection->getAuth()) {

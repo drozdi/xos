@@ -19,8 +19,9 @@ const manifest: AppManifest = {
 	defaultSize: { width: 760, height: 780 },
 	minSize: { width: 480, height: 420 },
 	...base,
+	wmGroup: 'recipes',
+	taskbarGroup: 'recipes',
 	requiredRole: 'recipe',
-	startMenuGroup: 'content',
 	canAccess: () => canAccessRecipeApp(),
 };
 

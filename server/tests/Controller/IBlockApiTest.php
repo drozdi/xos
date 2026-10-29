@@ -8,6 +8,7 @@ use Doctrine\ORM\Tools\SchemaTool;
 use IBlock\Entity\Block;
 use IBlock\Entity\Element;
 use IBlock\Entity\ElementPropertyValue;
+use IBlock\Entity\ElementShare;
 use IBlock\Entity\Property;
 use IBlock\Entity\Property\Enum as PropertyEnum;
 use IBlock\Entity\Section;
@@ -40,6 +41,7 @@ class IBlockApiTest extends AuthWebTestCase
             $entityManager->getClassMetadata(SectionElement::class),
             $entityManager->getClassMetadata(Element::class),
             $entityManager->getClassMetadata(ElementPropertyValue::class),
+            $entityManager->getClassMetadata(ElementShare::class),
             $entityManager->getClassMetadata(MainFile::class),
         ];
 
@@ -58,7 +60,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/type/',
+            '/api/iblock/type',
             [],
             [],
             $headers,
@@ -75,7 +77,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -93,7 +95,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -174,7 +176,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/type/',
+            '/api/iblock/type',
             [],
             [],
             $headers,
@@ -184,7 +186,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -195,7 +197,7 @@ class IBlockApiTest extends AuthWebTestCase
         foreach (['Alpha item', 'Beta item'] as $index => $name) {
             $client->request(
                 'POST',
-                '/api/iblock/element/',
+                '/api/iblock/element',
                 [],
                 [],
                 $headers,
@@ -236,7 +238,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/type/',
+            '/api/iblock/type',
             [],
             [],
             $headers,
@@ -247,7 +249,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -258,7 +260,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -281,7 +283,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -296,7 +298,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -311,7 +313,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property-enum/',
+            '/api/iblock/property-enum',
             [],
             [],
             $headers,
@@ -328,7 +330,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property-enum/',
+            '/api/iblock/property-enum',
             [],
             [],
             $headers,
@@ -344,7 +346,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -364,7 +366,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -460,7 +462,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/type/',
+            '/api/iblock/type',
             [],
             [],
             $headers,
@@ -471,7 +473,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -482,7 +484,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/section/',
+            '/api/iblock/section',
             [],
             [],
             $headers,
@@ -497,7 +499,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -513,7 +515,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/section-property/',
+            '/api/iblock/section-property',
             [],
             [],
             $headers,
@@ -540,7 +542,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -556,7 +558,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/section-property/',
+            '/api/iblock/section-property',
             [],
             [],
             $headers,
@@ -592,7 +594,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/type/',
+            '/api/iblock/type',
             [],
             [],
             $headers,
@@ -603,7 +605,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -614,7 +616,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -625,7 +627,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -640,7 +642,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -656,7 +658,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -672,7 +674,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -687,7 +689,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/section/',
+            '/api/iblock/section',
             [],
             [],
             $headers,
@@ -702,7 +704,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -717,7 +719,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -744,7 +746,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -761,7 +763,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -818,7 +820,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/type/',
+            '/api/iblock/type',
             [],
             [],
             $headers,
@@ -829,7 +831,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -840,7 +842,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -854,7 +856,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -886,7 +888,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/type/',
+            '/api/iblock/type',
             [],
             [],
             $headers,
@@ -897,7 +899,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/block/',
+            '/api/iblock/block',
             [],
             [],
             $headers,
@@ -920,7 +922,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/property/',
+            '/api/iblock/property',
             [],
             [],
             $headers,
@@ -935,7 +937,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/section/',
+            '/api/iblock/section',
             [],
             [],
             $headers,
@@ -951,7 +953,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/section/',
+            '/api/iblock/section',
             [],
             [],
             $headers,
@@ -974,7 +976,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -997,7 +999,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -1014,7 +1016,7 @@ class IBlockApiTest extends AuthWebTestCase
 
         $client->request(
             'POST',
-            '/api/iblock/element/',
+            '/api/iblock/element',
             [],
             [],
             $headers,
@@ -1133,5 +1135,205 @@ class IBlockApiTest extends AuthWebTestCase
         self::assertContains($multiId, $unionIds);
         self::assertContains($childOnlyId, $unionIds);
         self::assertContains($blueId, $unionIds);
+    }
+
+    public function testPrototypePropertyValues(): void
+    {
+        $client = static::createClient();
+        $this->prepareIBlockDatabase($client);
+        $headers = $this->authHeaders($this->login($client)['token']);
+
+        $client->request(
+            'POST',
+            '/api/iblock/type',
+            [],
+            [],
+            $headers,
+            json_encode(['code' => 'proto_type', 'name' => 'Proto Type'], JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseStatusCodeSame(201);
+        $typeId = (int) json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $client->request(
+            'POST',
+            '/api/iblock/block',
+            [],
+            [],
+            $headers,
+            json_encode(['code' => 'proto_block', 'name' => 'Proto Block', 'type_id' => $typeId], JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseStatusCodeSame(201);
+        $blockId = (int) json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $specId = $this->createProperty($client, $headers, [
+            'code' => 'SPEC',
+            'name' => 'Spec',
+            'field_type' => 'P',
+            'required' => true,
+            'block_id' => $blockId,
+        ]);
+        $this->createProperty($client, $headers, [
+            'code' => 'TITLE',
+            'name' => 'Inner title',
+            'field_type' => 'S',
+            'block_id' => $blockId,
+            'parent_id' => $specId,
+        ]);
+        $this->createProperty($client, $headers, [
+            'code' => 'QTY',
+            'name' => 'Qty',
+            'field_type' => 'N',
+            'block_id' => $blockId,
+            'parent_id' => $specId,
+        ]);
+        $this->createProperty($client, $headers, [
+            'code' => 'TITLE',
+            'name' => 'Root title',
+            'field_type' => 'S',
+            'block_id' => $blockId,
+        ]);
+        $optId = $this->createProperty($client, $headers, [
+            'code' => 'OPT',
+            'name' => 'Optional',
+            'field_type' => 'P',
+            'required' => false,
+            'block_id' => $blockId,
+        ]);
+        $this->createProperty($client, $headers, [
+            'code' => 'NOTE',
+            'name' => 'Note',
+            'field_type' => 'S',
+            'block_id' => $blockId,
+            'parent_id' => $optId,
+        ]);
+
+        $client->request(
+            'POST',
+            '/api/iblock/property/list',
+            [],
+            [],
+            $headers,
+            json_encode([
+                't' => 'list',
+                'limit' => -1,
+                'offset' => 1,
+                'filters' => ['block_id' => $blockId],
+            ], JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseIsSuccessful();
+        $listed = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $codes = array_column($listed, 'code');
+        sort($codes);
+        self::assertSame(['OPT', 'SPEC', 'TITLE'], $codes);
+
+        $client->request('GET', '/api/iblock/property/'.$specId, [], [], $headers);
+        self::assertResponseIsSuccessful();
+        $spec = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $childCodes = array_column($spec['children'], 'code');
+        sort($childCodes);
+        self::assertSame(['QTY', 'TITLE'], $childCodes);
+
+        $client->request(
+            'POST',
+            '/api/iblock/element',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'code' => 'incomplete',
+                'name' => 'Incomplete',
+                'block_id' => $blockId,
+                'PROPERTY_VALUES' => [
+                    'SPEC' => ['TITLE' => 'only title'],
+                ],
+            ], JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseStatusCodeSame(400);
+        self::assertStringContainsString('QTY', (string) $client->getResponse()->getContent());
+
+        $client->request(
+            'POST',
+            '/api/iblock/element',
+            [],
+            [],
+            $headers,
+            json_encode([
+                'code' => 'complete',
+                'name' => 'Complete',
+                'block_id' => $blockId,
+                'PROPERTY_VALUES' => [
+                    'TITLE' => 'root title',
+                    'SPEC' => ['TITLE' => 'inner', 'QTY' => 2],
+                    'OPT' => [],
+                ],
+            ], JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseStatusCodeSame(201);
+        $elementId = (int) json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+
+        $client->request('GET', '/api/iblock/element/'.$elementId, [], [], $headers);
+        self::assertResponseIsSuccessful();
+        $detail = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('root title', $detail['PROPERTY_VALUES']['TITLE']);
+        self::assertSame('inner', $detail['PROPERTY_VALUES']['SPEC']['TITLE']);
+        self::assertEquals(2, $detail['PROPERTY_VALUES']['SPEC']['QTY']);
+        self::assertArrayNotHasKey('OPT', $detail['PROPERTY_VALUES']);
+
+        $client->request(
+            'PUT',
+            '/api/iblock/element/'.$elementId,
+            [],
+            [],
+            $headers,
+            json_encode([
+                'PROPERTY_VALUES' => [
+                    'OPT' => ['NOTE' => 'hello'],
+                ],
+            ], JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseIsSuccessful();
+
+        $client->request('GET', '/api/iblock/element/'.$elementId, [], [], $headers);
+        self::assertResponseIsSuccessful();
+        $withNote = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame('hello', $withNote['PROPERTY_VALUES']['OPT']['NOTE']);
+        self::assertSame('inner', $withNote['PROPERTY_VALUES']['SPEC']['TITLE']);
+
+        $client->request(
+            'PUT',
+            '/api/iblock/element/'.$elementId,
+            [],
+            [],
+            $headers,
+            json_encode([
+                'PROPERTY_VALUES' => [
+                    'OPT' => ['NOTE' => ''],
+                ],
+            ], JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseIsSuccessful();
+
+        $client->request('GET', '/api/iblock/element/'.$elementId, [], [], $headers);
+        self::assertResponseIsSuccessful();
+        $cleared = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertArrayNotHasKey('OPT', $cleared['PROPERTY_VALUES']);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function createProperty($client, array $headers, array $payload): int
+    {
+        $client->request(
+            'POST',
+            '/api/iblock/property',
+            [],
+            [],
+            $headers,
+            json_encode($payload, JSON_THROW_ON_ERROR)
+        );
+        self::assertResponseStatusCodeSame(201, (string) $client->getResponse()->getContent());
+
+        return (int) json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
     }
 }

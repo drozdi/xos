@@ -7,24 +7,23 @@ import {
 	canUpdateIblockSection,
 } from '@/features/iblock/iblockAccess';
 
-import { NotebooksIcon } from '../shared/AppIcons';
+import { NotesIcon } from '../shared/AppIcons';
 
 const NotebooksApp = lazy(() => import('./NotebooksApp'));
 
 const manifest: AppManifest = {
 	id: 'notebooks',
-	name: 'Блокноты',
+	name: 'Заметки: Блокноты',
 	version: '1.0.0',
-	icon: NotebooksIcon,
+	icon: NotesIcon,
 	component: NotebooksApp,
 	defaultSize: { width: 560, height: 520 },
 	minSize: { width: 420, height: 360 },
 	singleInstance: true,
-	wmGroup: 'notebooks',
+	wmGroup: 'notes',
 	wmSort: 15,
-	startMenuSort: 15,
-	startMenuGroup: 'content',
-	taskbarGroup: 'notebooks',
+	startMenu: false,
+	taskbarGroup: 'notes',
 	requiredRole: 'iblock',
 	canAccess: () =>
 		canCreateIblockSection() || canUpdateIblockSection() || canDeleteIblockSection(),

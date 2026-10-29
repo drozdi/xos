@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 #[ORM\Table(name: 'iblock_property')]
-#[ORM\UniqueConstraint(name: 'UNIQ_IBLOCK_PROPERTY_BLOCK_CODE', columns: ['block_id', 'code'])]
+#[ORM\UniqueConstraint(name: 'UNIQ_IBLOCK_PROPERTY_BLOCK_SCOPE_CODE', columns: ['block_id', 'parent_scope', 'code'])]
 #[ORM\UniqueConstraint(columns: ['parent_id', 'code'])]
 #[ORM\HasLifecycleCallbacks]
 class Property
@@ -32,6 +32,10 @@ class Property
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?self $parent = null;
+
+    /** 0 for root properties; parent id for prototype fields. Keeps (block, code) unique per scope. */
+    #[ORM\Column(name: 'parent_scope', type: Types::INTEGER, options: ['default' => 0])]
+    private int $parentScope = 0;
 
     /** @var Collection<int, self> */
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
@@ -158,6 +162,7 @@ class Property
         if ($this->parent) {
             $this->parent->addChild($this);
         }
+        $this->parentScope = $this->parent?->getId() ?? 0;
 
         return $this;
     }
@@ -439,5 +444,6 @@ class Property
     {
         // x_timestamp managed by #[ORM\Version] — do not set in lifecycle callbacks
         $this->dateCreated = new \DateTime();
+        $this->parentScope = $this->parent?->getId() ?? 0;
     }
 }

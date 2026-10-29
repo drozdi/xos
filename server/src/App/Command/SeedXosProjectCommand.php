@@ -2061,13 +2061,15 @@ Property принадлежит **Block** (`block_id` required). Связи с T
 | `L` | M2M `valueL` | enums `/property-enum` |
 | `E` | `value_element_id` | **`link_iblock_id`** |
 | `G` | `value_section_id` | **`link_iblock_id`** |
+| `P` | дочерние свойства, `group_index` | прототип: поля `S/N/F/L/E/G`. `required` — заполнены все поля каждого кортежа |
 
-`multiple`: L — несколько enum в одной строке; иначе несколько строк значений.
+`multiple`: L — несколько enum в одной строке; иначе несколько строк значений. У прототипа — несколько кортежей.
 
 ## PROPERTY_VALUES
 
 На create/update элемента: map `CODE → value|value[]`.  
-Фильтр списка: `PROPERTY_{CODE}` (eq; `%` → LIKE).
+Прототип: объект `{ FIELD: value }` или массив объектов, если `multiple`.  
+Фильтр списка: `PROPERTY_{CODE}` (eq; `%` → LIKE). Поля внутри прототипа в фильтр не входят.
 
 Section-property (`iblock_section_property`) — настройки smart filter UI, не значения.
 

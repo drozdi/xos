@@ -1,4 +1,4 @@
-import { Box, Group, Text } from '@mantine/core';
+import { Box } from '@mantine/core';
 import { FitAddon } from '@xterm/addon-fit';
 import { Terminal } from '@xterm/xterm';
 import { useEffect, useRef } from 'react';
@@ -10,22 +10,23 @@ import '@xterm/xterm/css/xterm.css';
 
 export function SshTerminal({
 	connectionId,
-	title,
 	acceptHostKey,
+	active,
 	onHostKey,
-	onClose,
+	onSourceIp,
 }: {
 	connectionId: number;
-	title: string;
 	acceptHostKey: boolean;
+	active: boolean;
 	onHostKey: (fingerprint: string) => void;
-	onClose: () => void;
+	onSourceIp: (sourceIp: string | null) => void;
 }) {
 	const hostRef = useRef<HTMLDivElement>(null);
+	const termRef = useRef<Terminal | null>(null);
 	const onHostKeyRef = useRef(onHostKey);
-	const onCloseRef = useRef(onClose);
+	const onSourceIpRef = useRef(onSourceIp);
 	onHostKeyRef.current = onHostKey;
-	onCloseRef.current = onClose;
+	onSourceIpRef.current = onSourceIp;
 
 	useEffect(() => {
 		const host = hostRef.current;
@@ -47,6 +48,7 @@ export function SshTerminal({
 		const fit = new FitAddon();
 		term.open(host);
 		term.loadAddon(fit);
+		termRef.current = term;
 		fit.fit();
 		term.focus();
 
@@ -66,7 +68,9 @@ export function SshTerminal({
 
 		const disposable = term.onData(send);
 		const observer = new ResizeObserver(() => {
-			fit.fit();
+			if (host.clientWidth > 0 && host.clientHeight > 0) {
+				fit.fit();
+			}
 		});
 		observer.observe(host);
 
@@ -89,6 +93,7 @@ export function SshTerminal({
 					return;
 				}
 				sessionId = session.id;
+				onSourceIpRef.current(session.source_ip);
 				const response = await fetch(sshApi.streamUrl(session.id), {
 					headers: sshApi.streamHeaders(),
 					signal: abort.signal,
@@ -127,6 +132,7 @@ export function SshTerminal({
 			abort.abort();
 			disposable.dispose();
 			observer.disconnect();
+			termRef.current = null;
 			term.dispose();
 			if (sessionId) {
 				void sshApi.close(sessionId).catch(() => undefined);
@@ -134,16 +140,22 @@ export function SshTerminal({
 		};
 	}, [acceptHostKey, connectionId]);
 
+	useEffect(() => {
+		if (active) {
+			termRef.current?.focus();
+		}
+	}, [active]);
+
 	return (
-		<Box style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>
-			<Group justify="space-between" px="sm" py={6} style={{ borderBottom: '1px solid var(--xos-shell-border)' }}>
-				<Text size="sm" fw={600} truncate>
-					{title}
-				</Text>
-				<Text size="xs" c="dimmed" style={{ cursor: 'pointer' }} onClick={onClose}>
-					Отключить
-				</Text>
-			</Group>
+		<Box
+			style={{
+				display: active ? 'flex' : 'none',
+				position: 'absolute',
+				inset: 0,
+				flexDirection: 'column',
+				minWidth: 0,
+			}}
+		>
 			<Box ref={hostRef} style={{ flex: 1, minHeight: 0, background: '#111111', padding: 4 }} />
 		</Box>
 	);

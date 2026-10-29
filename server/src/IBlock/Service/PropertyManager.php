@@ -15,7 +15,9 @@ use Main\Entity\User;
 
 class PropertyManager extends AbstractIBlockManager
 {
-    private const ALLOWED_FIELD_TYPES = ['S', 'N', 'F', 'L', 'E', 'G'];
+    private const ALLOWED_FIELD_TYPES = ['S', 'N', 'F', 'L', 'E', 'G', 'P'];
+
+    private const MEMBER_FIELD_TYPES = ['S', 'N', 'F', 'L', 'E', 'G'];
 
     public function __construct(
         ValidatorInterface $validator,
@@ -77,9 +79,43 @@ class PropertyManager extends AbstractIBlockManager
             'block_id' => $entity->getBlock()?->getId(),
             'link_iblock_id' => $entity->getLinkIblock()?->getId(),
             'parent_id' => $entity->getParent()?->getId(),
+            'children' => $this->serializeChildren($entity),
             'x_timestamp' => $entity->getXTimestamp('Y-m-d H:i:s'),
             'date_created' => $entity->getDateCreated('Y-m-d H:i:s'),
         ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function serializeChildren(Property $entity): array
+    {
+        if ('P' !== strtoupper($entity->getFieldType())) {
+            return [];
+        }
+
+        $children = $entity->getChildren()->toArray();
+        usort($children, static function (Property $a, Property $b): int {
+            return [$a->getSort(), (string) $a->getCode()] <=> [$b->getSort(), (string) $b->getCode()];
+        });
+
+        $items = [];
+        foreach ($children as $child) {
+            $items[] = [
+                'id' => $child->getId(),
+                'code' => $child->getCode(),
+                'name' => $child->getName(),
+                'sort' => $child->getSort(),
+                'active' => $child->isActive(),
+                'multiple' => $child->isMultiple(),
+                'field_type' => strtoupper($child->getFieldType()),
+                'file_type' => $child->getFileType(),
+                'list_type' => $child->getListType(),
+                'link_iblock_id' => $child->getLinkIblock()?->getId(),
+                'block_id' => $child->getBlock()?->getId(),
+                'parent_id' => $entity->getId(),
+            ];
+        }
+
+        return $items;
     }
 
     public function getById(int $id): ?array
@@ -235,6 +271,9 @@ class PropertyManager extends AbstractIBlockManager
             $parent = null;
             if (null !== $fields['parent_id'] && '' !== $fields['parent_id']) {
                 $parent = $this->propertyRepository->find((int) $fields['parent_id']);
+                if (!$parent instanceof Property) {
+                    throw new BadRequestHttpException('parent_id not found');
+                }
             }
             $entity->setParent($parent);
         }
@@ -256,6 +295,25 @@ class PropertyManager extends AbstractIBlockManager
 
         if (\in_array($fieldType, ['E', 'G'], true) && !$property->getLinkIblock()) {
             throw new BadRequestHttpException('link_iblock_id is required for field_type E/G');
+        }
+
+        $parent = $property->getParent();
+        if ('P' === $fieldType && null !== $parent) {
+            throw new BadRequestHttpException('prototype cannot be nested');
+        }
+        if (null !== $parent) {
+            if ('P' !== strtoupper($parent->getFieldType())) {
+                throw new BadRequestHttpException('parent must be a prototype property');
+            }
+            if ($parent->getBlock()?->getId() !== $property->getBlock()?->getId()) {
+                throw new BadRequestHttpException('prototype field must belong to the same block');
+            }
+            if (!\in_array($fieldType, self::MEMBER_FIELD_TYPES, true)) {
+                throw new BadRequestHttpException('prototype field type must be one of: S, N, F, L, E, G');
+            }
+        }
+        if ('P' !== $fieldType && $property->getChildren()->count() > 0) {
+            throw new BadRequestHttpException('remove prototype fields before changing field_type');
         }
     }
 }

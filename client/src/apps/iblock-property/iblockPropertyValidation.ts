@@ -1,6 +1,6 @@
 import type { IblockPropertyDetail } from '@/core/api/endpoints/iblockApi';
 
-const ALLOWED_FIELD_TYPES = new Set(['S', 'N', 'F', 'L', 'E', 'G']);
+const ALLOWED_FIELD_TYPES = new Set(['S', 'N', 'F', 'L', 'E', 'G', 'P']);
 
 export function validateIblockPropertyForm(
 	data: IblockPropertyDetail,
@@ -19,7 +19,7 @@ export function validateIblockPropertyForm(
 
 	const fieldType = (data.field_type ?? '').toUpperCase();
 	if (!ALLOWED_FIELD_TYPES.has(fieldType)) {
-		errors.field_type = 'Допустимые типы: S, N, F, L, E, G';
+		errors.field_type = 'Допустимые типы: S, N, F, L, E, G, P';
 	}
 
 	if (fieldType === 'E' || fieldType === 'G') {

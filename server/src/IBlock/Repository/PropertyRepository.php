@@ -44,6 +44,18 @@ class PropertyRepository extends AbstractRepository
         }
         unset($filters['block_id']);
 
+        if (array_key_exists('parent_id', $filters)) {
+            $parentId = $filters['parent_id'];
+            if (null === $parentId || '' === $parentId || 0 === $parentId || '0' === $parentId) {
+                $query->andWhere($n.'.parent IS NULL');
+            } else {
+                $query->andWhere($n.'.parent = :parent_id')->setParameter('parent_id', (int) $parentId);
+            }
+            unset($filters['parent_id']);
+        } else {
+            $query->andWhere($n.'.parent IS NULL');
+        }
+
         if (array_key_exists('active', $filters) && null !== $filters['active'] && '' !== $filters['active']) {
             $query->andWhere($n.'.active = :active')->setParameter('active', (bool) $filters['active']);
         }

@@ -19,6 +19,7 @@ final class ProtectedAppModules
         'iblock',
         'recipe',
         'inbox',
+        'ssh',
     ];
 
     public static function isProtected(string $module): bool

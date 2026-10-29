@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 
 import type { AppManifest } from '@/core/appManager/types';
-import { canUseAuthenticatedApps } from '@/core/auth/protectedApps';
+import { canUseSsh } from '@/features/ssh/sshAccess';
 
 import { SshIcon } from './SshIcon';
 
@@ -19,7 +19,9 @@ const manifest: AppManifest = {
 	startMenuGroup: 'tools',
 	taskbarGroup: 'tools',
 	singleInstance: true,
-	canAccess: () => canUseAuthenticatedApps(),
+	requiredRole: 'ssh',
+	checkScopes: false,
+	canAccess: () => canUseSsh(),
 };
 
 export default manifest;

@@ -25,6 +25,7 @@ import {
 	type IblockPropertyEnumListItem,
 } from '@/core/api/endpoints/iblockApi';
 import { queryKeys } from '@/core/api/queryKeys';
+
 import {
 	canCreateIblockProperty,
 	useCanDeleteIblockProperty,
@@ -43,7 +44,19 @@ const FIELD_TYPE_OPTIONS = [
 	{ value: 'L', label: 'Список' },
 	{ value: 'E', label: 'Привязка к элементу' },
 	{ value: 'G', label: 'Привязка к разделу' },
+	{ value: 'P', label: 'Прототип' },
 ];
+
+const MEMBER_FIELD_TYPE_OPTIONS = FIELD_TYPE_OPTIONS.filter((item) => item.value !== 'P');
+
+const LIST_TYPE_OPTIONS = [
+	{ value: 'L', label: 'Выпадающий список' },
+	{ value: 'C', label: 'Флажки' },
+];
+
+function normalizeListType(value: string | null | undefined): string {
+	return (value ?? '').toUpperCase() === 'C' ? 'C' : 'L';
+}
 
 const FILE_TYPE_PRESETS = [
 	{ value: '', label: 'Любой файл' },
@@ -72,6 +85,7 @@ const initialData: IblockPropertyDetail = {
 	block_id: null,
 	parent_id: null,
 	link_iblock_id: null,
+	children: [],
 	x_timestamp: '',
 	date_created: '',
 };
@@ -313,6 +327,257 @@ function PropertyEnumsEditor({
 	);
 }
 
+type FieldDraft = {
+	id: number | null;
+	code: string;
+	name: string;
+	field_type: string;
+	multiple: boolean;
+	file_type: string;
+	link_iblock_id: number | null;
+	sort: number;
+};
+
+const emptyFieldDraft: FieldDraft = {
+	id: null,
+	code: '',
+	name: '',
+	field_type: 'S',
+	multiple: false,
+	file_type: '',
+	link_iblock_id: null,
+	sort: 100,
+};
+
+function PrototypeFieldsEditor({
+	propertyId,
+	blockId,
+	readOnly,
+	blockOptions,
+}: {
+	propertyId: number;
+	blockId: number | null;
+	readOnly: boolean;
+	blockOptions: { value: string; label: string }[];
+}) {
+	const queryClient = useQueryClient();
+	const [draft, setDraft] = useState<FieldDraft>(emptyFieldDraft);
+
+	const listRequest = useMemo(
+		() => ({
+			t: 'list' as const,
+			limit: -1,
+			offset: 1,
+			filters: { parent_id: propertyId, block_id: blockId },
+		}),
+		[blockId, propertyId],
+	);
+
+	const listQuery = useQuery({
+		queryKey: queryKeys.iblock.properties(listRequest),
+		queryFn: async () => {
+			const list = await iblockPropertyApi.list(listRequest);
+			return Promise.all(list.items.map((item) => iblockPropertyApi.get(item.id)));
+		},
+		enabled: propertyId > 0,
+	});
+
+	const invalidate = () => {
+		void queryClient.invalidateQueries({ queryKey: ['iblock', 'properties'] });
+		void queryClient.invalidateQueries({ queryKey: ['iblock', 'property'] });
+	};
+
+	const saveMutation = useMutation({
+		mutationFn: async () => {
+			if (!draft.code.trim() || !draft.name.trim()) {
+				throw new Error('Код и название обязательны');
+			}
+			if (blockId == null || blockId <= 0) {
+				throw new Error('Сначала укажите инфоблок');
+			}
+			const body = {
+				code: draft.code.trim(),
+				name: draft.name.trim(),
+				field_type: draft.field_type,
+				multiple: draft.multiple,
+				file_type: draft.field_type === 'F' ? draft.file_type : '',
+				link_iblock_id:
+					draft.field_type === 'E' || draft.field_type === 'G' ? draft.link_iblock_id : null,
+				sort: draft.sort,
+				active: true,
+				required: false,
+				block_id: blockId,
+				parent_id: propertyId,
+			};
+			if (draft.id) {
+				return iblockPropertyApi.update(draft.id, body);
+			}
+			return iblockPropertyApi.create(body);
+		},
+		onSuccess: () => {
+			notifications.show({ message: 'Сохранено', color: 'green' });
+			setDraft(emptyFieldDraft);
+			invalidate();
+		},
+		onError: (error) => notifyApiError(error, 'Ошибка сохранения'),
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: (id: number) => iblockPropertyApi.remove(id),
+		onSuccess: () => {
+			notifications.show({ message: 'Удалено', color: 'green' });
+			if (draft.id) {
+				setDraft(emptyFieldDraft);
+			}
+			invalidate();
+		},
+		onError: (error) => notifyApiError(error, 'Ошибка удаления'),
+	});
+
+	const rows = listQuery.data ?? [];
+	const needsLink = draft.field_type === 'E' || draft.field_type === 'G';
+
+	return (
+		<Stack gap="sm">
+			<Text size="sm" c="dimmed">
+				Поля прототипа. Если свойство обязательное, при сохранении элемента заполняются все поля.
+			</Text>
+			{!readOnly ? (
+				<Stack gap="xs">
+					<TextInput
+						label="Код"
+						value={draft.code}
+						onChange={(e) => setDraft((prev) => ({ ...prev, code: e.currentTarget.value }))}
+					/>
+					<TextInput
+						label="Название"
+						value={draft.name}
+						onChange={(e) => setDraft((prev) => ({ ...prev, name: e.currentTarget.value }))}
+					/>
+					<Select
+						label="Тип"
+						data={MEMBER_FIELD_TYPE_OPTIONS}
+						value={draft.field_type}
+						onChange={(value) =>
+							setDraft((prev) => ({
+								...prev,
+								field_type: value ?? 'S',
+								file_type: value === 'F' ? prev.file_type : '',
+								link_iblock_id: value === 'E' || value === 'G' ? prev.link_iblock_id : null,
+							}))
+						}
+					/>
+					<Switch
+						label="Множественное"
+						checked={draft.multiple}
+						onChange={(e) => setDraft((prev) => ({ ...prev, multiple: e.currentTarget.checked }))}
+					/>
+					{draft.field_type === 'F' ? (
+						<TextInput
+							label="Тип файла"
+							description="Пусто — любой; image — картинки; расширения jpg,png или mime image/*"
+							value={draft.file_type}
+							onChange={(e) => setDraft((prev) => ({ ...prev, file_type: e.currentTarget.value }))}
+						/>
+					) : null}
+					{needsLink ? (
+						<Select
+							label="Инфоблок привязки"
+							data={blockOptions}
+							value={draft.link_iblock_id != null ? String(draft.link_iblock_id) : null}
+							onChange={(value) =>
+								setDraft((prev) => ({ ...prev, link_iblock_id: value ? Number(value) : null }))
+							}
+							searchable
+							clearable
+						/>
+					) : null}
+					<NumberInput
+						label="Сортировка"
+						value={draft.sort}
+						onChange={(value) =>
+							setDraft((prev) => ({ ...prev, sort: typeof value === 'number' ? value : 100 }))
+						}
+					/>
+					<Group>
+						<Button size="xs" loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+							{draft.id ? 'Сохранить поле' : 'Добавить поле'}
+						</Button>
+						{draft.id ? (
+							<Button size="xs" variant="default" onClick={() => setDraft(emptyFieldDraft)}>
+								Отмена
+							</Button>
+						) : null}
+					</Group>
+					{draft.id && draft.field_type === 'L' ? (
+						<PropertyEnumsEditor propertyId={draft.id} readOnly={readOnly} />
+					) : null}
+				</Stack>
+			) : null}
+			<Table>
+				<Table.Thead>
+					<Table.Tr>
+						<Table.Th>Код</Table.Th>
+						<Table.Th>Название</Table.Th>
+						<Table.Th>Тип</Table.Th>
+						<Table.Th />
+					</Table.Tr>
+				</Table.Thead>
+				<Table.Tbody>
+					{rows.map((row) => (
+						<Table.Tr key={row.id}>
+							<Table.Td>{row.code}</Table.Td>
+							<Table.Td>{row.name}</Table.Td>
+							<Table.Td>{row.field_type}</Table.Td>
+							<Table.Td>
+								{!readOnly ? (
+									<Group gap="xs">
+										<Button
+											size="compact-xs"
+											variant="light"
+											onClick={() =>
+												setDraft({
+													id: row.id,
+													code: row.code ?? '',
+													name: row.name ?? '',
+													field_type: (row.field_type ?? 'S').toUpperCase(),
+													multiple: Boolean(row.multiple),
+													file_type: row.file_type ?? '',
+													link_iblock_id: row.link_iblock_id ?? null,
+													sort: row.sort ?? 100,
+												})
+											}
+										>
+											Изменить
+										</Button>
+										<Button
+											size="compact-xs"
+											variant="light"
+											color="red"
+											onClick={() => deleteMutation.mutate(row.id)}
+										>
+											Удалить
+										</Button>
+									</Group>
+								) : null}
+							</Table.Td>
+						</Table.Tr>
+					))}
+					{rows.length === 0 ? (
+						<Table.Tr>
+							<Table.Td colSpan={4}>
+								<Text size="sm" c="dimmed">
+									Нет полей
+								</Text>
+							</Table.Td>
+						</Table.Tr>
+					) : null}
+				</Table.Tbody>
+			</Table>
+		</Stack>
+	);
+}
+
 export default function IblockPropertyApp() {
 	const entityId = useEntityId();
 	const launchProps = useIblockLaunchProps();
@@ -383,6 +648,7 @@ export default function IblockPropertyApp() {
 				const fieldType = (data.field_type ?? '').toUpperCase();
 				const isListType = fieldType === 'L';
 				const isFileType = fieldType === 'F';
+				const isPrototype = fieldType === 'P';
 				const needsLinkIblock = fieldType === 'E' || fieldType === 'G';
 
 				return (
@@ -391,6 +657,9 @@ export default function IblockPropertyApp() {
 							<Tabs.Tab value="general">Общие</Tabs.Tab>
 							{!isNewRecord && isListType ? (
 								<Tabs.Tab value="enums">Значения списка</Tabs.Tab>
+							) : null}
+							{!isNewRecord && isPrototype ? (
+								<Tabs.Tab value="fields">Поля</Tabs.Tab>
 							) : null}
 						</Tabs.List>
 
@@ -443,6 +712,9 @@ export default function IblockPropertyApp() {
 								/>
 								<Switch
 									label="Обязательное"
+									description={
+										isPrototype ? 'Все поля прототипа обязательны в каждом значении' : undefined
+									}
 									checked={Boolean(data.required)}
 									disabled={readOnly}
 									onChange={(e) => setField('required', e.currentTarget.checked)}
@@ -470,6 +742,12 @@ export default function IblockPropertyApp() {
 										}
 										if (value !== 'L' && activeTab === 'enums') {
 											setActiveTab('general');
+										}
+										if (value !== 'P' && activeTab === 'fields') {
+											setActiveTab('general');
+										}
+										if (value === 'L' && (data.list_type ?? '').toUpperCase() !== 'C') {
+											setField('list_type', 'L');
 										}
 									}}
 								/>
@@ -518,12 +796,16 @@ export default function IblockPropertyApp() {
 										clearable
 									/>
 								) : null}
-								<TextInput
-									label="Тип списка"
-									value={data.list_type ?? ''}
-									readOnly={readOnly}
-									onChange={(e) => setField('list_type', e.currentTarget.value)}
-								/>
+								{isListType ? (
+									<Select
+										label="Тип списка"
+										data={LIST_TYPE_OPTIONS}
+										value={normalizeListType(data.list_type)}
+										readOnly={readOnly}
+										allowDeselect={false}
+										onChange={(value) => setField('list_type', value ?? 'L')}
+									/>
+								) : null}
 								<TextInput
 									label="Значение по умолчанию"
 									value={data.default_value ?? ''}
@@ -541,15 +823,6 @@ export default function IblockPropertyApp() {
 									value={data.postfix ?? ''}
 									readOnly={readOnly}
 									onChange={(e) => setField('postfix', e.currentTarget.value)}
-								/>
-								<NumberInput
-									label="Родитель (ID)"
-									value={data.parent_id ?? undefined}
-									readOnly={readOnly}
-									onChange={(value) =>
-										setField('parent_id', typeof value === 'number' ? value : null)
-									}
-									allowDecimal={false}
 								/>
 								<TextInput
 									label="Активен с"
@@ -569,6 +842,16 @@ export default function IblockPropertyApp() {
 						{!isNewRecord && isListType ? (
 							<Tabs.Panel value="enums" pt="sm">
 								<PropertyEnumsEditor propertyId={entityId} readOnly={readOnly} />
+							</Tabs.Panel>
+						) : null}
+						{!isNewRecord && isPrototype ? (
+							<Tabs.Panel value="fields" pt="sm">
+								<PrototypeFieldsEditor
+									propertyId={data.id}
+									blockId={data.block_id}
+									readOnly={readOnly}
+									blockOptions={blockOptions}
+								/>
 							</Tabs.Panel>
 						) : null}
 					</Tabs>

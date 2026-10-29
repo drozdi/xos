@@ -128,6 +128,7 @@ class ElementManager extends AbstractIBlockManager
         if (null !== $propertyValues) {
             $this->syncPropertyValues($element, $propertyValues);
         }
+        $this->assertRequiredPrototypesPresent($element, $propertyValues);
         $this->syncSections($element, $sectionIds, $fields);
         $this->validateEntity($element);
         $this->elementRepository->save($element, true);
@@ -154,6 +155,7 @@ class ElementManager extends AbstractIBlockManager
         if (null !== $propertyValues) {
             $this->syncPropertyValues($element, $propertyValues);
         }
+        $this->assertRequiredPrototypesPresent($element, $propertyValues);
         $this->syncSections($element, $sectionIds, $fields);
         $this->validateEntity($element);
         $this->elementRepository->save($element, true);
@@ -583,11 +585,12 @@ class ElementManager extends AbstractIBlockManager
                 throw new BadRequestHttpException(sprintf('Unknown property code: %s', $code));
             }
 
-            foreach ($element->getPropertyValues()->toArray() as $existing) {
-                if ($existing->getProperty()?->getId() === $property->getId()) {
-                    $element->removePropertyValue($existing);
-                }
+            if ($this->isPrototypeFieldType($property->getFieldType())) {
+                $this->syncPrototypeValue($element, $property, $value);
+                continue;
             }
+
+            $this->clearOwnedPropertyRows($element, $property);
 
             if (null === $value || '' === $value || [] === $value) {
                 continue;
@@ -697,6 +700,289 @@ class ElementManager extends AbstractIBlockManager
         return $item;
     }
 
+    private function syncPrototypeValue(Element $element, Property $prototype, mixed $value): void
+    {
+        $children = $this->activePrototypeChildren($prototype);
+        $tuples = $this->normalizePrototypeTuples($prototype, $value);
+        if ($prototype->isRequired()) {
+            $this->assertPrototypeTuplesComplete($prototype, $children, $tuples);
+        } else {
+            $tuples = array_values(array_filter(
+                $tuples,
+                fn (array $tuple): bool => $this->prototypeTupleHasValue($tuple, $children),
+            ));
+        }
+
+        $this->clearOwnedPropertyRows($element, $prototype);
+
+        foreach ($tuples as $groupIndex => $tuple) {
+            foreach ($children as $child) {
+                $childCode = (string) $child->getCode();
+                if (!array_key_exists($childCode, $tuple)) {
+                    continue;
+                }
+                $this->writePrototypeChild($element, $child, $tuple[$childCode], (int) $groupIndex);
+            }
+        }
+    }
+
+    /** @return list<Property> */
+    private function activePrototypeChildren(Property $prototype): array
+    {
+        $children = [];
+        foreach ($prototype->getChildren() as $child) {
+            if ($child->isActive()) {
+                $children[] = $child;
+            }
+        }
+        usort($children, static function (Property $a, Property $b): int {
+            return [$a->getSort(), (string) $a->getCode()] <=> [$b->getSort(), (string) $b->getCode()];
+        });
+
+        return $children;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function normalizePrototypeTuples(Property $prototype, mixed $value): array
+    {
+        if (null === $value || '' === $value || [] === $value) {
+            return [];
+        }
+        if (!\is_array($value)) {
+            throw new BadRequestHttpException(sprintf(
+                'Property %s: prototype value must be an object',
+                $prototype->getCode(),
+            ));
+        }
+        if ($prototype->isMultiple()) {
+            if (!array_is_list($value)) {
+                throw new BadRequestHttpException(sprintf(
+                    'Property %s: multiple prototype value must be a list',
+                    $prototype->getCode(),
+                ));
+            }
+            $tuples = [];
+            foreach ($value as $tuple) {
+                if (!\is_array($tuple) || array_is_list($tuple)) {
+                    throw new BadRequestHttpException(sprintf(
+                        'Property %s: each prototype item must be an object',
+                        $prototype->getCode(),
+                    ));
+                }
+                $tuples[] = $tuple;
+            }
+
+            return $tuples;
+        }
+        if (array_is_list($value)) {
+            throw new BadRequestHttpException(sprintf(
+                'Property %s: prototype value must be an object',
+                $prototype->getCode(),
+            ));
+        }
+
+        return [$value];
+    }
+
+    /**
+     * @param list<Property>            $children
+     * @param list<array<string, mixed>> $tuples
+     */
+    private function assertPrototypeTuplesComplete(Property $prototype, array $children, array $tuples): void
+    {
+        $codes = array_map(static fn (Property $child): string => (string) $child->getCode(), $children);
+        if ([] === $tuples) {
+            throw new BadRequestHttpException(sprintf(
+                'Property %s: required fields missing: %s',
+                $prototype->getCode(),
+                implode(', ', $codes),
+            ));
+        }
+        foreach ($tuples as $index => $tuple) {
+            $missing = [];
+            foreach ($children as $child) {
+                $childCode = (string) $child->getCode();
+                if (!$this->prototypeFieldIsFilled($tuple[$childCode] ?? null)) {
+                    $missing[] = $childCode;
+                }
+            }
+            if ([] === $missing) {
+                continue;
+            }
+            $label = $prototype->isMultiple()
+                ? sprintf('%s[%d]', $prototype->getCode(), $index)
+                : (string) $prototype->getCode();
+            throw new BadRequestHttpException(sprintf(
+                'Property %s: required fields missing: %s',
+                $label,
+                implode(', ', $missing),
+            ));
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $tuple
+     * @param list<Property>       $children
+     */
+    private function prototypeTupleHasValue(array $tuple, array $children): bool
+    {
+        foreach ($children as $child) {
+            $childCode = (string) $child->getCode();
+            if ($this->prototypeFieldIsFilled($tuple[$childCode] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function prototypeFieldIsFilled(mixed $value): bool
+    {
+        if (null === $value || '' === $value) {
+            return false;
+        }
+        if (!\is_array($value)) {
+            return true;
+        }
+        if ([] === $value) {
+            return false;
+        }
+        if (!array_is_list($value)) {
+            return true;
+        }
+        foreach ($value as $item) {
+            if (null !== $item && '' !== $item && [] !== $item) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function writePrototypeChild(Element $element, Property $child, mixed $value, int $groupIndex): void
+    {
+        if (!$this->prototypeFieldIsFilled($value)) {
+            return;
+        }
+
+        if ($this->isListFieldType($child->getFieldType())) {
+            $items = \is_array($value) && array_is_list($value) ? $value : [$value];
+            $enums = [];
+            foreach ($items as $item) {
+                if (null === $item || '' === $item) {
+                    continue;
+                }
+                $enum = $this->resolveEnum($child, $item);
+                if (!$enum instanceof PropertyEnum) {
+                    throw new BadRequestHttpException(sprintf(
+                        'Unknown enum value for property %s',
+                        $child->getCode(),
+                    ));
+                }
+                $enums[] = $enum;
+            }
+            if ([] === $enums) {
+                return;
+            }
+            $row = new ElementPropertyValue();
+            $row->setGroupIndex($groupIndex);
+            $row->setTypedValue($child, $enums);
+            $element->addPropertyValue($row);
+
+            return;
+        }
+
+        $items = ($child->isMultiple() && \is_array($value) && array_is_list($value)) ? $value : [$value];
+        foreach ($items as $item) {
+            if (!$this->prototypeFieldIsFilled($item)) {
+                continue;
+            }
+            $resolved = $this->resolveTypedPropertyItem($child, $item);
+            $row = new ElementPropertyValue();
+            $row->setGroupIndex($groupIndex);
+            $row->setTypedValue($child, $resolved);
+            $element->addPropertyValue($row);
+        }
+    }
+
+    private function assertRequiredPrototypesPresent(Element $element, ?array $provided): void
+    {
+        $block = $element->getBlock();
+        if (!$block) {
+            return;
+        }
+        $properties = $this->propertyRepository->findBy([
+            'block' => $block,
+            'parent' => null,
+        ]);
+        foreach ($properties as $property) {
+            if (!$property->isActive() || !$property->isRequired()) {
+                continue;
+            }
+            if (!$this->isPrototypeFieldType($property->getFieldType())) {
+                continue;
+            }
+            $code = (string) $property->getCode();
+            if (\is_array($provided) && array_key_exists($code, $provided)) {
+                continue;
+            }
+            if ($this->storedPrototypeIsComplete($element, $property)) {
+                continue;
+            }
+            $codes = array_map(
+                static fn (Property $child): string => (string) $child->getCode(),
+                $this->activePrototypeChildren($property),
+            );
+            throw new BadRequestHttpException(sprintf(
+                'Property %s: required fields missing: %s',
+                $code,
+                implode(', ', $codes),
+            ));
+        }
+    }
+
+    private function storedPrototypeIsComplete(Element $element, Property $prototype): bool
+    {
+        $children = $this->activePrototypeChildren($prototype);
+        if ([] === $children) {
+            return false;
+        }
+        /** @var array<int, array<string, true>> $groups */
+        $groups = [];
+        foreach ($element->getPropertyValues() as $row) {
+            $owner = $row->getProperty();
+            if ($owner?->getParent()?->getId() !== $prototype->getId()) {
+                continue;
+            }
+            $groups[$row->getGroupIndex()][(string) $owner->getCode()] = true;
+        }
+        if ([] === $groups) {
+            return false;
+        }
+        foreach ($groups as $present) {
+            foreach ($children as $child) {
+                if (!isset($present[(string) $child->getCode()])) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private function clearOwnedPropertyRows(Element $element, Property $property): void
+    {
+        $propertyId = $property->getId();
+        foreach ($element->getPropertyValues()->toArray() as $existing) {
+            $owner = $existing->getProperty();
+            if ($owner?->getId() === $propertyId || $owner?->getParent()?->getId() === $propertyId) {
+                $element->removePropertyValue($existing);
+            }
+        }
+    }
+
     private function extractId(mixed $item): ?int
     {
         if (is_int($item)) {
@@ -716,13 +1002,17 @@ class ElementManager extends AbstractIBlockManager
     {
         $block = $element->getBlock();
         if ($block) {
-            $property = $this->propertyRepository->findOneBy(['code' => $code, 'block' => $block]);
+            $property = $this->propertyRepository->findOneBy([
+                'code' => $code,
+                'block' => $block,
+                'parent' => null,
+            ]);
             if ($property instanceof Property) {
                 return $property;
             }
         }
 
-        $property = $this->propertyRepository->findOneBy(['code' => $code]);
+        $property = $this->propertyRepository->findOneBy(['code' => $code, 'parent' => null]);
 
         return $property instanceof Property ? $property : null;
     }
@@ -730,6 +1020,11 @@ class ElementManager extends AbstractIBlockManager
     private function isListFieldType(string $fieldType): bool
     {
         return 'L' === strtoupper($fieldType);
+    }
+
+    private function isPrototypeFieldType(string $fieldType): bool
+    {
+        return 'P' === strtoupper($fieldType);
     }
 
     private function resolveEnum(Property $property, mixed $value): ?PropertyEnum
@@ -782,70 +1077,118 @@ class ElementManager extends AbstractIBlockManager
         return null;
     }
 
+    /** @return list<mixed> */
+    private function collectSerializedValues(ElementPropertyValue $row): array
+    {
+        $property = $row->getProperty();
+        if (!$property) {
+            return [];
+        }
+        $fieldType = strtoupper($property->getFieldType());
+
+        if ($this->isListFieldType($fieldType)) {
+            $ids = [];
+            foreach ($row->getValueL() as $enum) {
+                $ids[] = $enum->getId();
+            }
+
+            return $ids;
+        }
+
+        if ('F' === $fieldType) {
+            $file = $row->getValueFile();
+            if (!$file) {
+                return [];
+            }
+
+            return [[
+                'id' => $file->getId(),
+                'name' => $file->getOriginalName(),
+                'src' => $file->getFileSRC(),
+            ]];
+        }
+
+        if ('E' === $fieldType) {
+            $linked = $row->getValueElement();
+            if (!$linked) {
+                return [];
+            }
+
+            return [[
+                'id' => $linked->getId(),
+                'name' => $linked->getName(),
+                'code' => $linked->getCode(),
+            ]];
+        }
+
+        if ('G' === $fieldType) {
+            $section = $row->getValueSection();
+            if (!$section) {
+                return [];
+            }
+
+            return [[
+                'id' => $section->getId(),
+                'name' => $section->getName(),
+                'code' => $section->getCode(),
+            ]];
+        }
+
+        if ('N' === $fieldType && null !== $row->getValueN()) {
+            return [$row->getValueN()];
+        }
+        if (null !== $row->getValueS()) {
+            return [$row->getValueS()];
+        }
+        if (null !== $row->getValueN() && (null === $row->getValue() || is_numeric($row->getValue()))) {
+            return [$row->getValueN()];
+        }
+
+        return [$row->getValue()];
+    }
+
+    private function findPrototypeChild(Property $prototype, string $code): ?Property
+    {
+        foreach ($prototype->getChildren() as $child) {
+            if ((string) $child->getCode() === $code) {
+                return $child;
+            }
+        }
+
+        return null;
+    }
+
     /** @return array<string, mixed> */
     private function serializePropertyValues(Element $element): array
     {
         /** @var array<string, list<mixed>> $grouped */
         $grouped = [];
+        /** @var array<int, array{property: Property, groups: array<int, array<string, list<mixed>>>}> $prototypes */
+        $prototypes = [];
+
         foreach ($element->getPropertyValues() as $row) {
             $property = $row->getProperty();
             if (!$property) {
                 continue;
             }
+            $values = $this->collectSerializedValues($row);
+            if ([] === $values) {
+                continue;
+            }
+            $parent = $property->getParent();
+            if ($parent instanceof Property && $this->isPrototypeFieldType($parent->getFieldType())) {
+                $parentId = (int) $parent->getId();
+                $prototypes[$parentId]['property'] = $parent;
+                $group = $row->getGroupIndex();
+                $childCode = (string) $property->getCode();
+                foreach ($values as $item) {
+                    $prototypes[$parentId]['groups'][$group][$childCode][] = $item;
+                }
+                continue;
+            }
             $code = (string) $property->getCode();
-            $fieldType = strtoupper($property->getFieldType());
-
-            if ($this->isListFieldType($fieldType)) {
-                foreach ($row->getValueL() as $enum) {
-                    $grouped[$code][] = $enum->getId();
-                }
-                continue;
-            }
-
-            if ('F' === $fieldType) {
-                $file = $row->getValueFile();
-                if ($file) {
-                    $grouped[$code][] = [
-                        'id' => $file->getId(),
-                        'name' => $file->getOriginalName(),
-                        'src' => $file->getFileSRC(),
-                    ];
-                }
-                continue;
-            }
-
-            if ('E' === $fieldType) {
-                $linked = $row->getValueElement();
-                if ($linked) {
-                    $grouped[$code][] = [
-                        'id' => $linked->getId(),
-                        'name' => $linked->getName(),
-                        'code' => $linked->getCode(),
-                    ];
-                }
-                continue;
-            }
-
-            if ('G' === $fieldType) {
-                $section = $row->getValueSection();
-                if ($section) {
-                    $grouped[$code][] = [
-                        'id' => $section->getId(),
-                        'name' => $section->getName(),
-                        'code' => $section->getCode(),
-                    ];
-                }
-                continue;
-            }
-
-            if ('N' === $fieldType && null !== $row->getValueN()) {
-                $grouped[$code][] = $row->getValueN();
-            } elseif (null !== $row->getValueS()) {
-                $grouped[$code][] = $row->getValueS();
-            } elseif (null !== $row->getValueN() && (null === $row->getValue() || is_numeric($row->getValue()))) {
-                $grouped[$code][] = $row->getValueN();
-            } else {
-                $grouped[$code][] = $row->getValue();
+            foreach ($values as $item) {
+                $grouped[$code][] = $item;
             }
         }
 
@@ -854,6 +1197,25 @@ class ElementManager extends AbstractIBlockManager
             $property = $this->resolvePropertyByCode($element, $code);
             $multiple = $property?->isMultiple() ?? (count($values) > 1);
             $result[$code] = $multiple ? array_values($values) : $values[0];
+        }
+
+        foreach ($prototypes as $bundle) {
+            /** @var Property $parent */
+            $parent = $bundle['property'];
+            $groups = $bundle['groups'];
+            ksort($groups);
+            $tuples = [];
+            foreach ($groups as $byCode) {
+                $tuple = [];
+                foreach ($byCode as $childCode => $values) {
+                    $child = $this->findPrototypeChild($parent, (string) $childCode);
+                    $multiple = $child?->isMultiple() ?? (count($values) > 1);
+                    $tuple[$childCode] = $multiple ? array_values($values) : $values[0];
+                }
+                $tuples[] = $tuple;
+            }
+            $code = (string) $parent->getCode();
+            $result[$code] = $parent->isMultiple() ? $tuples : ($tuples[0] ?? new \stdClass());
         }
 
         return $result;

@@ -17,7 +17,8 @@ const manifest: AppManifest = {
 	defaultSize: { width: 720, height: 720 },
 	minSize: { width: 480, height: 420 },
 	...createIblockDetailManifestOptions('note', 1),
-	startMenuGroup: 'content',
+	wmGroup: 'notes',
+	taskbarGroup: 'notes',
 	canAccess: () => canReadIblockElement() || canCreateIblockElement(),
 };
 

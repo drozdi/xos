@@ -44,7 +44,7 @@ class TypeController extends IBlockCrudController
         return $this->detail($id);
     }
 
-    #[Route('/', name: 'create', methods: ['POST'])]
+    #[Route('', name: 'create', methods: ['POST'])]
     #[Access('can_create')]
     public function createAction(Request $request, ValidatorInterface $validator): JsonResponse
     {

@@ -81,7 +81,7 @@ final class SshConnectionManager
     }
 
     /**
-     * @return array{id: string, columns: int, rows: int}
+     * @return array{id: string, columns: int, rows: int, source_ip: string|null}
      */
     public function openSession(User $user, int $connectionId, bool $acceptHostKey, int $columns, int $rows): array
     {
@@ -92,6 +92,7 @@ final class SshConnectionManager
         }
         $ssh = $this->client->connect($connection, $acceptHostKey, $columns, $rows);
         $fingerprint = SshClient::fingerprint((string) $ssh->getServerPublicHostKey());
+        $sourceIp = SshClient::localAddress($ssh);
         if ($connection->getHostKeyFingerprint() !== $fingerprint) {
             $connection->setHostKeyFingerprint($fingerprint);
             $this->entityManager->flush();
@@ -106,6 +107,7 @@ final class SshConnectionManager
             'id' => $meta['id'],
             'columns' => $meta['columns'],
             'rows' => $meta['rows'],
+            'source_ip' => $sourceIp,
         ];
     }
 

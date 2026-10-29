@@ -7,6 +7,7 @@ use App\Entity\UserAppData;
 use App\Entity\UserSetting;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
+use Main\Entity\AuditLog;
 use Main\Entity\Claimant;
 use Main\Entity\User;
 use Main\Entity\User\Access as UserAccess;
@@ -38,6 +39,7 @@ abstract class AuthWebTestCase extends WebTestCase
             $entityManager->getClassMetadata(Claimant::class),
             $entityManager->getClassMetadata(UserSetting::class),
             $entityManager->getClassMetadata(UserAppData::class),
+            $entityManager->getClassMetadata(AuditLog::class),
         ];
 
         $schemaTool = new SchemaTool($entityManager);

@@ -264,26 +264,25 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 			createLabel={config.createLabel}
 			filters={
 				<Stack gap="xs">
-					{config.sectionsAppId ? (
-						<Group gap="xs">
+					<Group gap="xs" w='100%'>
+						<Select
+							placeholder="Все разделы"
+							data={sectionOptions}
+							value={sectionId}
+							onChange={setSectionId}
+							searchable
+							clearable
+							flex={1}
+						/>
+						{config.sectionsAppId && (
 							<Button
-								size="xs"
 								variant="light"
 								onClick={() => void launchApp(config.sectionsAppId!, 0)}
 							>
 								{config.sectionsButtonLabel ?? 'Разделы'}
 							</Button>
-						</Group>
-					) : null}
-					<Select
-						label={config.sectionLabel}
-						placeholder="Все разделы"
-						data={sectionOptions}
-						value={sectionId}
-						onChange={setSectionId}
-						searchable
-						clearable
-					/>
+						)}
+					</Group>
 					<Chip
 						checked={favoritesOnly}
 						onChange={setFavoritesOnly}

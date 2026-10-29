@@ -189,7 +189,15 @@ const propertyValueItemSchema = z.union([
 		src: z.string().optional(),
 	}),
 ]);
-const propertyValueSchema = z.union([propertyValueItemSchema, z.array(propertyValueItemSchema)]);
+const prototypeTupleSchema = z.record(
+	z.string(),
+	z.union([propertyValueItemSchema, z.array(propertyValueItemSchema)]),
+);
+const propertyValueSchema = z.union([
+	propertyValueItemSchema,
+	prototypeTupleSchema,
+	z.array(z.union([propertyValueItemSchema, prototypeTupleSchema])),
+]);
 
 export const iblockElementDetailSchema = z.object({
 	id: z.number(),
@@ -215,6 +223,21 @@ export const iblockElementDetailSchema = z.object({
 	is_shared: z.boolean().optional().default(false),
 	shares: z.array(iblockElementShareSchema).optional().default([]),
 	...iblockImageFieldsSchema,
+});
+
+export const iblockPropertyChildSchema = z.object({
+	id: z.number(),
+	code: nullableString,
+	name: nullableString,
+	sort: z.number().nullable().optional().transform((v) => v ?? 0),
+	active: nullableBool,
+	multiple: nullableBool,
+	field_type: nullableString,
+	file_type: nullableString,
+	list_type: nullableString,
+	link_iblock_id: nullableNumber,
+	block_id: nullableNumber,
+	parent_id: nullableNumber,
 });
 
 export const iblockPropertyListItemSchema = z.object({
@@ -249,6 +272,7 @@ export const iblockPropertyDetailSchema = z.object({
 	block_id: nullableNumber,
 	parent_id: nullableNumber,
 	link_iblock_id: nullableNumber,
+	children: z.array(iblockPropertyChildSchema).optional().default([]),
 	x_timestamp: nullableString,
 	date_created: nullableString,
 });

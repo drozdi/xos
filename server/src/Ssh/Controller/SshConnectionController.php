@@ -2,6 +2,7 @@
 
 namespace Ssh\Controller;
 
+use App\Attribute\Access;
 use Main\Entity\User;
 use Ssh\Service\SshConnectionManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -14,6 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[Route('/api/ssh/connections', name: 'api_ssh_connections_')]
+#[Access('ssh', checkScopes: false)]
 class SshConnectionController extends AbstractController
 {
     public function __construct(private readonly SshConnectionManager $connections)
@@ -21,6 +23,7 @@ class SshConnectionController extends AbstractController
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
+    #[Access('ssh', checkScopes: false)]
     public function list(#[CurrentUser] ?User $user): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -30,6 +33,7 @@ class SshConnectionController extends AbstractController
     }
 
     #[Route('', name: 'create', methods: ['POST'])]
+    #[Access('ssh', checkScopes: false)]
     public function create(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -43,6 +47,7 @@ class SshConnectionController extends AbstractController
     }
 
     #[Route('/{id}', name: 'update', methods: ['PUT'], requirements: ['id' => '\d+'])]
+    #[Access('ssh', checkScopes: false)]
     public function update(int $id, Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -58,6 +63,7 @@ class SshConnectionController extends AbstractController
     }
 
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
+    #[Access('ssh', checkScopes: false)]
     public function delete(int $id, #[CurrentUser] ?User $user): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');

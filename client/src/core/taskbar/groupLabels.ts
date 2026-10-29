@@ -4,6 +4,8 @@ export const TASKBAR_GROUP_LABELS: Record<string, string> = {
 	games: 'Игры',
 	admin: 'Администрирование',
 	default: 'Приложения',
+	recipes: 'Рецепты',
+	notes: 'Заметки',
 };
 
 export function getTaskbarGroupLabel(groupId: string): string {

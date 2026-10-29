@@ -32,6 +32,7 @@ const sessionSchema = z.object({
 	id: z.string(),
 	columns: z.number(),
 	rows: z.number(),
+	source_ip: z.string().nullable(),
 });
 
 export type SshConnection = z.infer<typeof connectionSchema>;
@@ -95,7 +96,7 @@ export const sshApi = {
 		accept_host_key?: boolean;
 		columns: number;
 		rows: number;
-	}): Promise<{ id: string; columns: number; rows: number }> => {
+	}): Promise<{ id: string; columns: number; rows: number; source_ip: string | null }> => {
 		try {
 			const config: AxiosRequestConfig & { _errorToastShown: boolean } = {
 				_errorToastShown: true,

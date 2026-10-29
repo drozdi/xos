@@ -2,6 +2,7 @@
 
 namespace Ssh\Controller;
 
+use App\Attribute\Access;
 use Main\Entity\User;
 use Ssh\Service\SshKeyManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -14,6 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[Route('/api/ssh/keys', name: 'api_ssh_keys_')]
+#[Access('ssh', checkScopes: false)]
 class SshKeyController extends AbstractController
 {
     public function __construct(private readonly SshKeyManager $keys)
@@ -21,6 +23,7 @@ class SshKeyController extends AbstractController
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
+    #[Access('ssh', checkScopes: false)]
     public function list(#[CurrentUser] ?User $user): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -30,6 +33,7 @@ class SshKeyController extends AbstractController
     }
 
     #[Route('', name: 'import', methods: ['POST'])]
+    #[Access('ssh', checkScopes: false)]
     public function import(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -43,6 +47,7 @@ class SshKeyController extends AbstractController
     }
 
     #[Route('/generate', name: 'generate', methods: ['POST'])]
+    #[Access('ssh', checkScopes: false)]
     public function generate(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -56,6 +61,7 @@ class SshKeyController extends AbstractController
     }
 
     #[Route('/{id}', name: 'delete', methods: ['DELETE'], requirements: ['id' => '\d+'])]
+    #[Access('ssh', checkScopes: false)]
     public function delete(int $id, #[CurrentUser] ?User $user): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');

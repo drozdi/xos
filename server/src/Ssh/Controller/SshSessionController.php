@@ -2,6 +2,7 @@
 
 namespace Ssh\Controller;
 
+use App\Attribute\Access;
 use Main\Entity\User;
 use Ssh\Exception\SshHostKeyMismatch;
 use Ssh\Service\SshConnectionManager;
@@ -18,6 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[Route('/api/ssh/sessions', name: 'api_ssh_sessions_')]
+#[Access('ssh', checkScopes: false)]
 class SshSessionController extends AbstractController
 {
     public function __construct(
@@ -28,6 +30,7 @@ class SshSessionController extends AbstractController
     }
 
     #[Route('', name: 'open', methods: ['POST'])]
+    #[Access('ssh', checkScopes: false)]
     public function open(Request $request, #[CurrentUser] ?User $user): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -61,6 +64,7 @@ class SshSessionController extends AbstractController
     }
 
     #[Route('/{id}/stream', name: 'output', methods: ['GET'], requirements: ['id' => '[a-f0-9]{32}'])]
+    #[Access('ssh', checkScopes: false)]
     public function output(string $id, #[CurrentUser] ?User $user): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -87,6 +91,7 @@ class SshSessionController extends AbstractController
     }
 
     #[Route('/{id}/input', name: 'input', methods: ['POST'], requirements: ['id' => '[a-f0-9]{32}'])]
+    #[Access('ssh', checkScopes: false)]
     public function input(string $id, Request $request, #[CurrentUser] ?User $user): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
@@ -114,6 +119,7 @@ class SshSessionController extends AbstractController
     }
 
     #[Route('/{id}', name: 'close', methods: ['DELETE'], requirements: ['id' => '[a-f0-9]{32}'])]
+    #[Access('ssh', checkScopes: false)]
     public function close(string $id, #[CurrentUser] ?User $user): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');

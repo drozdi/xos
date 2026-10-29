@@ -15,7 +15,7 @@ import {
 	TextInput,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconPlayerPlay, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPencil, IconPlayerPlay, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
@@ -47,9 +47,11 @@ type EditorState = {
 };
 
 type LiveSession = {
+	tabId: string;
 	connectionId: number;
 	title: string;
 	acceptHostKey: boolean;
+	sourceIp: string | null;
 };
 
 const emptyEditor = (): EditorState => ({
@@ -105,7 +107,8 @@ export default function SshApp() {
 	useWindowTitle('SSH');
 	const queryClient = useQueryClient();
 	const [editor, setEditor] = useState<EditorState | null>(null);
-	const [live, setLive] = useState<LiveSession | null>(null);
+	const [sessions, setSessions] = useState<LiveSession[]>([]);
+	const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
 	const connectionsQuery = useQuery({
 		queryKey: queryKeys.ssh.connections,
@@ -143,6 +146,35 @@ export default function SshApp() {
 		},
 	});
 
+	const openSession = (connection: SshConnection) => {
+		const tabId = crypto.randomUUID();
+		setSessions((current) => [
+			...current,
+			{
+				tabId,
+				connectionId: connection.id,
+				title: connection.name,
+				acceptHostKey: false,
+				sourceIp: null,
+			},
+		]);
+		setActiveTabId(tabId);
+	};
+
+	const closeSession = (tabId: string) => {
+		setSessions((current) => {
+			const next = current.filter((session) => session.tabId !== tabId);
+			setActiveTabId((active) => {
+				if (active !== tabId) {
+					return active;
+				}
+				return next[next.length - 1]?.tabId ?? null;
+			});
+			return next;
+		});
+	};
+
+	const activeSession = sessions.find((session) => session.tabId === activeTabId) ?? null;
 	const connections = connectionsQuery.data ?? [];
 	const keys = keysQuery.data ?? [];
 	const keyOptions = [
@@ -226,13 +258,7 @@ export default function SshApp() {
 						<ActionIcon
 							variant="subtle"
 							aria-label="Подключиться"
-							onClick={() =>
-								setLive({
-									connectionId: connection.id,
-									title: connection.name,
-									acceptHostKey: false,
-								})
-							}
+							onClick={() => openSession(connection)}
 						>
 							<IconPlayerPlay size={16} />
 						</ActionIcon>
@@ -250,9 +276,17 @@ export default function SshApp() {
 									confirmLabel: 'Удалить',
 									confirmColor: 'red',
 									onConfirm: () => {
-										if (live?.connectionId === connection.id) {
-											setLive(null);
-										}
+										setSessions((current) => {
+											const next = current.filter(
+												(session) => session.connectionId !== connection.id,
+											);
+											setActiveTabId((active) =>
+												next.some((session) => session.tabId === active)
+													? active
+													: (next.at(-1)?.tabId ?? null),
+											);
+											return next;
+										});
 										deleteMutation.mutate(connection.id);
 									},
 								})
@@ -268,31 +302,104 @@ export default function SshApp() {
 					<SshKeysPanel />
 				</Tabs.Panel>
 			</Tabs>
-			<Box style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
-				{live ? (
-					<SshTerminal
-						key={`${live.connectionId}:${live.acceptHostKey ? 'trust' : 'check'}`}
-						connectionId={live.connectionId}
-						title={live.title}
-						acceptHostKey={live.acceptHostKey}
-						onHostKey={(fingerprint) => {
-							confirmAction({
-								title: 'Ключ сервера',
-								message: `Отпечаток ${fingerprint} не совпадает с сохранённым. Подключаться только если вы ожидали смену ключа.`,
-								confirmLabel: 'Доверять',
-								confirmColor: 'red',
-								onConfirm: () => setLive((current) => (current ? { ...current, acceptHostKey: true } : current)),
-							});
-						}}
-						onClose={() => setLive(null)}
-					/>
-				) : (
-					<Center h="100%">
-						<Text size="sm" c="dimmed">
-							Выберите подключение
-						</Text>
-					</Center>
-				)}
+			<Box style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+				{sessions.length > 0 ? (
+					<Group
+						gap={4}
+						px="xs"
+						py={4}
+						wrap="nowrap"
+						style={{ borderBottom: '1px solid var(--xos-shell-border)', overflowX: 'auto' }}
+					>
+						{sessions.map((session) => {
+							const selected = session.tabId === activeTabId;
+							return (
+								<Group
+									key={session.tabId}
+									gap={4}
+									wrap="nowrap"
+									px={8}
+									py={4}
+									style={{
+										borderRadius: 6,
+										cursor: 'pointer',
+										background: selected ? 'var(--mantine-color-default-hover)' : undefined,
+									}}
+									onClick={() => setActiveTabId(session.tabId)}
+								>
+									<Text size="xs" fw={selected ? 600 : 400} truncate maw={160}>
+										{session.title}
+									</Text>
+									<ActionIcon
+										size="xs"
+										variant="subtle"
+										aria-label="Закрыть сессию"
+										onClick={(event) => {
+											event.stopPropagation();
+											closeSession(session.tabId);
+										}}
+									>
+										<IconX size={12} />
+									</ActionIcon>
+								</Group>
+							);
+						})}
+					</Group>
+				) : null}
+				<Box style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+					{sessions.length === 0 ? (
+						<Center h="100%">
+							<Text size="sm" c="dimmed">
+								Выберите подключение
+							</Text>
+						</Center>
+					) : (
+						sessions.map((session) => (
+							<SshTerminal
+								key={`${session.tabId}:${session.acceptHostKey ? 'trust' : 'check'}`}
+								connectionId={session.connectionId}
+								acceptHostKey={session.acceptHostKey}
+								active={session.tabId === activeTabId}
+								onSourceIp={(sourceIp) =>
+									setSessions((current) =>
+										current.map((item) =>
+											item.tabId === session.tabId ? { ...item, sourceIp } : item,
+										),
+									)
+								}
+								onHostKey={(fingerprint) => {
+									confirmAction({
+										title: 'Ключ сервера',
+										message: `Отпечаток ${fingerprint} не совпадает с сохранённым. Подключаться только если вы ожидали смену ключа.`,
+										confirmLabel: 'Доверять',
+										confirmColor: 'red',
+										onConfirm: () =>
+											setSessions((current) =>
+												current.map((item) =>
+													item.tabId === session.tabId
+														? { ...item, acceptHostKey: true, sourceIp: null }
+														: item,
+												),
+											),
+									});
+								}}
+							/>
+						))
+					)}
+				</Box>
+				<Text
+					size="xs"
+					px="sm"
+					py={6}
+					c="dimmed"
+					style={{ borderTop: '1px solid var(--xos-shell-border)' }}
+				>
+					{activeSession
+						? activeSession.sourceIp
+							? `Подключение с ${activeSession.sourceIp}`
+							: 'Подключение…'
+						: 'Нет активного подключения'}
+				</Text>
 			</Box>
 			<Modal
 				opened={editor !== null}

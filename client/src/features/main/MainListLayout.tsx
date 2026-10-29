@@ -18,6 +18,8 @@ interface MainListLayoutProps {
 	onRefresh: () => void;
 	onCreate?: () => void;
 	createLabel?: string;
+	/** Extra buttons next to create / refresh. */
+	headerActions?: ReactNode;
 	filters?: ReactNode;
 	children: ReactNode;
 }
@@ -32,6 +34,7 @@ export function MainListLayout({
 	onRefresh,
 	onCreate,
 	createLabel = 'Создать',
+	headerActions,
 	filters,
 	children,
 }: MainListLayoutProps) {
@@ -50,6 +53,7 @@ export function MainListLayout({
 			<Group justify="space-between" mb="md" wrap="nowrap" style={{ flexShrink: 0 }}>
 				<Text fw={600}>{title}</Text>
 				<Group gap="xs" wrap="nowrap">
+					{headerActions}
 					{onCreate ? (
 						<Button variant="filled" size="xs" onClick={onCreate}>
 							{createLabel}

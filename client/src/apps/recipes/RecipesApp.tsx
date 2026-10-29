@@ -1,6 +1,6 @@
 import { ActionIcon, Alert, Badge, Button, Group, Select, Stack, Text, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconShare } from '@tabler/icons-react';
+import { IconPencil, IconShare, IconListDetails } from '@tabler/icons-react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -208,26 +208,24 @@ export default function RecipesApp() {
 				createLabel="Новый рецепт"
 				filters={
 					<Stack gap="xs">
-						{canManageCategories ? (
-							<Group gap="xs">
-								<Button
-									size="xs"
-									variant="light"
-									onClick={() => void launchApp('recipe-categories', 0)}
-								>
-									Категории
-								</Button>
-							</Group>
-						) : null}
-						<Select
-							label="Категория"
-							placeholder="Все категории"
-							data={sectionOptions}
-							value={sectionId}
-							onChange={setSectionId}
-							searchable
-							clearable
-						/>
+						<Group gap="xs" w='100%'>
+							<Select
+								placeholder="Все категории"
+								data={sectionOptions}
+								value={sectionId}
+								onChange={setSectionId}
+								searchable
+								clearable
+								flex={1}
+							/>
+							{canManageCategories && <Button
+								variant="light"
+								onClick={() => void launchApp('recipe-categories', 0)}
+								leftSection={<IconListDetails size={16} />}
+							>
+								Категории
+							</Button>}
+						</Group>
 						<Select
 							label="Сложность"
 							placeholder="Любая"

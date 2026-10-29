@@ -60,6 +60,10 @@ class ElementPropertyValue
     #[ORM\Column(name: 'description', length: 255, nullable: true)]
     private ?string $description = null;
 
+    /** Tuple index when this row belongs to a prototype (field_type P) value. */
+    #[ORM\Column(name: 'group_index', type: Types::INTEGER, options: ['default' => 0])]
+    private int $groupIndex = 0;
+
     public function __construct()
     {
         $this->valueL = new ArrayCollection();
@@ -352,6 +356,18 @@ class ElementPropertyValue
         if (null !== $valueEnum) {
             $this->addValueL($valueEnum);
         }
+
+        return $this;
+    }
+
+    public function getGroupIndex(): int
+    {
+        return $this->groupIndex;
+    }
+
+    public function setGroupIndex(int $groupIndex): self
+    {
+        $this->groupIndex = $groupIndex;
 
         return $this;
     }

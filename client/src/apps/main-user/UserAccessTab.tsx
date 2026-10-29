@@ -55,12 +55,20 @@ export function UserAccessTab({
 	const moduleCards = useMemo(() => {
 		return modules.map((moduleGroup) => {
 			const scopeClaimants = getModuleScopeClaimants(moduleGroup);
-			const mode = getModuleAccessMode(
+			const roleOnly = scopeClaimants.length === 0;
+			const storedMode = getModuleAccessMode(
 				moduleGroup.module,
 				roles,
 				accesses,
 				scopeClaimants,
 			);
+			const mode = roleOnly && storedMode === 'full' ? 'available' : storedMode;
+			const modeOptions = roleOnly
+				? [
+						{ label: 'Не доступен', value: 'none' },
+						{ label: 'Доступен', value: 'available' },
+					]
+				: [...MODULE_MODE_OPTIONS];
 
 			return (
 				<Paper key={moduleGroup.module} withBorder p="md">
@@ -68,7 +76,7 @@ export function UserAccessTab({
 						<Text fw={600}>{moduleGroup.moduleLabel}</Text>
 						<SegmentedControl
 							fullWidth
-							data={[...MODULE_MODE_OPTIONS]}
+							data={modeOptions}
 							value={mode}
 							disabled={readOnly}
 							onChange={(value) => {
@@ -134,11 +142,6 @@ export function UserAccessTab({
 							</SimpleGrid>
 						) : null}
 
-						{mode === 'available' && scopeClaimants.length === 0 ? (
-							<Text size="sm" c="dimmed">
-								Для модуля нет детализированных правил доступа
-							</Text>
-						) : null}
 					</Stack>
 				</Paper>
 			);
