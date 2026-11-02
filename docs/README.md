@@ -30,5 +30,6 @@ XOS — рабочий стол в браузере: Symfony API и React-обо
 | Почта | [inbox/README.md](inbox/README.md) | [inbox/TZ.md](inbox/TZ.md) | [inbox/API.md](inbox/API.md) |
 | GitHub | [github/README.md](github/README.md) | [github/TZ.md](github/TZ.md) | [github/API.md](github/API.md) |
 | Привычки | [habits/README.md](habits/README.md) | [habits/TZ.md](habits/TZ.md) | [habits/API.md](habits/API.md) |
+| SSH | [ssh/README.md](ssh/README.md) | [ssh/TZ.md](ssh/TZ.md) | [ssh/API.md](ssh/API.md) |
 
-Полный перечень путей без схем тел: `php bin/console app:openapi:dump` пишет `server/var/openapi.json`.
+Полный перечень путей без схем тел: `php bin/console debug:router`. Как поднять стенд: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).

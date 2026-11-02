@@ -23,9 +23,10 @@ XOS — рабочий стол в браузере. Пользователь в
 
 ## 3. Вход и права
 
-- Вход: `POST /api/login`. Тело — логин и пароль. Ответ — access-токен.
-- Обновление: `POST /api/token/refresh`.
-- Выход: `POST /api/logout`.
+- Вход: `POST /api/login`. Тело — логин и пароль. Ответ — access-токен в JSON. Refresh кладётся в HttpOnly-cookie `xos_refresh` (для календаря, школы и IncCom — `xos_app_refresh`) и в JSON не возвращается.
+- Обновление: `POST /api/token/refresh` с этой cookie, без тела. Новый access снова только в JSON, новый refresh — снова в cookie.
+- После перезагрузки страницы access в памяти нет. Оболочка сама вызывает refresh и поднимает сессию.
+- Выход: `GET /api/logout`. Cookie сбрасывается.
 - Дальнейшие методы, кроме явно открытых, требуют `Authorization: Bearer <access>`.
 - Защищённый модуль требует роль `ROLE_<МОДУЛЬ>` и scope `can_*` на методе.
 - Карта прав текущего пользователя: `GET /api/account/accesses` и `GET /api/account/map`.
@@ -77,6 +78,7 @@ XOS — рабочий стол в браузере. Пользователь в
 | Inbox | `ROLE_INBOX` | Внутренние сообщения |
 | Github | `ROLE_GITHUB` | Токен и issues GitHub |
 | TeamStorm | `ROLE_TS` | Прокси TeamStorm |
+| SSH | `ROLE_SSH` | Подключения, ключи и терминал |
 
 Привычки своей роли и таблиц не имеют: отметки лежат в user-data, окно открывается вместе с задачами.
 

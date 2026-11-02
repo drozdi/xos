@@ -39,11 +39,14 @@ import {
 	RecipeShareModal,
 	RecipeView,
 	allocateUniqueElementCode,
+	emptyIngredientRow,
+	storedIngredientRow,
 	fileIdsFromProperty,
+	ingredientRowsFromProperty,
 	numberFromProperty,
 	patchPropertyValues,
 	scalarFromProperty,
-	stringListFromProperty,
+	type IngredientRow,
 	useContentBlock,
 } from '@/features/iblock-content';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
@@ -145,7 +148,7 @@ export default function RecipeApp() {
 			section_ids: Number.isFinite(sectionId) && sectionId > 0 ? [sectionId] : [],
 			PROPERTY_VALUES: {
 				[CONTENT_PROPS.DIFFICULTY]: 'easy',
-				[CONTENT_PROPS.INGREDIENTS]: [''],
+				[CONTENT_PROPS.INGREDIENTS]: [storedIngredientRow(emptyIngredientRow())],
 			},
 			is_owner: true,
 			can_write: true,
@@ -306,7 +309,6 @@ async function serializeRecipePayload(
 	options?: { allocateCode?: boolean },
 ): Promise<Record<string, unknown>> {
 	const values = data.PROPERTY_VALUES ?? {};
-	const ingredients = stringListFromProperty(values[CONTENT_PROPS.INGREDIENTS]).filter(Boolean);
 	const coverIds = fileIdsFromProperty(values[CONTENT_PROPS.COVER]);
 	const blockId = data.block_id;
 	let code = (data.code || '').trim();
@@ -337,7 +339,9 @@ async function serializeRecipePayload(
 			[CONTENT_PROPS.COOK_MIN]: numberFromProperty(values[CONTENT_PROPS.COOK_MIN]),
 			[CONTENT_PROPS.SERVINGS]: numberFromProperty(values[CONTENT_PROPS.SERVINGS]),
 			[CONTENT_PROPS.DIFFICULTY]: scalarFromProperty(values[CONTENT_PROPS.DIFFICULTY]) || null,
-			[CONTENT_PROPS.INGREDIENTS]: ingredients,
+			[CONTENT_PROPS.INGREDIENTS]: ingredientRowsFromProperty(values[CONTENT_PROPS.INGREDIENTS])
+				.filter((row) => row.NAME.trim() !== '' || row.QTY != null || row.UNIT.trim() !== '')
+				.map(storedIngredientRow),
 		},
 	};
 }
@@ -364,8 +368,8 @@ function RecipeFormFields({
 	const values = data.PROPERTY_VALUES ?? {};
 	const [activeTab, setActiveTab] = useState<string | null>('general');
 	const ingredients = useMemo(() => {
-		const list = stringListFromProperty(values[CONTENT_PROPS.INGREDIENTS]);
-		return list.length > 0 ? list : [''];
+		const list = ingredientRowsFromProperty(values[CONTENT_PROPS.INGREDIENTS]);
+		return list.length > 0 ? list : [emptyIngredientRow()];
 	}, [values[CONTENT_PROPS.INGREDIENTS]]);
 
 	useEffect(() => {
@@ -379,9 +383,26 @@ function RecipeFormFields({
 	};
 
 	const addIngredient = () => {
-		const current = stringListFromProperty(values[CONTENT_PROPS.INGREDIENTS]);
-		const base = current.length > 0 ? current : [''];
-		setProp(CONTENT_PROPS.INGREDIENTS, [...base, '']);
+		const current = ingredientRowsFromProperty(values[CONTENT_PROPS.INGREDIENTS]);
+		const base = current.length > 0 ? current : [emptyIngredientRow()];
+		setProp(CONTENT_PROPS.INGREDIENTS, [...base, emptyIngredientRow()].map(storedIngredientRow));
+	};
+
+	const updateIngredient = (index: number, patch: Partial<IngredientRow>) => {
+		setProp(
+			CONTENT_PROPS.INGREDIENTS,
+			ingredients.map((row, rowIndex) =>
+				storedIngredientRow(
+					rowIndex === index
+						? {
+								NAME: patch.NAME ?? row.NAME,
+								QTY: patch.QTY === undefined ? row.QTY : patch.QTY,
+								UNIT: patch.UNIT ?? row.UNIT,
+							}
+						: row,
+				),
+			),
+		);
 	};
 
 	return (
@@ -478,18 +499,34 @@ function RecipeFormFields({
 								</Button>
 							)}
 						</Group>
-						{ingredients.map((line, index) => (
-							<Group key={`ing-${index}`} gap="xs" wrap="nowrap">
+						{ingredients.map((row, index) => (
+							<Group key={`ing-${index}`} gap="xs" wrap="nowrap" align="flex-end">
 								<TextInput
-									style={{ flex: 1 }}
-									value={line}
+									style={{ flex: 2 }}
+									label={index === 0 ? 'Название' : undefined}
+									value={row.NAME}
 									readOnly={readOnly}
-									placeholder="например: мука — 200 г"
-									onChange={(e) => {
-										const next = [...ingredients];
-										next[index] = e.currentTarget.value;
-										setProp(CONTENT_PROPS.INGREDIENTS, next);
-									}}
+									placeholder="мука"
+									onChange={(e) => updateIngredient(index, { NAME: e.currentTarget.value })}
+								/>
+								<NumberInput
+									style={{ flex: 1 }}
+									label={index === 0 ? 'Количество' : undefined}
+									value={row.QTY ?? ''}
+									readOnly={readOnly}
+									min={0}
+									placeholder="200"
+									onChange={(v) =>
+										updateIngredient(index, { QTY: typeof v === 'number' ? v : null })
+									}
+								/>
+								<TextInput
+									style={{ width: 110 }}
+									label={index === 0 ? 'Ед. изм.' : undefined}
+									value={row.UNIT}
+									readOnly={readOnly}
+									placeholder="г"
+									onChange={(e) => updateIngredient(index, { UNIT: e.currentTarget.value })}
 								/>
 								{!readOnly && ingredients.length > 1 && (
 									<ActionIcon
@@ -498,7 +535,7 @@ function RecipeFormFields({
 										onClick={() =>
 											setProp(
 												CONTENT_PROPS.INGREDIENTS,
-												ingredients.filter((_, i) => i !== index),
+												ingredients.filter((_, i) => i !== index).map(storedIngredientRow),
 											)
 										}
 									>

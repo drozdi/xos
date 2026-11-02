@@ -10,15 +10,15 @@
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
-| POST | `/api/login` | Логин и пароль, выдаёт access-токен |
-| GET | `/api/login-check` | Проверка, что сессия ещё жива |
-| POST | `/api/token/refresh` | Новый access по refresh-токену |
-| POST | `/api/logout` | Выход |
+| POST | `/api/login` | Логин и пароль. Ответ `{ token, user }`. Refresh — cookie `xos_refresh`, HttpOnly, SameSite=Lax |
+| GET | `/api/login-check` | Проверка, что access ещё принят |
+| POST | `/api/token/refresh` | Новый access. Cookie уходит сама, тело пустое. Ответ `{ token }` |
+| GET | `/api/logout` | Выход и сброс cookie |
 | GET | `/api/user` | Краткие данные текущего пользователя |
 | GET | `/api/protected` | Проверка, что токен принят |
 | GET | `/api/health` | Живость API |
 
-У календаря, школы и IncCom есть собственные `POST /api/<модуль>/auth/login|logout` и `POST /api/<модуль>/token/refresh`. Рабочий стол пользуется общим `/api/login`.
+У календаря, школы и IncCom есть собственные `POST /api/<модуль>/auth/login|logout` и `POST /api/<модуль>/token/refresh`. Их refresh — cookie `xos_app_refresh`. Рабочий стол пользуется общим `/api/login` и cookie `xos_refresh`. Cookie `Secure` ставится только по HTTPS.
 
 ## Аккаунт и права
 
@@ -72,7 +72,8 @@
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
-| GET | `/api/browser/proxy` | Прокси страницы встроенного браузера |
+| GET | `/api/browser/proxy?url=` | HTML через SSRF-фильтр. Только http/https, порты 80/443, до 5 МБ |
+| GET | `/api/network/egress` | Внешний IP сервера для часов на панели задач |
 
 ## Списки
 

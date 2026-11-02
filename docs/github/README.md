@@ -1,7 +1,13 @@
 # GitHub
 
-Issues одного репозитория по токену пользователя. Сам GitHub остаётся снаружи.
+Issues одного репозитория по персональному токену. Копия issues в XOS не хранится: каждый список ходит в GitHub.
 
-Доступ: `ROLE_GITHUB`. Код: `server/src/Github`, `client/src/apps/github`. Виджет `widget-external` показывает те же issues.
+Доступ: `ROLE_GITHUB`. Окно `github`. Виджет `widget-external` показывает те же issues. Код: `server/src/Github`, `client/src/apps/github`.
+
+## Сценарий
+
+Пользователь записывает PAT и адрес репозитория, жмёт проверку соединения. Список issues открывается в окне. Карточка читает один номер. Правка (`PATCH`) уходит в GitHub: состояние и поля, которые принимает контроллер. Создать issue из XOS нельзя.
+
+Токен на диске шифруется (`GITHUB_TOKEN_SECRET`) и в ответах списка не возвращается.
 
 См. [TZ.md](TZ.md), [API.md](API.md).

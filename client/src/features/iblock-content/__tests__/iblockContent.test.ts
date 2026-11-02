@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { insertMarkdownImage } from '@/features/iblock-content/insertMarkdownImage';
-import { stringListFromProperty } from '@/features/iblock-content/propertyValues';
+import {
+	formatIngredientRow,
+	ingredientRowsFromProperty,
+	stringListFromProperty,
+} from '@/features/iblock-content/propertyValues';
 import { slugifyCode } from '@/features/iblock-content/slugifyCode';
 import { validateRecipeForm } from '@/apps/recipe/recipeValidation';
 
@@ -36,6 +40,15 @@ describe('stringListFromProperty', () => {
 	it('keeps empty rows for ingredient UI', () => {
 		expect(stringListFromProperty(['мука', ''])).toEqual(['мука', '']);
 		expect(stringListFromProperty(['', ''])).toEqual(['', '']);
+	});
+});
+
+describe('ingredientRowsFromProperty', () => {
+	it('reads name, quantity and unit', () => {
+		expect(
+			ingredientRowsFromProperty([{ NAME: 'мука', QTY: 200, UNIT: 'г' }]),
+		).toEqual([{ NAME: 'мука', QTY: 200, UNIT: 'г' }]);
+		expect(formatIngredientRow({ NAME: 'соль', QTY: null, UNIT: 'щепотка' })).toBe('соль — щепотка');
 	});
 });
 

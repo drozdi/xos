@@ -275,7 +275,7 @@ MD,
         $this->ensureEnum($difficulty, 'easy', 'Легко', 10, true);
         $this->ensureEnum($difficulty, 'medium', 'Средне', 20, false);
         $this->ensureEnum($difficulty, 'hard', 'Сложно', 30, false);
-        $this->ensureProperty($recipesBlock, 'INGREDIENTS', 'Ингредиенты', 'S', true, 60);
+        $this->ensureIngredientPrototype($recipesBlock);
 
         $this->ensureProperty($articlesBlock, 'COVER', 'Обложка', 'F', true, 10, 'image');
         $this->ensureProperty($articlesBlock, 'TAGS', 'Теги', 'S', true, 20);
@@ -364,10 +364,10 @@ MD,
                 'SERVINGS' => 4,
                 'DIFFICULTY' => 'easy',
                 'INGREDIENTS' => [
-                    'лук — 1 шт.',
-                    'чеснок — 2 зубчика',
-                    'томаты — 800 г',
-                    'бульон — 500 мл',
+                    ['NAME' => 'лук', 'QTY' => 1, 'UNIT' => 'шт.'],
+                    ['NAME' => 'чеснок', 'QTY' => 2, 'UNIT' => 'зубчика'],
+                    ['NAME' => 'томаты', 'QTY' => 800, 'UNIT' => 'г'],
+                    ['NAME' => 'бульон', 'QTY' => 500, 'UNIT' => 'мл'],
                 ],
             ],
             'sort' => 10,
@@ -382,10 +382,10 @@ MD,
                 'SERVINGS' => 6,
                 'DIFFICULTY' => 'medium',
                 'INGREDIENTS' => [
-                    'мука — 300 г',
-                    'молоко — 500 мл',
-                    'яйца — 2 шт.',
-                    'соль — щепотка',
+                    ['NAME' => 'мука', 'QTY' => 300, 'UNIT' => 'г'],
+                    ['NAME' => 'молоко', 'QTY' => 500, 'UNIT' => 'мл'],
+                    ['NAME' => 'яйца', 'QTY' => 2, 'UNIT' => 'шт.'],
+                    ['NAME' => 'соль', 'QTY' => null, 'UNIT' => 'щепотка'],
                 ],
             ],
             'sort' => 20,
@@ -501,6 +501,106 @@ MD,
         }
 
         return $block;
+    }
+
+    private function ensureIngredientPrototype(Block $block): Property
+    {
+        $property = $this->ensureProperty($block, 'INGREDIENTS', 'Ингредиенты', 'P', true, 60);
+        $this->ensurePrototypeField($property, 'NAME', 'Название', 'S', 10);
+        $this->ensurePrototypeField($property, 'QTY', 'Количество', 'N', 20);
+        $this->ensurePrototypeField($property, 'UNIT', 'Ед. изм.', 'S', 30);
+        $this->convertLegacyIngredientValues($block, $property);
+
+        return $property;
+    }
+
+    private function ensurePrototypeField(
+        Property $parent,
+        string $code,
+        string $name,
+        string $fieldType,
+        int $sort,
+    ): void {
+        foreach ($parent->getChildren() as $child) {
+            if ($child->getCode() === $code) {
+                return;
+            }
+        }
+        $this->propertyManager->add([
+            'code' => $code,
+            'name' => $name,
+            'block_id' => $parent->getBlock()?->getId(),
+            'field_type' => $fieldType,
+            'multiple' => false,
+            'sort' => $sort,
+            'active' => true,
+            'parent_id' => $parent->getId(),
+            'list_type' => 's',
+        ]);
+    }
+
+    private function convertLegacyIngredientValues(Block $block, Property $ingredients): void
+    {
+        $parentId = $ingredients->getId();
+        if (null === $parentId) {
+            return;
+        }
+        foreach ($this->iblockElements->findBy(['block' => $block]) as $element) {
+            if (!$element instanceof Element) {
+                continue;
+            }
+            $lines = [];
+            $hasChildRows = false;
+            $rows = $element->getPropertyValues()->toArray();
+            usort($rows, static fn ($left, $right): int => ($left->getId() ?? 0) <=> ($right->getId() ?? 0));
+            foreach ($rows as $row) {
+                $prop = $row->getProperty();
+                if (!$prop instanceof Property) {
+                    continue;
+                }
+                if ($prop->getParent()?->getId() === $parentId) {
+                    $hasChildRows = true;
+                    continue;
+                }
+                if ($prop->getId() !== $parentId) {
+                    continue;
+                }
+                $text = trim((string) ($row->getValueS() ?? $row->getValue() ?? ''));
+                if ('' !== $text) {
+                    $lines[] = $text;
+                }
+            }
+            if ([] === $lines || $hasChildRows || null === $element->getId()) {
+                continue;
+            }
+            $this->elementManager->update($element->getId(), [
+                'PROPERTY_VALUES' => [
+                    'INGREDIENTS' => array_map($this->parseIngredientLine(...), $lines),
+                ],
+            ]);
+        }
+    }
+
+    /**
+     * @return array{NAME: string, QTY: float|null, UNIT: string}
+     */
+    private function parseIngredientLine(string $line): array
+    {
+        $parts = preg_split('/\s+[—–-]\s+/u', $line, 2);
+        if (!\is_array($parts) || \count($parts) < 2) {
+            return ['NAME' => $line, 'QTY' => null, 'UNIT' => ''];
+        }
+        $name = trim($parts[0]);
+        $rest = trim($parts[1]);
+        if (1 === preg_match('/^(\d+(?:[.,]\d+)?)\s*(.*)$/u', $rest, $matches)) {
+            return [
+                'NAME' => $name,
+                'QTY' => (float) str_replace(',', '.', $matches[1]),
+                'UNIT' => trim($matches[2]),
+            ];
+        }
+
+        return ['NAME' => $name, 'QTY' => null, 'UNIT' => $rest];
     }
 
     private function ensureProperty(
@@ -731,6 +831,7 @@ MD,
             'content' => '#6a1b9a',
             'github' => '#24292e',
             'inbox' => '#0277bd',
+            'ssh' => '#37474f',
         ];
         $result = [];
         foreach ($defs as $name => $color) {
@@ -745,7 +846,7 @@ MD,
 
     /**
      * @param array<string, BoardList> $lists
-     * @param array<string, Label> $labels
+     * @param array<string, Label>     $labels
      */
     private function addLinkedDocCards(User $user, array $lists, array $labels, ?Vault $vault): void
     {
@@ -770,7 +871,7 @@ MD,
 
     /**
      * @param array<string, BoardList> $lists
-     * @param array<string, Label> $labels
+     * @param array<string, Label>     $labels
      */
     private function addRoadmapCards(User $user, array $lists, array $labels, ?Vault $vault): void
     {
@@ -889,7 +990,7 @@ MD,
 
     /**
      * @param array<string, Label> $labels
-     * @param list<string> $labelKeys
+     * @param list<string>         $labelKeys
      */
     private function applyLabels(Card $card, User $user, array $labels, array $labelKeys): void
     {
@@ -1031,6 +1132,13 @@ MD,
                 'description' => "Вход, права, настройки, файлы.\n\nЗаметка: Notes/Docs/API.md",
             ],
             [
+                'title' => 'Запуск и секреты',
+                'notePath' => 'Notes/Docs/DEVELOPER_GUIDE.md',
+                'boardList' => 'Обзор',
+                'labels' => ['docs'],
+                'description' => "Как поднять стенд, cookie, Mercure, SSH-шлюз.\n\nЗаметка: Notes/Docs/DEVELOPER_GUIDE.md",
+            ],
+            [
                 'title' => 'Идеи улучшений',
                 'notePath' => 'Notes/Improvements.md',
                 'boardList' => 'Обзор',
@@ -1075,6 +1183,7 @@ MD,
             'pkb' => ['folder' => 'PKB', 'label' => 'pkb', 'title' => 'PKB'],
             'ts' => ['folder' => 'TeamStorm', 'label' => 'system', 'title' => 'TeamStorm'],
             'inbox' => ['folder' => 'Inbox', 'label' => 'inbox', 'title' => 'Inbox'],
+            'ssh' => ['folder' => 'Ssh', 'label' => 'ssh', 'title' => 'SSH'],
             'github' => ['folder' => 'GitHub', 'label' => 'github', 'title' => 'GitHub'],
         ];
     }
@@ -1103,6 +1212,7 @@ MD,
             'API.md' => 'Notes/Docs/API.md',
             'APP_IDEAS.md' => 'Notes/AppIdeas.md',
             'IMPROVEMENTS.md' => 'Notes/Improvements.md',
+            'DEVELOPER_GUIDE.md' => 'Notes/Docs/DEVELOPER_GUIDE.md',
         ];
         foreach ($this->documentationDomains() as $domain => $meta) {
             foreach (['README.md', 'TZ.md', 'API.md'] as $file) {
@@ -1535,6 +1645,7 @@ Claimant в основном `iblock`; рецепты — `recipe` (`ROLE_RECIPE
 
 - Hub инфоблоков: [[IBlock]]
 - Теги / избранное в ContentCatalog — **DONE**
+- Рецепт: `INGREDIENTS` = название, количество, единица
 - Документы: `docs/iblock/README.md`, `docs/README.md`
 
 ← [[Home]] · [[IBlock]] · [[AppsCatalog]]
@@ -1585,9 +1696,32 @@ Personal Access Token → proxy Issues (list / detail / patch).
 
 - `GET/PUT/DELETE /api/github/credentials`
 - `GET /api/github/issues`
-- `GET/PATCH /api/github/repos/{owner}/{repo}/issues/{number}`
+- `GET/PATCH /api/github/issues/{number}`
 
 At rest: `GITHUB_TOKEN_SECRET`. Документы: `docs/github/README.md`
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'SSH',
+                'notePath' => 'Notes/Apps/Ssh/README.md',
+                'labels' => ['ssh'],
+                'cardDescription' => "Терминал: подключения и ключи.\n\nЗаметка: [[SSH]] · API `/api/ssh/`",
+                'body' => <<<'MD'
+# SSH
+
+Claimant `ssh` · `ROLE_SSH` · `server/src/Ssh/` · app `ssh`
+
+## Назначение
+
+Сохранённые подключения и терминал. Секрет шифруется на сервере. Шлюз получает параметры только по билету.
+
+## Приложения
+
+`ssh`
+
+Документы: `docs/ssh/README.md`, `docs/ssh/TZ.md`, `docs/ssh/API.md`
 
 ← [[Home]] · [[AppsCatalog]]
 MD,
@@ -1699,13 +1833,13 @@ MD,
             'Notes/Home.md' => <<<'MD'
 # XOS
 
-Веб-CRM с desktop-окружением в браузере: окна, меню «Пуск», JWT API.
+Рабочий стол в браузере: окна, меню «Пуск», API.
 
 ## Стек
 
 - Backend: Symfony 7, Doctrine, MySQL — `server/`
 - Frontend: React 19, Vite, Mantine, Zustand, TanStack Query — `client/`
-- Auth: JWT + claimants / scopes (`setting.json`, `ProtectedAppModules`)
+- Auth: access в памяти, refresh в HttpOnly-cookie, claimants / scopes (`setting.json`, `ProtectedAppModules`)
 
 ## Карта модулей
 
@@ -1724,6 +1858,7 @@ MD,
 - [[TeamStorm]] — TeamStorm proxy
 - [[GitHub]] — Issues
 - [[Inbox]] — внутренние сообщения
+- [[SSH]] — терминал
 - [[Habits]] — привычки (на Todo)
 
 ## Обзорные заметки
@@ -1793,6 +1928,12 @@ Polling `…/changes` + `/api/board/search` — **DONE**.
 
 [[SchoolTask]] homeworks + parent share · [[Content]] leads · [[GitHub]] · [[Habits]] · [[Inbox]] · IncCom bank UI · tags/favorites.
 
+## Сессия, SSH, рецепты (DONE)
+
+- Refresh в HttpOnly-cookie, access только в памяти. После перезагрузки сессия поднимается сама.
+- [[SSH]]: шлюз по билету или поток PHP.
+- Рецепты: ингредиент `INGREDIENTS` — название, количество, единица.
+
 ## Далее
 
 - IMAP / Open Banking; Board email/Trello — [[AppIdeas]]
@@ -1850,6 +1991,7 @@ MD,
 | Ts | `Ts/` | TeamStorm proxy |
 | Github | `Github/` | Issues proxy |
 | Inbox | `Inbox/` | Внутренние сообщения |
+| Ssh | `Ssh/` | Терминал |
 
 ## Клиент
 
@@ -1859,7 +2001,7 @@ MD,
 
 ## Безопасность API
 
-- JWT: `/api/login`, refresh, logout
+- Вход: `/api/login`. Refresh в cookie, access в JSON. Выход: `GET /api/logout`
 - `#[Access]` + scopes; загрузки через `UploadPathResolver`
 - Защищённые модули: `ProtectedAppModules`
 
@@ -1909,12 +2051,13 @@ MD,
 | TeamStorm | ts | teamstorm |
 | GitHub | github | github |
 | Inbox | inbox | inbox, inbox-message |
+| SSH | ssh | ssh |
 | IBlock | iblock | iblock-types, iblock-type, iblock-blocks, iblock-block, iblock-sections, iblock-section, iblock-elements, iblock-element, iblock-properties, iblock-property |
 | Content | iblock / recipe | notes, note, notebooks, articles, article, faqs, faq, galleries, gallery, announcements, announcement, contacts, contact, services, service, ideas, idea, leads, lead, recipes, recipe, recipe-categories |
 
 ## Модули в vault
 
-[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]]
+[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]] · [[SSH]]
 
 Полный каталог: `docs/README.md` · идеи: [[AppIdeas]]
 
@@ -2061,7 +2204,7 @@ Property принадлежит **Block** (`block_id` required). Связи с T
 | `L` | M2M `valueL` | enums `/property-enum` |
 | `E` | `value_element_id` | **`link_iblock_id`** |
 | `G` | `value_section_id` | **`link_iblock_id`** |
-| `P` | дочерние свойства, `group_index` | прототип: поля `S/N/F/L/E/G`. `required` — заполнены все поля каждого кортежа |
+| `P` | дочерние свойства, `group_index` | прототип: поля `S/N/F/L/E/G`. `required` — заполнены все поля каждого кортежа. Рецепт: `INGREDIENTS` → `NAME`, `QTY`, `UNIT` |
 
 `multiple`: L — несколько enum в одной строке; иначе несколько строк значений. У прототипа — несколько кортежей.
 

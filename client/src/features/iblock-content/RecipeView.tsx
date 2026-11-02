@@ -18,9 +18,10 @@ import { MarkdownPreview } from '@/features/markdown';
 import { CONTENT_PROPS } from './contentCatalog';
 import {
 	fileItemsFromProperty,
+	formatIngredientRow,
+	ingredientRowsFromProperty,
 	numberFromProperty,
 	scalarFromProperty,
-	stringListFromProperty,
 } from './propertyValues';
 
 function userLabel(user: IblockElementDetail['created_by']): string | null {
@@ -41,7 +42,9 @@ export function RecipeView({ data, difficultyLabel, onEdit, onShare }: RecipeVie
 	const coverItems = fileItemsFromProperty(values[CONTENT_PROPS.COVER]).filter(
 		(item) => item.id !== detailImage?.id,
 	);
-	const ingredients = stringListFromProperty(values[CONTENT_PROPS.INGREDIENTS]).filter(Boolean);
+	const ingredients = ingredientRowsFromProperty(values[CONTENT_PROPS.INGREDIENTS])
+		.map(formatIngredientRow)
+		.filter(Boolean);
 	const prep = numberFromProperty(values[CONTENT_PROPS.PREP_MIN]);
 	const cook = numberFromProperty(values[CONTENT_PROPS.COOK_MIN]);
 	const servings = numberFromProperty(values[CONTENT_PROPS.SERVINGS]);

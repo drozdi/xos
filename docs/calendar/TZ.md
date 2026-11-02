@@ -14,7 +14,7 @@
 
 ## 4. Вход модуля
 
-Свой login и refresh. Стол входит через общий `/api/login`.
+Свой login, logout и refresh (`/api/calendar/auth/*`, `/api/calendar/token/refresh`). Стол входит через общий `/api/login`. Refresh модуля кладётся в cookie `xos_app_refresh`, не в JSON.
 
 ## 5. Критерии
 

@@ -97,6 +97,79 @@ export function fileSrcFromProperty(value: PropertyValue | undefined): string | 
 	return null;
 }
 
+export interface IngredientRow {
+	[key: string]: string | number | null;
+	NAME: string;
+	QTY: number | null;
+	UNIT: string;
+}
+
+export function emptyIngredientRow(): IngredientRow {
+	return { NAME: '', QTY: null, UNIT: '' };
+}
+
+export function storedIngredientRow(row: IngredientRow): Record<string, string | number | null> {
+	return { NAME: row.NAME, QTY: row.QTY, UNIT: row.UNIT };
+}
+
+export function ingredientRowsFromProperty(value: PropertyValue | undefined): IngredientRow[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+	return value.flatMap((item) => {
+		if (typeof item === 'string') {
+			return [ingredientFromLegacyLine(item)];
+		}
+		if (!item || typeof item !== 'object' || Array.isArray(item) || 'src' in item) {
+			return [];
+		}
+		const record = item as Record<string, unknown>;
+		if (!('NAME' in record) && !('QTY' in record) && !('UNIT' in record)) {
+			return [];
+		}
+		const qty = record.QTY;
+		const parsedQty =
+			typeof qty === 'number'
+				? qty
+				: typeof qty === 'string' && qty.trim() !== ''
+					? Number(qty.replace(',', '.'))
+					: null;
+		return [
+			{
+				NAME: typeof record.NAME === 'string' ? record.NAME : '',
+				QTY: parsedQty != null && !Number.isNaN(parsedQty) ? parsedQty : null,
+				UNIT: typeof record.UNIT === 'string' ? record.UNIT : '',
+			},
+		];
+	});
+}
+
+export function formatIngredientRow(row: IngredientRow): string {
+	const amount = [row.QTY != null ? String(row.QTY) : '', row.UNIT.trim()].filter(Boolean).join(' ');
+	if (row.NAME.trim() && amount) {
+		return `${row.NAME.trim()} — ${amount}`;
+	}
+	return row.NAME.trim() || amount;
+}
+
+function ingredientFromLegacyLine(line: string): IngredientRow {
+	const parts = line.split(/\s+[—–-]\s+/);
+	if (parts.length < 2) {
+		return { NAME: line, QTY: null, UNIT: '' };
+	}
+	const name = parts[0]?.trim() ?? '';
+	const rest = parts.slice(1).join(' — ').trim();
+	const match = /^(\d+(?:[.,]\d+)?)\s*(.*)$/.exec(rest);
+	if (!match) {
+		return { NAME: name, QTY: null, UNIT: rest };
+	}
+	return {
+		NAME: name,
+		QTY: Number(match[1]?.replace(',', '.')),
+		UNIT: match[2]?.trim() ?? '',
+	};
+}
+
 export function stringListFromProperty(value: PropertyValue | undefined): string[] {
 	if (value == null || value === '') {return [];}
 	if (Array.isArray(value)) {

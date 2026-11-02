@@ -4,6 +4,12 @@
 
 Доступ: `ROLE_BOARD`. Доска общая, активное подразделение её не режет. Код: `server/src/Board`, `client/src/apps/board`.
 
-Живые изменения: `GET /api/board/boards/{id}/changes`, `/realtime`, `/events`.
+## Сценарий
+
+Пространство, доска, перенос карточки между колонками, срок, исполнители, метки, чеклист, комментарий и вложение. Карточку можно связать с заметкой: `GET /api/board/cards/linked`.
+
+## Живое обновление
+
+Если задан `MERCURE_PUBLIC_URL`, клиент подписывается на хаб. Иначе раз в 5 секунд читает `GET /api/board/boards/{id}/events` и сравнивает `MAX(updated_at)`. Рядом: `/changes`, `/realtime`, `/activity`.
 
 См. [TZ.md](TZ.md), [API.md](API.md).

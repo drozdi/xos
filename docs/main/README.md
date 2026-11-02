@@ -20,6 +20,8 @@
 
 Пользователь выбирает его в настройках. Ключ user-data: `main.active_ou_id`. Его читают списки, которые вызывают `OuScope::applyListFilter`. Список устройств этот фильтр не применяет — см. [device/README.md](../device/README.md).
 
-Синхронизация каталога прав: `php bin/console main:claimant:sync`.
+Синхронизация каталога прав: `php bin/console main:claimant:sync`. Журнал `main-audit` читает `GET|POST /api/main/audit/list` при scope `main.audit` can_read.
+
+Загрузка общих файлов: `POST /api/main/file/upload` (`file` + `module` из списка device, common, task, main, board, iblock, inbox). Отдача файла проверяет владельца и отдаёт `Content-Disposition: attachment`.
 
 См. [TZ.md](TZ.md), [API.md](API.md).

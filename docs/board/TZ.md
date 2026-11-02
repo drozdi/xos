@@ -18,7 +18,7 @@
 
 ## 4. Лента
 
-Активность доски, инкремент изменений, realtime и events — четыре чтения. Поиск по доскам: `GET /api/board/search`. Фильтр карточек одной доски: `GET /api/board/boards/{id}/cards`.
+Активность доски, инкремент изменений, realtime и events — четыре чтения. Если задан публичный URL Mercure, клиент слушает хаб, а `/events` остаётся запасным опросом раз в 5 секунд. Поиск: `GET /api/board/search` (`page`, `limit` 1–100, `sort`, `order`). Фильтр карточек одной доски: `GET /api/board/boards/{id}/cards`.
 
 ## 5. Критерии
 
