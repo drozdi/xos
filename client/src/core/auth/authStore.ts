@@ -119,13 +119,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
 			const generation = ++hydrateGeneration;
 			set({ isLoading: true });
 
-			if (!tokenStorage.hasStoredSession(resolved)) {
-				if (generation === hydrateGeneration) {
-					set({ isLoading: false, isAuthenticated: false });
-				}
-				return;
-			}
-
 			try {
 				const restored = await restoreAccessToken(resolved);
 				if (!restored) {

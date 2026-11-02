@@ -40,6 +40,15 @@ describe('sessionRestore', () => {
 		expect(tokenStorage.getAccessToken()).toBe('new-access');
 	});
 
+	it('asks the cookie refresh endpoint when memory has no access token', async () => {
+		vi.spyOn(authApi, 'refreshToken').mockResolvedValue({
+			token: 'restored-access',
+		});
+
+		await expect(restoreAccessToken()).resolves.toBe(true);
+		expect(tokenStorage.getAccessToken()).toBe('restored-access');
+	});
+
 	it('detects expired tokens', () => {
 		const expired = makeJwt(Math.floor(Date.now() / 1000) - 10);
 		const valid = makeJwt(Math.floor(Date.now() / 1000) + 3600);

@@ -67,7 +67,7 @@ export async function refreshToken(): Promise<RefreshResponse> {
 }
 
 export async function logout(): Promise<LogoutResponse> {
-	const { data } = await apiClient.get<unknown>(PATHS.logout);
+	const { data } = await apiClient.get<unknown>(PATHS.logout, { withCredentials: true });
 	return logoutResponseSchema.parse(data);
 }
 
