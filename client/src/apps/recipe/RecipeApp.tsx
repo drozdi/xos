@@ -153,7 +153,7 @@ export default function RecipeApp() {
 	};
 
 	const difficultyLabel = useMemo(() => {
-		if (!viewData) return null;
+		if (!viewData) {return null;}
 		const code = resolveDifficultyCode(viewData.PROPERTY_VALUES?.[CONTENT_PROPS.DIFFICULTY]);
 		return difficultyOptions.find((o) => o.value === code)?.label ?? code;
 	}, [viewData, resolveDifficultyCode, difficultyOptions]);

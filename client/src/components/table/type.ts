@@ -173,10 +173,10 @@ export interface TableDataProps<T = object> extends Omit<TableProps, 'layout' | 
 }
 
 export interface TableStorage {
-	clear(): void;
-	setItem(key: string, value: unknown): void;
-	getItem(key: string): unknown | null;
-	removeItem(key: string): void;
+	clear: () => void;
+	setItem: (key: string, value: unknown) => void;
+	getItem: (key: string) => unknown | null;
+	removeItem: (key: string) => void;
 }
 
 export interface DataColumnProps<T = object> {

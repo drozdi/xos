@@ -2,29 +2,29 @@
 
 namespace Device\Repository;
 
-use AbstractRepository;
 use Device\Entity\Software;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
-
 /**
- * @extends ServiceEntityRepository<OU>
+ * @extends ServiceEntityRepository<Software>
  *
  * @method Software|null find($id, $lockMode = null, $lockVersion = null)
  * @method Software|null findOneBy(array $criteria, array $orderBy = null)
  * @method Software[]    findAll()
  * @method Software[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class SoftwareRepository extends AbstractRepository
+class SoftwareRepository extends \AbstractRepository
 {
-    public function __construct(ManagerRegistry $registry) {
+    public function __construct(ManagerRegistry $registry)
+    {
         parent::__construct($registry, Software::class);
     }
 
-    public function save(Software $entity, bool $flush = false): void {
-        if (!(int)$entity->getId()) {
+    public function save(Software $entity, bool $flush = false): void
+    {
+        if (!(int) $entity->getId()) {
             $this->getEntityManager()->persist($entity);
         }
 
@@ -33,7 +33,8 @@ class SoftwareRepository extends AbstractRepository
         }
     }
 
-    public function remove(Software $entity, bool $flush = false): void {
+    public function remove(Software $entity, bool $flush = false): void
+    {
         $this->getEntityManager()->remove($entity);
 
         if ($flush) {
@@ -41,9 +42,10 @@ class SoftwareRepository extends AbstractRepository
         }
     }
 
-    protected function filter (QueryBuilder $query, array $filters = array(), string $n = "s"): QueryBuilder {
+    protected function filter(QueryBuilder $query, array $filters = [], string $n = 's'): QueryBuilder
+    {
         if (!empty($filters['type']) && is_int($filters['type']) && $filters['type'] > 0) {
-            $query->andWhere($this->fieldVal($n.".type", $filters['type']));
+            $query->andWhere($this->fieldVal($n.'.type', $filters['type']));
         } elseif (!empty($filters['type']) && is_array($filter = $filters['type'])) {
             $query->innerJoin($n.'.type', $n.'t');
             foreach ($filter as $field => $val) {
@@ -54,49 +56,56 @@ class SoftwareRepository extends AbstractRepository
         foreach ($filters as $f => $v) {
             $query->andWhere($this->fieldVal($n.".{$f}", $v));
         }
+
         return $query;
     }
-    protected function order (QueryBuilder $query, array $sort = array(), string $n = "s"): QueryBuilder {
+
+    protected function order(QueryBuilder $query, array $sort = [], string $n = 's'): QueryBuilder
+    {
         if (count($sort) > 0) {
             foreach ($sort as $sortBy) {
-                $order = strtoupper($sortBy['order'])=="DESC"? "DESC": "ASC";
+                $order = strtoupper($sortBy['order']) == 'DESC' ? 'DESC' : 'ASC';
                 switch ($sortBy['key']) {
                     case 'type':
                         $query->join($n.'.type', $n.'t')
                             ->addOrderBy($n.'t.name', $order);
                         break;
                     default:
-                        $query->addOrderBy($n.'.' . $sortBy['key'], $order);
+                        $key = (string) ($sortBy['key'] ?? '');
+                        if (!\in_array($key, ['id', 'name', 'sort'], true)) {
+                            break;
+                        }
+                        $query->addOrderBy($n.'.'.$key, $order);
                         break;
                 }
-
             }
         }
+
         return $query;
     }
 
-//    /**
-//     * @return OU[] Returns an array of Software objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('o.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    //    /**
+    //     * @return OU[] Returns an array of Software objects
+    //     */
+    //    public function findByExampleField($value): array
+    //    {
+    //        return $this->createQueryBuilder('o')
+    //            ->andWhere('o.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->orderBy('o.id', 'ASC')
+    //            ->setMaxResults(10)
+    //            ->getQuery()
+    //            ->getResult()
+    //        ;
+    //    }
 
-//    public function findOneBySomeField($value): ?Software
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    //    public function findOneBySomeField($value): ?Software
+    //    {
+    //        return $this->createQueryBuilder('o')
+    //            ->andWhere('o.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->getQuery()
+    //            ->getOneOrNullResult()
+    //        ;
+    //    }
 }

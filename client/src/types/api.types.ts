@@ -7,13 +7,11 @@ export interface LoginRequest {
 
 export interface LoginResponse {
 	token: string;
-	refresh_token: string;
 	user?: UserSummary;
 }
 
 export interface RefreshResponse {
 	token: string;
-	refresh_token: string;
 }
 
 export interface UserSummary {

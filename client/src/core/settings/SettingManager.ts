@@ -34,7 +34,7 @@ class SettingManagerImpl {
 		if (!adapter || typeof (adapter as { dispose?: unknown }).dispose !== 'function') {
 			return;
 		}
-		(adapter as { dispose: () => void }).dispose();
+		(adapter as unknown as { dispose: () => void }).dispose();
 	}
 
 	isInitialized(): boolean {

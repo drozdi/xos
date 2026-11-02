@@ -46,10 +46,10 @@ export default function RecipesApp() {
 
 	const filters = useMemo(() => {
 		const next: Record<string, unknown> = {};
-		if (blockId) next.block_id = blockId;
-		if (sectionId) next.section_id = Number(sectionId);
-		if (difficulty) next.PROPERTY_DIFFICULTY = difficulty;
-		if (userQuery.data?.id) next.accessible_for = userQuery.data.id;
+		if (blockId) {next.block_id = blockId;}
+		if (sectionId) {next.section_id = Number(sectionId);}
+		if (difficulty) {next.PROPERTY_DIFFICULTY = difficulty;}
+		if (userQuery.data?.id) {next.accessible_for = userQuery.data.id;}
 		return next;
 	}, [blockId, sectionId, difficulty, userQuery.data?.id]);
 
@@ -111,7 +111,7 @@ export default function RecipesApp() {
 			},
 			{ field: 'name' as const, header: 'Название' },
 			{
-				field: 'access' as const,
+				field: 'is_owner' as const,
 				header: 'Доступ',
 				width: 110,
 				render: (row: IblockElementListItem) =>

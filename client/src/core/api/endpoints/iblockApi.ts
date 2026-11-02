@@ -24,12 +24,12 @@ const nullableBool = z
 
 /** PHP empty array encodes as []; treat as null / object map. */
 const filterRecordSchema = z.preprocess((value) => {
-	if (value == null) return null;
+	if (value == null) {return null;}
 	if (Array.isArray(value)) {
-		if (value.length === 0) return null;
-		return Object.assign({}, value);
+		if (value.length === 0) {return null;}
+		return { ...value};
 	}
-	if (typeof value === 'object') return value;
+	if (typeof value === 'object') {return value;}
 	return null;
 }, z.record(z.string(), z.unknown()).nullable())
 	.optional()
@@ -345,7 +345,7 @@ function makeCrudApi<TList, TDetail>(
 ) {
 	return {
 		list: (request: ListRequest): Promise<PaginatedResponse<TList>> =>
-			postList(basePath + '/list', request, listSchema),
+			postList(`${basePath  }/list`, request, listSchema),
 		get: (id: number): Promise<TDetail> => getDetail(`${basePath}/${id}`, detailSchema),
 		create: (body: unknown): Promise<number> => createEntity(basePath, body),
 		update: (id: number, body: unknown): Promise<number> => updateEntity(basePath, id, body),
@@ -419,7 +419,7 @@ export async function uploadIblockFile(file: File): Promise<{ id: number; name: 
 	formData.append('module', 'iblock');
 	const { data } = await apiClient.post<unknown>('/api/main/file/upload', formData);
 	const parsed = z.array(z.object({ id: z.number(), name: z.string(), src: z.string() })).parse(data);
-	if (!parsed[0]) throw new Error('Upload failed');
+	if (!parsed[0]) {throw new Error('Upload failed');}
 	return parsed[0];
 }
 

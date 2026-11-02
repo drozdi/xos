@@ -42,6 +42,14 @@ abstract class AuthWebTestCase extends WebTestCase
             $entityManager->getClassMetadata(AuditLog::class),
         ];
 
+        $this->resetMetadataSchema($entityManager, $metadata);
+    }
+
+    /**
+     * @param list<\Doctrine\ORM\Mapping\ClassMetadata> $metadata
+     */
+    protected function resetMetadataSchema(EntityManagerInterface $entityManager, array $metadata): void
+    {
         $schemaTool = new SchemaTool($entityManager);
         $schemaTool->dropSchema($metadata);
         $schemaTool->createSchema($metadata);
@@ -90,8 +98,10 @@ abstract class AuthWebTestCase extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        /** @var array{token: string, refresh_token: string, user: array<string, mixed>} $payload */
+        /** @var array{token: string, user: array<string, mixed>} $payload */
         $payload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $cookie = $client->getCookieJar()->get('xos_refresh');
+        $payload['refresh_token'] = $cookie?->getValue() ?? '';
 
         return $payload;
     }

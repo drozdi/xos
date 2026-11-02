@@ -7,8 +7,5 @@ RewriteRule ^assets/(.*)$ client/dist/assets/$1 [L,QSA]
 
 RewriteRule ^$ client/dist/index.html [L]
 
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
+# Do not serve arbitrary files from the repository root (env, keys, uploads).
 RewriteRule ^ client/dist/index.html [L]

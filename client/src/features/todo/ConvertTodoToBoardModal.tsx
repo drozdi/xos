@@ -76,7 +76,7 @@ export function ConvertTodoToBoardModal({
 
 	const convertMutation = useMutation({
 		mutationFn: async () => {
-			if (!listId || !boardId) throw new Error('list required');
+			if (!listId || !boardId) {throw new Error('list required');}
 			const card = await boardApi.createCard(Number(listId), { title: title.trim() || 'Задача' });
 			const dueDate = dueAt ? dayjs(dueAt).format('YYYY-MM-DD') : undefined;
 			if (dueDate || title) {

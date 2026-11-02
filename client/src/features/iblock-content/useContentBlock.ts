@@ -115,16 +115,16 @@ export function useContentBlock(blockCode: string) {
 	}, [difficultyEnumsQuery.data?.items]);
 
 	const resolveDifficultyCode = (raw: unknown): string | null => {
-		if (raw == null || raw === '') return null;
+		if (raw == null || raw === '') {return null;}
 		const scalar =
 			typeof raw === 'object' && raw !== null && !Array.isArray(raw) && 'id' in raw
 				? String((raw as { id: number }).id)
 				: Array.isArray(raw)
 					? String(raw[0] ?? '')
 					: String(raw);
-		if (!scalar) return null;
+		if (!scalar) {return null;}
 		const byCode = difficultyOptions.find((o) => o.value === scalar);
-		if (byCode) return byCode.value;
+		if (byCode) {return byCode.value;}
 		const byId = difficultyOptions.find((o) => o.id > 0 && String(o.id) === scalar);
 		return byId?.value ?? scalar;
 	};

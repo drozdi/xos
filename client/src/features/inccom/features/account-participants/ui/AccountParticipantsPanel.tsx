@@ -37,8 +37,8 @@ export function AccountParticipantsPanel({
 		validate: {
 			email: (value) => {
 				const trimmed = value.trim();
-				if (!trimmed) return 'Введите email';
-				if (!trimmed.includes('@')) return 'Некорректный email';
+				if (!trimmed) {return 'Введите email';}
+				if (!trimmed.includes('@')) {return 'Некорректный email';}
 				return null;
 			},
 		},

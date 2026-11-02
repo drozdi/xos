@@ -69,7 +69,7 @@ describe('coreScopes', () => {
 	});
 
 	it('checkHasScope bypasses scope checks for full app access role', () => {
-		setUserRoles(['ROLE_MAIN_ADMIN']);
+		setUserRoles(['ROLE_MAIN_ROOT']);
 		setLevelScopes({ 'read.main': 0 });
 		setMapScopes({ main: { can_read: 1 } });
 

@@ -36,13 +36,11 @@ export const userSummarySchema = z.object({
 
 export const loginResponseSchema = z.object({
 	token: z.string(),
-	refresh_token: z.string(),
 	user: userSummarySchema.optional(),
 });
 
 export const refreshResponseSchema = z.object({
 	token: z.string(),
-	refresh_token: z.string(),
 });
 
 export const loginCheckResponseSchema = z.object({
@@ -57,12 +55,14 @@ export type LoginRequestInput = z.infer<typeof loginRequestSchema>;
 export type UserSummaryDto = z.infer<typeof userSummarySchema>;
 
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
-	const { data } = await apiClient.post<unknown>(PATHS.login, credentials);
+	const { data } = await apiClient.post<unknown>(PATHS.login, credentials, {
+		withCredentials: true,
+	});
 	return loginResponseSchema.parse(data);
 }
 
-export async function refreshToken(refresh_token: string): Promise<RefreshResponse> {
-	const { data } = await apiClient.post<unknown>(PATHS.refresh, { refresh_token });
+export async function refreshToken(): Promise<RefreshResponse> {
+	const { data } = await apiClient.post<unknown>(PATHS.refresh, {}, { withCredentials: true });
 	return refreshResponseSchema.parse(data);
 }
 

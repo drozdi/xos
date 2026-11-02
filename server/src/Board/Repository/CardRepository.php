@@ -6,8 +6,8 @@ use Board\Entity\Board;
 use Board\Entity\BoardList;
 use Board\Entity\Card;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Main\Entity\User;
 use Doctrine\Persistence\ManagerRegistry;
+use Main\Entity\User;
 
 /**
  * @extends ServiceEntityRepository<Card>
@@ -17,6 +17,53 @@ class CardRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Card::class);
+    }
+
+    /**
+     * Cards of a board with labels and assignees in one query.
+     *
+     * @return list<Card>
+     */
+    public function findByBoardWithRelations(Board $board): array
+    {
+        /** @var list<Card> $cards */
+        $cards = $this->createQueryBuilder('c')
+            ->innerJoin('c.list', 'l')
+            ->addSelect('l')
+            ->leftJoin('c.labels', 'label')
+            ->addSelect('label')
+            ->leftJoin('c.assignees', 'assignee')
+            ->addSelect('assignee')
+            ->andWhere('l.board = :board')
+            ->andWhere('c.archivedAt IS NULL')
+            ->setParameter('board', $board)
+            ->orderBy('c.position', 'ASC')
+            ->addOrderBy('c.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $unique = [];
+        foreach ($cards as $card) {
+            $id = $card->getId();
+            if (null !== $id) {
+                $unique[$id] = $card;
+            }
+        }
+
+        return array_values($unique);
+    }
+
+    public function maxUpdatedAtForBoard(int $boardId): ?string
+    {
+        $result = $this->createQueryBuilder('c')
+            ->select('MAX(c.updatedAt)')
+            ->innerJoin('c.list', 'l')
+            ->andWhere('IDENTITY(l.board) = :boardId')
+            ->setParameter('boardId', $boardId)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return is_string($result) && '' !== $result ? $result : null;
     }
 
     /** @return list<Card> */

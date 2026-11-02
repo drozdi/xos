@@ -105,7 +105,7 @@ function ElementFilterEditor({
 		const next: Record<string, unknown> = {};
 		for (const row of nextRows) {
 			const k = row.key.trim();
-			if (!k) continue;
+			if (!k) {continue;}
 			next[k] = row.value;
 		}
 		onChange(Object.keys(next).length > 0 ? next : null);
@@ -113,7 +113,7 @@ function ElementFilterEditor({
 
 	const inheritedText = useMemo(() => {
 		const entries = Object.entries(inherited ?? {});
-		if (entries.length === 0) return 'нет';
+		if (entries.length === 0) {return 'нет';}
 		return entries.map(([k, v]) => `${k}=${String(v)}`).join(', ');
 	}, [inherited]);
 

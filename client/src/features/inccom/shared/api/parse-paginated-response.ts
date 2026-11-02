@@ -13,14 +13,14 @@ export function parsePaginatedResponse<T>(
 		return { items: [], total: 0, page: 1, size: 0, pages: 0 };
 	}
 
-	if (Array.isArray(data['items'])) {
-		const items = data['items'];
+	if (Array.isArray(data.items)) {
+		const items = data.items;
 		return {
 			items: items.map(mapItem),
-			total: Number(data['total'] ?? items.length),
-			page: Number(data['page'] ?? 1),
-			size: Number(data['size'] ?? items.length),
-			pages: Number(data['pages'] ?? 1),
+			total: Number(data.total ?? items.length),
+			page: Number(data.page ?? 1),
+			size: Number(data.size ?? items.length),
+			pages: Number(data.pages ?? 1),
 		};
 	}
 

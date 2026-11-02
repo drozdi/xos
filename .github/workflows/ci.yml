@@ -9,6 +9,8 @@ on:
 jobs:
   server:
     runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
     defaults:
       run:
         working-directory: server
@@ -22,14 +24,78 @@ jobs:
           extensions: ctype, iconv, pdo_sqlite
           coverage: none
 
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: server/vendor
+          key: composer-${{ hashFiles('server/composer.lock') }}
+          restore-keys: composer-
+
       - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-scripts
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php bin/console lexik:jwt:generate-keypair --skip-if-exists
 
       - name: Validate Doctrine schema
         run: php bin/console doctrine:schema:validate --skip-sync
 
+      - name: Composer audit
+        run: composer audit
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
       - name: Run PHPUnit
         run: vendor/bin/phpunit
+
+  mysql:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: xos
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    defaults:
+      run:
+        working-directory: server
+    env:
+      APP_ENV: dev
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/xos?serverVersion=8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, iconv, pdo_mysql
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-scripts
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php bin/console lexik:jwt:generate-keypair --skip-if-exists
+
+      - name: Migrate and validate
+        run: |
+          php bin/console doctrine:migrations:execute 'DoctrineMigrations\Version20260801000000' --up --no-interaction
+          php bin/console doctrine:migrations:version --add --all --no-interaction
+          php bin/console doctrine:migrations:migrate --no-interaction
+          php bin/console doctrine:schema:validate
 
   client:
     runs-on: ubuntu-latest
@@ -49,11 +115,21 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
       - name: Run Vitest
         run: npm run test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
 
       - name: Build client
         run: npm run build
 
       - name: Check bundle size
         run: node scripts/check-bundle-size.mjs
+
+      - name: Playwright login smoke
+        run: npx playwright install --with-deps chromium && npx playwright test e2e/smoke.spec.ts --grep "login page"

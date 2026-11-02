@@ -269,6 +269,7 @@ export interface EditorEventPayload {
 
 export interface TeacherEventSavePayload {
 	id: number;
+	title?: string;
 	theme?: string;
 	ht?: string;
 	pt?: string;

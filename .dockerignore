@@ -1,1 +1,8 @@
-**/node_modules
+.git
+.env*
+server/var
+server/config/jwt
+server/vendor
+client/node_modules
+client/test-results
+client/dist

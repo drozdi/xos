@@ -2,18 +2,14 @@
 
 namespace Main\Repository;
 
-use AbstractRepository;
-use Main\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
+use Main\Entity\User;
 use Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface;
-use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
-
-use Doctrine\ORM\QueryBuilder;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -23,12 +19,13 @@ use Doctrine\ORM\QueryBuilder;
  * @method User[]    findAll()
  * @method User[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class UserRepository extends AbstractRepository implements PasswordUpgraderInterface, UserLoaderInterface
+class UserRepository extends \AbstractRepository implements PasswordUpgraderInterface, UserLoaderInterface
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, User::class);
     }
+
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
     {
         if (!$user instanceof User) {
@@ -40,10 +37,9 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
         $this->getEntityManager()->flush();
     }
 
-
     public function save(User $entity, bool $flush = false): void
     {
-        if (!(int)$entity->getId()) {
+        if (!(int) $entity->getId()) {
             $this->getEntityManager()->persist($entity);
         }
 
@@ -60,6 +56,7 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
             $this->getEntityManager()->flush();
         }
     }
+
     public function loadUserByIdentifier(string $usernameOrEmail): ?User
     {
         $entityManager = $this->getEntityManager();
@@ -73,7 +70,9 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
             ->setParameter('query', $usernameOrEmail)
             ->getOneOrNullResult();
     }
-    protected function filter (QueryBuilder $query, array $filters = array(), string $n = "u"): QueryBuilder {
+
+    protected function filter(QueryBuilder $query, array $filters = [], string $n = 'u'): QueryBuilder
+    {
         // Multi-OU list filter: ou_id is an alias of ou (list filter only, not tenancy)
         if (
             array_key_exists('ou_id', $filters)
@@ -86,9 +85,9 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
         if (array_key_exists('ou', $filters) && null === $filters['ou']) {
             $query->andWhere($n.'.ou IS NULL');
         } elseif (!empty($filters['ou']) && is_int($filters['ou']) && $filters['ou'] > 0) {
-            $query->andWhere($this->fieldVal($n.".ou", $filters['ou']));
+            $query->andWhere($this->fieldVal($n.'.ou', $filters['ou']));
         } elseif (!empty($filters['ou']) && is_numeric($filters['ou']) && (int) $filters['ou'] > 0) {
-            $query->andWhere($this->fieldVal($n.".ou", (int) $filters['ou']));
+            $query->andWhere($this->fieldVal($n.'.ou', (int) $filters['ou']));
         } elseif (!empty($filters['ou']) && is_array($filter = $filters['ou'])) {
             $query->innerJoin($n.'.ou', $n.'ou');
             foreach ($filter as $field => $val) {
@@ -98,7 +97,7 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
         if (!empty($filters['group']) && is_int($filters['group']) && $filters['group'] > 0) {
             $query->innerJoin($n.'.groups', $n.'ug');
             $query->innerJoin($n.'ug.group', $n.'g');
-            $query->andWhere($this->fieldVal($n."g.id", $filters['group']));
+            $query->andWhere($this->fieldVal($n.'g.id', $filters['group']));
         } elseif (!empty($filters['group']) && is_array($filter = $filters['group'])) {
             $query->innerJoin($n.'.groups', $n.'ug');
             $query->innerJoin($n.'ug.group', $n.'g');
@@ -106,12 +105,15 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
                 $query->andWhere($this->fieldVal($n."g.{$field}", $val));
             }
         }
+
         return $query;
     }
-    protected function order (QueryBuilder $query, array $sort = array(), string $n = "u"): QueryBuilder {
+
+    protected function order(QueryBuilder $query, array $sort = [], string $n = 'u'): QueryBuilder
+    {
         if (count($sort) > 0) {
             foreach ($sort as $sortBy) {
-                $order = strtoupper($sortBy['order'])=="DESC"? "DESC": "ASC";
+                $order = strtoupper($sortBy['order']) == 'DESC' ? 'DESC' : 'ASC';
                 switch ($sortBy['key']) {
                     case 'ou':
                         $query->join($n.'.ou', $n.'ou')
@@ -122,11 +124,16 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
                             ->addOrderBy($n.'p.login', $order);
                         break;
                     default:
-                        $query->addOrderBy($n.'.'.$sortBy['key'], $order);
+                        $key = (string) ($sortBy['key'] ?? '');
+                        if (!\in_array($key, ['id', 'login', 'email', 'alias', 'active', 'phone', 'dateRegister', 'lastLogin', 'firstName', 'secondName'], true)) {
+                            break;
+                        }
+                        $query->addOrderBy($n.'.'.$key, $order);
                         break;
                 }
             }
         }
+
         return $query;
     }
 
@@ -162,28 +169,28 @@ class UserRepository extends AbstractRepository implements PasswordUpgraderInter
         return '' !== $email ? sprintf('%s - %s', $alias, $email) : $alias;
     }
 
-//    /**
-//     * @return User[] Returns an array of User objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('u.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    //    /**
+    //     * @return User[] Returns an array of User objects
+    //     */
+    //    public function findByExampleField($value): array
+    //    {
+    //        return $this->createQueryBuilder('u')
+    //            ->andWhere('u.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->orderBy('u.id', 'ASC')
+    //            ->setMaxResults(10)
+    //            ->getQuery()
+    //            ->getResult()
+    //        ;
+    //    }
 
-//    public function findOneBySomeField($value): ?User
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    //    public function findOneBySomeField($value): ?User
+    //    {
+    //        return $this->createQueryBuilder('u')
+    //            ->andWhere('u.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->getQuery()
+    //            ->getOneOrNullResult()
+    //        ;
+    //    }
 }

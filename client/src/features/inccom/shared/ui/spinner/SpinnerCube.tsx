@@ -8,7 +8,7 @@ interface SpinnerCubeProps {
 export function SpinnerCube({ size = '1em', color }: SpinnerCubeProps) {
 	return (
 		<SpinnerBase color={color} size={size} viewBox='0 0 100 100' preserveAspectRatio='xMidYMid'>
-			<rect x='0' y='0' width='100' height='100' fill='none'></rect>
+			<rect x='0' y='0' width='100' height='100' fill='none' />
 			<g transform='translate(25 25)'>
 				<rect x='-20' y='-20' width='40' height='40' fill='currentColor' opacity='0.9'>
 					<animateTransform
@@ -22,7 +22,7 @@ export function SpinnerCube({ size = '1em', color }: SpinnerCubeProps) {
 						calcMode='spline'
 						keySplines='0.2 0.8 0.2 0.8'
 						keyTimes='0;1'
-					></animateTransform>
+					 />
 				</rect>
 			</g>
 			<g transform='translate(75 25)'>
@@ -38,7 +38,7 @@ export function SpinnerCube({ size = '1em', color }: SpinnerCubeProps) {
 						calcMode='spline'
 						keySplines='0.2 0.8 0.2 0.8'
 						keyTimes='0;1'
-					></animateTransform>
+					 />
 				</rect>
 			</g>
 			<g transform='translate(25 75)'>
@@ -54,7 +54,7 @@ export function SpinnerCube({ size = '1em', color }: SpinnerCubeProps) {
 						calcMode='spline'
 						keySplines='0.2 0.8 0.2 0.8'
 						keyTimes='0;1'
-					></animateTransform>
+					 />
 				</rect>
 			</g>
 			<g transform='translate(75 75)'>
@@ -70,7 +70,7 @@ export function SpinnerCube({ size = '1em', color }: SpinnerCubeProps) {
 						calcMode='spline'
 						keySplines='0.2 0.8 0.2 0.8'
 						keyTimes='0;1'
-					></animateTransform>
+					 />
 				</rect>
 			</g>
 		</SpinnerBase>

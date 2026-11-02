@@ -22,7 +22,7 @@ class ExplorerApiTest extends AuthWebTestCase
     {
         $client = static::createClient();
         $client->request('GET', '/api/explorer/config');
-        self::assertResponseStatusCodeSame(403);
+        self::assertResponseStatusCodeSame(401);
     }
 
     public function testConfigForbiddenWithoutScope(): void
@@ -395,12 +395,13 @@ class ExplorerApiTest extends AuthWebTestCase
         $this->grantExplorerScope($client, $user, self::SCOPE_ALL);
         $headers = $this->jsonAuthHeaders($this->login($client, 'explorer_cross', 'password')['token']);
         $homeDir = $this->homeDir($user);
-        $imgDir = dirname(__DIR__, 2).'/../img';
+        $imgDir = dirname(__DIR__, 2).'/var/img';
         if (!is_dir($imgDir)) {
             mkdir($imgDir, 0775, true);
         }
 
         file_put_contents($imgDir.'/cross-source.txt', 'cross');
+        @unlink($homeDir.'/cross-source.txt');
 
         $client->request(
             'POST',
@@ -450,8 +451,7 @@ class ExplorerApiTest extends AuthWebTestCase
             $entityManager->getClassMetadata(UserDisk::class),
         ];
 
-        $schemaTool = new SchemaTool($entityManager);
-        $schemaTool->createSchema($metadata);
+        $this->resetMetadataSchema($entityManager, $metadata);
     }
 
     protected function grantExplorerScope(KernelBrowser $client, User $user, int $level): void
@@ -468,7 +468,13 @@ class ExplorerApiTest extends AuthWebTestCase
         $access->setClaimant($claimant);
         $access->setLevel($level);
 
+        $roles = $user->getRoles();
+        if (!in_array('ROLE_EXPLORER', $roles, true)) {
+            $user->setRoles([...$roles, 'ROLE_EXPLORER']);
+        }
+
         $entityManager->persist($claimant);
+        $entityManager->persist($user);
         $entityManager->persist($access);
         $entityManager->flush();
     }
@@ -486,10 +492,31 @@ class ExplorerApiTest extends AuthWebTestCase
     private function homeDir(User $user): string
     {
         $dir = dirname(__DIR__, 2).'/var/explorer/home/'.$user->getId();
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
+        if (is_dir($dir)) {
+            $this->removeTree($dir);
         }
+        mkdir($dir, 0775, true);
 
         return $dir;
+    }
+
+    private function removeTree(string $dir): void
+    {
+        $items = scandir($dir);
+        if (false === $items) {
+            return;
+        }
+        foreach ($items as $item) {
+            if ('.' === $item || '..' === $item) {
+                continue;
+            }
+            $path = $dir.'/'.$item;
+            if (is_dir($path)) {
+                $this->removeTree($path);
+                continue;
+            }
+            unlink($path);
+        }
+        rmdir($dir);
     }
 }

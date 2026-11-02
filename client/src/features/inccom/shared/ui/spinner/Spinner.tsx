@@ -18,7 +18,7 @@ export function Spinner({ size = '1em', thickness = 5, color }: SpinnerProps) {
 				stroke='currentColor'
 				strokeWidth={thickness}
 				strokeMiterlimit='10'
-			></circle>
+			 />
 		</SpinnerBase>
 	)
 }

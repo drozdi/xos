@@ -14,7 +14,7 @@ export function SpinnerClock({ size = '1em', color }: SpinnerClockProps) {
 			preserveAspectRatio='xMidYMid'
 			xmlns='http://www.w3.org/2000/svg'
 		>
-			<circle cx='50' cy='50' r='48' fill='none' strokeWidth='4' strokeMiterlimit='10' stroke='currentColor'></circle>
+			<circle cx='50' cy='50' r='48' fill='none' strokeWidth='4' strokeMiterlimit='10' stroke='currentColor' />
 			<line
 				strokeLinecap='round'
 				strokeWidth='4'
@@ -32,7 +32,7 @@ export function SpinnerClock({ size = '1em', color }: SpinnerClockProps) {
 					to='360 50 50'
 					dur='2s'
 					repeatCount='indefinite'
-				></animateTransform>
+				 />
 			</line>
 			<line
 				strokeLinecap='round'
@@ -51,7 +51,7 @@ export function SpinnerClock({ size = '1em', color }: SpinnerClockProps) {
 					to='360 50 50'
 					dur='15s'
 					repeatCount='indefinite'
-				></animateTransform>
+				 />
 			</line>{' '}
 		</SpinnerBase>
 	)

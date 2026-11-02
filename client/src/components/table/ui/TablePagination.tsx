@@ -14,7 +14,7 @@ export function TablePagination<T = object>({
 	const showPageNumbers = !isCursorMode && total > 1;
 
 	const pagination = usePagination({
-		total: total,
+		total,
 		page: typeof page === 'number' ? page : undefined,
 		initialPage: typeof page === 'number' ? page : 1,
 		siblings: 1,

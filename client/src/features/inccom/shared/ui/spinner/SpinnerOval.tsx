@@ -9,7 +9,7 @@ export function SpinnerOval({ size = '1em', color }: SpinnerOvalProps) {
 	return (
 		<SpinnerBase size={size} color={color} viewBox='0 0 38 38' stroke='currentColor'>
 			<g transform='translate(1 1)' strokeWidth='2' fill='none' fillRule='evenodd'>
-				<circle strokeOpacity='.5' cx='18' cy='18' r='18'></circle>
+				<circle strokeOpacity='.5' cx='18' cy='18' r='18' />
 				<path d='M36 18c0-9.94-8.06-18-18-18'>
 					<animateTransform
 						attributeName='transform'
@@ -18,7 +18,7 @@ export function SpinnerOval({ size = '1em', color }: SpinnerOvalProps) {
 						to='360 18 18'
 						dur='1s'
 						repeatCount='indefinite'
-					></animateTransform>
+					 />
 				</path>
 			</g>
 		</SpinnerBase>

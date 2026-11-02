@@ -297,7 +297,7 @@ export function ContentCatalogDetailApp({ config }: { config: ContentCatalogConf
 										leftSection={<IconArrowLeft size={14} />}
 										onClick={() => {
 											void detailQuery.refetch().then((r) => {
-												if (r.data) setViewData(r.data);
+												if (r.data) {setViewData(r.data);}
 												setMode('view');
 											});
 										}}

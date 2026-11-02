@@ -1,56 +1,38 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 
-const assets = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'assets');
-const desktopLimit = 1_500_000;
-const mantineLimit = 1_500_000;
-const forbiddenInShell = ['pdfjs', 'mammoth', 'leaflet', 'highlight.js', 'cytoscape', '@tiptap'];
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const dist = join(root, 'dist');
+const html = readFileSync(join(dist, 'index.html'), 'utf8');
+const budget = 300 * 1024;
+const refs = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map((match) => match[1]);
 
-function files(dir) {
-	const found = [];
-	for (const name of readdirSync(dir)) {
-		const path = join(dir, name);
-		const stat = statSync(path);
-		if (stat.isDirectory()) {
-			found.push(...files(path));
-			continue;
-		}
-		if (name.endsWith('.js')) {
-			found.push({ name, path, size: stat.size });
-		}
-	}
-	return found;
+if (refs.length === 0) {
+	console.error('index.html has no startup scripts');
+	process.exit(1);
 }
 
-const jsFiles = files(assets);
-
-function assertUnder(label, matches, limit) {
-	const largest = matches.reduce((best, file) => (file.size > best.size ? file : best), {
-		name: '',
-		size: 0,
-	});
-	console.log(`${label} ${largest.size} ${largest.name}`);
-	if (!largest.name) {
-		console.error(`missing ${label} chunk`);
-		process.exit(1);
-	}
-	if (largest.size > limit) {
-		console.error(`${label} exceeds ${limit} bytes`);
-		process.exit(1);
-	}
+let total = 0;
+for (const ref of refs) {
+	const bytes = gzipSync(readFileSync(join(dist, ref.replace(/^\//, '')))).length;
+	total += bytes;
+	console.log(`${bytes} ${ref}`);
 }
 
-const entry = jsFiles.filter((file) => file.name.startsWith('index-'));
-const mantine = jsFiles.filter((file) => file.name.startsWith('mantine'));
-assertUnder('desktop', entry, desktopLimit);
-assertUnder('mantine', mantine, mantineLimit);
+console.log(`startup gzip ${total}`);
+if (total > budget) {
+	console.error(`startup gzip ${total} exceeds ${budget}`);
+	process.exit(1);
+}
 
-for (const file of [...entry, ...mantine]) {
-	const text = readFileSync(file.path, 'utf8');
-	for (const marker of forbiddenInShell) {
+const forbidden = ['pdfjs', 'mammoth', 'leaflet', 'highlight.js', '@tiptap', 'prosemirror'];
+for (const ref of refs) {
+	const text = readFileSync(join(dist, ref.replace(/^\//, '')), 'utf8');
+	for (const marker of forbidden) {
 		if (text.includes(marker)) {
-			console.error(`${file.name} contains ${marker} before its app is opened`);
+			console.error(`${ref} contains ${marker}`);
 			process.exit(1);
 		}
 	}

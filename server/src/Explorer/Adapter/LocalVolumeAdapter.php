@@ -6,6 +6,7 @@ use Explorer\Model\FilePermissions;
 use Explorer\Service\ExplorerPathValidator;
 use Explorer\Service\FileTypeRegistry;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class LocalVolumeAdapter implements VolumeAdapterInterface
 {
@@ -246,6 +247,9 @@ final class LocalVolumeAdapter implements VolumeAdapterInterface
     private function buildEntry(string $relativePath): array
     {
         $absolute = $this->absolutePath($relativePath);
+        if (!is_file($absolute) && !is_dir($absolute)) {
+            throw new NotFoundHttpException('File not found');
+        }
         $isDir = is_dir($absolute);
         $name = '' === trim($relativePath, '/')
             ? '/'

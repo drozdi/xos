@@ -77,6 +77,7 @@ class PkbManagerTest extends AuthWebTestCase
             $em->getClassMetadata(\Main\Entity\Claimant::class),
             $em->getClassMetadata(\App\Entity\UserSetting::class),
             $em->getClassMetadata(Vault::class),
+            $em->getClassMetadata(\Pkb\Entity\VaultMember::class),
         ];
         $schemaTool = new SchemaTool($em);
         $schemaTool->dropSchema($metadata);

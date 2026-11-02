@@ -3,7 +3,6 @@
 namespace App\Security;
 
 use Main\Entity\User;
-use App\Security\ProtectedAppModules;
 use Main\Service\ClaimantManager;
 
 final class UserScopeResolver
@@ -422,14 +421,12 @@ final class UserScopeResolver
 
     private function canMainScope(User $user, string $module, string $scope, string $scopePath): bool
     {
+        $scopeRootRole = 'ROLE_'.strtoupper(str_replace('.', '_', $scopePath)).'_ROOT';
+        if ($this->hasFullAppAccess($user, $module) || $this->userHasAnyRole($user, [$scopeRootRole])) {
+            return true;
+        }
         if (!$this->canAccessModule($user, $module)) {
             return false;
-        }
-
-        $scopeRootRole = 'ROLE_'.strtoupper(str_replace('.', '_', $scopePath)).'_ROOT';
-        if ($this->hasFullAppAccess($user, $module)
-            || $this->userHasAnyRole($user, [$scopeRootRole])) {
-            return true;
         }
 
         return $this->checkHasScope($user, $scope, false);

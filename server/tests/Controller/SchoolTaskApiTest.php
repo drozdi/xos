@@ -10,7 +10,8 @@ use Main\Entity\User;
 use Main\Entity\User\Access as UserAccess;
 use SchoolTask\Entity\EpEvent;
 use SchoolTask\Entity\EpSubject;
-use SchoolTask\Entity\StGroup;
+use SchoolTask\Entity\EpGroup;
+use SchoolTask\Entity\EpGroupUser;
 use SchoolTask\Security\SchoolTaskAccessMessages;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
@@ -35,7 +36,7 @@ class SchoolTaskApiTest extends AuthWebTestCase
             json_encode(['limit' => -1, 'offset' => 1], JSON_THROW_ON_ERROR),
         );
 
-        self::assertResponseStatusCodeSame(403);
+        self::assertResponseStatusCodeSame(401);
     }
 
     public function testSubjectListForbiddenWithoutPermission(): void
@@ -163,7 +164,7 @@ class SchoolTaskApiTest extends AuthWebTestCase
 
         /** @var array{message: string} $payload */
         $payload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
-        self::assertSame(SchoolTaskAccessMessages::CREATE_SUBJECT, $payload['message']);
+        self::assertSame('Недостаточно прав', $payload['message']);
     }
 
     public function testClassListForbiddenWithoutPermission(): void
@@ -628,9 +629,10 @@ class SchoolTaskApiTest extends AuthWebTestCase
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
         $metadata = [
             $entityManager->getClassMetadata(EpSubject::class),
-            $entityManager->getClassMetadata(StGroup::class),
-            $entityManager->getClassMetadata(\SchoolTask\Entity\StGroupUser::class),
+            $entityManager->getClassMetadata(EpGroup::class),
+            $entityManager->getClassMetadata(\SchoolTask\Entity\EpGroupUser::class),
             $entityManager->getClassMetadata(EpEvent::class),
+            $entityManager->getClassMetadata(\SchoolTask\Entity\EpGroupShare::class),
         ];
 
         $schemaTool = new SchemaTool($entityManager);
@@ -647,16 +649,25 @@ class SchoolTaskApiTest extends AuthWebTestCase
         /** @var EntityManagerInterface $entityManager */
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
 
-        $claimant = new Claimant();
-        $claimant->setCode($code);
-        $claimant->setName($code);
+        $claimant = $entityManager->getRepository(Claimant::class)->findOneBy(['code' => $code]);
+        if (!$claimant instanceof Claimant) {
+            $claimant = new Claimant();
+            $claimant->setCode($code);
+            $claimant->setName($code);
+            $entityManager->persist($claimant);
+        }
+
+        $roles = $user->getRoles();
+        if (!in_array('ROLE_SCHOOLTASK', $roles, true)) {
+            $user->setRoles([...$roles, 'ROLE_SCHOOLTASK']);
+        }
 
         $access = new UserAccess();
         $access->setUser($user);
         $access->setClaimant($claimant);
         $access->setLevel($level);
 
-        $entityManager->persist($claimant);
+        $entityManager->persist($user);
         $entityManager->persist($access);
         $entityManager->flush();
     }
@@ -671,12 +682,12 @@ class SchoolTaskApiTest extends AuthWebTestCase
         ]);
     }
 
-    protected function createParallelGroup(KernelBrowser $client, string $code, string $name): StGroup
+    protected function createParallelGroup(KernelBrowser $client, string $code, string $name): EpGroup
     {
         /** @var EntityManagerInterface $entityManager */
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
 
-        $group = new StGroup();
+        $group = new EpGroup();
         $group->setCode($code);
         $group->setName($name);
         $group->setSort(100);
@@ -709,7 +720,7 @@ class SchoolTaskApiTest extends AuthWebTestCase
      */
     protected function createClassWithSubgroup(
         KernelBrowser $client,
-        StGroup $parallel,
+        EpGroup $parallel,
         string $className,
         User $tutor,
         EpSubject $subject,
@@ -719,14 +730,14 @@ class SchoolTaskApiTest extends AuthWebTestCase
         /** @var EntityManagerInterface $entityManager */
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
 
-        $class = new StGroup();
+        $class = new EpGroup();
         $class->setCode('st_class_test_'.uniqid());
         $class->setName($className);
         $class->setParent($parallel);
         $class->setUser($tutor);
         $entityManager->persist($class);
 
-        $subgroup = new StGroup();
+        $subgroup = new EpGroup();
         $subgroup->setCode('st_sub_test_'.uniqid());
         $subgroup->setName($subject->getName().' '.$className);
         $subgroup->setParent($class);

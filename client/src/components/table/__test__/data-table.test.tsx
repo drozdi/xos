@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -47,7 +48,11 @@ describe('DataTable', () => {
 			/>,
 		);
 
-		await user.click(screen.getByText('Beta'));
+		const beta = screen.getAllByText('Beta')[0];
+		if (!beta) {
+			throw new Error('Beta row is missing');
+		}
+		await user.click(beta);
 		expect(onRowClick).toHaveBeenCalledWith(demoData[1]);
 	});
 });

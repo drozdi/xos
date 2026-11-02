@@ -15,6 +15,8 @@ final class BoardMercurePublisher
         private readonly ?string $hubUrl = null,
         #[Autowire('%env(default::MERCURE_JWT_SECRET)%')]
         private readonly ?string $jwtSecret = null,
+        #[Autowire('%env(default::MERCURE_PUBLIC_URL)%')]
+        private readonly ?string $publicUrl = null,
     ) {
     }
 
@@ -27,6 +29,16 @@ final class BoardMercurePublisher
     public function hubUrl(): ?string
     {
         return $this->isEnabled() ? rtrim(trim((string) $this->hubUrl), '/') : null;
+    }
+
+    public function publicHubUrl(): ?string
+    {
+        if (!$this->isEnabled()) {
+            return null;
+        }
+        $public = trim((string) $this->publicUrl);
+
+        return '' !== $public ? rtrim($public, '/') : $this->hubUrl();
     }
 
     public function topicForBoard(int $boardId): string

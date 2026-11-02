@@ -11,6 +11,7 @@ use Main\Entity\User;
 
 #[ORM\Entity(repositoryClass: CardRepository::class)]
 #[ORM\Table(name: 'board_card')]
+#[ORM\Index(name: 'IDX_BOARD_CARD_LIST_UPDATED', columns: ['list_id', 'updated_at'])]
 #[ORM\HasLifecycleCallbacks]
 class Card
 {

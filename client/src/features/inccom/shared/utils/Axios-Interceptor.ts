@@ -47,14 +47,14 @@ interface IAxiosInterceptor extends IAxiosInterceptorDefault {
 	put: AxiosInstance["put"];
 
 	// Методы для работы с токенами
-	setAccessToken(accessToken: string): void;
-	setRefreshToken(refreshToken: string): void;
-	setTokens(accessToken: string, refreshToken: string): void;
-	getAccessToken(): string | null;
-	getRefreshToken(): string | null;
-	clearTokens(): void;
-	refreshTokens(): Promise<any>;
-	_message401(error: AxiosError): Promise<boolean>;
+	setAccessToken: (accessToken: string) => void;
+	setRefreshToken: (refreshToken: string) => void;
+	setTokens: (accessToken: string, refreshToken: string) => void;
+	getAccessToken: () => string | null;
+	getRefreshToken: () => string | null;
+	clearTokens: () => void;
+	refreshTokens: () => Promise<any>;
+	_message401: (error: AxiosError) => Promise<boolean>;
 }
 
 export class AxiosInterceptor implements IAxiosInterceptor {

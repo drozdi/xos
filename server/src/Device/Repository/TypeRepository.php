@@ -2,29 +2,29 @@
 
 namespace Device\Repository;
 
-use AbstractRepository;
 use Device\Entity\Type;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
-
 /**
- * @extends ServiceEntityRepository<OU>
+ * @extends ServiceEntityRepository<Type>
  *
  * @method Type|null find($id, $lockMode = null, $lockVersion = null)
  * @method Type|null findOneBy(array $criteria, array $orderBy = null)
  * @method Type[]    findAll()
  * @method Type[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class TypeRepository extends AbstractRepository
+class TypeRepository extends \AbstractRepository
 {
-    public function __construct(ManagerRegistry $registry) {
+    public function __construct(ManagerRegistry $registry)
+    {
         parent::__construct($registry, Type::class);
     }
 
-    public function save(Type $entity, bool $flush = false): void {
-        if (!(int)$entity->getId()) {
+    public function save(Type $entity, bool $flush = false): void
+    {
+        if (!(int) $entity->getId()) {
             $this->getEntityManager()->persist($entity);
         }
 
@@ -33,7 +33,8 @@ class TypeRepository extends AbstractRepository
         }
     }
 
-    public function remove(Type $entity, bool $flush = false): void {
+    public function remove(Type $entity, bool $flush = false): void
+    {
         $this->getEntityManager()->remove($entity);
 
         if ($flush) {
@@ -41,11 +42,12 @@ class TypeRepository extends AbstractRepository
         }
     }
 
-    protected function filter (QueryBuilder $query, array $filters = array(), string $n = "t"): QueryBuilder {
+    protected function filter(QueryBuilder $query, array $filters = [], string $n = 't'): QueryBuilder
+    {
         if (array_key_exists('parent', $filters) && null === $filters['parent']) {
             $query->andWhere($n.'.parent IS NULL');
         } elseif (!empty($filters['parent']) && is_int($filters['parent']) && $filters['parent'] > 0) {
-            $query->andWhere($this->fieldVal($n.".parent", $filters['parent']));
+            $query->andWhere($this->fieldVal($n.'.parent', $filters['parent']));
         } elseif (!empty($filters['parent']) && is_array($filter = $filters['parent'])) {
             $query->innerJoin($n.'.parent', $n.'p');
             foreach ($filter as $field => $val) {
@@ -56,7 +58,7 @@ class TypeRepository extends AbstractRepository
         if (array_key_exists('property', $filters) && null === $filters['property']) {
             $query->andWhere($n.'.property IS NULL');
         } elseif (!empty($filters['property']) && is_int($filters['property']) && $filters['property'] > 0) {
-            $query->andWhere($this->fieldVal($n.".property", $filters['property']));
+            $query->andWhere($this->fieldVal($n.'.property', $filters['property']));
         } elseif (!empty($filters['property']) && is_array($filter = $filters['property'])) {
             $query->innerJoin($n.'.property', $n.'prop');
             foreach ($filter as $field => $val) {
@@ -72,29 +74,35 @@ class TypeRepository extends AbstractRepository
         foreach ($filters as $f => $v) {
             $query->andWhere($this->fieldVal($n.".{$f}", $v));
         }
+
         return $query;
     }
 
-    public function getTypes ($limit = null, $offset = 0) {
+    public function getTypes($limit = null, $offset = 0)
+    {
         $dql = 'SELECT p FROM '.Type::class.' p WHERE p.parent IS NULL AND p.property IS NULL ORDER BY p.sort ASC, p.name ASC';
         $query = $this->getEntityManager()->createQuery($dql);
-        if ($limit && (int)$limit > 0) {
-            $query->setMaxResults((int)$limit);
+        if ($limit && (int) $limit > 0) {
+            $query->setMaxResults((int) $limit);
         }
-        if ($offset && (int)$offset > 0) {
-            $query->setFirstResult((int)$offset);
+        if ($offset && (int) $offset > 0) {
+            $query->setFirstResult((int) $offset);
         }
+
         return $query->execute();
     }
-    public function getComponents ($limit = null, $offset = 0) {
+
+    public function getComponents($limit = null, $offset = 0)
+    {
         $dql = 'SELECT t FROM '.Type::class.' t JOIN t.property p WHERE t.property IS NOT NULL ORDER BY t.sort ASC, t.name ASC';
         $query = $this->getEntityManager()->createQuery($dql);
-        if ($limit && (int)$limit > 0) {
-            $query->setMaxResults((int)$limit);
+        if ($limit && (int) $limit > 0) {
+            $query->setMaxResults((int) $limit);
         }
-        if ($offset && (int)$offset > 0) {
-            $query->setFirstResult((int)$offset);
+        if ($offset && (int) $offset > 0) {
+            $query->setFirstResult((int) $offset);
         }
+
         return $query->execute();
     }
     /*protected function order (QueryBuilder $query, array $sort = array(), string $n = "s"): QueryBuilder {
@@ -116,31 +124,28 @@ class TypeRepository extends AbstractRepository
         return $query;
     }*/
 
+    //    /**
+    //     * @return OU[] Returns an array of Type objects
+    //     */
+    //    public function findByExampleField($value): array
+    //    {
+    //        return $this->createQueryBuilder('o')
+    //            ->andWhere('o.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->orderBy('o.id', 'ASC')
+    //            ->setMaxResults(10)
+    //            ->getQuery()
+    //            ->getResult()
+    //        ;
+    //    }
 
-
-
-//    /**
-//     * @return OU[] Returns an array of Type objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('o.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?Type
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    //    public function findOneBySomeField($value): ?Type
+    //    {
+    //        return $this->createQueryBuilder('o')
+    //            ->andWhere('o.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->getQuery()
+    //            ->getOneOrNullResult()
+    //        ;
+    //    }
 }

@@ -138,7 +138,7 @@ class DualAuthApiTest extends AuthWebTestCase
         $client = static::createClient();
         $this->prepareDualAuthDatabase($client);
 
-        $user = $this->createTestUser($client, 'cal_user', 'password', ['ROLE_USER']);
+        $user = $this->createTestUser($client, 'cal_user', 'password', ['ROLE_USER', 'ROLE_CALENDAR']);
         $user->setEmail('calendar@example.com');
         /** @var EntityManagerInterface $em */
         $em = $client->getContainer()->get(EntityManagerInterface::class);
@@ -178,6 +178,7 @@ class DualAuthApiTest extends AuthWebTestCase
             $entityManager->getClassMetadata(\Main\Entity\User\Access::class),
             $entityManager->getClassMetadata(\Main\Entity\Claimant::class),
             $entityManager->getClassMetadata(\App\Entity\UserSetting::class),
+            $entityManager->getClassMetadata(\Main\Entity\AuditLog::class),
         ];
 
         $schemaTool = new SchemaTool($entityManager);

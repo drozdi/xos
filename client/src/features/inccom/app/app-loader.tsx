@@ -21,7 +21,9 @@ export function AppLoader({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		let alive = true;
 		void ensureInccomTablePrefs()
-			.catch(() => undefined)
+			.catch((error: unknown) => {
+				console.warn('inccom table prefs', error);
+			})
 			.finally(() => {
 				if (alive) {
 					setPrefsReady(true);

@@ -72,13 +72,13 @@ export async function requestItemList(
 
 	if (params.search) {
 
-		queryParams['search'] = params.search;
+		queryParams.search = params.search;
 
 	}
 
 	if (params.category) {
 
-		queryParams['category'] = params.category;
+		queryParams.category = params.category;
 
 	}
 
@@ -142,19 +142,19 @@ export async function requestItemUpdate(
 
 	const payload: Record<string, unknown> = {};
 
-	if (data.name !== undefined) payload['name'] = data.name;
+	if (data.name !== undefined) {payload.name = data.name;}
 
 	if (data.description !== undefined) {
 
-		payload['description'] = data.description;
+		payload.description = data.description;
 
 	}
 
-	if (data.unit !== undefined) payload['unit'] = data.unit;
+	if (data.unit !== undefined) {payload.unit = data.unit;}
 
 	if (data.categoryIds !== undefined) {
 
-		payload['categoryIds'] = data.categoryIds;
+		payload.categoryIds = data.categoryIds;
 
 	}
 

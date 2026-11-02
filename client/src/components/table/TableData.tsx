@@ -767,7 +767,7 @@ export function TableData<T = object>({
 		[onExternalPageChange],
 	);
 	const handlerPprevious = useCallback(
-		function () {
+		() => {
 			setHistory((prev) => {
 				const newHistory = [...prev];
 				newHistory.pop(); // удаляем текущую страницу

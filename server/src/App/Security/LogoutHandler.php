@@ -19,6 +19,7 @@ class LogoutHandler implements EventSubscriberInterface
         private readonly RefreshTokenManagerInterface $refreshTokenManager,
         private readonly ExtractorInterface $refreshTokenExtractor,
         private readonly AuditLogger $auditLogger,
+        private readonly RefreshCookie $refreshCookie,
         #[Autowire('%gesdinet_jwt_refresh_token.token_parameter_name%')]
         private readonly string $tokenParameterName,
         #[Autowire('%gesdinet_jwt_refresh_token.logout_firewall_context%')]
@@ -46,7 +47,9 @@ class LogoutHandler implements EventSubscriberInterface
 
         $this->invalidateRefreshTokens($event);
 
-        $event->setResponse(new JsonResponse(['status' => 'logged_out']));
+        $response = new JsonResponse(['status' => 'logged_out']);
+        $this->refreshCookie->clear($response, $event->getRequest());
+        $event->setResponse($response);
     }
 
     public static function getSubscribedEvents(): array

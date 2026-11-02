@@ -26,7 +26,7 @@ function Item({ account }: { account: IAccount }) {
 					<Text fz="md">{formatBalance(account.balance)}</Text>
 				</div>
 			}
-		></NavLink>
+		 />
 	);
 }
 

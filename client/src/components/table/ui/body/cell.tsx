@@ -26,7 +26,7 @@ function GroupedGroupCellContent<T>({
 	const { groupAt } = useTableGroupingContext<T>();
 
 	return (
-		<div className={classes['expanderHeaderInnerLabeled']}>
+		<div className={classes.expanderHeaderInnerLabeled}>
 			{groupAt === 'start' && <TableBodyUnifiedExpander<T> node={node} column={column} />}
 			<TableBodyCellSlot<T>
 				node={node}

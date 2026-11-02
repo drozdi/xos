@@ -246,7 +246,7 @@ class BoardManagerTest extends AuthWebTestCase
         $attachment = $manager->createAttachmentFromUpload($card, $fixture['owner'], $mainFile);
 
         self::assertSame('note.txt', $attachment->getFileName());
-        self::assertSame('test/note.txt', $attachment->getFileUrl());
+        self::assertMatchesRegularExpression('#^test/[a-f0-9]{32}\\.txt$#', $attachment->getFileUrl());
 
         $listed = $manager->listAttachments($card, $fixture['owner']);
         self::assertCount(1, $listed);
@@ -279,7 +279,7 @@ class BoardManagerTest extends AuthWebTestCase
         $attachment = $manager->importAttachmentFromLocalPath($card, $fixture['owner'], $tmp, 'import.txt');
 
         self::assertSame('import.txt', $attachment->getFileName());
-        self::assertSame(sprintf('boards/%d/import.txt', $boardId), $attachment->getFileUrl());
+        self::assertMatchesRegularExpression(sprintf('#^boards/%d/[a-f0-9]{32}\\.txt$#', $boardId), $attachment->getFileUrl());
 
         $manager->deleteAttachment($attachment, $fixture['owner']);
         @unlink($tmp);

@@ -25,7 +25,7 @@ export const SignInForm = (props: React.ComponentProps<typeof Box>) => {
 		password: string;
 	}) => {
 		const res = await storeAuth.login(username, password);
-		if (true === res) {
+		if (res === true) {
 			navigate('/', { replace: true });
 		}
 	};

@@ -62,7 +62,7 @@ export const useStoreAuth = create<IStoreAuth>(
 					set({ isLoading: false });
 					return false;
 				}
-				api.setTokens(response.token, response.refresh_token);
+				api.setAccessToken(response.token);
 				set({
 					isAuthenticated: true,
 					isLoading: false,

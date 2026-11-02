@@ -65,8 +65,8 @@ export function ProgressBarRoot({
 			)}
 			style={{ height: thickness }}
 		>
-			<div {...trackAttrs} className={classes.progress_bar__track}></div>
-			<div {...valueAttrs} className={classes.progress_bar__value}></div>
+			<div {...trackAttrs} className={classes.progress_bar__track} />
+			<div {...valueAttrs} className={classes.progress_bar__value} />
 			{!indeterminate && children && <div className={classes.progress_bar__label}>{children}</div>}
 			{!indeterminate && !children && label && <div className={classes.progress_bar__label}>{value}%</div>}
 		</div>

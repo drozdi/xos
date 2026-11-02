@@ -80,7 +80,7 @@ export const Item = memo(
 						className
 					),
 					role: disRoleTag.includes(props.component) ? undefined : role ?? 'listitem',
-					disabled: disabled,
+					disabled,
 				}
 				if (isActionable) {
 					attrs['aria-disabled'] = disabled

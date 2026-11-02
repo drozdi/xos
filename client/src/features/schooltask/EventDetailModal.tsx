@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { schooltaskCalendarApi } from '@/core/api/endpoints/schooltaskApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { openSchooltaskFile } from '@/features/schooltask/openSchooltaskFile';
+import { sanitizeHtml } from '@/shared/sanitizeHtml';
 
 interface EventDetailModalProps {
 	classId: number;
@@ -57,19 +58,19 @@ export function EventDetailModal({ classId, eventId, opened, onClose }: EventDet
 					{detailQuery.data.ht ? (
 						<Stack gap={4}>
 							<Text fw={600}>Домашнее задание</Text>
-							<Text dangerouslySetInnerHTML={{ __html: detailQuery.data.ht }} />
+							<Text dangerouslySetInnerHTML={{ __html: sanitizeHtml(detailQuery.data.ht) }} />
 						</Stack>
 					) : null}
 					{detailQuery.data.pt ? (
 						<Stack gap={4}>
 							<Text fw={600}>План урока</Text>
-							<Text dangerouslySetInnerHTML={{ __html: detailQuery.data.pt }} />
+							<Text dangerouslySetInnerHTML={{ __html: sanitizeHtml(detailQuery.data.pt) }} />
 						</Stack>
 					) : null}
 					{detailQuery.data.des ? (
 						<Stack gap={4}>
 							<Text fw={600}>Описание</Text>
-							<Text dangerouslySetInnerHTML={{ __html: detailQuery.data.des }} />
+							<Text dangerouslySetInnerHTML={{ __html: sanitizeHtml(detailQuery.data.des) }} />
 						</Stack>
 					) : null}
 					{detailQuery.data.net && detailQuery.data.net.length > 0 ? (

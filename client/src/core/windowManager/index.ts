@@ -2,7 +2,6 @@ export { useWmStore } from './useWmStore';
 export { Window } from './Window';
 export { WindowManager } from './WindowManager';
 export { createWindowApi, destroyWindowApi, getOrCreateWindowApi } from './WindowApi';
-export { ChildWindowPortal } from './ChildWindowPortal';
 export { WindowErrorBoundary } from './WindowErrorBoundary';
 export { useWindowSize, useObserveWindowSize, WindowSizeContext } from './useWindowSize';
 export { schedulePersistWindow, persistWindowNow, removePersistedWindow, flushPendingWindowPersists, persistAllOpenWindowsNow, setWindowDocumentPath } from './persistWindow';

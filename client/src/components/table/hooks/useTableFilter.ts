@@ -21,7 +21,7 @@ export function useTableFilter<T extends Record<string, any>>({
 		return data.filter((item) =>
 			searchFields.some((field) => {
 				const value = item[field];
-				if (value == null) return false;
+				if (value == null) {return false;}
 
 				// Обработка разных типов данных
 				if (typeof value === 'string') {

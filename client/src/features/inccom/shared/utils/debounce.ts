@@ -5,7 +5,7 @@
  * @returns {Function} - Задержанная функция.
  */
 export function debounce(fn: Function, delay: number = 200): Function {
-	let timer: NodeJS.Timeout
+	let timer: ReturnType<typeof setTimeout> | undefined
 
 	const func = (...args: any[]): void => {
 		if (timer) {

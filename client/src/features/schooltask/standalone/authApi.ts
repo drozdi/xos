@@ -7,10 +7,11 @@ import { canAccessSchooltaskFromRoles } from '@/features/schooltask/schooltaskAc
 
 export async function schooltaskEmailLogin(username: string, password: string): Promise<boolean> {
 	try {
-		const { data } = await apiClient.post<unknown>('/api/schooltask/auth/login', {
-			username,
-			password,
-		});
+		const { data } = await apiClient.post<unknown>(
+			'/api/schooltask/auth/login',
+			{ username, password },
+			{ withCredentials: true },
+		);
 		const parsed = loginResponseSchema.parse(data);
 		if (!canAccessSchooltaskFromRoles(parsed.user?.roles)) {
 			notifications.show({
@@ -19,7 +20,7 @@ export async function schooltaskEmailLogin(username: string, password: string): 
 			});
 			return false;
 		}
-		tokenStorage.setTokens(parsed.token, parsed.refresh_token, 'app');
+		tokenStorage.setAccessToken(parsed.token, 'app');
 		await useAuthStore.getState().hydrate('app');
 		if (!useAuthStore.getState().isAuthenticated) {
 			notifications.show({ color: 'red', message: 'Не удалось восстановить сессию' });
@@ -34,11 +35,8 @@ export async function schooltaskEmailLogin(username: string, password: string): 
 }
 
 export async function schooltaskEmailLogout(): Promise<void> {
-	const refresh = tokenStorage.getRefreshToken('app');
 	try {
-		if (refresh) {
-			await apiClient.post('/api/schooltask/auth/logout', { refresh_token: refresh });
-		}
+		await apiClient.post('/api/schooltask/auth/logout', {}, { withCredentials: true });
 	} catch {
 		// ignore
 	} finally {

@@ -170,17 +170,21 @@ function showErrorToast(error: AxiosError, config: RetryableRequestConfig | unde
 
 async function performTokenRefresh(requestUrl?: string): Promise<string> {
 	const realm = resolveRealmForApiUrl(requestUrl);
-	const refreshToken = tokenStorage.getRefreshToken(realm);
-	if (!refreshToken) {
-		throw new Error('Refresh token missing');
-	}
+	const path =
+		realm === 'app' && requestUrl?.includes('/api/calendar')
+			? '/api/calendar/token/refresh'
+			: realm === 'app' && requestUrl?.includes('/api/schooltask')
+				? '/api/schooltask/token/refresh'
+				: realm === 'app' && requestUrl?.includes('/api/IncCom')
+					? '/api/IncCom/token/refresh'
+					: '/api/token/refresh';
 	const { data } = await axios.post<unknown>(
-		`${apiBaseURL}/api/token/refresh`,
-		{ refresh_token: refreshToken },
-		{ headers: { 'Content-Type': 'application/json' } },
+		`${apiBaseURL}${path}`,
+		{},
+		{ headers: { 'Content-Type': 'application/json' }, withCredentials: true },
 	);
 	const parsed = refreshResponseSchema.parse(data);
-	tokenStorage.setTokens(parsed.token, parsed.refresh_token, realm);
+	tokenStorage.setAccessToken(parsed.token, realm);
 	return parsed.token;
 }
 

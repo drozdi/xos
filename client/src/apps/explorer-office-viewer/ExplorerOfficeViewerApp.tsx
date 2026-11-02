@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { apiClient } from '@/core/api/client';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { getExplorerFileName } from '@/features/explorer/explorerPathUtils';
+import { sanitizeHtml } from '@/shared/sanitizeHtml';
 import { useExplorerSatelliteFile } from '@/features/explorer/useExplorerSatelliteFile';
 
 async function fetchDocxHtml(path: string): Promise<string> {
@@ -71,7 +72,7 @@ export default function ExplorerOfficeViewerApp() {
 				<ScrollArea style={{ flex: 1, minHeight: 0 }} type="auto" offsetScrollbars p="md">
 					<Box
 						className="office-preview"
-						dangerouslySetInnerHTML={{ __html: htmlQuery.data ?? '' }}
+						dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlQuery.data ?? '') }}
 						style={{
 							maxWidth: 800,
 							margin: '0 auto',

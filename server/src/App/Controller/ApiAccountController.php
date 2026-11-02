@@ -1,32 +1,33 @@
 <?php
 
-
 namespace App\Controller;
 
+use App\Security\UserScopeResolver;
+use Doctrine\ORM\EntityManagerInterface;
+use Main\Entity\User;
+use Main\Repository\UserRepository;
+use Main\Service\ClaimantManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Doctrine\ORM\EntityManagerInterface;
 
-use App\Security\UserScopeResolver;
-use Main\Entity\User;
-use Main\Service\ClaimantManager;
-
-#[Route('/api/account', name: 'api_app_account_' )]
-class ApiAccountController extends AbstractController {
+#[Route('/api/account', name: 'api_app_account_')]
+class ApiAccountController extends AbstractController
+{
     #[Route('', name: 'detail', methods: ['GET'])]
-    public function detail (#[CurrentUser] ?User $user): JsonResponse {
+    public function detail(#[CurrentUser] ?User $user): JsonResponse
+    {
         if (null === $user) {
             return $this->json([
                 'message' => 'missing credentials',
             ], Response::HTTP_UNAUTHORIZED);
         }
+
         return $this->json([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
@@ -35,40 +36,54 @@ class ApiAccountController extends AbstractController {
             'first_name' => $user->getFirstName(),
             'patronymic' => $user->getPatronymic(),
             'description' => $user->getDescription(),
-            'date_register' => $user->getDateRegister("Y-m-d H:m:s"),
-            'tutor' => $user->getParent()? $user->getParent()->getAlias(): '',
-            'last_login' => $user->getLastLogin("Y-m-d H:m:s"),
-            'x_timestamp' => $user->getXTimestamp("Y-m-d H:m:s"),
+            'date_register' => $user->getDateRegister('Y-m-d H:m:s'),
+            'tutor' => $user->getParent() ? $user->getParent()->getAlias() : '',
+            'last_login' => $user->getLastLogin('Y-m-d H:m:s'),
+            'x_timestamp' => $user->getXTimestamp('Y-m-d H:m:s'),
         ]);
     }
+
     #[Route('/map', name: 'map', methods: ['GET'])]
-    public function map (ClaimantManager $cm): JsonResponse {
+    public function map(ClaimantManager $cm): JsonResponse
+    {
         $ret = [];
         foreach ($cm->getMap() as $k => $v) {
-            $ret[$k] = $v['map-access']??[];
+            $ret[$k] = $v['map-access'] ?? [];
         }
+
         return $this->json($ret);
     }
+
     #[Route('/accesses', name: 'accesses', methods: ['GET'])]
-    public function accesses (#[CurrentUser] ?User $user, UserScopeResolver $userScopeResolver): JsonResponse {
+    public function accesses(#[CurrentUser] ?User $user, UserScopeResolver $userScopeResolver): JsonResponse
+    {
         return $this->json($userScopeResolver->resolve($user));
     }
+
     #[Route('/roles', name: 'roles', methods: ['GET'])]
-    public function roles (#[CurrentUser] ?User $user): JsonResponse {
+    public function roles(#[CurrentUser] ?User $user): JsonResponse
+    {
         return $this->json($user->getRoles());
     }
+
     #[Route('/options', name: 'options', methods: ['GET'])]
-    public function options (#[CurrentUser] ?User $user): JsonResponse {
+    public function options(#[CurrentUser] ?User $user): JsonResponse
+    {
         return $this->json($user->getOptions());
     }
+
     #[Route('/options', name: 'options_update', methods: ['PUT', 'PATCH'])]
-    public function updateOptions (#[CurrentUser] ?User $user, Request $request, EntityManagerInterface $entityManager): JsonResponse {
+    public function updateOptions(#[CurrentUser] ?User $user, Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
         $user->setOptions($request->toArray());
         $entityManager->flush();
+
         return $this->json($user->getOptions());
     }
+
     #[Route('', name: 'update', methods: ['PUT', 'PATCH'])]
-    public function update (Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, UserPasswordHasherInterface $passwordHasher, #[CurrentUser] ?User $user): JsonResponse {
+    public function update(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, UserPasswordHasherInterface $passwordHasher, #[CurrentUser] ?User $user): JsonResponse
+    {
         if (null === $user) {
             return $this->json([
                 'message' => 'missing credentials',
@@ -105,14 +120,20 @@ class ApiAccountController extends AbstractController {
                 $errors[$error->getPropertyPath()] = $error->getMessage();
             }
             $entityManager->getConnection()->rollBack();
+
             return $this->json($errors, Response::HTTP_BAD_REQUEST);
         }
         if (!empty($ar['password']) && ($ar['confirm_password'] ?? null) == $ar['password']) {
             $hashedPassword = $passwordHasher->hashPassword($user, $ar['password']);
-            $entityManager->getRepository(User::class)->upgradePassword($user, $hashedPassword);
+            $users = $entityManager->getRepository(User::class);
+            if (!$users instanceof UserRepository) {
+                throw new \LogicException('User repository is not available');
+            }
+            $users->upgradePassword($user, $hashedPassword);
         }
         $entityManager->flush();
         $entityManager->getConnection()->commit();
+
         return $this->json($user->getId(), Response::HTTP_CREATED);
     }
 }

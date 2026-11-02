@@ -12,10 +12,10 @@ function checkMessage(notifications: NotificationData[], message: string) {
 
 function send(item: { title?: string; message: string; color?: string }) {
 	const store = notificationsStore.getState()
-	if (false === checkMessage(store.notifications, item.message)) {
+	if (checkMessage(store.notifications, item.message) === false) {
 		return
 	}
-	if (false === checkMessage(store.queue, item.message)) {
+	if (checkMessage(store.queue, item.message) === false) {
 		return
 	}
 	return notifications.show({

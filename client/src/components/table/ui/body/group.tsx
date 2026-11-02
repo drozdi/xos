@@ -35,7 +35,7 @@ function NestedLayoutPlaceholderCell<T>({ column }: { column: ColumnEntity<T> })
 			p="0"
 			aria-hidden
 			colSpan={getBodyColumnPhysicalSpan(column)}
-			className={isGroupOnly ? classes['expanderCell'] : undefined}
+			className={isGroupOnly ? classes.expanderCell : undefined}
 		/>
 	);
 }

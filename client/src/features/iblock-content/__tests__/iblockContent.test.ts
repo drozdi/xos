@@ -6,16 +6,16 @@ import { slugifyCode } from '@/features/iblock-content/slugifyCode';
 import { validateRecipeForm } from '@/apps/recipe/recipeValidation';
 
 function nextUniqueCode(base: string, used: Set<string>): string {
-	if (!used.has(base)) return base;
+	if (!used.has(base)) {return base;}
 	let n = 2;
-	while (used.has(`${base}-${n}`)) n += 1;
+	while (used.has(`${base}-${n}`)) {n += 1;}
 	return `${base}-${n}`;
 }
 
 function validateContentName(data: { name?: string; block_id?: number | null }) {
 	const errors: { name?: string; block_id?: string } = {};
-	if (!data.name?.trim()) errors.name = 'Укажите название';
-	if (!data.block_id) errors.block_id = 'Инфоблок не загружен';
+	if (!data.name?.trim()) {errors.name = 'Укажите название';}
+	if (!data.block_id) {errors.block_id = 'Инфоблок не загружен';}
 	return errors;
 }
 

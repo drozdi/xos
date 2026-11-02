@@ -1,10 +1,20 @@
-const ACCESS_TOKEN_KEY = 'xos.access_token';
-const REFRESH_TOKEN_KEY = 'xos.refresh_token';
-const APP_ACCESS_TOKEN_KEY = 'xos.app.access_token';
-const APP_REFRESH_TOKEN_KEY = 'xos.app.refresh_token';
+const LEGACY_KEYS = [
+	'xos.access_token',
+	'xos.refresh_token',
+	'xos.app.access_token',
+	'xos.app.refresh_token',
+];
 
 export type AuthRealm = 'desktop' | 'app';
 export type StandaloneAppId = 'inccom' | 'schooltask' | 'calendar';
+
+const accessTokens = new Map<AuthRealm, string>();
+
+if (typeof localStorage !== 'undefined') {
+	for (const key of LEGACY_KEYS) {
+		localStorage.removeItem(key);
+	}
+}
 
 /** Standalone apps with email auth under their own path. */
 export function resolveStandaloneApp(
@@ -28,52 +38,42 @@ export function resolveAuthRealm(
 	return resolveStandaloneApp(pathname) ? 'app' : 'desktop';
 }
 
-function keysFor(realm: AuthRealm): { access: string; refresh: string } {
-	if (realm === 'app') {
-		return { access: APP_ACCESS_TOKEN_KEY, refresh: APP_REFRESH_TOKEN_KEY };
-	}
-	return { access: ACCESS_TOKEN_KEY, refresh: REFRESH_TOKEN_KEY };
-}
-
 export function getAccessToken(realm: AuthRealm = resolveAuthRealm()): string | null {
-	return localStorage.getItem(keysFor(realm).access);
+	return accessTokens.get(realm) ?? null;
 }
 
-export function getRefreshToken(realm: AuthRealm = resolveAuthRealm()): string | null {
-	return localStorage.getItem(keysFor(realm).refresh);
+export function getRefreshToken(_realm: AuthRealm = resolveAuthRealm()): string | null {
+	return null;
 }
 
 export function setAccessToken(token: string, realm: AuthRealm = resolveAuthRealm()): void {
-	localStorage.setItem(keysFor(realm).access, token);
+	accessTokens.set(realm, token);
 }
 
-export function setRefreshToken(token: string, realm: AuthRealm = resolveAuthRealm()): void {
-	localStorage.setItem(keysFor(realm).refresh, token);
+export function setRefreshToken(_token: string, _realm: AuthRealm = resolveAuthRealm()): void {
+	// Refresh lives in an HttpOnly cookie set by the API.
 }
 
 export function setTokens(
 	accessToken: string,
-	refreshToken: string,
+	_refreshToken?: string,
 	realm: AuthRealm = resolveAuthRealm(),
 ): void {
 	setAccessToken(accessToken, realm);
-	setRefreshToken(refreshToken, realm);
 }
 
 export function clearTokens(realm: AuthRealm = resolveAuthRealm()): void {
-	const keys = keysFor(realm);
-	localStorage.removeItem(keys.access);
-	localStorage.removeItem(keys.refresh);
+	accessTokens.delete(realm);
 }
 
 export function hasAccessToken(realm: AuthRealm = resolveAuthRealm()): boolean {
 	return getAccessToken(realm) !== null;
 }
 
-export function hasRefreshToken(realm: AuthRealm = resolveAuthRealm()): boolean {
-	return getRefreshToken(realm) !== null;
+export function hasRefreshToken(_realm: AuthRealm = resolveAuthRealm()): boolean {
+	return false;
 }
 
 export function hasStoredSession(realm: AuthRealm = resolveAuthRealm()): boolean {
-	return hasAccessToken(realm) || hasRefreshToken(realm);
+	return hasAccessToken(realm);
 }

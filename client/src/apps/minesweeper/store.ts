@@ -141,7 +141,7 @@ export const useMinesweeperStore = create<MinesweeperState>((set, get) => ({
 	closeActiveDialog: (parentWindowId) => {
 		const id = get().activeDialogId;
 		if (id) {
-			useChildWindowStore.getState().close(parentWindowId, id);
+			useChildWindowStore.getState().removeChild(parentWindowId, id);
 		}
 		set({ activeDialogId: null });
 	},

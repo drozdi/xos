@@ -5,11 +5,11 @@ import { canAccessApp, isAppRoot, isRoot, isScopeRoot } from '@/core/auth/coreRo
 import { getCanScope, getLevelScope } from '@/core/auth/coreScopes';
 
 function canDeviceScope(scopePath: string, actionScope: string): boolean {
-	if (!canAccessApp('device')) {
-		return false;
-	}
 	if (isRoot() || isAppRoot('device') || isScopeRoot(scopePath)) {
 		return true;
+	}
+	if (!canAccessApp('device')) {
+		return false;
 	}
 
 	return Boolean(getLevelScope(scopePath) & getCanScope(actionScope));

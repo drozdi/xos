@@ -1,9 +1,9 @@
 function isArray(value: unknown): boolean {
 	if (Array.isArray) {
 		return Array.isArray(value)
-	} else {
+	} 
 		return Object.prototype.toString.call(value) === '[object Array]'
-	}
+	
 }
 function isBoolean(value: unknown): boolean {
 	return typeof value === 'boolean'
@@ -14,9 +14,9 @@ function isObject(value: unknown): boolean {
 function isSymbol(value: unknown): boolean {
 	if (typeof Symbol === 'function') {
 		return typeof value === 'symbol'
-	} else {
+	} 
 		return Object.prototype.toString.call(value) === '[object Symbol]'
-	}
+	
 }
 
 function last(array: unknown[]): unknown {

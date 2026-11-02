@@ -327,7 +327,7 @@ export function orderColumnsTree<T>(
 		return column;
 	});
 
-	let ordered = reorderSegmentsAtLevel(withNested, segmentOrders?.[parentKey]);
+	const ordered = reorderSegmentsAtLevel(withNested, segmentOrders?.[parentKey]);
 
 	if (!orderIndex) {
 		return ordered;
@@ -411,7 +411,7 @@ export function mergeColumnOrder<T>(
 
 /** Удаляет из storage ширины и прочие per-field ключи для удалённых колонок. */
 export function purgeRemovedColumnStorage(
-	storage: { removeItem(key: string): void },
+	storage: { removeItem: (key: string) => void },
 	removedFields: (string | number | symbol)[],
 ): void {
 	for (const field of removedFields) {

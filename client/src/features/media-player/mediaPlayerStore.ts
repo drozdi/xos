@@ -123,7 +123,13 @@ export const useMediaPlayerStore = create<MediaPlayerStore>((set, get) => ({
 			return;
 		}
 		const items = [...session.items];
-		[items[index], items[target]] = [items[target], items[index]];
+		const currentItem = items[index];
+		const targetItem = items[target];
+		if (currentItem === undefined || targetItem === undefined) {
+			return;
+		}
+		items[index] = targetItem;
+		items[target] = currentItem;
 		get().patchSession(windowId, { items, dirty: true });
 	},
 

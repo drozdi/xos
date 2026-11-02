@@ -28,6 +28,9 @@ export function DeviceImageGallery({ images, initialIndex = 0, onClose }: Device
 	}
 
 	const current = images[index];
+	if (!current) {
+		return null;
+	}
 	const hasPrev = index > 0;
 	const hasNext = index < images.length - 1;
 

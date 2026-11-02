@@ -106,7 +106,7 @@ export function CalendarSidebar({
 	deletingId,
 }: CalendarSidebarProps) {
 	const [title, setTitle] = useState('');
-	const [color, setColor] = useState(BATTLE_NET.accent);
+	const [color, setColor] = useState<string>(BATTLE_NET.accent);
 	const [showForm, setShowForm] = useState(false);
 
 	const owned = calendars.filter((c) => c.is_owner);

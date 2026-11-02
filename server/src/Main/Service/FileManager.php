@@ -1,16 +1,20 @@
 <?php
 
-
 namespace Main\Service;
 
-use AbstractManager;
-use Main\Entity\File as MainFile;
-use Main\Service\UploadPathResolver;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\Filesystem\Filesystem;
+use Main\Entity\File as MainFile;
 
-class FileManager extends AbstractManager {
+class FileManager extends \AbstractManager
+{
+    private const MAX_BYTES = 20 * 1024 * 1024;
+
+    /** @var list<string> */
+    private const ALLOWED_EXTENSIONS = [
+        'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'txt', 'md', 'csv',
+        'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'mp3', 'mp4', 'webm',
+    ];
+
     private string $uploadDir;
 
     public function __construct(
@@ -20,17 +24,19 @@ class FileManager extends AbstractManager {
         $this->uploadDir = $uploadDir;
     }
 
-    public function getFileRepository (): ?EntityRepository {
+    public function getFileRepository(): ?EntityRepository
+    {
         return $this->getEntityManager()->getRepository(MainFile::class);
     }
 
-    public function upload (string $field, string $module, ?string $name = null, ?string $customSubDir = null): array {
+    public function upload(string $field, string $module, ?string $name = null, ?string $customSubDir = null): array
+    {
         $this->uploadPathResolver->assertAllowedModule($module);
         $this->uploadPathResolver->assertSafeSubDir($customSubDir);
 
         $arField = explode('[', $field);
         $files = $this->getRequest()->files->get($arField[0]);
-        for ($i = 1, $cnt = count($arField); $i < $cnt; $i++) {
+        for ($i = 1, $cnt = count($arField); $i < $cnt; ++$i) {
             if (!is_array($files)) {
                 $files = null;
                 break;
@@ -51,18 +57,16 @@ class FileManager extends AbstractManager {
             if (!$file) {
                 continue;
             }
-            $fileName = $file->getClientOriginalName();
-            $fileExt = '.'.$file->getClientOriginalExtension();
+            $extension = $this->assertUploadAllowed($file->getClientOriginalName(), (int) $file->getSize(), $file->getPathname());
+            $fileExt = '.'.$extension;
+            $fileName = bin2hex(random_bytes(16)).$fileExt;
             $subDir = $customSubDir ?: date('Y.m/d');
             $dir = $uploadDir.'/'.$module.'/'.$subDir.'/';
-            if (!is_dir($dir)) {
-                mkdir($dir, 0775, true);
-            }
-            while (file_exists($dir.$fileName)) {
-                $fileName = substr(md5(mt_rand()), 0, 10).$fileExt;
+            if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+                throw new \RuntimeException('Unable to create upload directory');
             }
 
-            $objectFile = new MainFile;
+            $objectFile = new MainFile();
 
             $objectFile->setFileSize($file->getSize());
             $objectFile->setContentType($file->getMimeType());
@@ -100,15 +104,12 @@ class FileManager extends AbstractManager {
         }
 
         $uploadDir = $this->uploadDir;
-        $fileExt = pathinfo($originalName, PATHINFO_EXTENSION);
-        $fileExt = $fileExt !== '' ? '.'.$fileExt : '';
-        $fileName = $originalName;
+        $extension = $this->assertUploadAllowed($originalName, (int) filesize($sourcePath), $sourcePath);
+        $fileExt = '.'.$extension;
+        $fileName = bin2hex(random_bytes(16)).$fileExt;
         $dir = $uploadDir.'/'.$module.'/'.$subDir.'/';
         if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
             throw new \RuntimeException('Unable to create upload directory');
-        }
-        while (file_exists($dir.$fileName)) {
-            $fileName = substr(md5((string) mt_rand()), 0, 10).$fileExt;
         }
 
         $targetPath = $dir.$fileName;
@@ -131,15 +132,63 @@ class FileManager extends AbstractManager {
         return $objectFile;
     }
 
-    public function remove (MainFile $file) {
-        unlink(implode('/',[
+    public function remove(MainFile $file)
+    {
+        unlink(implode('/', [
             $this->uploadDir,
             $file->getModule(),
             $file->getSubDir(),
-            $file->getFileName()
+            $file->getFileName(),
         ]));
         $this->getEntityManager()->remove($file);
         $this->getEntityManager()->flush();
+    }
+
+    private function assertUploadAllowed(string $originalName, int $size, string $path): string
+    {
+        if ($size <= 0 || $size > self::MAX_BYTES) {
+            throw new \InvalidArgumentException('File is empty or larger than 20 MB');
+        }
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if (!in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
+            throw new \InvalidArgumentException(sprintf('Extension "%s" is not allowed', $extension));
+        }
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($path);
+        if (!is_string($mime) || !$this->mimeMatchesExtension($mime, $extension)) {
+            throw new \InvalidArgumentException('File content does not match its extension');
+        }
+
+        return $extension;
+    }
+
+    private function mimeMatchesExtension(string $mime, string $extension): bool
+    {
+        $mime = strtolower($mime);
+        $groups = [
+            'jpg' => ['image/jpeg'],
+            'jpeg' => ['image/jpeg'],
+            'png' => ['image/png'],
+            'gif' => ['image/gif'],
+            'webp' => ['image/webp'],
+            'svg' => ['image/svg+xml', 'text/xml', 'text/plain', 'application/xml'],
+            'pdf' => ['application/pdf'],
+            'txt' => ['text/plain'],
+            'md' => ['text/plain', 'text/markdown'],
+            'csv' => ['text/plain', 'text/csv', 'application/vnd.ms-excel'],
+            'zip' => ['application/zip', 'application/x-zip-compressed'],
+            'mp3' => ['audio/mpeg', 'audio/mp3'],
+            'mp4' => ['video/mp4'],
+            'webm' => ['video/webm', 'audio/webm'],
+            'doc' => ['application/msword'],
+            'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+            'xls' => ['application/vnd.ms-excel'],
+            'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip'],
+            'ppt' => ['application/vnd.ms-powerpoint'],
+            'pptx' => ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/zip'],
+        ];
+
+        return in_array($mime, $groups[$extension] ?? [], true);
     }
 
     public function resolveAbsolutePath(MainFile $file): string

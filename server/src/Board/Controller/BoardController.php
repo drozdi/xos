@@ -3,6 +3,8 @@
 namespace Board\Controller;
 
 use App\Attribute\Access;
+use App\Http\ListQuery;
+use Board\Http\BoardWriteRequest;
 use Board\Service\BoardManager;
 use Main\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -10,6 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
@@ -21,13 +25,17 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 class BoardController extends AbstractController
 {
     #[Route('/workspaces/{wsId}/boards', requirements: ['wsId' => '\d+'], methods: ['POST'])]
-    public function create(int $wsId, Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
-    {
+    public function create(
+        int $wsId,
+        #[MapRequestPayload] BoardWriteRequest $payload,
+        #[CurrentUser] ?User $user,
+        BoardManager $boardManager,
+    ): JsonResponse {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         \assert($user instanceof User);
 
         $workspace = $boardManager->getWorkspace($wsId, $user);
-        $board = $boardManager->createBoard($workspace, $user, $request->toArray());
+        $board = $boardManager->createBoard($workspace, $user, $payload->toPayload());
 
         return $this->json($boardManager->serializeBoardDetail($board, $user), Response::HTTP_CREATED);
     }
@@ -197,20 +205,25 @@ class BoardController extends AbstractController
             $started = time();
             $cursor = $sinceStr;
             $heartbeatAt = time();
+            $revision = null;
 
             echo ": connected\n\n";
             flush();
 
             while (!connection_aborted() && (time() - $started) < $maxSeconds) {
-                $board = $boardManager->getBoard($boardId, $user);
-                $delta = $boardManager->getBoardChanges($board, $user, $cursor);
-                if ($delta['has_changes']) {
-                    echo 'event: board_delta'."\n";
-                    echo 'data: '.json_encode($delta, \JSON_UNESCAPED_UNICODE)."\n\n";
-                    flush();
-                }
-                if (!empty($delta['server_time']) && is_string($delta['server_time'])) {
-                    $cursor = $delta['server_time'];
+                $nextRevision = $boardManager->boardCardRevision($boardId);
+                if ($nextRevision !== $revision) {
+                    $board = $boardManager->getBoard($boardId, $user);
+                    $delta = $boardManager->getBoardChanges($board, $user, $cursor);
+                    if ($delta['has_changes']) {
+                        echo 'event: board_delta'."\n";
+                        echo 'data: '.json_encode($delta, \JSON_UNESCAPED_UNICODE)."\n\n";
+                        flush();
+                    }
+                    if (!empty($delta['server_time']) && is_string($delta['server_time'])) {
+                        $cursor = $delta['server_time'];
+                    }
+                    $revision = $nextRevision;
                 }
 
                 if ((time() - $heartbeatAt) >= 15) {
@@ -219,7 +232,7 @@ class BoardController extends AbstractController
                     $heartbeatAt = time();
                 }
 
-                usleep(1_500_000);
+                usleep(5_000_000);
             }
 
             echo "event: stream_end\n";
@@ -236,15 +249,18 @@ class BoardController extends AbstractController
     }
 
     #[Route('/search', methods: ['GET'])]
-    public function search(Request $request, #[CurrentUser] ?User $user, BoardManager $boardManager): JsonResponse
-    {
+    public function search(
+        #[MapQueryString] ListQuery $query,
+        Request $request,
+        #[CurrentUser] ?User $user,
+        BoardManager $boardManager,
+    ): JsonResponse {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         \assert($user instanceof User);
 
         $q = trim((string) $request->query->get('q', ''));
-        $limit = max(1, min(100, (int) $request->query->get('limit', 50)));
 
-        return $this->json(['cards' => $boardManager->searchCards($user, $q, $limit)]);
+        return $this->json(['cards' => $boardManager->searchCards($user, $q, $query->limit)]);
     }
 
     /**
@@ -270,16 +286,15 @@ class BoardController extends AbstractController
     /** @return list<int> */
     private function parseIntListParam(Request $request, string $name): array
     {
-        $values = $request->query->all($name);
-        if ([] === $values) {
-            $single = $request->query->get($name);
-            if (is_string($single) && str_contains($single, ',')) {
-                $values = explode(',', $single);
-            } elseif (null !== $single && '' !== $single) {
-                $values = [$single];
-            } else {
-                $values = [];
-            }
+        $raw = $request->query->all()[$name] ?? null;
+        if (is_array($raw)) {
+            $values = $raw;
+        } elseif (is_string($raw) && str_contains($raw, ',')) {
+            $values = explode(',', $raw);
+        } elseif (null !== $raw && '' !== $raw) {
+            $values = [$raw];
+        } else {
+            $values = [];
         }
 
         $ids = [];

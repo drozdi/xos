@@ -56,7 +56,7 @@ export function IblockMarkdownEditor({
 
 	const handleUpload = useCallback(
 		async (file: File | null) => {
-			if (!file || readOnly) return;
+			if (!file || readOnly) {return;}
 			setUploading(true);
 			try {
 				const uploaded = await uploadIblockFile(file);

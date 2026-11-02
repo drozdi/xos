@@ -125,7 +125,7 @@ function NavbarLink({
 				justify="space-between"
 				gap={0}
 				renderRoot={(props) => <Link {...props} to={path} />}
-				className={classes['link']}
+				className={classes.link}
 				data-active={active || undefined}
 				aria-label={label}
 			>

@@ -85,6 +85,7 @@ export default function SchooltaskSubjectApp() {
 				const { users, ...rest } = data;
 				return {
 					...rest,
+					users,
 					user_ids: extractSubjectUserIds(users),
 				};
 			}}

@@ -34,6 +34,8 @@ export default defineConfig(({ mode }) => ({
 				},
 				workbox: {
 					globPatterns: ['**/*.{js,css,html,svg,ico,woff2}'],
+					globIgnores: ['**/stats.html', '**/editor-*.js', '**/app-*.js'],
+					maximumFileSizeToCacheInBytes: 400 * 1024,
 					navigateFallback: '/index.html',
 					runtimeCaching: [
 						{
@@ -82,6 +84,7 @@ export default defineConfig(({ mode }) => ({
 		alias: {
 			'@': path.resolve(__dirname, 'src'),
 			'@inccom': path.resolve(__dirname, 'src/features/inccom'),
+			'#dev/vitest/render': path.resolve(__dirname, 'src/test/render.tsx'),
 		},
 	},
 	define: {
@@ -91,7 +94,9 @@ export default defineConfig(({ mode }) => ({
 	test: {
 		globals: false,
 		environment: 'node',
-		include: ['src/**/*.test.ts'],
+		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+		setupFiles: ['src/test/setup.ts'],
+		environmentMatchGlobs: [['src/**/*.test.tsx', 'happy-dom']],
 	},
 	server: {
 		port: 5173,
@@ -102,42 +107,38 @@ export default defineConfig(({ mode }) => ({
 	},
 	build: {
 		target: 'es2022',
+		modulePreload: {
+			resolveDependencies(_filename, deps) {
+				return deps.filter((dep) => !/\/(?:app|editor)-/.test(dep));
+			},
+		},
 		rollupOptions: {
 			output: {
 				manualChunks(id) {
-					if (
-						id.includes('node_modules/react/') ||
-						id.includes('node_modules/react-dom/')
-					) {
-						return 'vendor';
+					if (!id.includes('node_modules')) {
+						if (id.includes('/src/apps/')) {
+							const match = id.match(/\/apps\/([^/]+)\//);
+							if (match && !id.endsWith('/index.ts')) {
+								return `app-${match[1]}`;
+							}
+						}
+						return;
 					}
-					if (id.includes('node_modules/@mantine/')) {
+					if (id.includes('@mantine')) {
 						return 'mantine';
 					}
-					if (id.includes('node_modules/@tanstack/react-query')) {
-						return 'query';
+					if (id.includes('tiptap') || id.includes('prosemirror')) {
+						return 'editor';
 					}
 					if (
-						id.includes('node_modules/react-rnd') ||
-						id.includes('node_modules/react-draggable') ||
-						id.includes('node_modules/re-resizable')
+						id.includes('/react/') ||
+						id.includes('/react-dom/') ||
+						id.includes('react-router')
 					) {
-						return 'rnd';
+						return 'react';
 					}
-					if (id.includes('node_modules/react-window')) {
-						return 'react-window';
-					}
-					if (id.includes('node_modules/axios')) {
-						return 'axios';
-					}
-					if (id.includes('node_modules/zustand')) {
-						return 'zustand';
-					}
-					if (id.includes('/src/apps/')) {
-						const match = id.match(/\/apps\/([^/]+)\//);
-						if (match) {
-							return `app-${match[1]}`;
-						}
+					if (id.includes('/zod/') || id.includes('/axios/') || id.includes('@tanstack/react-query')) {
+						return 'core-vendor';
 					}
 				},
 			},

@@ -76,9 +76,9 @@ export function ContentCatalogListApp({ config }: { config: ContentCatalogConfig
 
 	const filters = useMemo(() => {
 		const next: Record<string, unknown> = {};
-		if (blockId) next.block_id = blockId;
-		if (sectionId) next.section_id = Number(sectionId);
-		if (userQuery.data?.id) next.accessible_for = userQuery.data.id;
+		if (blockId) {next.block_id = blockId;}
+		if (sectionId) {next.section_id = Number(sectionId);}
+		if (userQuery.data?.id) {next.accessible_for = userQuery.data.id;}
 		if (features.tags && tagFilter) {
 			next[`PROPERTY_${CONTENT_PROPS.TAGS}`] = tagFilter;
 		}

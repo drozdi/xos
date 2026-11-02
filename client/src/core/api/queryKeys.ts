@@ -166,4 +166,7 @@ export const queryKeys = {
 		connections: ['ssh', 'connections'] as const,
 		keys: ['ssh', 'keys'] as const,
 	},
+	network: {
+		egress: ['network', 'egress'] as const,
+	},
 } as const;

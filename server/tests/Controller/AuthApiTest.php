@@ -81,19 +81,18 @@ class AuthApiTest extends AuthWebTestCase
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'refresh_token' => $loginPayload['refresh_token'],
-            ], JSON_THROW_ON_ERROR)
+            '{}'
         );
 
         self::assertResponseIsSuccessful();
 
-        /** @var array{token: string, refresh_token: string} $refreshPayload */
+        /** @var array{token: string} $refreshPayload */
         $refreshPayload = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        $rotated = $client->getCookieJar()->get('xos_refresh')?->getValue();
 
         self::assertArrayHasKey('token', $refreshPayload);
-        self::assertArrayHasKey('refresh_token', $refreshPayload);
-        self::assertNotSame($loginPayload['refresh_token'], $refreshPayload['refresh_token']);
+        self::assertArrayNotHasKey('refresh_token', $refreshPayload);
+        self::assertNotSame($loginPayload['refresh_token'], $rotated);
     }
 
     public function testLoginCheckRequiresAuthentication(): void

@@ -82,6 +82,34 @@ export function SshTerminal({
 
 		void (async () => {
 			try {
+				const gateway = await sshApi.gatewayTicket(connectionId);
+				if (gateway.gateway_url) {
+					const ws = new WebSocket(gateway.gateway_url);
+					ws.addEventListener('open', () => {
+						ws.send(
+							JSON.stringify({
+								ticket: gateway.ticket,
+								columns: term.cols || 80,
+								rows: term.rows || 24,
+							}),
+						);
+					});
+					ws.addEventListener('message', (event) => {
+						term.write(typeof event.data === 'string' ? event.data : '');
+					});
+					ws.addEventListener('close', () => {
+						if (!abort.signal.aborted) {
+							fail('Соединение закрыто');
+						}
+					});
+					abort.signal.addEventListener('abort', () => ws.close());
+					term.onData((data) => {
+						if (ws.readyState === WebSocket.OPEN) {
+							ws.send(data);
+						}
+					});
+					return;
+				}
 				const session = await sshApi.openSession({
 					connection_id: connectionId,
 					accept_host_key: acceptHostKey,

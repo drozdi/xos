@@ -25,7 +25,7 @@ import {
 } from './propertyValues';
 
 function userLabel(user: IblockElementDetail['created_by']): string | null {
-	if (!user) return null;
+	if (!user) {return null;}
 	return user.alias || user.email || (user.id != null ? `#${user.id}` : null);
 }
 
@@ -37,7 +37,7 @@ function labelForSelect(
 }
 
 function renderExtraBadges(data: IblockElementDetail, fields: ContentExtraField[] | undefined): ReactNode {
-	if (!fields?.length) return null;
+	if (!fields?.length) {return null;}
 	const values = data.PROPERTY_VALUES ?? {};
 	const nodes: ReactNode[] = [];
 	for (const field of fields) {
@@ -76,7 +76,7 @@ function renderExtraBadges(data: IblockElementDetail, fields: ContentExtraField[
 			}
 		}
 	}
-	if (!nodes.length) return null;
+	if (!nodes.length) {return null;}
 	return (
 		<Stack gap={4}>
 			{nodes}

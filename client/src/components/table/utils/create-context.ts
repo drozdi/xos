@@ -1,8 +1,7 @@
 import React from 'react'
 
 type SetStateHandler<T> = {
-	_(partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: false): void
-	_(state: T | ((state: T) => T), replace: true): void
+	_: ((partial: T | Partial<T> | ((state: T) => T | Partial<T>), replace?: false) => void) & ((state: T | ((state: T) => T), replace: true) => void)
 }['_']
 
 export interface StoreApi<T> {
@@ -57,7 +56,7 @@ const createStoreImpl: CreateStoreImpl = createState => {
 	type TState = ReturnType<typeof createState>
 	type Listener = (state: TState, prevState: TState) => void
 	let state: TState
-	const listeners: Set<Listener> = new Set()
+	const listeners = new Set<Listener>()
 
 	const setState: StoreApi<TState>['setState'] = (partial, replace) => {
 		const nextState = typeof partial === 'function' ? (partial as (state: TState) => TState)(state) : partial
@@ -66,7 +65,7 @@ const createStoreImpl: CreateStoreImpl = createState => {
 			state =
 				replace ?? (typeof nextState !== 'object' || nextState === null)
 					? (nextState as TState)
-					: Object.assign({}, state, nextState)
+					: ({ ...state, ...nextState})
 			listeners.forEach(listener => listener(state, previousState))
 		}
 	}

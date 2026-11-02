@@ -1,9 +1,7 @@
 import { ActionIcon, Box, Group, Text } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import {
-	lazy,
 	memo,
-	Suspense,
 	useCallback,
 	useEffect,
 	useMemo,
@@ -25,7 +23,6 @@ import { WindowContextMenu } from '@/core/contextMenu';
 
 import { destroyWindowApi, getOrCreateWindowApi } from './WindowApi';
 import { useWindowManagerViewport } from './WindowManagerContext';
-import { useChildWindowStore } from './childWindowStore';
 import { useWindowAutoSize } from './useWindowAutoSize';
 import { WindowSizeContext } from './useWindowSize';
 import { useWmStore } from './useWmStore';
@@ -48,27 +45,8 @@ import {
 	getWindowDragBounds,
 	snapAppToDesktopEdges,
 } from './windowDragBounds';
+import { ChildWindowPortalGate } from './WindowChildren';
 import { getMaximizedBounds } from './windowLayout';
-
-const ChildWindowPortal = lazy(() =>
-	import('./ChildWindowPortal').then((module) => ({ default: module.ChildWindowPortal })),
-);
-
-function ChildWindowPortalGate({ windowId }: { windowId: string }) {
-	const hasChildren = useChildWindowStore(
-		(state) => (state.byParent[windowId]?.length ?? 0) > 0,
-	);
-
-	if (!hasChildren) {
-		return null;
-	}
-
-	return (
-		<Suspense fallback={null}>
-			<ChildWindowPortal windowId={windowId} />
-		</Suspense>
-	);
-}
 
 interface WindowProps {
 	windowId: string;

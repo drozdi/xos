@@ -24,7 +24,7 @@ import {
 } from './propertyValues';
 
 function userLabel(user: IblockElementDetail['created_by']): string | null {
-	if (!user) return null;
+	if (!user) {return null;}
 	return user.alias || user.email || (user.id != null ? `#${user.id}` : null);
 }
 

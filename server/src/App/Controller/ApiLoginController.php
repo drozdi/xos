@@ -50,9 +50,11 @@ class ApiLoginController extends AbstractController
     #[Route('/protected', name: 'protected', methods: ['GET'])]
     public function protected(): JsonResponse
     {
+        $user = $this->getUser();
+
         return $this->json([
             'message' => 'This is protected data!',
-            'user' => $this->getUser()->getEmail(),
+            'user' => $user instanceof User ? $user->getEmail() : null,
         ]);
     }
 }

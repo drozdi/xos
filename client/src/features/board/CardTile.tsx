@@ -148,14 +148,14 @@ function CardTileContent({
 	);
 }
 
-export const CardTile = memo(function CardTile({
+export const CardTile = memo(({
 	card,
 	labels,
 	members = [],
 	disabled,
 	dimmed,
 	onClick,
-}: CardTileProps) {
+}: CardTileProps) => {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
 		id: dragId('card', card.id),
 		disabled,

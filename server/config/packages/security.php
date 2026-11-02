@@ -24,6 +24,9 @@ return static function (ContainerConfigurator $container): void {
         }
     }
 
+    $loginMaxAttempts = 'test' === $container->env() ? 10000 : 5;
+    $container->parameters()->set('app.login_max_attempts', $loginMaxAttempts);
+
     $firewalls = $moduleFirewalls + [
         'dev' => [
             'pattern' => '^/(_(profiler|wdt)|css|images|js)/',
@@ -41,6 +44,10 @@ return static function (ContainerConfigurator $container): void {
                 'success_handler' => 'App\\Security\\LoginSuccessHandler',
                 'failure_handler' => 'lexik_jwt_authentication.handler.authentication_failure',
             ],
+            'login_throttling' => [
+                'max_attempts' => $loginMaxAttempts,
+                'interval' => '15 minutes',
+            ],
         ],
         'refresh' => [
             'pattern' => '^/api/token/refresh',
@@ -50,6 +57,10 @@ return static function (ContainerConfigurator $container): void {
             'refresh_jwt' => [
                 'check_path' => '/api/token/refresh',
             ],
+        ],
+        'ssh_gateway' => [
+            'pattern' => '^/api/ssh/gateway/(redeem|release)$',
+            'security' => false,
         ],
         'api' => [
             'pattern' => '^/api',
@@ -74,6 +85,7 @@ return static function (ContainerConfigurator $container): void {
         ['path' => '^/api/login$', 'roles' => 'PUBLIC_ACCESS', 'methods' => ['POST']],
         ['path' => '^/api/token/refresh$', 'roles' => 'PUBLIC_ACCESS', 'methods' => ['POST']],
         ['path' => '^/api/health', 'roles' => 'PUBLIC_ACCESS', 'methods' => ['GET']],
+        ['path' => '^/api/ssh/gateway/(redeem|release)$', 'roles' => 'PUBLIC_ACCESS', 'methods' => ['POST']],
         ['path' => '^/uploads/', 'roles' => 'IS_AUTHENTICATED_FULLY', 'methods' => ['GET']],
         ['path' => '^/api', 'roles' => 'IS_AUTHENTICATED_FULLY'],
     ]);

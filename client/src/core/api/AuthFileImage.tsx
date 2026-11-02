@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useMainFileUrl } from '@/core/api/useMainFileUrl';
 
-type AuthFileImageProps = Omit<ImageProps, 'src'> & {
+type AuthFileImageProps = Omit<ImageProps, 'src' | 'alt' | 'onClick'> & {
 	fileId: number | null | undefined;
+	alt?: string;
+	onClick?: () => void;
 	/** Optional local/preview URL while fileId blob loads. */
 	fallbackSrc?: string | null;
 	/** Defer the authenticated blob request until the image scrolls near the viewport. */
@@ -42,7 +44,7 @@ function useInView(enabled: boolean) {
 }
 
 /** Renders main_file image via authenticated blob URL. */
-export function AuthFileImage({ fileId, fallbackSrc, alt, lazy = false, ...rest }: AuthFileImageProps) {
+export function AuthFileImage({ fileId, fallbackSrc, alt = '', lazy = false, ...rest }: AuthFileImageProps) {
 	const { ref, inView } = useInView(lazy);
 	const blobUrl = useMainFileUrl(inView ? fileId : null);
 	const src = blobUrl || fallbackSrc || undefined;

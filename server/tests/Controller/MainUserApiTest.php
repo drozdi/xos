@@ -27,6 +27,12 @@ class MainUserApiTest extends AuthWebTestCase
     {
         $client = static::createClient();
         $this->prepareAuthDatabase($client);
+        /** @var \Doctrine\ORM\EntityManagerInterface $entityManager */
+        $entityManager = $client->getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $user = $entityManager->getRepository(User::class)->findOneBy(['login' => self::TEST_LOGIN]);
+        self::assertInstanceOf(User::class, $user);
+        $user->setRoles(['ROLE_ADMIN', 'ROLE_MAIN_USER_ROOT']);
+        $entityManager->flush();
 
         $loginPayload = $this->login($client);
 

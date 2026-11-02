@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 const username = process.env.E2E_USERNAME ?? 'admin';
@@ -9,6 +10,8 @@ test.describe('XOS smoke', () => {
 		await page.goto('/');
 		await expect(page.getByRole('heading', { name: 'XOS Login' })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+		const results = await new AxeBuilder({ page }).analyze();
+		expect(results.violations.filter((item) => item.impact === 'critical')).toEqual([]);
 	});
 
 	test('full flow: login → app → reload restore', async ({ page }) => {

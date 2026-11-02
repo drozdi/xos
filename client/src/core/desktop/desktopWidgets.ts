@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { AppRegistry } from '@/core/appManager/AppRegistry';
+import { useAppManager } from '@/core/appManager/useAppManager';
 import { settingManager } from '@/core/settings/SettingManager';
 import { useWmStore } from '@/core/windowManager/useWmStore';
 
@@ -88,7 +89,6 @@ export async function enableDesktopWidget(appId: string, instanceKey = 'default'
 	const next = current.filter((e) => !(e.appId === appId && e.instanceKey === instanceKey));
 	next.push({ appId, instanceKey, enabled: true, page });
 	await writeDesktopWidgets(next);
-	const { useAppManager } = await import('@/core/appManager/useAppManager');
 	await useAppManager.getState().launchApp(appId, { instanceKey });
 }
 
@@ -124,7 +124,6 @@ export async function toggleDesktopWidget(appId: string, instanceKey = 'default'
 /** After restoreFromHistory: launch enabled widgets that are not open yet. */
 export async function syncDesktopWidgetsFromCatalog(): Promise<void> {
 	const entries = await readDesktopWidgets();
-	const { useAppManager } = await import('@/core/appManager/useAppManager');
 	const launchApp = useAppManager.getState().launchApp;
 	const windows = useWmStore.getState().windows;
 

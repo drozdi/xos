@@ -212,8 +212,7 @@ class MainOuApiTest extends AuthWebTestCase
             $entityManager->getClassMetadata(OU::class),
         ];
 
-        $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($entityManager);
-        $schemaTool->createSchema($metadata);
+        $this->resetMetadataSchema($entityManager, $metadata);
     }
 
     protected function grantUserScope(

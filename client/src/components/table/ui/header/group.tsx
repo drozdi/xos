@@ -22,8 +22,8 @@ export function TableHeaderCellGroup<T = object>({
 		(!groupColumnField || column.field === groupColumnField);
 	const showHeaderLabel = !!column.header && !isGroupOnly;
 	const innerClass = showHeaderLabel
-		? classes['expanderHeaderInnerLabeled']
-		: classes['expanderHeaderInner'];
+		? classes.expanderHeaderInnerLabeled
+		: classes.expanderHeaderInner;
 
 	const expanders = isUnified ? (
 		<TableHeaderCellUnifiedExpander<T> column={column} flex="0" {...props} />
@@ -38,7 +38,7 @@ export function TableHeaderCellGroup<T = object>({
 			column={column}
 			maxRow={maxRow}
 			maxCol={maxCol}
-			className={isGroupOnly ? classes['expanderHeader'] : undefined}
+			className={isGroupOnly ? classes.expanderHeader : undefined}
 		>
 			<div className={innerClass}>
 				{groupAt === 'start' && expanders && (

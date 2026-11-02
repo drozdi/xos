@@ -3,6 +3,7 @@
 namespace SchoolTask\Controller;
 
 use App\Entity\RefreshToken;
+use App\Security\RefreshCookie;
 use Doctrine\ORM\EntityManagerInterface;
 use Main\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -46,27 +47,24 @@ class AuthController extends AbstractController
     }
 
     #[Route('/logout', name: 'logout', methods: ['POST'])]
-    public function logout(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    public function logout(Request $request, EntityManagerInterface $entityManager, RefreshCookie $refreshCookie): JsonResponse
     {
-        $data = $request->toArray();
-        $refreshTokenValue = $data['refresh_token'] ?? null;
+        $data = [] === $request->getContent() ? [] : $request->toArray();
+        $refreshTokenValue = $data['refresh_token'] ?? $refreshCookie->read($request);
 
-        if (!is_string($refreshTokenValue) || '' === $refreshTokenValue) {
-            return $this->json([
-                'error' => 'Validation failed',
-                'violations' => ['refresh_token' => 'Refresh token is required'],
-            ], Response::HTTP_BAD_REQUEST);
+        if (is_string($refreshTokenValue) && '' !== $refreshTokenValue) {
+            $refreshToken = $entityManager->getRepository(RefreshToken::class)
+                ->findOneBy(['refreshToken' => $refreshTokenValue]);
+            if (null !== $refreshToken) {
+                $entityManager->remove($refreshToken);
+                $entityManager->flush();
+            }
         }
 
-        $refreshToken = $entityManager->getRepository(RefreshToken::class)
-            ->findOneBy(['refreshToken' => $refreshTokenValue]);
+        $response = $this->json(['success' => true]);
+        $refreshCookie->clear($response, $request);
 
-        if (null !== $refreshToken) {
-            $entityManager->remove($refreshToken);
-            $entityManager->flush();
-        }
-
-        return $this->json(['success' => true]);
+        return $response;
     }
 
     /**

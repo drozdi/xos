@@ -86,7 +86,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 		set({ isLoading: true });
 		try {
 			const response = await loginRequest(credentials);
-			tokenStorage.setTokens(response.token, response.refresh_token, 'desktop');
+			tokenStorage.setAccessToken(response.token, 'desktop');
 
 			const user = response.user ?? (await fetchUser());
 			await applyUserSession(user);

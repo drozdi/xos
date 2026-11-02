@@ -11,8 +11,25 @@ final class SshSecretCipher
 
     public function __construct(
         #[Autowire('%kernel.secret%')]
-        private readonly string $secret,
+        private readonly string $appSecret,
+        #[Autowire('%env(default::SSH_SECRET_KEY)%')]
+        private readonly string $sshSecretKey = '',
     ) {
+    }
+
+    public function usesDedicatedKey(): bool
+    {
+        return '' !== $this->sshSecretKey;
+    }
+
+    /** Decrypt with an explicit previous secret (usually the old APP_SECRET), then encrypt with the current key. */
+    public function reencryptFrom(string $stored, string $fromSecret): string
+    {
+        if ('' === $stored || !str_starts_with($stored, self::PREFIX)) {
+            return $this->encrypt($stored);
+        }
+
+        return $this->encrypt($this->decryptWith($stored, $fromSecret));
     }
 
     public function encrypt(string $plaintext): string
@@ -40,6 +57,11 @@ final class SshSecretCipher
             return $stored;
         }
 
+        return $this->decryptWith($stored, null);
+    }
+
+    private function decryptWith(string $stored, ?string $material): string
+    {
         $raw = base64_decode(substr($stored, strlen(self::PREFIX)), true);
         if (false === $raw || strlen($raw) < 28) {
             throw new \RuntimeException('Повреждён секрет SSH');
@@ -48,7 +70,7 @@ final class SshSecretCipher
         $plain = openssl_decrypt(
             substr($raw, 28),
             'aes-256-gcm',
-            $this->key(),
+            $this->key($material),
             OPENSSL_RAW_DATA,
             substr($raw, 0, 12),
             substr($raw, 12, 16),
@@ -60,8 +82,10 @@ final class SshSecretCipher
         return $plain;
     }
 
-    private function key(): string
+    private function key(?string $material = null): string
     {
-        return hash('sha256', $this->secret, true);
+        $source = $material ?? ('' !== $this->sshSecretKey ? $this->sshSecretKey : $this->appSecret);
+
+        return hash('sha256', $source, true);
     }
 }

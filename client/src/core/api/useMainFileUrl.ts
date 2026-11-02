@@ -7,10 +7,10 @@ const inflight = new Map<number, Promise<string>>();
 
 async function loadMainFileBlobUrl(fileId: number): Promise<string> {
 	const cached = blobUrlCache.get(fileId);
-	if (cached) return cached;
+	if (cached) {return cached;}
 
 	const pending = inflight.get(fileId);
-	if (pending) return pending;
+	if (pending) {return pending;}
 
 	const request = apiClient
 		.get<Blob>(`/api/main/file/${fileId}`, { responseType: 'blob' })
@@ -48,10 +48,10 @@ export function useMainFileUrl(fileId: number | null | undefined): string | null
 		let cancelled = false;
 		void loadMainFileBlobUrl(fileId)
 			.then((next) => {
-				if (!cancelled) setUrl(next);
+				if (!cancelled) {setUrl(next);}
 			})
 			.catch(() => {
-				if (!cancelled) setUrl(null);
+				if (!cancelled) {setUrl(null);}
 			});
 		return () => {
 			cancelled = true;

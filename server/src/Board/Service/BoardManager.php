@@ -2,7 +2,6 @@
 
 namespace Board\Service;
 
-use AbstractManager;
 use Board\Entity\ActivityLog;
 use Board\Entity\Attachment;
 use Board\Entity\Board;
@@ -39,7 +38,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class BoardManager extends AbstractManager
+class BoardManager extends \AbstractManager
 {
     private const POSITION_GAP = 1024;
 
@@ -330,6 +329,11 @@ class BoardManager extends AbstractManager
      *     activity_count: int
      * }
      */
+    public function boardCardRevision(int $boardId): string
+    {
+        return $this->getCardRepository()->maxUpdatedAtForBoard($boardId) ?? '';
+    }
+
     public function getBoardChanges(Board $board, User $user, ?string $sinceRaw): array
     {
         if (!$this->permissionResolver->canViewBoard($board, $user)) {
@@ -1445,11 +1449,22 @@ class BoardManager extends AbstractManager
     {
         $lists = $this->getBoardListRepository()->findByBoardOrdered($board);
         $labels = $this->getLabelRepository()->findByBoard($board);
+        $cardsByList = [];
+        foreach ($this->getCardRepository()->findByBoardWithRelations($board) as $card) {
+            $listId = $card->getList()?->getId();
+            if (null === $listId) {
+                continue;
+            }
+            $cardsByList[$listId][] = $card;
+        }
 
         return [
             ...$this->serializeBoardSummary($board, $viewer),
             'labels' => array_map(fn (Label $label) => $this->serializeLabel($label), $labels),
-            'lists' => array_map(fn (BoardList $list) => $this->serializeList($list), $lists),
+            'lists' => array_map(
+                fn (BoardList $list) => $this->serializeList($list, $cardsByList[$list->getId()] ?? []),
+                $lists,
+            ),
             'members' => $this->serializeBoardMembers($board),
             'permissions' => [
                 'can_edit' => $this->permissionResolver->canEditBoard($board, $viewer),
@@ -1461,9 +1476,12 @@ class BoardManager extends AbstractManager
     }
 
     /** @return array<string, mixed> */
-    public function serializeList(BoardList $list): array
+    /**
+     * @param list<Card>|null $cards
+     */
+    public function serializeList(BoardList $list, ?array $cards = null): array
     {
-        $cards = $this->getCardRepository()->findByListOrdered($list);
+        $cards ??= $this->getCardRepository()->findByListOrdered($list);
 
         return [
             'id' => $list->getId(),
@@ -2029,7 +2047,7 @@ class BoardManager extends AbstractManager
             'transport' => $enabled ? 'mercure' : 'sse',
             'mercure' => [
                 'enabled' => $enabled,
-                'hub_url' => $this->mercurePublisher->hubUrl(),
+                'hub_url' => $this->mercurePublisher->publicHubUrl(),
                 'topic' => $this->mercurePublisher->topicForBoard($boardId),
                 'token' => $enabled ? $this->mercurePublisher->subscriberToken($boardId) : null,
             ],

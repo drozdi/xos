@@ -25,13 +25,13 @@ export function Icon({ children, className, color, size, title, as = 'i', ...pro
 	if (!children) {
 		return ''
 	}
-	color &&= color = ' text-' + color
+	color &&= color = ` text-${  color}`
 	color ||= ''
 
 	let name = replace(children)
 
 	if (!/^tb-/.test(name)) {
-		name = 'tb-' + name
+		name = `tb-${  name}`
 	}
 	if (name === 'tb-close') {
 		name = 'tb-x'

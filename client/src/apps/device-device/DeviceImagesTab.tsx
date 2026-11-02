@@ -20,7 +20,7 @@ import { useCoreApi } from '@/core/hooks/useCoreApi';
 
 import { DeviceImageGallery } from '@/features/device/DeviceImageGallery';
 
-export interface DeviceImageRecord {
+export interface DeviceImageRecord extends Record<string, unknown> {
 	id: number;
 	src: string;
 	name?: string;

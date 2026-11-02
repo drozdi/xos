@@ -75,11 +75,12 @@ export async function createSettingAdapter(
 	}
 
 	const api = new ApiAdapter();
-	const hydrated = options.preloadedSnapshot !== undefined;
+	const snapshot = options.preloadedSnapshot;
+	const hydrated = snapshot !== undefined;
 
-	if (hydrated) {
-		api.preload(options.preloadedSnapshot.settings);
-		await clearThenSeedDesktopState(local, options.preloadedSnapshot);
+	if (hydrated && snapshot) {
+		api.preload(snapshot.settings);
+		await clearThenSeedDesktopState(local, snapshot);
 	}
 
 	return new CompositeAdapter(local, api, {

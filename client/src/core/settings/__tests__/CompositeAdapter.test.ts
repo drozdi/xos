@@ -98,12 +98,12 @@ function installDomStubs(): {
 describe('CompositeAdapter', () => {
 	let local: MemoryAdapter;
 	let apiStore: MemoryAdapter;
-	let onApiError: ReturnType<typeof vi.fn>;
+	let onApiError: ReturnType<typeof vi.fn<(error: unknown, operation: string) => void>>;
 
 	beforeEach(() => {
 		local = new MemoryAdapter();
 		apiStore = new MemoryAdapter();
-		onApiError = vi.fn();
+		onApiError = vi.fn<(error: unknown, operation: string) => void>();
 	});
 
 	afterEach(() => {

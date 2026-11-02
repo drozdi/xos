@@ -233,7 +233,7 @@ export default function BrowserApp() {
 						key={`${pageUrl}-${reloadToken}`}
 						title={getBrowserTitle(pageUrl)}
 						srcDoc={frameHtml}
-						sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+						sandbox="allow-scripts allow-forms allow-popups"
 						style={{
 							position: 'absolute',
 							inset: 0,

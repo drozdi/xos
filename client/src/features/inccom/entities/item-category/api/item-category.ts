@@ -44,10 +44,10 @@ export async function requestItemCategoryList(
 	const queryParams: Record<string, string | number> = { page, size };
 
 	if (params.search) {
-		queryParams['search'] = params.search;
+		queryParams.search = params.search;
 	}
 	if (params.parent !== undefined && params.parent !== null) {
-		queryParams['parent'] =
+		queryParams.parent =
 			params.parent === 'null' ? 'null' : params.parent;
 	}
 
@@ -81,9 +81,9 @@ export async function requestItemCategoryUpdate(
 	data: Partial<IItemCategory>,
 ): Promise<IResponse<IItemCategory>> {
 	const payload: Record<string, unknown> = {};
-	if (data.name !== undefined) payload['name'] = data.name;
-	if (data.parentId !== undefined) payload['parentId'] = data.parentId;
-	if (data.keywords !== undefined) payload['keywords'] = data.keywords;
+	if (data.name !== undefined) {payload.name = data.name;}
+	if (data.parentId !== undefined) {payload.parentId = data.parentId;}
+	if (data.keywords !== undefined) {payload.keywords = data.keywords;}
 
 	const res = await api.patch<ApiItemCategory>(
 		`/item-categories/${id}`,

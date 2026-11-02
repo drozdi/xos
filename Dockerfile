@@ -1,19 +1,24 @@
-FROM node:22
+FROM node:22-bookworm AS assets
+WORKDIR /src/client
+COPY client/package.json client/package-lock.json ./
+RUN npm ci
+COPY client/ ./
+RUN npx vite build
 
-ENV GENERATE_SOURCEMAP=false
-ENV NODE_OPTIONS=--max-old-space-size=8192
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY server/composer.json server/composer.lock ./
+RUN composer install --no-dev --no-scripts --prefer-dist --no-interaction
 
-WORKDIR /usr/src/app
-
-COPY . .
-
-WORKDIR /usr/src/app/client
-RUN npm i
-RUN npm run build
-
-WORKDIR /usr/src/app/server
-RUN npm i
-
-EXPOSE 8080
-
-CMD [ "node", "index.js" ]
+FROM php:8.4-apache
+RUN docker-php-ext-install pdo_mysql \
+    && a2enmod rewrite
+WORKDIR /var/www/html
+COPY server/ ./
+COPY --from=vendor /app/vendor ./vendor
+COPY --from=assets /src/client/dist/index.html ./public/index.html
+COPY --from=assets /src/client/dist/assets ./public/assets
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+EXPOSE 80

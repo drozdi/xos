@@ -91,6 +91,19 @@ export const sshApi = {
 	removeKey: async (id: number): Promise<void> => {
 		await apiClient.delete(`/api/ssh/keys/${id}`);
 	},
+	gatewayTicket: async (
+		connectionId: number,
+	): Promise<{ ticket: string; gateway_url: string | null }> => {
+		const { data } = await apiClient.post<unknown>('/api/ssh/gateway/ticket', {
+			connection_id: connectionId,
+		});
+		return z
+			.object({
+				ticket: z.string(),
+				gateway_url: z.string().nullable(),
+			})
+			.parse(data);
+	},
 	openSession: async (body: {
 		connection_id: number;
 		accept_host_key?: boolean;

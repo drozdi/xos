@@ -27,6 +27,8 @@ xos.explorer
 
 # testing
 /coverage
+/server/.php-cs-fixer.cache
+/server/var/phpstan/
 
 # production
 /build
@@ -38,6 +40,10 @@ xos.explorer
 .env.local
 .env.local.php
 .env.*.local
+/symfony.exe
+/client/test-results/
+/server/.phpunit.cache/
+/server/.env.dev
 .env.development.local
 .env.test.local
 .env.production.local

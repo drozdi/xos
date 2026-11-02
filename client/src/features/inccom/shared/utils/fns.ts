@@ -1,5 +1,5 @@
 export function minMax(val: number, min?: number, max?: number) {
-	let _min = typeof min === 'number' && !isNaN(min)
-	let _max = typeof max === 'number' && !isNaN(max)
+	const _min = typeof min === 'number' && !isNaN(min)
+	const _max = typeof max === 'number' && !isNaN(max)
 	return _min && val < min && min > 0 ? min : _max && val > max && max > 0 ? max : val
 }

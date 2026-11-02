@@ -76,7 +76,7 @@ export default function StickyNoteApp() {
 				placeholder="Заметка…"
 				autosize={false}
 				styles={{
-					root: { flex: 1, minHeight: 0, display: 0 },
+					root: { flex: 1, minHeight: 0, display: 'flex' },
 					wrapper: { height: '100%' },
 					input: {
 						height: '100%',

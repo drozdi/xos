@@ -31,22 +31,22 @@ export interface IStoreBase {
 export interface IStoreAuth extends IStoreBase {
 	isAuthenticated: boolean;
 	isAuth: boolean;
-	load(): Promise<void>;
-	clearAuth(): void;
-	login(username: string, password: string): Promise<boolean>;
-	register(data: IRegisterRequest): Promise<{ user: IUser } | undefined>;
-	logout(): Promise<void>;
+	load: () => Promise<void>;
+	clearAuth: () => void;
+	login: (username: string, password: string) => Promise<boolean>;
+	register: (data: IRegisterRequest) => Promise<{ user: IUser } | undefined>;
+	logout: () => Promise<void>;
 }
 
 export interface IStoreUserProfile extends IStoreBase {
 	userData?: IUser;
 	product_id?: string | number;
-	setUserData(data: Partial<IUser>): void;
-	load(reloading?: boolean): Promise<IUser | undefined>;
-	update(userData: IUser): Promise<IUser | undefined>;
-	updatePassword(oldPassword: string, newPassword: string): Promise<boolean>;
-	delete(): Promise<unknown>;
-	reset(): void;
+	setUserData: (data: Partial<IUser>) => void;
+	load: (reloading?: boolean) => Promise<IUser | undefined>;
+	update: (userData: IUser) => Promise<IUser | undefined>;
+	updatePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
+	delete: () => Promise<unknown>;
+	reset: () => void;
 }
 
 declare global {

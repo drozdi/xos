@@ -49,7 +49,7 @@ function shallowEqual(objA: any, objB: any): boolean {
 }
 
 export function createTemplateContext(): [any & Record<string, any>, Function] {
-	const listeners: Set<(state: TState) => void> = new Set()
+	const listeners = new Set<(state: TState) => void>()
 	let templates: TState = {}
 
 	function getTemplates(): TState {

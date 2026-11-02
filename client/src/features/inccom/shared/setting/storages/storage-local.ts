@@ -1,9 +1,9 @@
 export interface IStorage {
-	set(key: string, value: any): void
-	del(key: string): void
-	get(key: string, def: any): any
-	has(key: string): boolean
-	default(key: string, value: any): void
+	set: (key: string, value: any) => void
+	del: (key: string) => void
+	get: (key: string, def: any) => any
+	has: (key: string) => boolean
+	default: (key: string, value: any) => void
 }
 
 export const storageLocal: IStorage = {

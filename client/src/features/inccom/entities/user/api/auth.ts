@@ -5,19 +5,19 @@ import type { IRegisterRequest } from '../model/types';
 
 type LoginResponse = {
 	token: string;
-	refresh_token: string;
 	user?: ApiUser;
 };
 type RefreshResponse = {
 	token: string;
-	refresh_token: string;
 };
 
 export async function requestAuthenticationLogin(credentials: {
 	username: string;
 	password: string;
 }): Promise<IResponse<LoginResponse>> {
-	const { data } = await apiClient.post<LoginResponse>('/api/IncCom/auth/login', credentials);
+	const { data } = await apiClient.post<LoginResponse>('/api/IncCom/auth/login', credentials, {
+		withCredentials: true,
+	});
 	return data;
 }
 
@@ -40,13 +40,16 @@ export async function requestAuthenticationRefresh(refreshToken: string): Promis
 		};
 	}>
 > {
-	const { data } = await apiClient.post<RefreshResponse>('/api/token/refresh', {
-		refresh_token: refreshToken,
-	});
+	void refreshToken;
+	const { data } = await apiClient.post<RefreshResponse>(
+		'/api/IncCom/token/refresh',
+		{},
+		{ withCredentials: true },
+	);
 	return {
 		token: {
 			access: data.token,
-			refresh: data.refresh_token,
+			refresh: '',
 		},
 	};
 }

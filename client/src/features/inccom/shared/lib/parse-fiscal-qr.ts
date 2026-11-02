@@ -97,31 +97,31 @@ export function parseFiscalQr(raw: string): ParsedFiscalQr {
 		return result;
 	}
 
-	if (params['fn']) {
-		result.fn = params['fn'];
+	if (params.fn) {
+		result.fn = params.fn;
 	}
 
-	if (params['fpd']) {
-		result.fpd = params['fpd'];
-	} else if (params['fp']) {
-		result.fp = params['fp'];
+	if (params.fpd) {
+		result.fpd = params.fpd;
+	} else if (params.fp) {
+		result.fp = params.fp;
 	}
 
-	if (params['fd']) {
-		result.fd = params['fd'];
-	} else if (params['i']) {
-		result.fd = params['i'];
+	if (params.fd) {
+		result.fd = params.fd;
+	} else if (params.i) {
+		result.fd = params.i;
 	}
 
-	if (params['s']) {
-		const amount = parseAmount(params['s']);
+	if (params.s) {
+		const amount = parseAmount(params.s);
 		if (amount) {
 			result.amount = amount;
 		}
 	}
 
-	if (params['t']) {
-		const date = parseFiscalDate(params['t']);
+	if (params.t) {
+		const date = parseFiscalDate(params.t);
 		if (date) {
 			result.date = date;
 		}

@@ -36,11 +36,11 @@ export function DueNotifyWatcher() {
 		const items = dueQuery.data ?? [];
 		const now = dayjs();
 		for (const item of items) {
-			if (!item.due_at || item.done) continue;
+			if (!item.due_at || item.done) {continue;}
 			const due = dayjs(item.due_at);
-			if (!due.isValid()) continue;
+			if (!due.isValid()) {continue;}
 			const hours = due.diff(now, 'hour', true);
-			if (hours > 2 || hours < -24) continue;
+			if (hours > 2 || hours < -24) {continue;}
 			const overdue = hours < 0;
 			const launchPayload = {
 				appId: 'todo' as const,

@@ -192,7 +192,7 @@ export const useSolitaireStore = create<StoreState>((set, get) => ({
 	closeActiveDialog: (parentWindowId) => {
 		const id = get().activeDialogId;
 		if (id) {
-			useChildWindowStore.getState().close(parentWindowId, id);
+			useChildWindowStore.getState().removeChild(parentWindowId, id);
 		}
 		set({ activeDialogId: null });
 	},

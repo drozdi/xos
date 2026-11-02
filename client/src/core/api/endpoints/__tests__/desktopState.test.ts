@@ -70,7 +70,12 @@ describe('desktopStateApi', () => {
 	it('saves desktop state via PUT', async () => {
 		put.mockResolvedValue({ data: snapshot });
 
-		await expect(desktopStateApi.save(snapshot)).resolves.toEqual(snapshot);
+		await expect(
+			desktopStateApi.save({
+				settings: snapshot.settings.map((item) => ({ ...item })),
+				explorerLastPath: snapshot.explorerLastPath,
+			}),
+		).resolves.toEqual(snapshot);
 		expect(put).toHaveBeenCalledWith('/api/desktop-state', snapshot);
 	});
 });

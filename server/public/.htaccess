@@ -1,0 +1,10 @@
+DirectoryIndex index.html
+
+RewriteEngine On
+
+RewriteRule ^(api|uploads)(?:/.*)?$ index.php [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+RewriteRule ^ index.html [L]

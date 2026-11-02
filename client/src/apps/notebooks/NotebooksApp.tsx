@@ -29,11 +29,11 @@ import { NOTES_BLOCK_CODE, slugifyCode, useContentBlock } from '@/features/ibloc
 
 function allocateUniqueCategoryCode(name: string, used: Set<string>, fallback = 'notebook'): string {
 	const base = slugifyCode(name || fallback);
-	if (!used.has(base)) return base;
+	if (!used.has(base)) {return base;}
 	let n = 2;
 	while (used.has(`${base}-${n}`)) {
 		n += 1;
-		if (n > 9999) return `${base}-${Date.now()}`;
+		if (n > 9999) {return `${base}-${Date.now()}`;}
 	}
 	return `${base}-${n}`;
 }
@@ -72,7 +72,7 @@ export default function NotebooksApp() {
 	const usedCodes = useMemo(() => {
 		const set = new Set<string>();
 		for (const item of listQuery.data?.items ?? []) {
-			if (item.code) set.add(item.code);
+			if (item.code) {set.add(item.code);}
 		}
 		return set;
 	}, [listQuery.data?.items]);
@@ -84,7 +84,7 @@ export default function NotebooksApp() {
 
 	const createMutation = useMutation({
 		mutationFn: async (name: string) => {
-			if (!blockId) throw new Error('block missing');
+			if (!blockId) {throw new Error('block missing');}
 			const code = allocateUniqueCategoryCode(name, usedCodes);
 			return iblockSectionApi.create({
 				name: name.trim(),
@@ -133,7 +133,7 @@ export default function NotebooksApp() {
 
 	const submitNew = () => {
 		const name = newName.trim();
-		if (!name) return;
+		if (!name) {return;}
 		createMutation.mutate(name);
 	};
 
@@ -195,7 +195,7 @@ export default function NotebooksApp() {
 									value={newName}
 									onChange={(e) => setNewName(e.currentTarget.value)}
 									onKeyDown={(e) => {
-										if (e.key === 'Enter') submitNew();
+										if (e.key === 'Enter') {submitNew();}
 									}}
 									disabled={!isReady || createMutation.isPending}
 								/>

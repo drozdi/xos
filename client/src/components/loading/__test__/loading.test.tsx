@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { Skeleton } from '@mantine/core';
 import { screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';

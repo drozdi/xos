@@ -82,7 +82,7 @@ function TableBodyCellSlotInner<T>({
 
 	if (treeLineKind !== 'none') {
 		return (
-			<Box w="100%" className={classes['groupedTreeCell']}>
+			<Box w="100%" className={classes.groupedTreeCell}>
 				<TableBodyGroupedTreeLine kind={treeLineKind} />
 			</Box>
 		);

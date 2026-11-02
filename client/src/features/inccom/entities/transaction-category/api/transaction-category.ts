@@ -163,7 +163,7 @@ async function resolveAccountId(
 
 ): Promise<number> {
 
-	if (accountId) return accountId;
+	if (accountId) {return accountId;}
 
 
 

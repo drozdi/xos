@@ -117,7 +117,7 @@ export default function SchooltaskClassApp() {
 			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.classShares(entityId) });
 			notifications.show({ message: 'Родитель добавлен', color: 'green' });
 		},
-		onError: (error) => notifyApiError(error),
+		onError: (error) => notifyApiError(error, 'Не удалось добавить родителя'),
 	});
 
 	const removeParentMutation = useMutation({
@@ -125,7 +125,7 @@ export default function SchooltaskClassApp() {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: queryKeys.schooltask.classShares(entityId) });
 		},
-		onError: (error) => notifyApiError(error),
+		onError: (error) => notifyApiError(error, 'Не удалось удалить родителя'),
 	});
 
 	const parallelOptions = useMemo(

@@ -109,7 +109,7 @@ export function SubDeviceAccountingFields({
 							});
 						}}
 					/>
-					{Boolean(acc.discarded) ? (
+					{acc.discarded ? (
 						<DatePickerInput
 							label="Дата списания"
 							value={parseSubDeviceDate(acc.dateDiscarded)}

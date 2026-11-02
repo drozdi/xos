@@ -66,9 +66,9 @@ function applyFormatCommand(editor: NonNullable<ReturnType<typeof useEditor>>, c
 		}
 		case 'hr':
 			chain.setHorizontalRule().run();
-			return;
+			
 		default:
-			return;
+			
 	}
 }
 

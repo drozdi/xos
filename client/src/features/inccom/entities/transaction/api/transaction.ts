@@ -124,7 +124,7 @@ function mapTransactionPayload(
 
 	if (data.items !== undefined) {
 
-		payload['items'] = data.items.map((item) => ({
+		payload.items = data.items.map((item) => ({
 
 			itemId: item.itemId,
 
@@ -164,18 +164,18 @@ export async function requestTransactionList(
 
 
 
-	if (params.type) queryParams['type'] = params.type;
+	if (params.type) {queryParams.type = params.type;}
 
-	if (params.category) queryParams['category'] = params.category;
+	if (params.category) {queryParams.category = params.category;}
 
-	if (params.dateFrom) queryParams['dateFrom'] = params.dateFrom;
+	if (params.dateFrom) {queryParams.dateFrom = params.dateFrom;}
 
-	if (params.dateTo) queryParams['dateTo'] = params.dateTo;
+	if (params.dateTo) {queryParams.dateTo = params.dateTo;}
 
-	if (params.mcc) queryParams['mcc'] = params.mcc;
+	if (params.mcc) {queryParams.mcc = params.mcc;}
 
-	if (params.author) queryParams['author'] = params.author;
-	if (params.deviceId) queryParams['deviceId'] = params.deviceId;
+	if (params.author) {queryParams.author = params.author;}
+	if (params.deviceId) {queryParams.deviceId = params.deviceId;}
 
 
 

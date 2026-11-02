@@ -3,16 +3,17 @@
 namespace Device\Entity;
 
 use Device\Repository\PropertyEnumRepository;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
-use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_property_enum')]
-#[ORM\UniqueConstraint(columns: ["property_id", "value"])]
+#[ORM\UniqueConstraint(columns: ['property_id', 'value'])]
 #[ORM\Entity(repositoryClass: PropertyEnumRepository::class)]
 #[ORM\HasLifecycleCallbacks]
-class PropertyEnum {
+class PropertyEnum
+{
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -33,45 +34,48 @@ class PropertyEnum {
     private $sort = 100;
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
-    public function getId () {
+    public function getId()
+    {
         return $this->id;
     }
 
     /**
-     * Set xTimestamp
+     * Set xTimestamp.
      *
      * @param \DateTime $xTimestamp
      *
      * @return Property
      */
-    public function setXTimestamp ($xTimestamp) {
+    public function setXTimestamp($xTimestamp)
+    {
         $this->xTimestamp = $xTimestamp;
 
         return $this;
     }
 
     /**
-     * Get xTimestamp
+     * Get xTimestamp.
      *
      * @return \DateTime
      */
-    public function getXTimestamp () {
+    public function getXTimestamp()
+    {
         return $this->xTimestamp;
     }
 
     /**
-     * Set property
+     * Set property.
      *
-     * @param Property $property
-     * @param boolean $addEnum[true]
+     * @param bool $addEnum[true]
      *
      * @return PropertyEnum
      */
-    public function setProperty (Property $property = null, $addEnum = true) {
+    public function setProperty(?Property $property = null, $addEnum = true)
+    {
         if (null !== $this->property) {
             $this->property->removeEnum($this, false);
         }
@@ -86,111 +90,122 @@ class PropertyEnum {
     }
 
     /**
-     * Get parent
+     * Get parent.
      *
-     * @return \Device\Entity\Property
+     * @return Property
      */
-    public function getProperty () {
+    public function getProperty()
+    {
         return $this->property;
     }
 
     /**
-     * Set default
+     * Set default.
      *
-     * @param boolean $default
+     * @param bool $default
      *
      * @return PropertyEnum
      */
-    public function setDefault ($default) {
+    public function setDefault($default)
+    {
         $this->default = $default;
 
         return $this;
     }
 
     /**
-     * Get default
+     * Get default.
      *
-     * @return boolean
+     * @return bool
      */
-    public function getDefault () {
+    public function getDefault()
+    {
         return $this->default;
     }
 
     /**
-     * Set value
+     * Set value.
      *
      * @param string $value
      *
-     * @return \Device\Entity\Property
+     * @return PropertyEnum
      */
-    public function setValue ($value) {
+    public function setValue($value)
+    {
         $this->value = $value;
 
         return $this;
     }
 
     /**
-     * Get value
+     * Get value.
      *
      * @return string
      */
-    public function getValue () {
+    public function getValue()
+    {
         return $this->value;
     }
 
     /**
-     * Set name
+     * Set name.
      *
      * @param string $name
      *
-     * @return Property
+     * @return PropertyEnum
      */
-    public function setName ($name) {
+    public function setName($name)
+    {
         $this->name = $name;
 
         return $this;
     }
 
     /**
-     * Get name
+     * Get name.
      *
-     * @param boolean $isValue[true]
+     * @param bool $isValue[true]
      *
      * @return string
      */
-    public function getName ($isValue = true) {
+    public function getName($isValue = true)
+    {
         if (!$this->name && $isValue) {
             return $this->value.$this->property->getPostfix();
         }
+
         return $this->name;
     }
 
     /**
-     * Set sort
+     * Set sort.
      *
-     * @param integer $sort
+     * @param int $sort
      *
-     * @return \Device\Entity\Property
+     * @return PropertyEnum
      */
-    public function setSort ($sort) {
+    public function setSort($sort)
+    {
         $this->sort = $sort;
 
         return $this;
     }
 
     /**
-     * Get code
+     * Get code.
      *
-     * @return integer
+     * @return int
      */
-    public function getSort () {
+    public function getSort()
+    {
         return $this->sort;
     }
 
     #[ORM\PrePersist]
     #[ORM\PreUpdate]
-    public function preUpdate (LifecycleEventArgs $event) {
-        $errors = array();
+    public function preUpdate(LifecycleEventArgs $event)
+    {
+        $errors = [];
 
         if (null == $this->value) {
             $errors[] = 'Не ввели значение!';
@@ -210,8 +225,9 @@ class PropertyEnum {
     }
 
     #[ORM\PreRemove]
-    public function preRemove (LifecycleEventArgs $event) {
-        $errors = array();
+    public function preRemove(LifecycleEventArgs $event)
+    {
+        $errors = [];
 
         if (count($errors) > 0) {
             throw new \Exception(implode('<br />', $errors));

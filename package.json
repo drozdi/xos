@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
+  },
+  "lint-staged": {
+    "client/src/**/*.{ts,tsx}": "node scripts/eslint-staged.mjs",
+    "server/src/**/*.php": "node scripts/php-cs-fixer.mjs"
+  }
+}

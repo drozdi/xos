@@ -74,8 +74,6 @@ type PropertyValueObject = {
 	src?: string;
 };
 
-type PrototypeTuple = Record<string, PropertyValue>;
-
 type PropertyValue =
 	| string
 	| number
@@ -83,7 +81,11 @@ type PropertyValue =
 	| null
 	| PropertyValueObject
 	| PrototypeTuple
-	| Array<string | number | boolean | null | PropertyValueObject | PrototypeTuple>;
+	| PropertyValue[];
+
+interface PrototypeTuple {
+	[key: string]: PropertyValue;
+}
 
 type PropertyFieldModel = {
 	id: number;
@@ -115,46 +117,65 @@ function prototypeTuples(value: PropertyValue | undefined, multiple: boolean): P
 	return [{}];
 }
 
+function objectId(value: object): string | null {
+	if (!('id' in value)) {
+		return null;
+	}
+	const id = value.id;
+	if (typeof id === 'number' || typeof id === 'string') {
+		return String(id);
+	}
+	return null;
+}
+
 function toIdString(value: PropertyValue | undefined): string | null {
-	if (value == null || value === '') return null;
+	if (value == null || value === '') {return null;}
 	if (Array.isArray(value)) {
 		const first = value[0];
-		if (first == null) return null;
-		if (typeof first === 'object') return String(first.id);
+		if (first == null) {return null;}
+		if (typeof first === 'object') {return objectId(first);}
 		return String(first);
 	}
-	if (typeof value === 'object') return String(value.id);
+	if (typeof value === 'object') {return objectId(value);}
 	return String(value);
 }
 
+function objectLabel(value: object): string {
+	const name = 'name' in value && typeof value.name === 'string' ? value.name : '';
+	return name || objectId(value) || '';
+}
+
 function toIdStringList(value: PropertyValue | undefined): string[] {
-	if (value == null || value === '') return [];
+	if (value == null || value === '') {return [];}
 	if (Array.isArray(value)) {
 		return value
 			.map((item) => {
-				if (item == null) return null;
-				if (typeof item === 'object') return String(item.id);
+				if (item == null) {return null;}
+				if (typeof item === 'object') {return objectId(item);}
 				return String(item);
 			})
 			.filter((item): item is string => item != null && item !== '');
 	}
-	if (typeof value === 'object') return [String(value.id)];
+	if (typeof value === 'object') {
+		const id = objectId(value);
+		return id ? [id] : [];
+	}
 	return [String(value)];
 }
 
 function fileDisplayName(value: PropertyValue | undefined): string {
-	if (value == null || value === '') return '';
+	if (value == null || value === '') {return '';}
 	if (Array.isArray(value)) {
 		return value
 			.map((item) => {
-				if (item == null) return null;
-				if (typeof item === 'object') return item.name || String(item.id);
+				if (item == null) {return null;}
+				if (typeof item === 'object') {return objectLabel(item);}
 				return String(item);
 			})
-			.filter(Boolean)
+			.filter((item): item is string => typeof item === 'string' && item !== '')
 			.join(', ');
 	}
-	if (typeof value === 'object') return value.name || String(value.id);
+	if (typeof value === 'object') {return objectLabel(value);}
 	return String(value);
 }
 
@@ -410,7 +431,7 @@ function PropertyValueField({
 									: payload
 										? [payload]
 										: [];
-								if (files.length === 0) return;
+								if (files.length === 0) {return;}
 								setUploading(true);
 								uploadMutation.mutate(files);
 							}}
@@ -840,7 +861,9 @@ function ElementFormFields({
 				blockId={data.block_id}
 				values={(data.PROPERTY_VALUES ?? {}) as Record<string, PropertyValue>}
 				readOnly={readOnly}
-				onChange={(next) => setField('PROPERTY_VALUES', next)}
+				onChange={(next) =>
+					setField('PROPERTY_VALUES', next as NonNullable<typeof data.PROPERTY_VALUES>)
+				}
 			/>
 		</Stack>
 	);

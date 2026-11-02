@@ -3,10 +3,10 @@ import { cached } from './cached'
 /**
  * Hyphenate a camelCase string.
  */
-export const hyphenate = cached<string>(function (str: string) {
+export const hyphenate = cached<string>((str: string) => {
 	return str
-		.replace(/[A-Z]/g, function (c) {
-			return '-' + c.toLowerCase()
+		.replace(/[A-Z]/g, (c) => {
+			return `-${  c.toLowerCase()}`
 		})
 		.toLowerCase()
 })
@@ -14,8 +14,8 @@ export const hyphenate = cached<string>(function (str: string) {
 /**
  * Camelize a hyphen-delimited string.
  */
-export const camelize = cached<string>(function (str: string): string {
-	return str.replace(/-(\w)/g, function (_, c) {
+export const camelize = cached<string>((str: string): string => {
+	return str.replace(/-(\w)/g, (_, c) => {
 		return c ? c.toUpperCase() : ''
 	})
 })
@@ -23,6 +23,6 @@ export const camelize = cached<string>(function (str: string): string {
 /**
  * Capitalize a string.
  */
-export const capitalize = cached<string>(function (str: string): string {
+export const capitalize = cached<string>((str: string): string => {
 	return str.charAt(0).toUpperCase() + str.slice(1)
 })

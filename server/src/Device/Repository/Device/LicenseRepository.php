@@ -4,12 +4,10 @@ namespace Device\Repository\Device;
 
 use Device\Entity\Device\License;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
-
 /**
- * @extends ServiceEntityRepository<OU>
+ * @extends ServiceEntityRepository<License>
  *
  * @method License|null find($id, $lockMode = null, $lockVersion = null)
  * @method License|null findOneBy(array $criteria, array $orderBy = null)
@@ -25,7 +23,7 @@ class LicenseRepository extends ServiceEntityRepository
 
     public function save(License $entity, bool $flush = false): void
     {
-        if (!(int)$entity->getId()) {
+        if (!(int) $entity->getId()) {
             $this->getEntityManager()->persist($entity);
         }
 
@@ -43,31 +41,28 @@ class LicenseRepository extends ServiceEntityRepository
         }
     }
 
+    //    /**
+    //     * @return History[] Returns an array of History objects
+    //     */
+    //    public function findByExampleField($value): array
+    //    {
+    //        return $this->createQueryBuilder('o')
+    //            ->andWhere('o.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->orderBy('o.id', 'ASC')
+    //            ->setMaxResults(10)
+    //            ->getQuery()
+    //            ->getResult()
+    //        ;
+    //    }
 
-
-
-//    /**
-//     * @return History[] Returns an array of History objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('o.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
-
-//    public function findOneBySomeField($value): ?History
-//    {
-//        return $this->createQueryBuilder('o')
-//            ->andWhere('o.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    //    public function findOneBySomeField($value): ?History
+    //    {
+    //        return $this->createQueryBuilder('o')
+    //            ->andWhere('o.exampleField = :val')
+    //            ->setParameter('val', $value)
+    //            ->getQuery()
+    //            ->getOneOrNullResult()
+    //        ;
+    //    }
 }

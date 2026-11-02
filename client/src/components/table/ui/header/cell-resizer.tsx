@@ -38,7 +38,7 @@ export function TableHeaderCellResizer<T = object>({
 				return;
 			}
 
-			let deltaX = event.clientX - dragStateRef.current.startX;
+			const deltaX = event.clientX - dragStateRef.current.startX;
 			
 			const maxShrinkCurrent = dragStateRef.current.currentWidth - MIN_COLUMN_WIDTH;
 			const maxShrinkNext = dragStateRef.current.nextWidth - MIN_COLUMN_WIDTH;

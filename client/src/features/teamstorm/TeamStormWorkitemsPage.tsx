@@ -194,8 +194,9 @@ export function TeamStormWorkitemsPage() {
 	}, [workspacesQuery.data]);
 
 	useEffect(() => {
-		if (!workspace && workspaceOptions.length === 1) {
-			setWorkspace(workspaceOptions[0].value);
+		const onlyWorkspace = workspaceOptions[0];
+		if (!workspace && workspaceOptions.length === 1 && onlyWorkspace) {
+			setWorkspace(onlyWorkspace.value);
 		}
 	}, [workspace, workspaceOptions]);
 

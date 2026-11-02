@@ -4,10 +4,10 @@ namespace Device\Entity;
 
 use Device\Entity\License\Software as LicenseSoftware;
 use Device\Repository\LicenseRepository;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
-use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_license')]
 #[ORM\Entity(repositoryClass: LicenseRepository::class)]
@@ -41,7 +41,7 @@ class License
     private $sort = 100;
 
     /**
-     * Construct
+     * Construct.
      */
     public function __construct()
     {
@@ -49,9 +49,9 @@ class License
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -59,29 +59,29 @@ class License
     }
 
     /**
-     * New software
+     * New software.
      *
-     * @param \Device\Entity\Software $software
+     * @param Software $software
      *
-     * @return \Device\Entity\License\Software
+     * @return LicenseSoftware
      */
     public function newSoftware($software)
     {
-        $licenseSoftware = new License\Software;
+        $licenseSoftware = new LicenseSoftware();
         $this->addSoftware($licenseSoftware);
         $licenseSoftware->setSoftware($software, false);
+
         return $licenseSoftware;
     }
 
     /**
-     * Add software
+     * Add software.
      *
-     * @param \Device\Entity\License\Software $software
-     * @param boolean $setLicense[true]
+     * @param bool $setLicense[true]
      *
-     * @return \Device\Entity\License
+     * @return License
      */
-    public function addSoftware(\Device\Entity\License\Software $software, $setLicense = true)
+    public function addSoftware(LicenseSoftware $software, $setLicense = true)
     {
         if (false === $this->softwares->indexOf($software)) {
             $this->softwares[] = $software;
@@ -95,14 +95,13 @@ class License
     }
 
     /**
-     * Remove software
+     * Remove software.
      *
-     * @param \Device\Entity\License\Software $software
-     * @param boolean $removeLicense[true]
+     * @param bool $removeLicense[true]
      *
-     * @return \Device\Entity\License
+     * @return License
      */
-    public function removeSoftware(\Device\Entity\License\Software $software, $removeLicense = true)
+    public function removeSoftware(LicenseSoftware $software, $removeLicense = true)
     {
         $this->softwares->removeElement($software);
 
@@ -114,7 +113,7 @@ class License
     }
 
     /**
-     * Get softwares
+     * Get softwares.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
@@ -124,11 +123,11 @@ class License
     }
 
     /**
-     * Set code
+     * Set code.
      *
      * @param string $code
      *
-     * @return \Device\Entity\License
+     * @return License
      */
     public function setCode($code)
     {
@@ -138,7 +137,7 @@ class License
     }
 
     /**
-     * Get code
+     * Get code.
      *
      * @return string
      */
@@ -148,11 +147,11 @@ class License
     }
 
     /**
-     * Set sort
+     * Set sort.
      *
-     * @param integer $sort
+     * @param int $sort
      *
-     * @return \Device\Entity\License
+     * @return License
      */
     public function setSort($sort)
     {
@@ -162,9 +161,9 @@ class License
     }
 
     /**
-     * Get code
+     * Get code.
      *
-     * @return integer
+     * @return int
      */
     public function getSort()
     {
@@ -172,11 +171,11 @@ class License
     }
 
     /**
-     * Set type
+     * Set type.
      *
      * @param string $type
      *
-     * @return \Device\Entity\License
+     * @return License
      */
     public function setType($type)
     {
@@ -186,7 +185,7 @@ class License
     }
 
     /**
-     * Get type
+     * Get type.
      *
      * @return string
      */
@@ -196,11 +195,11 @@ class License
     }
 
     /**
-     * Set autNo
+     * Set autNo.
      *
      * @param string $autNo
      *
-     * @return \Device\Entity\License
+     * @return License
      */
     public function setAutNo($autNo)
     {
@@ -210,7 +209,7 @@ class License
     }
 
     /**
-     * Get autNo
+     * Get autNo.
      *
      * @return string
      */
@@ -220,11 +219,11 @@ class License
     }
 
     /**
-     * Set no
+     * Set no.
      *
      * @param string $no
      *
-     * @return \Device\Entity\License
+     * @return License
      */
     public function setNo($no)
     {
@@ -234,7 +233,7 @@ class License
     }
 
     /**
-     * Get no
+     * Get no.
      *
      * @return string
      */
@@ -244,11 +243,11 @@ class License
     }
 
     /**
-     * Set dateReal
+     * Set dateReal.
      *
      * @param \DateTime $dateReal
      *
-     * @return \Device\Entity\License
+     * @return License
      */
     public function setDateReal($dateReal)
     {
@@ -258,7 +257,7 @@ class License
     }
 
     /**
-     * Get dateReal
+     * Get dateReal.
      *
      * @return \DateTime
      */
@@ -271,7 +270,7 @@ class License
     #[ORM\PreUpdate]
     public function preUpdate(LifecycleEventArgs $event)
     {
-        $errors = array();
+        $errors = [];
 
         if (null == $this->code) {
             $errors[] = 'Не вели CODE!';
@@ -290,12 +289,14 @@ class License
             throw new \Exception(implode('<br />', $errors));
         }
     }
+
     #[ORM\PreRemove]
     public function preRemove(LifecycleEventArgs $event)
     {
-        if ((int)$event->getObjectManager()->getRepository(Device\License::class)->count(array(
-                'licenseSoftware' => $event->getObjectManager()->getRepository(License\Software::class)->findByLicense($this->getId())
-            )) > 0) {
+        $errors = [];
+        if ((int) $event->getObjectManager()->getRepository(Device\License::class)->count([
+            'licenseSoftware' => $event->getObjectManager()->getRepository(LicenseSoftware::class)->findByLicense($this->getId()),
+        ]) > 0) {
             $errors[] = 'Нельзя удалить лицензию, пока она используеться устройствами!';
         }
 
@@ -304,4 +305,3 @@ class License
         }
     }
 }
-

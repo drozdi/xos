@@ -28,11 +28,11 @@ class CalendarApiTest extends AuthWebTestCase
         /** @var EntityManagerInterface $em */
         $em = $client->getContainer()->get(EntityManagerInterface::class);
 
-        $owner = $this->createTestUser($client, 'cal_owner', 'password', ['ROLE_USER']);
+        $owner = $this->createTestUser($client, 'cal_owner', 'password', ['ROLE_USER', 'ROLE_CALENDAR']);
         $owner->setEmail('cal-owner@example.com');
         $em->flush();
 
-        $guest = $this->createTestUser($client, 'cal_guest', 'password', ['ROLE_USER']);
+        $guest = $this->createTestUser($client, 'cal_guest', 'password', ['ROLE_USER', 'ROLE_CALENDAR']);
         $guest->setEmail('cal-guest@example.com');
         $em->flush();
 
@@ -143,6 +143,7 @@ class CalendarApiTest extends AuthWebTestCase
             $entityManager->getClassMetadata(\Main\Entity\User\Access::class),
             $entityManager->getClassMetadata(\Main\Entity\Claimant::class),
             $entityManager->getClassMetadata(\App\Entity\UserSetting::class),
+            $entityManager->getClassMetadata(\Main\Entity\AuditLog::class),
             $entityManager->getClassMetadata(\Main\Entity\Group::class),
             $entityManager->getClassMetadata(\Main\Entity\User\Group::class),
             $entityManager->getClassMetadata(Calendar::class),

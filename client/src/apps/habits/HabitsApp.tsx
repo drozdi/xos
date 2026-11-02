@@ -35,7 +35,7 @@ const WEEKDAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 function dayDone(list: TodoListDetail, dayKey: string): boolean {
 	return (list.items ?? []).some((item) => {
-		if (!item.due_at) return false;
+		if (!item.due_at) {return false;}
 		const key = item.due_at.slice(0, 10);
 		return key === dayKey && item.done;
 	});

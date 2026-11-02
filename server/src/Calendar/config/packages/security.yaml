@@ -11,6 +11,9 @@ security:
                 password_path: password
                 success_handler: App\Security\LoginSuccessHandler
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+            login_throttling:
+                max_attempts: '%app.login_max_attempts%'
+                interval: '15 minutes'
 
         calendar_refresh:
             pattern: ^/api/calendar/token/refresh

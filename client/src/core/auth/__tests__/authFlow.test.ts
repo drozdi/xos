@@ -22,21 +22,18 @@ describe('auth refresh flow', () => {
 		vi.restoreAllMocks();
 	});
 
-	it('stores tokens after successful refresh response parse', async () => {
-		const setTokens = vi.spyOn(tokenStorage, 'setTokens').mockImplementation(() => {});
+	it('stores the access token after a cookie refresh', async () => {
+		const setAccessToken = vi.spyOn(tokenStorage, 'setAccessToken').mockImplementation(() => {});
 
-		const refreshData = { token: 'new-access', refresh_token: 'new-refresh' };
+		const refreshData = { token: 'new-access' };
 		vi.spyOn(axios, 'post').mockResolvedValue({ data: refreshData });
-		vi.spyOn(tokenStorage, 'getRefreshToken').mockReturnValue('old-refresh');
 
 		const { refreshResponseSchema } = await import('@/core/api/endpoints/auth');
-		const { data } = await axios.post('http://localhost:8000/api/token/refresh', {
-			refresh_token: 'old-refresh',
-		});
+		const { data } = await axios.post('http://localhost:8000/api/token/refresh', {});
 		const parsed = refreshResponseSchema.parse(data);
-		tokenStorage.setTokens(parsed.token, parsed.refresh_token);
+		tokenStorage.setAccessToken(parsed.token, 'desktop');
 
-		expect(setTokens).toHaveBeenCalledWith('new-access', 'new-refresh');
+		expect(setAccessToken).toHaveBeenCalledWith('new-access', 'desktop');
 	});
 
 	it('marks retried requests to avoid duplicate error toasts', () => {

@@ -3,6 +3,8 @@
 namespace Main\Controller;
 
 use Main\Entity\File as MainFile;
+use Main\Entity\User;
+use Main\Service\FileAccess;
 use Main\Service\FileManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -13,6 +15,7 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 #[Route('/api/main/file')]
 class FileController extends AbstractController
@@ -48,7 +51,7 @@ class FileController extends AbstractController
      * which browsers do not send on plain image requests.
      */
     #[Route('/{id}', name: 'main_file_download', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function download(int $id, FileManager $fm): BinaryFileResponse
+    public function download(int $id, FileManager $fm, #[CurrentUser] ?User $user): BinaryFileResponse
     {
         $file = $fm->getFileRepository()?->find($id);
         if (!$file instanceof MainFile) {
@@ -57,6 +60,9 @@ class FileController extends AbstractController
         if (\in_array($file->getModule(), self::BLOCKED_MODULES, true)) {
             throw new AccessDeniedHttpException('Direct download of this module is forbidden');
         }
+        if (!(new FileAccess())->canRead($file, $user)) {
+            throw new AccessDeniedHttpException('File access denied');
+        }
 
         $path = $fm->resolveAbsolutePath($file);
         $response = new BinaryFileResponse($path);
@@ -64,8 +70,9 @@ class FileController extends AbstractController
         if ('' !== $mime) {
             $response->headers->set('Content-Type', $mime);
         }
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->setContentDisposition(
-            ResponseHeaderBag::DISPOSITION_INLINE,
+            ResponseHeaderBag::DISPOSITION_ATTACHMENT,
             (string) $file->getOriginalName(),
         );
 

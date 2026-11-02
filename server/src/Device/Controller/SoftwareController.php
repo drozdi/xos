@@ -3,48 +3,41 @@
 namespace Device\Controller;
 
 use App\Attribute\Access;
-
+use Device\Entity\Software\Type;
+use Device\Repository\SoftwareRepository;
+use Device\Service\SoftwareManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
-
-use Device\Entity\Software;
-use Device\Entity\Software\Type;
-
-use Device\Repository\SoftwareRepository;
-use Device\Repository\Software\TypeRepository;
-
-use Device\Service\SoftwareManager;
 
 #[Route('/api/device/software')]
 #[Access('device.software')]
-class SoftwareController extends AbstractController {
+class SoftwareController extends AbstractController
+{
     #[Route('/list', methods: ['POST'])]
     #[Access('can_read')]
-    public function list (Request $request, SoftwareRepository $SoftwareRepository): JsonResponse {
+    public function list(Request $request, SoftwareRepository $SoftwareRepository): JsonResponse
+    {
         $req = array_merge([
             'limit' => -1,
             'offset' => 1,
             'sortBy' => [[
-                'key' => "sort",
-                'order' => "ASC",
+                'key' => 'sort',
+                'order' => 'ASC',
             ], [
-                'key' => "name",
-                'order' => "ASC",
+                'key' => 'name',
+                'order' => 'ASC',
             ]],
             'filters' => [
-                'parent' => null
-            ]
+                'parent' => null,
+            ],
         ], $request->toArray());
-        $req['limit'] = (int)$req['limit'];
-        $req['offset'] = (int)$req['offset'];
+        $req['limit'] = (int) $req['limit'];
+        $req['offset'] = (int) $req['offset'];
         $totalItems = $SoftwareRepository->cnt($req['filters']);
         $query = $SoftwareRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -83,33 +76,35 @@ class SoftwareController extends AbstractController {
                 ];
             }
         }
-        $start = $req['limit']*($req['offset']-1);
-        $end = ($req['limit'] > 0? $req['limit']*$req['offset']: $totalItems)-1;
-        $end = $end > $totalItems-1? $totalItems - 1: $end;
+        $start = $req['limit'] * ($req['offset'] - 1);
+        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
+
         return $this->json($items, Response::HTTP_OK, [
-            'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
+            'Content-Range' => sprintf('items %d-%d/%d', $start, $end, $totalItems),
         ]);
     }
 
     #[Route('/select', methods: ['POST'])]
     #[Access('can_read')]
-    public function select (Request $request, SoftwareRepository $SoftwareRepository): JsonResponse {
+    public function select(Request $request, SoftwareRepository $SoftwareRepository): JsonResponse
+    {
         $req = array_merge([
             'limit' => -1,
             'offset' => 1,
             'sortBy' => [[
-                'key' => "sort",
-                'order' => "ASC",
+                'key' => 'sort',
+                'order' => 'ASC',
             ], [
-                'key' => "name",
-                'order' => "ASC",
+                'key' => 'name',
+                'order' => 'ASC',
             ]],
             'filters' => [
-                'parent' => null
-            ]
+                'parent' => null,
+            ],
         ], $request->toArray());
-        $req['limit'] = (int)$req['limit'];
-        $req['offset'] = (int)$req['offset'];
+        $req['limit'] = (int) $req['limit'];
+        $req['offset'] = (int) $req['offset'];
         $totalItems = $SoftwareRepository->cnt($req['filters']);
         $query = $SoftwareRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -117,87 +112,105 @@ class SoftwareController extends AbstractController {
         foreach ($query->execute() as $s) {
             $items[] = [
                 'id' => $s->getId(),
-                'name' => $s->getName()
+                'name' => $s->getName(),
             ];
         }
-        $start = $req['limit']*($req['offset']-1);
-        $end = ($req['limit'] > 0? $req['limit']*$req['offset']: $totalItems)-1;
-        $end = $end > $totalItems-1? $totalItems - 1: $end;
+        $start = $req['limit'] * ($req['offset'] - 1);
+        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
+
         return $this->json($items, Response::HTTP_OK, [
-            'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
+            'Content-Range' => sprintf('items %d-%d/%d', $start, $end, $totalItems),
         ]);
     }
 
     #[Route('/filter', methods: ['GET'])]
     #[Access('can_read')]
-    public function filter (EntityManagerInterface $entityManager): JsonResponse {
+    public function filter(EntityManagerInterface $entityManager): JsonResponse
+    {
         $items = [];
-        foreach ($entityManager->createQuery('SELECT t FROM ' . Type::class . ' t ORDER BY t.sort ASC, t.code ASC')->execute() as $t) {
+        foreach ($entityManager->createQuery('SELECT t FROM '.Type::class.' t ORDER BY t.sort ASC, t.code ASC')->execute() as $t) {
             $items[] = [
                 'value' => $t->getId(),
-                'label' => $t->getName()
+                'label' => $t->getName(),
             ];
         }
+
         return $this->json($items);
     }
 
     #[Route('/', methods: ['POST'])]
     #[Access('can_create')]
-    public function create (Request $request, SoftwareManager $sm): JsonResponse {
+    public function create(Request $request, SoftwareManager $sm): JsonResponse
+    {
         $req = $request->toArray();
-        $req['id'] = (int)$req['id'];
+        $req['id'] = (int) $req['id'];
         $sm->getEntityManager()->getConnection()->beginTransaction();
         try {
             $software = $sm->software($req['id'], $req);
+            if (null === $software) {
+                throw new \RuntimeException('Software was not saved');
+            }
             $sm->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $sm->getEntityManager()->getConnection()->rollBack();
+
             return $this->json($sm->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
 
-        return $this->json($software->getId(),Response::HTTP_CREATED);
+        return $this->json($software->getId(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', methods: ['PUT'])]
     #[Access('can_update')]
-    public function update (int $id, Request $request, SoftwareManager $sm): JsonResponse {
+    public function update(int $id, Request $request, SoftwareManager $sm): JsonResponse
+    {
         $req = $request->toArray();
         $sm->getEntityManager()->getConnection()->beginTransaction();
         try {
             $software = $sm->software($id, $req);
+            if (null === $software) {
+                throw new \RuntimeException('Software was not saved');
+            }
             $sm->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $sm->getEntityManager()->getConnection()->rollBack();
+
             return $this->json($sm->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
-        return $this->json($software->getId(),Response::HTTP_CREATED);
+
+        return $this->json($software->getId(), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', methods: ['GET'])]
     #[Access('can_read')]
-    public function detail (int $id, SoftwareManager $sm): JsonResponse {
+    public function detail(int $id, SoftwareManager $sm): JsonResponse
+    {
         $software = $sm->software($id);
+
         return $this->json([
             'id' => $software->getId(),
             'name' => $software->getName(),
             'sort' => $software->getSort(),
-            'parent_id' => $software->getParent()? $software->getParent()->getId(): null,
-            'type_id' => $software->getType()? $software->getType()->getId(): null,
+            'parent_id' => $software->getParent() ? $software->getParent()->getId() : null,
+            'type_id' => $software->getType() ? $software->getType()->getId() : null,
         ]);
     }
 
     #[Route('/{id}', methods: ['DELETE'])]
     #[Access('can_delete')]
-    public function remove (int $id, SoftwareRepository $SoftwareRepository): JsonResponse {
+    public function remove(int $id, SoftwareRepository $SoftwareRepository): JsonResponse
+    {
         $software = $SoftwareRepository->find($id);
         $arSoftware = [
             'id' => $software->getId(),
             'name' => $software->getName(),
             'sort' => $software->getSort(),
-            'parent_id' => $software->getParent()? $software->getParent()->getId(): null,
-            'type_id' => $software->getType()? $software->getType()->getId(): null,
+            'parent_id' => $software->getParent() ? $software->getParent()->getId() : null,
+            'type_id' => $software->getType() ? $software->getType()->getId() : null,
         ];
         $SoftwareRepository->remove($software, true);
+
         return $this->json($arSoftware);
     }
 }

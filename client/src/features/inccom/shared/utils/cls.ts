@@ -21,7 +21,7 @@ function parseValue(arg: Args): Ret {
 		return arg.toString()
 	}
 	let classes = ''
-	for (let key in arg) {
+	for (const key in arg) {
 		if (hasOwn.call(arg, key) && arg[key]) {
 			classes = appendClass(classes, key)
 		}
@@ -35,7 +35,7 @@ function appendClass(val: string, newClass: string | number): string {
 	}
 
 	if (val) {
-		return val + ' ' + newClass
+		return `${val  } ${  newClass}`
 	}
 
 	return val + newClass

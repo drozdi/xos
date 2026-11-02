@@ -42,9 +42,9 @@ export function CoverField({
 	};
 
 	const upload = async (payload: File | File[] | null) => {
-		if (readOnly) return;
+		if (readOnly) {return;}
 		const files = Array.isArray(payload) ? payload : payload ? [payload] : [];
-		if (files.length === 0) return;
+		if (files.length === 0) {return;}
 		setUploading(true);
 		try {
 			const uploaded: FileItem[] = [];

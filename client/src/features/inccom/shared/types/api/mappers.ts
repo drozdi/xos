@@ -32,16 +32,16 @@ export function mapAccountToApi(
 	data: Partial<IAccount>,
 ): Record<string, unknown> {
 	const mapped: Record<string, unknown> = {};
-	if (data.label !== undefined) mapped['label'] = data.label;
-	if (data.sort !== undefined) mapped['order'] = data.sort;
+	if (data.label !== undefined) {mapped.label = data.label;}
+	if (data.sort !== undefined) {mapped.order = data.sort;}
 	for (const field of ['type', 'color', 'icon', 'balance', 'currency', 'description', 'number'] as const) {
-		if (data[field] !== undefined) mapped[field] = data[field];
+		if (data[field] !== undefined) {mapped[field] = data[field];}
 	}
-	if (mapped['icon'] === undefined || mapped['icon'] === '') {
-		mapped['icon'] = 'cards';
+	if (mapped.icon === undefined || mapped.icon === '') {
+		mapped.icon = 'cards';
 	}
-	if (mapped['color'] === undefined || mapped['color'] === '') {
-		mapped['color'] = '#228be6';
+	if (mapped.color === undefined || mapped.color === '') {
+		mapped.color = '#228be6';
 	}
 	return mapped;
 }
@@ -66,8 +66,8 @@ export function mapTransactionCategoryToApi(
 	data: Partial<ICategory>,
 ): Record<string, unknown> {
 	const mapped: Record<string, unknown> = {};
-	if (data.label !== undefined) mapped['name'] = data.label;
-	if (data.sort !== undefined) mapped['order'] = data.sort;
-	if (data.type !== undefined) mapped['type'] = data.type;
+	if (data.label !== undefined) {mapped.name = data.label;}
+	if (data.sort !== undefined) {mapped.order = data.sort;}
+	if (data.type !== undefined) {mapped.type = data.type;}
 	return mapped;
 }

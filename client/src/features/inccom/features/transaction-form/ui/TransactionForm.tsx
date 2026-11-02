@@ -228,12 +228,12 @@ export function TransactionForm({
 	}, [transactionData, id, defaultAccountId]);
 
 	function applyQrData(data: ParsedFiscalQr) {
-		if (data.fn) form.setFieldValue('fn', data.fn);
-		if (data.fpd) form.setFieldValue('fpd', data.fpd);
-		if (data.fp) form.setFieldValue('fp', data.fp);
-		if (data.fd) form.setFieldValue('fd', data.fd);
-		if (data.amount) form.setFieldValue('amount', Number(data.amount));
-		if (data.date) form.setFieldValue('date', toFormDate(data.date));
+		if (data.fn) {form.setFieldValue('fn', data.fn);}
+		if (data.fpd) {form.setFieldValue('fpd', data.fpd);}
+		if (data.fp) {form.setFieldValue('fp', data.fp);}
+		if (data.fd) {form.setFieldValue('fd', data.fd);}
+		if (data.amount) {form.setFieldValue('amount', Number(data.amount));}
+		if (data.date) {form.setFieldValue('date', toFormDate(data.date));}
 	}
 
 	function buildReceiptPayload() {

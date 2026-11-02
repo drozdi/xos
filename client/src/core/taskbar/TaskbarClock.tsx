@@ -12,12 +12,15 @@ import { Calendar } from '@mantine/dates';
 import { useQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useEffect, useMemo, useState } from 'react';
+import { z } from 'zod';
 
 import { useAppManager } from '@/core/appManager/useAppManager';
+import { apiClient } from '@/core/api/client';
 import { boardApi } from '@/core/api/endpoints/boardApi';
 import { calendarApi } from '@/core/api/endpoints/calendarApi';
 import { todoApi } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
+import { useAuthStore } from '@/core/auth/authStore';
 import { dayjs } from '@/core/dates/dayjs';
 import { useDateSettings } from '@/core/dates/DatesSettingsProvider';
 import { loadWeatherPrefs } from '@/core/desktop/widgetPrefs';
@@ -449,7 +452,24 @@ function TaskbarClockPanel({
 	);
 }
 
+const EGRESS_STALE_MS = 10 * 60 * 1000;
+
+async function fetchEgressIp(): Promise<string | null> {
+	const { data } = await apiClient.get<unknown>('/api/network/egress');
+	const parsed = z.object({ ip: z.string().nullable() }).parse(data);
+	return parsed.ip;
+}
+
 export function TaskbarClock() {
+	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const egressQuery = useQuery({
+		queryKey: queryKeys.network.egress,
+		queryFn: fetchEgressIp,
+		enabled: isAuthenticated,
+		staleTime: EGRESS_STALE_MS,
+		retry: false,
+	});
+	const egressIp = egressQuery.data ?? null;
 	const [now, setNow] = useState(() => dayjs());
 	const [opened, setOpened] = useState(false);
 	const [month, setMonth] = useState(() => dayjs().format('YYYY-MM-DD'));
@@ -503,7 +523,16 @@ export function TaskbarClock() {
 						background: opened ? 'var(--mantine-color-default-hover)' : undefined,
 					}}
 				>
-					<Text size="xs">{now.format('HH:mm')}</Text>
+					<Stack gap={0} align="center">
+						<Text size="xs" lh={1.15}>
+							{now.format('HH:mm')}
+						</Text>
+						{egressIp ? (
+							<Text size="10px" c="dimmed" lh={1.15} style={{ whiteSpace: 'nowrap' }}>
+								{egressIp}
+							</Text>
+						) : null}
+					</Stack>
 				</UnstyledButton>
 			</Popover.Target>
 			<Popover.Dropdown p="sm">

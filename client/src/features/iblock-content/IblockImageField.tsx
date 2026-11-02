@@ -26,7 +26,7 @@ export function IblockImageField({
 	const hasFile = value?.id != null;
 
 	const upload = async (file: File | null) => {
-		if (!file || readOnly) return;
+		if (!file || readOnly) {return;}
 		setUploading(true);
 		try {
 			const uploaded = await uploadIblockFile(file);

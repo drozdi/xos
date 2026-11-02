@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as authApi from '@/core/api/endpoints/auth';
@@ -19,7 +20,7 @@ describe('sessionRestore', () => {
 
 	it('returns true when access token is still valid', async () => {
 		const token = makeJwt(Math.floor(Date.now() / 1000) + 3600);
-		tokenStorage.setTokens(token, 'refresh');
+		tokenStorage.setAccessToken(token);
 
 		const refreshSpy = vi.spyOn(authApi, 'refreshToken');
 
@@ -29,16 +30,14 @@ describe('sessionRestore', () => {
 
 	it('refreshes access token when expired', async () => {
 		const expired = makeJwt(Math.floor(Date.now() / 1000) - 60);
-		tokenStorage.setTokens(expired, 'old-refresh');
+		tokenStorage.setAccessToken(expired);
 
 		vi.spyOn(authApi, 'refreshToken').mockResolvedValue({
 			token: 'new-access',
-			refresh_token: 'new-refresh',
 		});
 
 		await expect(restoreAccessToken()).resolves.toBe(true);
 		expect(tokenStorage.getAccessToken()).toBe('new-access');
-		expect(tokenStorage.getRefreshToken()).toBe('new-refresh');
 	});
 
 	it('detects expired tokens', () => {

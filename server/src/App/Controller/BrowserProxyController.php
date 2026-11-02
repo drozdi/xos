@@ -3,14 +3,20 @@
 namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 #[Route('/api/browser')]
 class BrowserProxyController extends AbstractController
 {
+    private const MAX_BYTES = 5 * 1024 * 1024;
+    private const CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https: http: data:; img-src https: http: data: blob:; font-src https: http: data:; media-src https: http:; connect-src https: http:; frame-src https: http:; base-uri https: http:; form-action https: http:; frame-ancestors 'none'";
+
     #[Route('/proxy', methods: ['GET'])]
     public function proxy(Request $request): Response
     {
@@ -19,30 +25,23 @@ class BrowserProxyController extends AbstractController
             return new JsonResponse(['message' => 'Недопустимый URL'], Response::HTTP_BAD_REQUEST);
         }
 
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => implode("\r\n", [
-                    'User-Agent: Mozilla/5.0 (compatible; XOS-Browser/1.0)',
-                    'Accept: text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
-                ]),
-                'follow_location' => 1,
-                'max_redirects' => 5,
-                'timeout' => 20,
-                'ignore_errors' => true,
-            ],
-            'ssl' => [
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
-        ]);
+        $client = new NoPrivateNetworkHttpClient(HttpClient::create([
+            'timeout' => 8,
+            'max_redirects' => 3,
+        ]));
 
-        $content = @file_get_contents($url, false, $context);
-        if ($content === false) {
+        try {
+            $response = $client->request('GET', $url, [
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (compatible; XOS-Browser/1.0)',
+                    'Accept' => 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+                ],
+            ]);
+            $statusCode = $response->getStatusCode();
+        } catch (TransportExceptionInterface) {
             return new JsonResponse(['message' => 'Не удалось загрузить страницу'], Response::HTTP_BAD_GATEWAY);
         }
 
-        $statusCode = $this->resolveStatusCode($http_response_header ?? []);
         if ($statusCode >= 400) {
             return new JsonResponse(
                 ['message' => sprintf('Сервер вернул ошибку %d', $statusCode)],
@@ -50,18 +49,33 @@ class BrowserProxyController extends AbstractController
             );
         }
 
-        $contentType = $this->resolveContentType($http_response_header ?? []);
-        if (!str_contains(strtolower($contentType), 'text/html')) {
+        $contentType = strtolower($response->getHeaders(false)['content-type'][0] ?? '');
+        if (!str_contains($contentType, 'text/html')) {
             return new JsonResponse(
                 ['message' => 'Поддерживаются только HTML-страницы'],
                 Response::HTTP_UNSUPPORTED_MEDIA_TYPE,
             );
         }
 
-        $html = $this->injectBaseTag($content, $url);
+        $content = '';
+        foreach ($client->stream($response) as $chunk) {
+            if ($chunk->isTimeout()) {
+                continue;
+            }
+            $content .= $chunk->getContent();
+            if (strlen($content) > self::MAX_BYTES) {
+                $response->cancel();
+
+                return new JsonResponse(['message' => 'Страница слишком большая'], Response::HTTP_BAD_GATEWAY);
+            }
+        }
+
+        $html = $this->injectCsp($this->injectBaseTag($content, $url));
 
         return new Response($html, Response::HTTP_OK, [
             'Content-Type' => 'text/html; charset=UTF-8',
+            'Content-Security-Policy' => self::CONTENT_SECURITY_POLICY,
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -77,64 +91,29 @@ class BrowserProxyController extends AbstractController
             return false;
         }
 
-        $host = strtolower($parts['host'] ?? '');
-        if (in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1'], true)) {
+        $port = (int) ($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+        if (!in_array($port, [80, 443], true)) {
             return false;
         }
 
-        if (filter_var($host, FILTER_VALIDATE_IP)) {
-            $packed = inet_pton($host);
-            if ($packed !== false && $this->isPrivateIp($packed)) {
-                return false;
-            }
+        $host = strtolower($parts['host'] ?? '');
+        if ('' === $host || in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1'], true)) {
+            return false;
         }
 
         return true;
     }
 
-    private function isPrivateIp(string $packed): bool
+    private function injectCsp(string $html): string
     {
-        if (strlen($packed) === 4) {
-            $first = ord($packed[0]);
-            $second = ord($packed[1]);
+        $meta = '<meta http-equiv="Content-Security-Policy" content="'.htmlspecialchars(self::CONTENT_SECURITY_POLICY, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'">';
+        if (preg_match('/<head[^>]*>/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            $position = $matches[0][1] + strlen($matches[0][0]);
 
-            return $first === 10
-                || ($first === 172 && $second >= 16 && $second <= 31)
-                || ($first === 192 && $second === 168)
-                || $first === 127;
+            return substr($html, 0, $position).$meta.substr($html, $position);
         }
 
-        return str_starts_with($packed, "\xfe\x80")
-            || str_starts_with($packed, "\xfc\x00")
-            || str_starts_with($packed, "\xfd\x00");
-    }
-
-    /**
-     * @param list<string> $headers
-     */
-    private function resolveContentType(array $headers): string
-    {
-        foreach ($headers as $header) {
-            if (stripos($header, 'Content-Type:') === 0) {
-                return trim(substr($header, strlen('Content-Type:')));
-            }
-        }
-
-        return 'text/html';
-    }
-
-    /**
-     * @param list<string> $headers
-     */
-    private function resolveStatusCode(array $headers): int
-    {
-        foreach ($headers as $header) {
-            if (preg_match('/^HTTP\/\d\.\d\s+(\d+)/', $header, $matches)) {
-                return (int) $matches[1];
-            }
-        }
-
-        return 200;
+        return '<head>'.$meta.'</head>'.$html;
     }
 
     private function injectBaseTag(string $html, string $url): string

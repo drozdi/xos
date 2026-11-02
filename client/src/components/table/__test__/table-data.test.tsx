@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { renderWithProviders } from '#dev/vitest/render';

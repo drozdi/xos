@@ -5,6 +5,12 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    rate_limiter:
+        public_api:
+            policy: sliding_window
+            limit: 30
+            interval: '1 minute'
+
     #esi: true
     #fragments: true
 
@@ -13,3 +19,8 @@ when@test:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
+        rate_limiter:
+            public_api:
+                policy: sliding_window
+                limit: 10000
+                interval: '1 minute'

@@ -76,13 +76,13 @@ export async function requestTransferList(
 
 
 
-	if (params.fromAccount) queryParams['fromAccount'] = params.fromAccount;
+	if (params.fromAccount) {queryParams.fromAccount = params.fromAccount;}
 
-	if (params.toAccount) queryParams['toAccount'] = params.toAccount;
+	if (params.toAccount) {queryParams.toAccount = params.toAccount;}
 
-	if (params.dateFrom) queryParams['dateFrom'] = params.dateFrom;
+	if (params.dateFrom) {queryParams.dateFrom = params.dateFrom;}
 
-	if (params.dateTo) queryParams['dateTo'] = params.dateTo;
+	if (params.dateTo) {queryParams.dateTo = params.dateTo;}
 
 
 
