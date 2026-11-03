@@ -272,11 +272,21 @@ export async function flushOutbox(client: AxiosInstance): Promise<number> {
 }
 
 let outboxInitialized = false;
+let onlineHandler: (() => void) | null = null;
+
+export function stopOfflineOutbox(): void {
+	if (typeof window !== 'undefined' && onlineHandler) {
+		window.removeEventListener('online', onlineHandler);
+	}
+	onlineHandler = null;
+	outboxInitialized = false;
+}
 
 export function initOfflineOutbox(client: AxiosInstance): void {
-	if (outboxInitialized || typeof window === 'undefined') {
+	if (typeof window === 'undefined') {
 		return;
 	}
+	stopOfflineOutbox();
 	outboxInitialized = true;
 
 	const runFlush = () => {
@@ -292,6 +302,7 @@ export function initOfflineOutbox(client: AxiosInstance): void {
 		});
 	};
 
+	onlineHandler = runFlush;
 	window.addEventListener('online', runFlush);
 	runFlush();
 }

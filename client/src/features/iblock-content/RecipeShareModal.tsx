@@ -2,7 +2,9 @@ import {
 	ActionIcon,
 	Alert,
 	Button,
+	Center,
 	Group,
+	Loader,
 	Modal,
 	Stack,
 	Text,
@@ -16,11 +18,12 @@ import { useState } from 'react';
 import { iblockElementApi, type IblockElementDetail } from '@/core/api/endpoints/iblockApi';
 
 interface RecipeShareModalProps {
-	recipe: IblockElementDetail;
+	recipe: IblockElementDetail | null;
 	opened: boolean;
 	onClose: () => void;
 	onUpdated: (recipe: IblockElementDetail) => void;
 	title?: string;
+	loading?: boolean;
 }
 
 export function RecipeShareModal({
@@ -29,13 +32,14 @@ export function RecipeShareModal({
 	onClose,
 	onUpdated,
 	title = 'Поделиться рецептом',
+	loading = false,
 }: RecipeShareModalProps) {
 	const queryClient = useQueryClient();
 	const [email, setEmail] = useState('');
 	const [lookupError, setLookupError] = useState<string | null>(null);
 
 	const shareMutation = useMutation({
-		mutationFn: () => iblockElementApi.share(recipe.id, email.trim()),
+		mutationFn: () => iblockElementApi.share(recipe!.id, email.trim()),
 		onSuccess: (data) => {
 			onUpdated(data);
 			void queryClient.invalidateQueries({ queryKey: ['iblock'] });
@@ -49,7 +53,7 @@ export function RecipeShareModal({
 	});
 
 	const unshareMutation = useMutation({
-		mutationFn: (userId: number) => iblockElementApi.unshare(recipe.id, userId),
+		mutationFn: (userId: number) => iblockElementApi.unshare(recipe!.id, userId),
 		onSuccess: (data) => {
 			onUpdated(data);
 			void queryClient.invalidateQueries({ queryKey: ['iblock'] });
@@ -58,59 +62,67 @@ export function RecipeShareModal({
 
 	return (
 		<Modal opened={opened} onClose={onClose} title={title} centered>
-			<Stack gap="sm">
-				<Text size="sm" c="dimmed">
-					Доступ только для просмотра. Укажите email пользователя XOS.
-				</Text>
-				<TextInput
-					label="Email"
-					placeholder="user@example.com"
-					value={email}
-					onChange={(e) => setEmail(e.currentTarget.value)}
-				/>
-				{lookupError ? <Alert color="red">{lookupError}</Alert> : null}
-				<Button
-					onClick={() => {
-						if (!email.trim()) {
-							setLookupError('Укажите email');
-							return;
-						}
-						shareMutation.mutate();
-					}}
-					loading={shareMutation.isPending}
-				>
-					Поделиться
-				</Button>
+			{loading || !recipe ? (
+				<Center py="lg">
+					<Loader size="sm" />
+				</Center>
+			) : !recipe.is_owner ? (
+				<Alert color="yellow">Поделиться может только владелец рецепта</Alert>
+			) : (
+				<Stack gap="sm">
+					<Text size="sm" c="dimmed">
+						Доступ только для просмотра. Укажите email пользователя XOS.
+					</Text>
+					<TextInput
+						label="Email"
+						placeholder="user@example.com"
+						value={email}
+						onChange={(e) => setEmail(e.currentTarget.value)}
+					/>
+					{lookupError ? <Alert color="red">{lookupError}</Alert> : null}
+					<Button
+						onClick={() => {
+							if (!email.trim()) {
+								setLookupError('Укажите email');
+								return;
+							}
+							shareMutation.mutate();
+						}}
+						loading={shareMutation.isPending}
+					>
+						Поделиться
+					</Button>
 
-				{(recipe.shares ?? []).length > 0 ? (
-					<Stack gap={6}>
-						<Text fw={600} size="sm">
-							Уже есть доступ
-						</Text>
-						{(recipe.shares ?? []).map((share) => (
-							<Group key={share.user_id ?? share.email} justify="space-between" wrap="nowrap">
-								<div>
-									<Text size="sm">{share.alias || share.email}</Text>
-									<Text size="xs" c="dimmed">
-										{share.email} · просмотр
-									</Text>
-								</div>
-								{share.user_id ? (
-									<ActionIcon
-										variant="subtle"
-										color="red"
-										aria-label="Отозвать"
-										loading={unshareMutation.isPending}
-										onClick={() => unshareMutation.mutate(share.user_id!)}
-									>
-										<IconTrash size={16} />
-									</ActionIcon>
-								) : null}
-							</Group>
-						))}
-					</Stack>
-				) : null}
-			</Stack>
+					{(recipe.shares ?? []).length > 0 ? (
+						<Stack gap={6}>
+							<Text fw={600} size="sm">
+								Уже есть доступ
+							</Text>
+							{(recipe.shares ?? []).map((share) => (
+								<Group key={share.user_id ?? share.email} justify="space-between" wrap="nowrap">
+									<div>
+										<Text size="sm">{share.alias || share.email}</Text>
+										<Text size="xs" c="dimmed">
+											{share.email} · просмотр
+										</Text>
+									</div>
+									{share.user_id ? (
+										<ActionIcon
+											variant="subtle"
+											color="red"
+											aria-label="Отозвать"
+											loading={unshareMutation.isPending}
+											onClick={() => unshareMutation.mutate(share.user_id!)}
+										>
+											<IconTrash size={16} />
+										</ActionIcon>
+									) : null}
+								</Group>
+							))}
+						</Stack>
+					) : null}
+				</Stack>
+			)}
 		</Modal>
 	);
 }

@@ -16,7 +16,7 @@ import {
 } from '@mantine/core';
 import { IconArrowLeft, IconShare } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 
 import {
 	iblockElementApi,
@@ -39,7 +39,6 @@ import {
 } from './contentCatalog';
 import { ContentView } from './ContentView';
 import { CoverField } from './CoverField';
-import { IblockMarkdownEditor } from './IblockMarkdownEditor';
 import { allocateUniqueElementCode } from './allocateUniqueElementCode';
 import {
 	fileIdsFromProperty,
@@ -50,6 +49,11 @@ import {
 } from './propertyValues';
 import { RecipeShareModal } from './RecipeShareModal';
 import { useContentBlock } from './useContentBlock';
+
+const IblockMarkdownEditor = lazy(async () => {
+	const mod = await import('./IblockMarkdownEditor');
+	return { default: mod.IblockMarkdownEditor };
+});
 
 const initialData: IblockElementDetail = {
 	id: 0,
@@ -491,13 +495,15 @@ function ContentFormFields({
 				/>
 			) : null}
 			{features.markdown ? (
-				<IblockMarkdownEditor
-					label={config.detailTextLabel ?? 'Текст (Markdown)'}
-					value={data.detail_text ?? ''}
-					readOnly={readOnly}
-					onChange={(next) => setField('detail_text', next)}
-					minHeight={360}
-				/>
+				<Suspense fallback={<Loader size="sm" />}>
+					<IblockMarkdownEditor
+						label={config.detailTextLabel ?? 'Текст (Markdown)'}
+						value={data.detail_text ?? ''}
+						readOnly={readOnly}
+						onChange={(next) => setField('detail_text', next)}
+						minHeight={360}
+					/>
+				</Suspense>
 			) : (
 				<Textarea
 					label={config.detailTextLabel ?? 'Текст'}

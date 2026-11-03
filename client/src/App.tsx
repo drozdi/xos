@@ -9,7 +9,7 @@ import { queryClient } from '@/core/api/queryClient';
 import { setupInterceptors } from '@/core/api/interceptors';
 import { getAuthStoreActions, useAuthStore } from '@/core/auth/authStore';
 import { resolveStandaloneApp } from '@/core/auth/tokenStorage';
-import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
+import { apiSettingsEnabled, createSettingAdapter } from '@/core/settings/createSettingAdapter';
 import { settingManager } from '@/core/settings/SettingManager';
 import { battleNetCssVariablesResolver } from '@/core/theme/battleNetTheme';
 import { DEFAULT_THEME, ThemeProvider, xosColorSchemeManager } from '@/core/theme';
@@ -60,7 +60,7 @@ function DesktopShell() {
 
 			let preloadedSnapshot: Awaited<ReturnType<typeof desktopStateApi.load>> | undefined;
 			let preloadFailed = false;
-			if (isAuthenticated && useApiSettings()) {
+			if (isAuthenticated && apiSettingsEnabled()) {
 				try {
 					preloadedSnapshot = await desktopStateApi.load();
 				} catch {

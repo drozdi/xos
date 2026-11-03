@@ -1,12 +1,21 @@
 import { expect, test } from '@playwright/test';
 
 test('start menu theme switch updates color scheme', async ({ page }) => {
+	await page.context().addCookies([
+		{ name: 'xos_refresh', value: 'test-refresh', url: 'http://localhost:5173' },
+	]);
 	await page.goto('/');
 
 	await page.evaluate(() => {
-		localStorage.setItem('xos.access_token', 'test-token');
-		localStorage.setItem('xos.refresh_token', 'test-refresh');
 		localStorage.setItem('xos.settings.USER.theme', JSON.stringify('dark'));
+	});
+
+	await page.route('**/api/token/refresh', async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({ token: 'test-token' }),
+		});
 	});
 
 	await page.route('**/api/login-check', async (route) => {

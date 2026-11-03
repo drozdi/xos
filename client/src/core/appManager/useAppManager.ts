@@ -18,6 +18,7 @@ import { resolveWindowLayoutConfig } from '@/core/windowManager/windowLayout';
 import { resolveTaskbarGroup } from '@/core/taskbar/taskbarUtils';
 
 import { AppRegistry } from './AppRegistry';
+import { loadAppManifest } from './registerApps';
 import { markWidgetClosedInCatalog, syncDesktopWidgetsFromCatalog } from '@/core/desktop/desktopWidgets';
 
 import {
@@ -122,7 +123,10 @@ export const useAppManager = create<AppManagerStore>((set, get) => ({
 	launchApp: async (appId, params) => {
 		initCloseCleanup();
 
-		const manifest = get().registry.get(appId) ?? AppRegistry.get(appId);
+		let manifest = get().registry.get(appId) ?? AppRegistry.get(appId);
+		if (!manifest) {
+			manifest = (await loadAppManifest(appId)) ?? undefined;
+		}
 		if (!manifest) {
 			notifications.show({
 				title: 'App not found',

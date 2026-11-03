@@ -16,6 +16,10 @@ services:
     SchoolTask\Repository\:
         resource: '../Repository/'
 
+    SchoolTask\Service\EpGroupKindResolver: ~
+
+    SchoolTask\Service\SchoolTaskTransliterator: ~
+
     SchoolTask\Service\SchoolTaskManager:
         lazy: true
         calls:

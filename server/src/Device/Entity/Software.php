@@ -7,7 +7,6 @@ use Device\Repository\SoftwareRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
-use Doctrine\Common\Collections\Criteria;
 
 #[ORM\Table(name: 'd_software')]
 #[ORM\Entity(repositoryClass: SoftwareRepository::class)]
@@ -30,7 +29,7 @@ class Software
     #[ORM\Column(name: 'name', length: 255, nullable: false, unique: true)]
     private $name;
 
-    #[ORM\ManyToOne(targetEntity: Software\Type::class)]
+    #[ORM\ManyToOne(targetEntity: Type::class)]
     #[ORM\JoinColumn(name: 'type_id', referencedColumnName: 'id', nullable: false, onDelete: 'RESTRICT')]
     private $type;
 
@@ -38,9 +37,9 @@ class Software
     private $sort = 100;
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -48,14 +47,13 @@ class Software
     }
 
     /**
-     * Set parent
+     * Set parent.
      *
-     * @param \Device\Entity\Software $parent
-     * @param boolean $addChild[true]
+     * @param bool $addChild[true]
      *
-     * @return \Device\Entity\Software
+     * @return Software
      */
-    public function setParent(\Device\Entity\Software $parent = null, $addChild = true)
+    public function setParent(?Software $parent = null, $addChild = true)
     {
         if ((null === $parent || $this->parent !== $parent) && null !== $this->parent) {
             $this->parent->removeChild($this, false);
@@ -75,9 +73,9 @@ class Software
     }
 
     /**
-     * Get parent
+     * Get parent.
      *
-     * @return \Device\Entity\Software
+     * @return Software|null
      */
     public function getParent()
     {
@@ -85,14 +83,13 @@ class Software
     }
 
     /**
-     * Add child
+     * Add child.
      *
-     * @param \Device\Entity\Software $child
-     * @param boolean $setParent[true]
+     * @param bool $setParent
      *
-     * @return \Device\Entity\Software
+     * @return Software
      */
-    public function addChild(\Device\Entity\Software $child, $setParent = true)
+    public function addChild(Software $child, $setParent = true)
     {
         if (false === $this->children->indexOf($child)) {
             $this->children[] = $child;
@@ -106,14 +103,13 @@ class Software
     }
 
     /**
-     * Remove child
+     * Remove child.
      *
-     * @param \Device\Entity\Software $child
-     * @param boolean $removeParent[true]
+     * @param bool $removeParent[true]
      *
-     * @return \Device\Entity\Software
+     * @return Software
      */
-    public function removeChild(\Device\Entity\Software $child, $removeParent = true)
+    public function removeChild(Software $child, $removeParent = true)
     {
         $this->children->removeElement($child);
 
@@ -125,7 +121,7 @@ class Software
     }
 
     /**
-     * Get children
+     * Get children.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
@@ -135,7 +131,7 @@ class Software
     }
 
     /**
-     * Set name
+     * Set name.
      *
      * @param string $name
      *
@@ -149,7 +145,7 @@ class Software
     }
 
     /**
-     * Get name
+     * Get name.
      *
      * @return string
      */
@@ -159,11 +155,11 @@ class Software
     }
 
     /**
-     * Set sort
+     * Set sort.
      *
-     * @param integer $sort
+     * @param int $sort
      *
-     * @return \Device\Entity\Software
+     * @return Software
      */
     public function setSort($sort)
     {
@@ -173,9 +169,9 @@ class Software
     }
 
     /**
-     * Get code
+     * Get code.
      *
-     * @return integer
+     * @return int
      */
     public function getSort()
     {
@@ -183,13 +179,11 @@ class Software
     }
 
     /**
-     * Set type
+     * Set type.
      *
-     * @param \Device\Entity\Software\Type $type
-     *
-     * @return \Device\Entity\Software
+     * @return Software
      */
-    public function setType(\Device\Entity\Software\Type $type = null)
+    public function setType(?Type $type = null)
     {
         $this->type = $type;
 
@@ -197,9 +191,9 @@ class Software
     }
 
     /**
-     * Get type
+     * Get type.
      *
-     * @return \Device\Entity\Software\Type
+     * @return Type|null
      */
     public function getType()
     {
@@ -207,9 +201,9 @@ class Software
     }
 
     /**
-     * Check whether the root software
+     * Check whether the root software.
      *
-     * @return boolean
+     * @return bool
      */
     public function isRoot()
     {
@@ -217,11 +211,11 @@ class Software
     }
 
     /**
-     * Is children
+     * Is children.
      *
-     * @return  boolean
+     * @return bool
      */
-    public function isChild ()
+    public function isChild()
     {
         return null != $this->parent;
     }
@@ -230,7 +224,7 @@ class Software
     #[ORM\PreUpdate]
     public function preUpdate(LifecycleEventArgs $event)
     {
-        $errors = array();
+        $errors = [];
 
         if (null == $this->name) {
             $errors[] = 'Не вели название!';
@@ -247,17 +241,17 @@ class Software
     #[ORM\PreRemove]
     public function preRemove(LifecycleEventArgs $event)
     {
-        $errors = array();
+        $errors = [];
 
-        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device\License')->count(array(
-                'software' => $this->getId()
-            )) > 0) {
+        if ((int) $event->getObjectManager()->getRepository('Device\Entity\Device\License')->count([
+            'software' => $this->getId(),
+        ]) > 0) {
             $errors[] = 'Нельзя удалить программу "'.$this->getName().'", пока она установлена!';
         }
 
-        if ((int)$event->getObjectManager()->getRepository('Device\Entity\License\Software')->count(array(
-                'software' => $this->getId()
-            )) > 0) {
+        if ((int) $event->getObjectManager()->getRepository('Device\Entity\License\Software')->count([
+            'software' => $this->getId(),
+        ]) > 0) {
             $errors[] = 'Нельзя удалить программу "'.$this->getName().'", пока она привязана к лицензии!';
         }
 
@@ -266,4 +260,3 @@ class Software
         }
     }
 }
-

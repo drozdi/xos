@@ -33,7 +33,8 @@ import {
 	useCanUpdateIblockElement,
 } from '@/features/iblock/iblockAccess';
 import { useEntityId, useIblockLaunchProps } from '@/features/iblock/iblockAppUtils';
-import { IblockMarkdownEditor, IblockImageField, fileAcceptFromFileType } from '@/features/iblock-content';
+import { IblockImageField, fileAcceptFromFileType } from '@/features/iblock-content';
+import { IblockMarkdownEditor } from '@/features/iblock-content/IblockMarkdownEditor';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { validateIblockElementForm } from './iblockElementValidation';

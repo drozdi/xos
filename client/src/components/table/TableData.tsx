@@ -11,18 +11,15 @@ import { TableGroupingProvider } from './context/TableGroupingContext';
 import { TableRowActionsProvider } from './context/TableRowActionsContext';
 import { TableSelectionProvider } from './context/TableSelectionContext';
 import { TableSortProvider } from './context/TableSortContext';
-import { useColumnHidden, useColumnOrder, useColumnSort, useNodeSelect } from './hooks';
+import { useColumnHidden, useColumnOrder, useColumnSort, useNodeSelect, useTableExpands } from './hooks';
 import { useBreakpoint } from './hooks/use-breakpoint';
 import type {
 	ColumnEntity,
 	DataColumnProps,
-	ExpandKind,
 	TableDataProps,
 	TableExpandablesState,
-	TableExpandsState,
 	TableNode,
 	TableStorage,
-	ToggleExpandOptions,
 } from './type';
 import { Table, TableBodyCellSlot, TableEmpty, TableHeaderCellSlot, TablePagination } from "./ui";
 import { TableBulkActionsPanel, TableRowActionsPanel } from './ui/row-actions/panel';
@@ -165,10 +162,6 @@ export function TableData<T = object>({
 
 	const [fetchError, setFetchError] = useState<React.ReactNode>(undefined);
 	const [isLoading, setLoading] = useState<boolean>(false);
-	const [expands, setExpands] = useState<TableExpandsState>({
-		group: [],
-		grouped: [],
-	});
 
 	const [editableMeta, setEditableMeta] = useState<{
 		columns: ColumnEntity<T>['field'][];
@@ -210,7 +203,7 @@ export function TableData<T = object>({
 				isHoverSlot: false,
 				isColumns: calculateIsColumns(column.children),
 				isResizable: !!column.resizable,
-				isHeader: !!column.header,
+				isHeader: column.header != null || !!column.field || !!column.actions,
 				isField: !!column.field && !column.actions,
 				isEmpty: !column.field || !!column.actions,
 				isSorted: false,
@@ -273,6 +266,9 @@ export function TableData<T = object>({
 
 	const resolvedMultiSort = initialMultiSort ?? groupKeys.length > 1;
 	const resolvedMultiGroup = initialMultiGroup ?? groupKeys.length > 1;
+	const allowMultipleExpands = !!initialMultiple || resolvedMultiGroup;
+	const { expands, setExpands, expandedSets, toggleExpand, isExpanded } =
+		useTableExpands(allowMultipleExpands);
 
 	const { sort, changeSort } = useColumnSort(
 		columnsRaw,
@@ -368,56 +364,6 @@ export function TableData<T = object>({
 			return columnWidths[column.field as keyof T] || undefined;
 		},
 		[columnWidths],
-	);
-
-	const toggleExpand = useCallback(
-		(
-			expandKey: string | string[],
-			kind: ExpandKind,
-			options?: ToggleExpandOptions,
-		) => {
-			setExpands((prev) => {
-				const updateKind = (current: string[]) => {
-					if (Array.isArray(expandKey)) {
-						if (options?.remove) {
-							return current.filter((key) => !expandKey.includes(key));
-						}
-						if (options?.merge) {
-							return [...new Set([...current, ...expandKey])];
-						}
-						return expandKey;
-					}
-
-					const allowMultiple = initialMultiple || resolvedMultiGroup;
-
-					if (allowMultiple) {
-						return current.includes(expandKey)
-							? current.filter((key) => key !== expandKey)
-							: [...current, expandKey];
-					}
-					return current.includes(expandKey) ? [] : [expandKey];
-				};
-
-				return {
-					...prev,
-					[kind]: updateKind(prev[kind]),
-				};
-			});
-		},
-		[initialMultiple, resolvedMultiGroup],
-	);
-
-	const expandedSets = useMemo(
-		() => ({
-			group: new Set(expands.group),
-			grouped: new Set(expands.grouped),
-		}),
-		[expands],
-	);
-
-	const isExpanded = useCallback(
-		(expandKey: string, kind: ExpandKind) => expandedSets[kind].has(expandKey),
-		[expandedSets],
 	);
 
 	const render = useCallback<

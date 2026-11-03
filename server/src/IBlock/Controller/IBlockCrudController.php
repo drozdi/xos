@@ -2,8 +2,8 @@
 
 namespace IBlock\Controller;
 
-use AbstractRepository;
 use App\Http\ContentRangeHeaders;
+use App\Http\ListRequest;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,21 +14,16 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 abstract class IBlockCrudController extends AbstractController
 {
-    abstract protected function getRepository(): AbstractRepository;
+    abstract protected function getRepository(): \AbstractRepository;
 
-    /** @param object $entity */
     abstract protected function serializeListItem(object $entity): array;
 
-    /** @param object $entity */
     abstract protected function serializeDetail(object $entity): array;
 
-    /** @return object */
     abstract protected function createEntity(array $data): object;
 
-    /** @param object $entity */
     abstract protected function updateEntity(object $entity, array $data): void;
 
-    /** @param object $entity */
     abstract protected function serializeRemoved(object $entity): array;
 
     protected function getListAlias(): string
@@ -53,15 +48,16 @@ abstract class IBlockCrudController extends AbstractController
     protected function list(Request $request): JsonResponse
     {
         $repository = $this->getRepository();
-        $req = array_merge([
+        $req = ListRequest::merge([
             't' => 'list',
-            'limit' => -1,
+            'limit' => 20,
             'offset' => 1,
             'sortBy' => $this->getDefaultSort(),
             'filters' => $this->getDefaultFilters(),
         ], $request->toArray());
-        $req['limit'] = (int) $req['limit'];
-        $req['offset'] = (int) $req['offset'];
+        if (empty($req['sortBy'])) {
+            $req['sortBy'] = $this->getDefaultSort();
+        }
 
         $totalItems = $repository->cnt($req['filters']);
         $query = $repository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset'], $this->getListAlias());

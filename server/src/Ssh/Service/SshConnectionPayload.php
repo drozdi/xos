@@ -93,8 +93,35 @@ final class SshConnectionPayload
         if (!$isIp && !$isName) {
             throw new BadRequestHttpException('Хост заполнен неверно');
         }
+        if (self::isPrivateHost($host, $isIp)) {
+            throw new BadRequestHttpException('Хост во внутренней сети недоступен');
+        }
 
         return $host;
+    }
+
+    private static function isPrivateHost(string $host, bool $isIp): bool
+    {
+        $lower = strtolower($host);
+        if (\in_array($lower, ['localhost', 'metadata.google.internal'], true)
+            || str_ends_with($lower, '.local')
+            || str_ends_with($lower, '.internal')) {
+            return true;
+        }
+        if ($isIp) {
+            return false === filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        }
+        $records = @gethostbynamel($host);
+        if (!\is_array($records)) {
+            return false;
+        }
+        foreach ($records as $ip) {
+            if (false === filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function port(mixed $value): int

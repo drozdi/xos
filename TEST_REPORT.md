@@ -10,7 +10,7 @@
 
 ```bash
 # из server/
-/c/OSPanel/modules/PHP-8.3/php.exe bin/phpunit \
+php bin/phpunit \
   tests/Controller/UserDataApiTest.php \
   tests/Service/UserAppDataValidatorTest.php \
   tests/Repository/UserAppDataRepositoryTest.php \
@@ -105,7 +105,7 @@ php bin/console doctrine:migrations:migrate
 
 ```bash
 # из server/
-/c/OSPanel/modules/PHP-8.3/php.exe bin/phpunit \
+php bin/phpunit \
   tests/Security/UserScopeResolverTest.php \
   tests/Main/Service/ClaimantManagerSyncTest.php \
   tests/Main/Service/ClaimantManagerExtraRolesTest.php \

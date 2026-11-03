@@ -1,0 +1,25 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"types": ["vite/client", "@testing-library/jest-dom"],
+		"paths": {
+			"@/*": ["./src/*"],
+			"@inccom/*": ["./src/features/inccom/*"],
+			"#dev/vitest/render": ["./src/test/render.tsx"]
+		}
+	},
+	"include": ["src"],
+	"exclude": [
+		"**/*.stories.tsx",
+		"src/features/inccom/features/qr-scanner/**",
+		"src/features/inccom/app/providers/**",
+		"src/features/inccom/shared/internal/**",
+		"src/features/inccom/shared/ui/item/**",
+		"src/features/inccom/shared/ui/list/**",
+		"src/features/inccom/shared/ui/progress/**",
+		"src/features/inccom/shared/utils/fns.ts",
+		"src/features/inccom/shared/utils/is.ts",
+		"src/features/inccom/shared/utils/factory-multi-select.tsx",
+		"src/features/inccom/shared/zustand/**"
+	]
+}

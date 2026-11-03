@@ -3,6 +3,7 @@
 namespace Device\Controller;
 
 use App\Attribute\Access;
+use App\Http\ListRequest;
 use Device\Repository\Software\TypeRepository;
 use Device\Service\SoftwareManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,8 +21,8 @@ class SoftwareTypeController extends AbstractController
     #[Access('can_read')]
     public function list(Request $request, TypeRepository $TypeRepository): JsonResponse
     {
-        $req = array_merge([
-            'limit' => -1,
+        $req = ListRequest::merge([
+            'limit' => 20,
             'offset' => 1,
             'sortBy' => [[
                 'key' => 'sort',
@@ -32,8 +33,6 @@ class SoftwareTypeController extends AbstractController
             ]],
             'filters' => [],
         ], $request->toArray());
-        $req['limit'] = (int) $req['limit'];
-        $req['offset'] = (int) $req['offset'];
         $totalItems = $TypeRepository->cnt($req['filters']);
         $query = $TypeRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -43,7 +42,7 @@ class SoftwareTypeController extends AbstractController
             $items[] = $s;
         }
         $start = $req['limit'] * ($req['offset'] - 1);
-        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = ($req['limit'] * $req['offset']) - 1;
         $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
 
         return $this->json($items, Response::HTTP_OK, [
@@ -55,8 +54,8 @@ class SoftwareTypeController extends AbstractController
     #[Access('can_read')]
     public function select(Request $request, TypeRepository $TypeRepository): JsonResponse
     {
-        $req = array_merge([
-            'limit' => -1,
+        $req = ListRequest::merge([
+            'limit' => 20,
             'offset' => 1,
             'sortBy' => [[
                 'key' => 'sort',
@@ -67,8 +66,6 @@ class SoftwareTypeController extends AbstractController
             ]],
             'filters' => [],
         ], $request->toArray());
-        $req['limit'] = (int) $req['limit'];
-        $req['offset'] = (int) $req['offset'];
         $totalItems = $TypeRepository->cnt($req['filters']);
         $query = $TypeRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -80,7 +77,7 @@ class SoftwareTypeController extends AbstractController
             ];
         }
         $start = $req['limit'] * ($req['offset'] - 1);
-        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = ($req['limit'] * $req['offset']) - 1;
         $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
 
         return $this->json($items, Response::HTTP_OK, [

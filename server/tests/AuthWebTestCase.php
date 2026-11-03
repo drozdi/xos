@@ -9,8 +9,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Main\Entity\AuditLog;
 use Main\Entity\Claimant;
+use Main\Entity\Group as MainGroup;
+use Main\Entity\OU;
 use Main\Entity\User;
 use Main\Entity\User\Access as UserAccess;
+use Main\Entity\User\Group as UserGroup;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -34,6 +37,9 @@ abstract class AuthWebTestCase extends WebTestCase
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
         $metadata = [
             $entityManager->getClassMetadata(User::class),
+            $entityManager->getClassMetadata(OU::class),
+            $entityManager->getClassMetadata(MainGroup::class),
+            $entityManager->getClassMetadata(UserGroup::class),
             $entityManager->getClassMetadata(RefreshToken::class),
             $entityManager->getClassMetadata(UserAccess::class),
             $entityManager->getClassMetadata(Claimant::class),

@@ -27,10 +27,11 @@ class BrowserProxyController extends AbstractController
 
         $client = new NoPrivateNetworkHttpClient(HttpClient::create([
             'timeout' => 8,
-            'max_redirects' => 3,
+            'max_redirects' => 0,
         ]));
 
         try {
+            $url = $this->followAllowedRedirects($client, $url);
             $response = $client->request('GET', $url, [
                 'headers' => [
                     'User-Agent' => 'Mozilla/5.0 (compatible; XOS-Browser/1.0)',
@@ -102,6 +103,50 @@ class BrowserProxyController extends AbstractController
         }
 
         return true;
+    }
+
+    private function followAllowedRedirects(NoPrivateNetworkHttpClient $client, string $url): string
+    {
+        for ($hop = 0; $hop < 3; ++$hop) {
+            $probe = $client->request('HEAD', $url, [
+                'headers' => ['User-Agent' => 'Mozilla/5.0 (compatible; XOS-Browser/1.0)'],
+            ]);
+            $status = $probe->getStatusCode();
+            if ($status < 300 || $status >= 400) {
+                return $url;
+            }
+            $location = $probe->getHeaders(false)['location'][0] ?? '';
+            $probe->cancel();
+            if ('' === $location) {
+                return $url;
+            }
+            $next = $this->resolveRedirect($url, $location);
+            if (!$this->isAllowedUrl($next)) {
+                throw new \App\Exception\UserFacingException('Редирект ведёт на недопустимый адрес');
+            }
+            $url = $next;
+        }
+
+        throw new \App\Exception\UserFacingException('Слишком много редиректов');
+    }
+
+    private function resolveRedirect(string $current, string $location): string
+    {
+        if (str_starts_with($location, 'http://') || str_starts_with($location, 'https://')) {
+            return $location;
+        }
+        $parts = parse_url($current);
+        $origin = ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '');
+        if (isset($parts['port'])) {
+            $origin .= ':'.$parts['port'];
+        }
+        if (str_starts_with($location, '/')) {
+            return $origin.$location;
+        }
+        $path = $parts['path'] ?? '/';
+        $dir = str_ends_with($path, '/') ? $path : substr($path, 0, (int) strrpos($path, '/') + 1);
+
+        return $origin.$dir.$location;
     }
 
     private function injectCsp(string $html): string

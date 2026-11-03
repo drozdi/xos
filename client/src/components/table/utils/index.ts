@@ -3,6 +3,7 @@ export * from './column-dnd';
 export * from './column-fields';
 export * from './column-order-index';
 export * from './convert-nodes';
+export * from './expand-keys';
 export * from './group-by';
 export * from './limit-by';
 export * from './row-actions';

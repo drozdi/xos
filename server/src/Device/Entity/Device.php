@@ -2,26 +2,26 @@
 
 namespace Device\Entity;
 
-use Device\Entity\Device\License as DeviceLicense;
-use Device\Entity\Device\Repair;
-use Device\Entity\Device\Location;
 use Device\Entity\Device\History;
+use Device\Entity\Device\License as DeviceLicense;
+use Device\Entity\Device\Location;
 use Device\Entity\Device\Property as DeviceProperty;
-use Main\Entity\File;
-use Main\Entity\User;
+use Device\Entity\Device\Repair;
 use Device\Repository\DeviceRepository;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
-use Doctrine\Common\Collections\Criteria;
-use Doctrine\Common\Collections\ArrayCollection;
+use Main\Entity\File;
+use Main\Entity\User;
 
 #[ORM\Table(name: 'd_device')]
-#[ORM\UniqueConstraint(columns: ["group_id", "code"])]
-#[ORM\UniqueConstraint(columns: ["type_id", "sn"])]
+#[ORM\UniqueConstraint(columns: ['group_id', 'code'])]
+#[ORM\UniqueConstraint(columns: ['type_id', 'sn'])]
 #[ORM\Entity(repositoryClass: DeviceRepository::class)]
 #[ORM\HasLifecycleCallbacks]
-class Device {
+class Device
+{
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -109,9 +109,10 @@ class Device {
     private $licenses;
 
     /**
-     * Constructor
+     * Constructor.
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->children = new ArrayCollection();
         $this->properties = new ArrayCollection();
         $this->locations = new ArrayCollection();
@@ -119,13 +120,13 @@ class Device {
         $this->repairs = new ArrayCollection();
         $this->licenses = new ArrayCollection();
 
-        $this->setDateCreated(new \DateTime);
+        $this->setDateCreated(new \DateTime());
     }
 
     /**
-     * Get id
+     * Get id.
      *
-     * @return integer
+     * @return int
      */
     public function getId()
     {
@@ -133,7 +134,7 @@ class Device {
     }
 
     /**
-     * Set xTimestamp
+     * Set xTimestamp.
      *
      * @param \DateTime $xTimestamp
      *
@@ -147,7 +148,7 @@ class Device {
     }
 
     /**
-     * Get xTimestamp
+     * Get xTimestamp.
      *
      * @return \DateTime
      */
@@ -157,7 +158,7 @@ class Device {
     }
 
     /**
-     * Set dateCreated
+     * Set dateCreated.
      *
      * @param \DateTime $dateCreated
      *
@@ -171,7 +172,7 @@ class Device {
     }
 
     /**
-     * Get dateCreated
+     * Get dateCreated.
      *
      * @return \DateTime
      */
@@ -181,7 +182,7 @@ class Device {
     }
 
     /**
-     * Set code
+     * Set code.
      *
      * @param string $code
      *
@@ -195,8 +196,9 @@ class Device {
     }
 
     /**
-     * Get code
-     * @param boolean $autoPrefix[true]
+     * Get code.
+     *
+     * @param bool $autoPrefix[true]
      *
      * @return string
      */
@@ -205,11 +207,12 @@ class Device {
         if ($autoPrefix && $this->type) {
             return $this->type->getPrefix().$this->code;
         }
+
         return $this->code;
     }
 
     /**
-     * Set name
+     * Set name.
      *
      * @param string $name
      *
@@ -223,7 +226,7 @@ class Device {
     }
 
     /**
-     * Get name
+     * Get name.
      *
      * @return string
      */
@@ -233,7 +236,7 @@ class Device {
     }
 
     /**
-     * Set sn
+     * Set sn.
      *
      * @param string $sn
      *
@@ -247,7 +250,7 @@ class Device {
     }
 
     /**
-     * Get sn
+     * Get sn.
      *
      * @return string
      */
@@ -257,7 +260,7 @@ class Device {
     }
 
     /**
-     * Set description
+     * Set description.
      *
      * @param string $description
      *
@@ -271,7 +274,7 @@ class Device {
     }
 
     /**
-     * Get description
+     * Get description.
      *
      * @return string
      */
@@ -281,11 +284,11 @@ class Device {
     }
 
     /**
-     * Set sort
+     * Set sort.
      *
-     * @param integer $sort
+     * @param int $sort
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
     public function setSort($sort)
     {
@@ -295,9 +298,9 @@ class Device {
     }
 
     /**
-     * Get code
+     * Get code.
      *
-     * @return integer
+     * @return int
      */
     public function getSort()
     {
@@ -305,12 +308,11 @@ class Device {
     }
 
     /**
-     * Add child
+     * Add child.
      *
-     * @param \Device\Entity\Device $child
-     * @param boolean $setParent[true]
+     * @param bool $setParent[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
     public function addChild(Device $child, $setParent = true)
     {
@@ -326,14 +328,13 @@ class Device {
     }
 
     /**
-     * Remove child
+     * Remove child.
      *
-     * @param \Device\Entity\Device $child
-     * @param boolean $removeParent[true]
+     * @param bool $removeParent[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function removeChild(\Device\Entity\Device $child, $removeParent = true)
+    public function removeChild(Device $child, $removeParent = true)
     {
         $this->children->removeElement($child);
 
@@ -351,7 +352,7 @@ class Device {
     }
 
     /**
-     * Get children
+     * Get children.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
@@ -361,14 +362,14 @@ class Device {
     }
 
     /**
-     * Set parent
+     * Set parent.
      *
-     * @param \Device\Entity\Device $parent
-     * @param boolean $addChild[true]
+     * @param bool $addChild[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function setParent (Device $parent = null, $addChild = true) {
+    public function setParent(?Device $parent = null, $addChild = true)
+    {
         if ((null === $parent || $this->parent !== $parent) && null !== $this->parent) {
             $this->parent->removeChild($this, false);
         }
@@ -383,22 +384,22 @@ class Device {
     }
 
     /**
-     * Get parent
+     * Get parent.
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function getParent () {
+    public function getParent()
+    {
         return $this->parent;
     }
 
     /**
-     * Set type
+     * Set type.
      *
-     * @param \Device\Entity\Type $type
-     *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function setType (Type $type = null) {
+    public function setType(?Type $type = null)
+    {
         $this->type = $type;
 
         if (null != $this->type) {
@@ -411,44 +412,44 @@ class Device {
     }
 
     /**
-     * Get type
+     * Get type.
      *
-     * @return \Device\Entity\Type
+     * @return Type
      */
-    public function getType () {
+    public function getType()
+    {
         return $this->type;
     }
 
     /**
-     * Set type
+     * Set type.
      *
-     * @param \Device\Entity\Type $type
-     *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function setGroup (Type $type = null) {
+    public function setGroup(?Type $type = null)
+    {
         $this->group = $type;
 
         return $this;
     }
 
     /**
-     * Get type
+     * Get type.
      *
-     * @return \Device\Entity\Type
+     * @return Type
      */
-    public function getGroup () {
+    public function getGroup()
+    {
         return $this->group;
     }
+
     /**
-     * Set accounting
+     * Set accounting.
      *
-     * @param \Device\Entity\Accounting $accounting
-     * @param boolean #setDevice[true]
-     *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function setAccounting (Accounting $accounting = null, $setDevice = true) {
+    public function setAccounting(?Accounting $accounting = null, bool $setDevice = true)
+    {
         if ((null === $accounting || $this->accounting !== $accounting) && null !== $this->accounting) {
             $this->accounting->setDevice(null, false);
         }
@@ -463,59 +464,61 @@ class Device {
     }
 
     /**
-     * Get accounting
+     * Get accounting.
      *
-     * @return \Device\Entity\Accounting
+     * @return Accounting
      */
-    public function getAccounting () {
+    public function getAccounting()
+    {
         return $this->accounting;
     }
 
     /**
-     * Set log
+     * Set log.
      *
      * @param string $log
      *
      * @return Device
      */
-    public function setLog ($log) {
+    public function setLog($log)
+    {
         $this->log = $log;
 
         return $this;
     }
 
     /**
-     * Get log
+     * Get log.
      *
      * @return string
      */
-    public function getLog () {
+    public function getLog()
+    {
         return $this->log;
     }
 
     /**
-     * Add log
+     * Add log.
      *
      * @param string $mes
      *
      * @return Device
      */
-    public function addLog ($mes) {
-        $this->log = $this->log.(new \DateTime)->format("d.m.Y H:i").": ".$mes."\n";
+    public function addLog($mes)
+    {
+        $this->log = $this->log.(new \DateTime())->format('d.m.Y H:i').': '.$mes."\n";
 
         return $this;
     }
 
     /**
-     * New property
+     * New property.
      *
-     * @param \Device\Entity\Property $property
-     *
-     * @return \Device\Entity\Device\Property $property
+     * @return DeviceProperty $property
      */
-    public function newProperty (\Device\Entity\Property $property = null)
+    public function newProperty(?Property $property = null)
     {
-        $prop = new \Device\Entity\Device\Property;
+        $prop = new DeviceProperty();
 
         $prop->setProperty($property);
 
@@ -525,14 +528,13 @@ class Device {
     }
 
     /**
-     * Add property
+     * Add property.
      *
-     * @param \Device\Entity\Device\Property $property
-     * @param boolean $setDevice[true]
+     * @param bool $setDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function addProperty(\Device\Entity\Device\Property $property, $setDevice = true)
+    public function addProperty(DeviceProperty $property, $setDevice = true)
     {
         if (false === $this->properties->indexOf($property)) {
             $this->properties[] = $property;
@@ -546,14 +548,13 @@ class Device {
     }
 
     /**
-     * Remove property
+     * Remove property.
      *
-     * @param \Device\Entity\Device\Property $property
-     * @param boolean $removeDevice[true]
+     * @param bool $removeDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function removeProperty(\Device\Entity\Device\Property $property, $removeDevice = true)
+    public function removeProperty(DeviceProperty $property, $removeDevice = true)
     {
         $this->properties->removeElement($property);
 
@@ -565,7 +566,7 @@ class Device {
     }
 
     /**
-     * Get properties
+     * Get properties.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
@@ -575,14 +576,13 @@ class Device {
     }
 
     /**
-     * New history
+     * New history.
      *
-     * @param \Device\Entity\Device $device
-     *
-     * @return \Device\Entity\Device\History
+     * @return History
      */
-    public function newHistory(Device $device) {
-        $history = new Device\History;
+    public function newHistory(Device $device)
+    {
+        $history = new History();
 
         $history
             ->setDevice($this)
@@ -592,47 +592,51 @@ class Device {
 
         return $history;
     }
+
     /**
-     * Add history
-     *
-     * @param \Device\Entity\Device\History $history
+     * Add history.
      *
      * @return Device
      */
-    public function addHistory (Device\History $history) {
+    public function addHistory(History $history)
+    {
         if (false === $this->histories->indexOf($history)) {
             $this->histories[] = $history;
         }
 
         return $this;
     }
+
     /**
-     * Remove history
-     *
-     * @param \Device\Entity\Device\History $history
+     * Remove history.
      *
      * @return Device
      */
-    public function removeHistory (Device\History $history) {
+    public function removeHistory(History $history)
+    {
         $this->histories->removeElement($history);
 
         return $this;
     }
+
     /**
-     * Get histories
+     * Get histories.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getHistories () {
+    public function getHistories()
+    {
         return $this->histories;
     }
+
     /**
-     * New repair
+     * New repair.
      *
-     * @return \Device\Entity\Device\Repair
+     * @return Repair
      */
-    public function newRepair () {
-        $repair = new \Device\Entity\Device\Repair;
+    public function newRepair()
+    {
+        $repair = new Repair();
 
         $repair
             ->setDevice($this, false);
@@ -641,15 +645,16 @@ class Device {
 
         return $repair;
     }
+
     /**
-     * Add repair
+     * Add repair.
      *
-     * @param \Device\Entity\Device\Repair $repair
-     * @param boolean $setDevice[true]
+     * @param bool $setDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function addRepair (Device\Repair $repair, $setDevice = true) {
+    public function addRepair(Repair $repair, $setDevice = true)
+    {
         if (false === $this->repairs->indexOf($repair)) {
             $this->repairs[] = $repair;
         }
@@ -660,15 +665,16 @@ class Device {
 
         return $this;
     }
+
     /**
-     * Remove repair
+     * Remove repair.
      *
-     * @param \Device\Entity\Device\Repair $repair
-     * @param boolean $removeDevice[true]
+     * @param bool $removeDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function removeRepair (Device\Repair $repair, $removeDevice = true) {
+    public function removeRepair(Repair $repair, $removeDevice = true)
+    {
         $this->repairs->removeElement($repair);
 
         if (true === $removeDevice) {
@@ -677,22 +683,25 @@ class Device {
 
         return $this;
     }
+
     /**
-     * Get repairs
+     * Get repairs.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getRepairs () {
+    public function getRepairs()
+    {
         return $this->repairs;
     }
 
     /**
-     * New location
+     * New location.
      *
-     * @return \Device\Entity\Device\Location
+     * @return Location
      */
-    public function newLocation () {
-        $location = new \Device\Entity\Device\Location;
+    public function newLocation()
+    {
+        $location = new Location();
 
         $location
             ->setDevice($this, false);
@@ -703,14 +712,14 @@ class Device {
     }
 
     /**
-     * Add location
+     * Add location.
      *
-     * @param \Device\Entity\Device\Location $location
-     * @param boolean $setDevice[true]
+     * @param bool $setDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function addLocation (Device\Location $location, $setDevice = true) {
+    public function addLocation(Location $location, $setDevice = true)
+    {
         if (false === $this->locations->indexOf($location)) {
             $this->locations[] = $location;
         }
@@ -723,14 +732,14 @@ class Device {
     }
 
     /**
-     * Remove location
+     * Remove location.
      *
-     * @param \Device\Entity\Device\Location $location
-     * @param boolean $removeDevice[true]
+     * @param bool $removeDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function removeLocation (Device\Location $location, $removeDevice = true) {
+    public function removeLocation(Location $location, $removeDevice = true)
+    {
         $this->locations->removeElement($location);
 
         if (true === $removeDevice) {
@@ -741,44 +750,44 @@ class Device {
     }
 
     /**
-     * Get locations
+     * Get locations.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getLocations () {
+    public function getLocations()
+    {
         return $this->locations;
     }
 
     /**
-     * Set file
+     * Set file.
      *
-     * @param \Main\Entity\File $file
-     *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function setFile (\Main\Entity\File $file = null) {
+    public function setFile(?File $file = null)
+    {
         $this->file = $file;
 
         return $this;
     }
 
     /**
-     * Get file
+     * Get file.
      *
-     * @return \Main\Entity\File
+     * @return File
      */
-    public function getFile () {
+    public function getFile()
+    {
         return $this->file;
     }
 
     /**
-     * Add property
+     * Add property.
      *
-     * @param \Main\Entity\File $file
-     *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function addImage (\Main\Entity\File $file) {
+    public function addImage(File $file)
+    {
         if (false === $this->images->indexOf($file)) {
             $this->images[] = $file;
         }
@@ -787,30 +796,31 @@ class Device {
     }
 
     /**
-     * Remove property
+     * Remove property.
      *
-     * @param \Main\Entity\File $file
-     *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function removeImage (\Main\Entity\File $file) {
+    public function removeImage(File $file)
+    {
         $this->images->removeElement($file);
 
         return $this;
     }
 
     /**
-     * Get images
+     * Get images.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
-    public function getImages () {
+    public function getImages()
+    {
         return $this->images;
     }
+
     /**
-     * Set createdBy
+     * Set createdBy.
      *
-     * @param \Main\Entity\User $createdBy
+     * @param User $createdBy
      *
      * @return Device
      */
@@ -822,9 +832,9 @@ class Device {
     }
 
     /**
-     * Get createdBy
+     * Get createdBy.
      *
-     * @return \Main\Entity\User
+     * @return User
      */
     public function getCreatedBy()
     {
@@ -832,9 +842,9 @@ class Device {
     }
 
     /**
-     * Set modifiedBy
+     * Set modifiedBy.
      *
-     * @param \Main\Entity\User $modifiedBy
+     * @param User $modifiedBy
      *
      * @return Device
      */
@@ -846,9 +856,9 @@ class Device {
     }
 
     /**
-     * Get modifiedBy
+     * Get modifiedBy.
      *
-     * @return \Main\Entity\User
+     * @return User
      */
     public function getModifiedBy()
     {
@@ -856,15 +866,13 @@ class Device {
     }
 
     /**
-     * New license
+     * New license.
      *
-     * @param \Device\Entity\License\Software $licenseSoftware
-     *
-     * @return \Device\Entity\Device\License
+     * @return DeviceLicense
      */
-    public function newLicense(\Device\Entity\License\Software $licenseSoftware)
+    public function newLicense(License\Software $licenseSoftware)
     {
-        $license = new \Device\Entity\Device\License;
+        $license = new DeviceLicense();
 
         $license->setLicenseSoftware($licenseSoftware);
 
@@ -874,14 +882,13 @@ class Device {
     }
 
     /**
-     * Add license
+     * Add license.
      *
-     * @param \Device\Entity\Device\License $license
-     * @param boolean $setDevice[true]
+     * @param bool $setDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function addLicense(\Device\Entity\Device\License $license, $setDevice = true)
+    public function addLicense(DeviceLicense $license, $setDevice = true)
     {
         if (false === $this->licenses->indexOf($license)) {
             $this->licenses[] = $license;
@@ -895,14 +902,13 @@ class Device {
     }
 
     /**
-     * Remove license
+     * Remove license.
      *
-     * @param \Device\Entity\Device\License $license
-     * @param boolean $removeDevice[true]
+     * @param bool $removeDevice[true]
      *
-     * @return \Device\Entity\Device
+     * @return Device
      */
-    public function removeLicense(\Device\Entity\Device\License $license, $removeDevice = true)
+    public function removeLicense(DeviceLicense $license, $removeDevice = true)
     {
         $this->licenses->removeElement($license);
 
@@ -914,7 +920,7 @@ class Device {
     }
 
     /**
-     * Get licenses
+     * Get licenses.
      *
      * @return \Doctrine\Common\Collections\Collection
      */
@@ -925,8 +931,9 @@ class Device {
 
     #[ORM\PrePersist]
     #[ORM\PreUpdate]
-    public function preUpdate (LifecycleEventArgs $event) {
-        $errors = array();
+    public function preUpdate(LifecycleEventArgs $event)
+    {
+        $errors = [];
 
         if (null == $this->type) {
             $errors[] = 'Не выбрали тип устройства(компонента)!';
@@ -947,12 +954,13 @@ class Device {
     }
 
     #[ORM\PreRemove]
-    public function preRemove (LifecycleEventArgs $event) {
-        $errors = array();
+    public function preRemove(LifecycleEventArgs $event)
+    {
+        $errors = [];
 
-        if ((int)$event->getObjectManager()->getRepository('Device\Entity\Device\Property')->count(array(
-                'subDevice' => $this->id
-            )) > 0) {
+        if ((int) $event->getObjectManager()->getRepository('Device\Entity\Device\Property')->count([
+            'subDevice' => $this->id,
+        ]) > 0) {
             $errors[] = 'Нельзя удалить компонент "'.$this->getName().'", пока он установлен в устройстве!';
         }
 

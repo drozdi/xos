@@ -71,7 +71,7 @@ export function createTemplateContext(): [any & Record<string, any>, Function] {
 		useDebugValue(slice)
 		return slice
 	}
-	const setState = useCallback((state: TState) => {
+	const setState = (state: TState) => {
 		let hasChanges = false
 		const newTemplates = { ...templates }
 
@@ -88,7 +88,7 @@ export function createTemplateContext(): [any & Record<string, any>, Function] {
 
 		templates = newTemplates
 		listeners.forEach(listener => listener(templates))
-	}, [])
+	}
 	function register(slotName: string, element: React.ReactNode): void {
 		if (templates[slotName] === element) {
 			return

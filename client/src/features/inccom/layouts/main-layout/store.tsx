@@ -78,19 +78,20 @@ function TemplateHas({
 }
 Template.Has = TemplateHas;
 
-Template.Title = ({
+function TemplateTitle({
 	children,
 	...props
 }: {
 	children: React.ReactNode;
 	[key: string]: any;
-}) => {
+}) {
 	const manager = Template.use();
 	if (!manager) {
 		return <Title {...props}>{children}</Title>;
 	}
 	return <Template slot="title">{children}</Template>;
-};
+}
+Template.Title = TemplateTitle;
 
 Template.Footer = ({ children }: { children: React.ReactNode }) => (
 	<Template slot="footer">{children}</Template>

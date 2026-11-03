@@ -62,8 +62,8 @@ final class IblockImageRef
     /**
      * Apply preview_image / detail_image from request fields onto an entity with setters.
      *
-     * @param object{setPreviewImage(?MainFile): mixed, setDetailImage(?MainFile): mixed} $entity
-     * @param array<string, mixed>                                                         $fields
+     * @param object               $entity entity with setPreviewImage() and setDetailImage()
+     * @param array<string, mixed> $fields
      */
     public static function applyTo(object $entity, array $fields, EntityManagerInterface $em): void
     {

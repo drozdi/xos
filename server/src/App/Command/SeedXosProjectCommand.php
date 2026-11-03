@@ -50,6 +50,8 @@ final class SeedXosProjectCommand extends Command
     private const BOARD_TITLE = 'XOS — roadmap';
     private const VAULT_SLUG = 'xos';
 
+    private ?User $seedOwner = null;
+
     public function __construct(
         private readonly UserRepository $users,
         private readonly WorkspaceRepository $workspaces,
@@ -91,7 +93,7 @@ final class SeedXosProjectCommand extends Command
 
         $vault = $this->seedVault($io, $user, $force);
         $board = $this->seedBoard($io, $user, $force, $vault);
-        $content = $this->seedContentCatalog($io);
+        $content = $this->seedContentCatalog($io, $user);
         $this->syncAppIdeas($io, $user);
 
         $io->success([
@@ -233,8 +235,9 @@ MD,
      *
      * @return array{type_id: int, notes_id: int, recipes_id: int}|null
      */
-    private function seedContentCatalog(SymfonyStyle $io): ?array
+    private function seedContentCatalog(SymfonyStyle $io, User $owner): ?array
     {
+        $this->seedOwner = $owner;
         $type = $this->iblockTypes->findOneBy(['code' => 'content']);
         if (!$type instanceof Type) {
             $typeId = $this->typeManager->add([
@@ -697,14 +700,24 @@ MD,
     {
         $existing = $this->iblockElements->findOneBy(['code' => $code, 'block' => $block]);
         if ($existing instanceof Element) {
+            if (null === $existing->getCreatedBy() && $this->seedOwner instanceof User) {
+                $existing->setCreatedBy($this->seedOwner);
+                $this->iblockElements->save($existing, true);
+            }
+
             return;
         }
-        $this->elementManager->add(array_merge([
+        $id = $this->elementManager->add(array_merge([
             'code' => $code,
             'name' => $name,
             'block_id' => $block->getId(),
             'active' => true,
         ], $fields));
+        $created = $this->iblockElements->find($id);
+        if ($created instanceof Element && null === $created->getCreatedBy() && $this->seedOwner instanceof User) {
+            $created->setCreatedBy($this->seedOwner);
+            $this->iblockElements->save($created, true);
+        }
     }
 
     private function resolveUser(?string $login): User

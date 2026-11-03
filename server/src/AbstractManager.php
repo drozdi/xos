@@ -1,6 +1,7 @@
 <?php
 
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -16,26 +17,37 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Service\Attribute\Required;
 use Symfony\Contracts\Service\ServiceSubscriberInterface;
 
-use Psr\Container\ContainerInterface;
-
-abstract class AbstractManager implements ServiceSubscriberInterface{
+abstract class AbstractManager implements ServiceSubscriberInterface
+{
     protected ValidatorInterface $validator;
     protected ContainerInterface $container;
-    public function __construct (ValidatorInterface $Validator) {
+
+    public function __construct(ValidatorInterface $Validator)
+    {
         $this->validator = $Validator;
     }
+
     #[Required]
-    public function setContainer (ContainerInterface $container): ?ContainerInterface
+    public function setContainer(ContainerInterface $container): ?ContainerInterface
     {
         $previous = $this->container ?? null;
         $this->container = $container;
 
         return $previous;
     }
-    public function getEntityManager (): ?EntityManagerInterface {
-        return $this->container->get('doctrine.orm.default_entity_manager');
+
+    public function getEntityManager(): EntityManagerInterface
+    {
+        $manager = $this->container->get('doctrine.orm.default_entity_manager');
+        if (!$manager instanceof EntityManagerInterface) {
+            throw new LogicException('Entity manager is not available');
+        }
+
+        return $manager;
     }
-    public static function getSubscribedServices(): array {
+
+    public static function getSubscribedServices(): array
+    {
         return [
             'debug.validator' => TraceableValidator::class,
             'doctrine.orm.default_entity_manager' => EntityManagerInterface::class,
@@ -45,22 +57,27 @@ abstract class AbstractManager implements ServiceSubscriberInterface{
             'security.csrf.token_manager' => '?'.CsrfTokenManagerInterface::class,
             'request_stack' => '?'.RequestStack::class,
             'http_kernel' => '?'.HttpKernelInterface::class,
-            'parameter_bag' => '?'.ContainerBagInterface::class
+            'parameter_bag' => '?'.ContainerBagInterface::class,
         ];
     }
-    protected function getRequest (): ?Request {
+
+    protected function getRequest(): ?Request
+    {
         if (null === ($requestStack = $this->container->get('request_stack'))) {
             return null;
         }
+
         return $requestStack->getCurrentRequest();
     }
-    protected function getUser (): ?UserInterface {
+
+    protected function getUser(): ?UserInterface
+    {
         if (!$this->container->has('security.token_storage')) {
             return null;
         }
         try {
             $tokenStorage = $this->container->get('security.token_storage');
-        } catch (\Psr\Container\ContainerExceptionInterface) {
+        } catch (Psr\Container\ContainerExceptionInterface) {
             return null;
         }
         if (null === $tokenStorage || null === $token = $tokenStorage->getToken()) {
@@ -69,21 +86,28 @@ abstract class AbstractManager implements ServiceSubscriberInterface{
 
         return $token->getUser();
     }
-    protected function isGranted (mixed $attribute, mixed $subject = null): bool {
+
+    protected function isGranted(mixed $attribute, mixed $subject = null): bool
+    {
         return $this->container->get('security.authorization_checker')->isGranted($attribute, $subject);
     }
-    protected function getValidator (): ?ValidatorInterface {
+
+    protected function getValidator(): ?ValidatorInterface
+    {
         return $this->validator;
-        //return $this->container->get('debug.validator');
+        // return $this->container->get('debug.validator');
     }
-    public function parseViolation (ConstraintViolationListInterface $violationList): array {
+
+    public function parseViolation(ConstraintViolationListInterface $violationList): array
+    {
         $errors = [];
         if ($violationList->count() > 0) {
             foreach ($violationList as $error) {
-                $errors[$error->getPropertyPath()] = "";
+                $errors[$error->getPropertyPath()] = '';
                 $errors[$error->getPropertyPath()] .= $error->getMessage()."\n";
             }
         }
+
         return $errors;
     }
 }

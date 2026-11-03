@@ -15,7 +15,6 @@ use Board\Entity\Label;
 use Board\Entity\Workspace;
 use Board\Entity\WorkspaceMember;
 use Board\Enum\ActivityAction;
-use Board\Enum\MemberRole;
 use Board\Repository\ActivityLogRepository;
 use Board\Repository\AttachmentRepository;
 use Board\Repository\BoardListRepository;
@@ -52,6 +51,7 @@ class BoardManager extends \AbstractManager
         private readonly PkbManager $pkbManager,
         private readonly PkbPermissionResolver $pkbPermissionResolver,
         private readonly BoardMercurePublisher $mercurePublisher,
+        private readonly BoardInputNormalizer $inputNormalizer,
     ) {
         parent::__construct($validator);
     }
@@ -131,9 +131,9 @@ class BoardManager extends \AbstractManager
     {
         $workspace = new Workspace();
         $workspace->setOwner($user);
-        $workspace->setName($this->normalizeName($data['name'] ?? null));
+        $workspace->setName($this->inputNormalizer->normalizeName($data['name'] ?? null));
         if (array_key_exists('description', $data)) {
-            $workspace->setDescription($this->normalizeNullableText($data['description']));
+            $workspace->setDescription($this->inputNormalizer->normalizeNullableText($data['description']));
         }
 
         $em = $this->getEntityManager();
@@ -150,10 +150,10 @@ class BoardManager extends \AbstractManager
         }
 
         if (array_key_exists('name', $data)) {
-            $workspace->setName($this->normalizeName($data['name']));
+            $workspace->setName($this->inputNormalizer->normalizeName($data['name']));
         }
         if (array_key_exists('description', $data)) {
-            $workspace->setDescription($this->normalizeNullableText($data['description']));
+            $workspace->setDescription($this->inputNormalizer->normalizeNullableText($data['description']));
         }
 
         $this->getEntityManager()->flush();
@@ -181,18 +181,18 @@ class BoardManager extends \AbstractManager
         $board = new Board();
         $board->setWorkspace($workspace);
         $board->setCreatedBy($user);
-        $board->setTitle($this->normalizeTitle($data['title'] ?? null));
+        $board->setTitle($this->inputNormalizer->normalizeTitle($data['title'] ?? null));
         if (array_key_exists('description', $data)) {
-            $board->setDescription($this->normalizeNullableText($data['description']));
+            $board->setDescription($this->inputNormalizer->normalizeNullableText($data['description']));
         }
         if (array_key_exists('background_type', $data)) {
-            $board->setBackgroundType($this->normalizeBackgroundType($data['background_type']));
+            $board->setBackgroundType($this->inputNormalizer->normalizeBackgroundType($data['background_type']));
         }
         if (array_key_exists('background_value', $data)) {
             $board->setBackgroundValue(trim((string) $data['background_value']));
         }
         if (array_key_exists('visibility', $data)) {
-            $board->setVisibility($this->normalizeVisibility($data['visibility']));
+            $board->setVisibility($this->inputNormalizer->normalizeVisibility($data['visibility']));
         }
 
         $em = $this->getEntityManager();
@@ -253,8 +253,8 @@ class BoardManager extends \AbstractManager
         $filters = [
             'assignee_ids' => $params['assignee_ids'] ?? [],
             'label_ids' => $params['label_ids'] ?? [],
-            'due_before' => $this->parseFilterDate($params['due_before'] ?? null),
-            'due_after' => $this->parseFilterDate($params['due_after'] ?? null),
+            'due_before' => $this->inputNormalizer->parseFilterDate($params['due_before'] ?? null),
+            'due_after' => $this->inputNormalizer->parseFilterDate($params['due_after'] ?? null),
             'q' => trim((string) ($params['q'] ?? '')),
         ];
 
@@ -418,19 +418,19 @@ class BoardManager extends \AbstractManager
         }
 
         if (array_key_exists('title', $data)) {
-            $board->setTitle($this->normalizeTitle($data['title']));
+            $board->setTitle($this->inputNormalizer->normalizeTitle($data['title']));
         }
         if (array_key_exists('description', $data)) {
-            $board->setDescription($this->normalizeNullableText($data['description']));
+            $board->setDescription($this->inputNormalizer->normalizeNullableText($data['description']));
         }
         if (array_key_exists('background_type', $data)) {
-            $board->setBackgroundType($this->normalizeBackgroundType($data['background_type']));
+            $board->setBackgroundType($this->inputNormalizer->normalizeBackgroundType($data['background_type']));
         }
         if (array_key_exists('background_value', $data)) {
             $board->setBackgroundValue(trim((string) $data['background_value']));
         }
         if (array_key_exists('visibility', $data)) {
-            $board->setVisibility($this->normalizeVisibility($data['visibility']));
+            $board->setVisibility($this->inputNormalizer->normalizeVisibility($data['visibility']));
         }
 
         $this->getEntityManager()->flush();
@@ -447,7 +447,7 @@ class BoardManager extends \AbstractManager
 
         $list = new BoardList();
         $list->setBoard($board);
-        $list->setTitle($this->normalizeTitle($data['title'] ?? null));
+        $list->setTitle($this->inputNormalizer->normalizeTitle($data['title'] ?? null));
         $list->setOrderIndex($this->nextOrderIndex($board));
         $board->addList($list);
 
@@ -485,7 +485,7 @@ class BoardManager extends \AbstractManager
         }
 
         if (array_key_exists('title', $data)) {
-            $list->setTitle($this->normalizeTitle($data['title']));
+            $list->setTitle($this->inputNormalizer->normalizeTitle($data['title']));
         }
         if (array_key_exists('assignee_id', $data)) {
             $list->setAssignee($this->resolveOptionalUserById($data['assignee_id']));
@@ -561,7 +561,7 @@ class BoardManager extends \AbstractManager
         $card = new Card();
         $card->setList($list);
         $card->setCreatedBy($user);
-        $card->setTitle($this->normalizeCardTitle($data['title'] ?? null));
+        $card->setTitle($this->inputNormalizer->normalizeCardTitle($data['title'] ?? null));
         $card->setPosition($this->nextCardPosition($list));
         $list->addCard($card);
 
@@ -608,16 +608,16 @@ class BoardManager extends \AbstractManager
         }
 
         if (array_key_exists('title', $data)) {
-            $card->setTitle($this->normalizeCardTitle($data['title']));
+            $card->setTitle($this->inputNormalizer->normalizeCardTitle($data['title']));
         }
         if (array_key_exists('description_md', $data)) {
-            $card->setDescriptionMd($this->normalizeNullableText($data['description_md']));
+            $card->setDescriptionMd($this->inputNormalizer->normalizeNullableText($data['description_md']));
         }
         if (array_key_exists('due_date', $data)) {
-            $card->setDueDate($this->parseNullableDateTime($data['due_date']));
+            $card->setDueDate($this->inputNormalizer->parseNullableDateTime($data['due_date']));
         }
         if (array_key_exists('cover_color', $data)) {
-            $card->setCoverColor($this->normalizeNullableText($data['cover_color']));
+            $card->setCoverColor($this->inputNormalizer->normalizeNullableText($data['cover_color']));
         }
         if (array_key_exists('pkb_vault_id', $data) || array_key_exists('pkb_note_path', $data)) {
             $vaultId = array_key_exists('pkb_vault_id', $data) ? $data['pkb_vault_id'] : $card->getPkbVaultId();
@@ -750,8 +750,8 @@ class BoardManager extends \AbstractManager
 
         $label = new Label();
         $label->setBoard($board);
-        $label->setName($this->normalizeLabelName($data['name'] ?? null));
-        $label->setColor($this->normalizeLabelColor($data['color'] ?? null));
+        $label->setName($this->inputNormalizer->normalizeLabelName($data['name'] ?? null));
+        $label->setColor($this->inputNormalizer->normalizeLabelColor($data['color'] ?? null));
         $board->addLabel($label);
 
         $em = $this->getEntityManager();
@@ -786,10 +786,10 @@ class BoardManager extends \AbstractManager
         }
 
         if (array_key_exists('name', $data)) {
-            $label->setName($this->normalizeLabelName($data['name']));
+            $label->setName($this->inputNormalizer->normalizeLabelName($data['name']));
         }
         if (array_key_exists('color', $data)) {
-            $label->setColor($this->normalizeLabelColor($data['color']));
+            $label->setColor($this->inputNormalizer->normalizeLabelColor($data['color']));
         }
 
         $this->getEntityManager()->flush();
@@ -820,7 +820,7 @@ class BoardManager extends \AbstractManager
 
         $checklist = new Checklist();
         $checklist->setCard($card);
-        $checklist->setTitle($this->normalizeChecklistTitle($data['title'] ?? null));
+        $checklist->setTitle($this->inputNormalizer->normalizeChecklistTitle($data['title'] ?? null));
         $checklist->setPosition($this->nextChecklistPosition($card));
 
         $em = $this->getEntityManager();
@@ -855,7 +855,7 @@ class BoardManager extends \AbstractManager
         $this->assertCanManageCard($board, $user, $card);
 
         if (array_key_exists('title', $data)) {
-            $checklist->setTitle($this->normalizeChecklistTitle($data['title']));
+            $checklist->setTitle($this->inputNormalizer->normalizeChecklistTitle($data['title']));
         }
         if (array_key_exists('position', $data)) {
             $checklist->setPosition((int) $data['position']);
@@ -891,7 +891,7 @@ class BoardManager extends \AbstractManager
 
         $item = new ChecklistItem();
         $item->setChecklist($checklist);
-        $item->setText($this->normalizeChecklistItemText($data['text'] ?? null));
+        $item->setText($this->inputNormalizer->normalizeChecklistItemText($data['text'] ?? null));
         $item->setPosition($this->nextChecklistItemPosition($checklist));
         $checklist->addItem($item);
 
@@ -933,7 +933,7 @@ class BoardManager extends \AbstractManager
         $wasChecked = $item->isChecked();
 
         if (array_key_exists('text', $data)) {
-            $item->setText($this->normalizeChecklistItemText($data['text']));
+            $item->setText($this->inputNormalizer->normalizeChecklistItemText($data['text']));
         }
         if (array_key_exists('checked', $data)) {
             $item->setChecked((bool) $data['checked']);
@@ -1001,7 +1001,7 @@ class BoardManager extends \AbstractManager
         $comment = new Comment();
         $comment->setCard($card);
         $comment->setUser($user);
-        $comment->setText($this->normalizeCommentText($data['text'] ?? null));
+        $comment->setText($this->inputNormalizer->normalizeCommentText($data['text'] ?? null));
 
         $em = $this->getEntityManager();
         $em->persist($comment);
@@ -1047,7 +1047,7 @@ class BoardManager extends \AbstractManager
         }
 
         if (array_key_exists('text', $data)) {
-            $comment->setText($this->normalizeCommentText($data['text']));
+            $comment->setText($this->inputNormalizer->normalizeCommentText($data['text']));
         }
 
         $this->getEntityManager()->flush();
@@ -1242,7 +1242,7 @@ class BoardManager extends \AbstractManager
             throw new AccessDeniedHttpException('Нет прав на управление участниками');
         }
 
-        $memberRole = $this->parseMemberRole($role);
+        $memberRole = $this->inputNormalizer->parseMemberRole($role);
         $target = $this->resolveUserByEmail($email);
         if ($target->getId() === $workspace->getOwner()?->getId()) {
             throw new BadRequestHttpException('Владелец workspace не добавляется в участники');
@@ -1280,7 +1280,7 @@ class BoardManager extends \AbstractManager
         }
 
         $member = $this->findWorkspaceMember($workspace, $userId);
-        $member->setRole($this->parseMemberRole($role));
+        $member->setRole($this->inputNormalizer->parseMemberRole($role));
         $this->getEntityManager()->flush();
 
         return $member;
@@ -1318,7 +1318,7 @@ class BoardManager extends \AbstractManager
             throw new AccessDeniedHttpException('Нет прав на управление участниками доски');
         }
 
-        $memberRole = $this->parseMemberRole($role);
+        $memberRole = $this->inputNormalizer->parseMemberRole($role);
         $target = $this->resolveUserByEmail($email);
         $workspace = $board->getWorkspace();
         if ($workspace && $target->getId() === $workspace->getOwner()?->getId()) {
@@ -1353,7 +1353,7 @@ class BoardManager extends \AbstractManager
         }
 
         $member = $this->findBoardMember($board, $userId);
-        $member->setRole($this->parseMemberRole($role));
+        $member->setRole($this->inputNormalizer->parseMemberRole($role));
         $this->getEntityManager()->flush();
 
         return $member;
@@ -1499,7 +1499,7 @@ class BoardManager extends \AbstractManager
             'id' => $card->getId(),
             'title' => $card->getTitle(),
             'position' => $card->getPosition(),
-            'due_date' => $this->formatDateTime($card->getDueDate()),
+            'due_date' => $this->inputNormalizer->formatDateTime($card->getDueDate()),
             'cover_color' => $card->getCoverColor(),
             'pkb_vault_id' => $card->getPkbVaultId(),
             'pkb_note_path' => $card->getPkbNotePath(),
@@ -1521,7 +1521,7 @@ class BoardManager extends \AbstractManager
             'list_id' => $list?->getId(),
             'list_title' => $list?->getTitle(),
             'title' => $card->getTitle(),
-            'due_date' => $this->formatDateTime($card->getDueDate()),
+            'due_date' => $this->inputNormalizer->formatDateTime($card->getDueDate()),
             'cover_color' => $card->getCoverColor(),
         ];
     }
@@ -1677,73 +1677,6 @@ class BoardManager extends \AbstractManager
         return $this->permissionResolver->resolveWorkspaceRole($workspace, $viewer)?->value;
     }
 
-    private function normalizeName(mixed $name): string
-    {
-        $value = trim((string) ($name ?? ''));
-
-        return '' !== $value ? $value : 'Без названия';
-    }
-
-    private function normalizeTitle(mixed $title): string
-    {
-        $value = trim((string) ($title ?? ''));
-
-        return '' !== $value ? $value : 'Без названия';
-    }
-
-    private function normalizeNullableText(mixed $value): ?string
-    {
-        if (null === $value) {
-            return null;
-        }
-        $text = trim((string) $value);
-
-        return '' !== $text ? $text : null;
-    }
-
-    private function parseFilterDate(?string $value): ?\DateTimeInterface
-    {
-        if (null === $value || '' === trim($value)) {
-            return null;
-        }
-
-        try {
-            return new \DateTimeImmutable(trim($value));
-        } catch (\Exception) {
-            throw new BadRequestHttpException('Некорректная дата фильтра');
-        }
-    }
-
-    private function normalizeBackgroundType(mixed $type): string
-    {
-        $value = strtolower(trim((string) $type));
-        if (!in_array($value, [Board::BACKGROUND_COLOR, Board::BACKGROUND_IMAGE, Board::BACKGROUND_GRADIENT], true)) {
-            throw new BadRequestHttpException('background_type: color, image или gradient');
-        }
-
-        return $value;
-    }
-
-    private function normalizeVisibility(mixed $visibility): string
-    {
-        $value = strtolower(trim((string) $visibility));
-        if (!in_array($value, [Board::VISIBILITY_PRIVATE, Board::VISIBILITY_WORKSPACE], true)) {
-            throw new BadRequestHttpException('visibility: private или workspace');
-        }
-
-        return $value;
-    }
-
-    private function parseMemberRole(string $role): MemberRole
-    {
-        $parsed = MemberRole::tryFromString($role);
-        if (null === $parsed) {
-            throw new BadRequestHttpException('role: admin, editor или observer');
-        }
-
-        return $parsed;
-    }
-
     private function resolveUserByEmail(string $email): User
     {
         $email = trim($email);
@@ -1841,50 +1774,6 @@ class BoardManager extends \AbstractManager
         return $user;
     }
 
-    private function normalizeCardTitle(mixed $title): string
-    {
-        $value = trim((string) ($title ?? ''));
-
-        return '' !== $value ? $value : 'Без названия';
-    }
-
-    private function normalizeLabelName(mixed $name): string
-    {
-        $value = trim((string) ($name ?? ''));
-        if ('' === $value) {
-            throw new BadRequestHttpException('Укажите name метки');
-        }
-
-        return $value;
-    }
-
-    private function normalizeLabelColor(mixed $color): string
-    {
-        $value = trim((string) ($color ?? ''));
-        if ('' === $value) {
-            throw new BadRequestHttpException('Укажите color метки');
-        }
-
-        return $value;
-    }
-
-    private function parseNullableDateTime(mixed $value): ?\DateTimeInterface
-    {
-        if (null === $value || '' === $value) {
-            return null;
-        }
-        try {
-            return new \DateTime((string) $value);
-        } catch (\Exception) {
-            throw new BadRequestHttpException('Некорректный due_date');
-        }
-    }
-
-    private function formatDateTime(?\DateTimeInterface $dateTime): ?string
-    {
-        return $dateTime?->format('Y-m-d\TH:i:s');
-    }
-
     /** @return list<int> */
     private function extractLabelIds(Card $card): array
     {
@@ -1926,36 +1815,6 @@ class BoardManager extends \AbstractManager
         if (!$this->permissionResolver->canManageCards($board, $user, $card->getList(), $card)) {
             throw new AccessDeniedHttpException('Нет прав на изменение карточки');
         }
-    }
-
-    private function normalizeChecklistTitle(mixed $title): string
-    {
-        $value = trim((string) ($title ?? ''));
-        if ('' === $value) {
-            throw new BadRequestHttpException('Укажите title чеклиста');
-        }
-
-        return $value;
-    }
-
-    private function normalizeChecklistItemText(mixed $text): string
-    {
-        $value = trim((string) ($text ?? ''));
-        if ('' === $value) {
-            throw new BadRequestHttpException('Укажите text пункта');
-        }
-
-        return $value;
-    }
-
-    private function normalizeCommentText(mixed $text): string
-    {
-        $value = trim((string) ($text ?? ''));
-        if ('' === $value) {
-            throw new BadRequestHttpException('Укажите text комментария');
-        }
-
-        return $value;
     }
 
     private function nextChecklistPosition(Card $card): int

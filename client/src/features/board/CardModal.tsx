@@ -45,6 +45,7 @@ import { openExplorerPicker } from '@/features/explorer/explorerPickerStore';
 import { useExplorerPickerResult } from '@/features/explorer/useExplorerPickerResult';
 
 import { BOARD_BACKGROUND_COLORS } from './BackgroundPicker';
+import { memberInitials, memberLabel, userRefLabel } from './cardMemberLabels';
 import { CardPkbNoteSection } from './CardPkbNoteSection';
 import { downloadBoardAttachment, openBoardAttachment } from './openBoardAttachment';
 
@@ -57,25 +58,6 @@ interface CardModalProps {
 	members: BoardMember[];
 	canEdit: boolean;
 	onClose: () => void;
-}
-
-function memberLabel(member: BoardMember): string {
-	return member.alias?.trim() || member.email?.trim() || `User #${member.user_id}`;
-}
-
-function userRefLabel(user: { id?: number | null; alias?: string | null; email?: string | null }): string {
-	return user.alias?.trim() || user.email?.trim() || (user.id != null ? `User #${user.id}` : 'User');
-}
-
-function memberInitials(member: BoardMember): string {
-	const label = memberLabel(member);
-	const parts = label.split(/\s+/).filter(Boolean);
-	if (parts.length >= 2) {
-		const a = parts[0]?.[0] ?? '';
-		const b = parts[1]?.[0] ?? '';
-		return (a + b).toUpperCase() || '?';
-	}
-	return label.slice(0, 2).toUpperCase() || '?';
 }
 
 export function CardModal({

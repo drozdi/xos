@@ -10,11 +10,6 @@ export function TableHeaderCellToggler<T = object>({
 }: TableHeaderCellTogglerProps<T>) {
 	const { toggleColumn, hiddenColumns } = useTableColumnMetaContext<T>();
 
-	if (!column.isToggleable || !column.field) {
-		return null;
-	}
-	const isHidden = hiddenColumns.includes(column.field as keyof T);
-
 	const handleClick = useCallback(
 		(event: React.MouseEvent<HTMLButtonElement>) => {
 			event.preventDefault();
@@ -29,6 +24,11 @@ export function TableHeaderCellToggler<T = object>({
 		},
 		[column, toggleColumn],
 	);
+
+	if (!column.isToggleable || !column.field) {
+		return null;
+	}
+	const isHidden = hiddenColumns.includes(column.field as keyof T);
 
 	return (
 		<ActionIcon

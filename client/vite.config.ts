@@ -34,8 +34,21 @@ export default defineConfig(({ mode }) => ({
 				},
 				workbox: {
 					globPatterns: ['**/*.{js,css,html,svg,ico,woff2}'],
-					globIgnores: ['**/stats.html', '**/editor-*.js', '**/app-*.js'],
-					maximumFileSizeToCacheInBytes: 400 * 1024,
+					globIgnores: [
+						'**/stats.html',
+						'**/editor-*.js',
+						'**/app-*.js',
+						'**/*App-*.js',
+						'**/MarkdownWysiwygEditor-*.js',
+						'**/mantine-*.js',
+						'**/dist-*.js',
+						'**/lib-*.js',
+						'**/SshApp-*.js',
+						'**/core-vendor-*.js',
+						'**/shared-*.js',
+						'**/react-*.js',
+					],
+					maximumFileSizeToCacheInBytes: 2 * 1024 * 1024,
 					navigateFallback: '/index.html',
 					runtimeCaching: [
 						{
@@ -96,7 +109,14 @@ export default defineConfig(({ mode }) => ({
 		environment: 'node',
 		include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
 		setupFiles: ['src/test/setup.ts'],
-		environmentMatchGlobs: [['src/**/*.test.tsx', 'happy-dom']],
+		coverage: {
+			provider: 'v8',
+			include: ['src/**'],
+			thresholds: {
+				statements: 1,
+				lines: 1,
+			},
+		},
 	},
 	server: {
 		port: 5173,
@@ -107,38 +127,20 @@ export default defineConfig(({ mode }) => ({
 	},
 	build: {
 		target: 'es2022',
-		modulePreload: {
-			resolveDependencies(_filename, deps) {
-				return deps.filter((dep) => !/\/(?:app|editor)-/.test(dep));
-			},
-		},
+		modulePreload: false,
 		rollupOptions: {
 			output: {
 				manualChunks(id) {
-					if (!id.includes('node_modules')) {
-						if (id.includes('/src/apps/')) {
-							const match = id.match(/\/apps\/([^/]+)\//);
-							if (match && !id.endsWith('/index.ts')) {
-								return `app-${match[1]}`;
-							}
-						}
-						return;
-					}
-					if (id.includes('@mantine')) {
-						return 'mantine';
-					}
-					if (id.includes('tiptap') || id.includes('prosemirror')) {
-						return 'editor';
-					}
+					const normalized = id.replace(/\\/g, '/');
+					// Only isolate React. App/shared/editor manual chunks make Rolldown
+					// place shared modules into TipTap-bearing chunks that the entry
+					// then loads statically — breaking the 250 KB startup budget.
 					if (
-						id.includes('/react/') ||
-						id.includes('/react-dom/') ||
-						id.includes('react-router')
+						normalized.includes('/node_modules/react/')
+						|| normalized.includes('/node_modules/react-dom/')
+						|| normalized.includes('/node_modules/scheduler/')
 					) {
 						return 'react';
-					}
-					if (id.includes('/zod/') || id.includes('/axios/') || id.includes('@tanstack/react-query')) {
-						return 'core-vendor';
 					}
 				},
 			},

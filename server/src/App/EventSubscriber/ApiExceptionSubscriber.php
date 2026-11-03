@@ -2,6 +2,7 @@
 
 namespace App\EventSubscriber;
 
+use App\Exception\UserFacingException;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -62,9 +63,17 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
             return;
         }
 
-        if ($throwable instanceof \InvalidArgumentException) {
+        if ($throwable instanceof UserFacingException) {
             $event->setResponse(new JsonResponse([
                 'message' => $throwable->getMessage() !== '' ? $throwable->getMessage() : 'Некорректный запрос',
+            ], JsonResponse::HTTP_BAD_REQUEST));
+
+            return;
+        }
+
+        if ($throwable instanceof \InvalidArgumentException) {
+            $event->setResponse(new JsonResponse([
+                'message' => 'Некорректный запрос',
             ], JsonResponse::HTTP_BAD_REQUEST));
 
             return;

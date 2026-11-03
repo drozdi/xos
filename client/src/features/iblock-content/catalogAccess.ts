@@ -26,11 +26,23 @@ export const canUpdateCatalogSection = () =>
 export const canDeleteCatalogSection = () =>
 	(canAccessApp('iblock') && canDeleteIblockSection()) || canManageRecipeCategories();
 
-export const useCanReadCatalogSection = () =>
-	useCanReadIblockSection() || useCanAccessRecipeApp();
-export const useCanCreateCatalogSection = () =>
-	useCanCreateIblockSection() || useCanManageRecipeCategories();
-export const useCanUpdateCatalogSection = () =>
-	useCanUpdateIblockSection() || useCanManageRecipeCategories();
-export const useCanDeleteCatalogSection = () =>
-	useCanDeleteIblockSection() || useCanManageRecipeCategories();
+export const useCanReadCatalogSection = () => {
+	const iblock = useCanReadIblockSection();
+	const recipe = useCanAccessRecipeApp();
+	return iblock || recipe;
+};
+export const useCanCreateCatalogSection = () => {
+	const iblock = useCanCreateIblockSection();
+	const recipe = useCanManageRecipeCategories();
+	return iblock || recipe;
+};
+export const useCanUpdateCatalogSection = () => {
+	const iblock = useCanUpdateIblockSection();
+	const recipe = useCanManageRecipeCategories();
+	return iblock || recipe;
+};
+export const useCanDeleteCatalogSection = () => {
+	const iblock = useCanDeleteIblockSection();
+	const recipe = useCanManageRecipeCategories();
+	return iblock || recipe;
+};

@@ -18,12 +18,12 @@ const MANAGED_SETTING_CATEGORIES: SettingCategory[] = ['USER', 'APP', 'WIN'];
 
 let saveErrorToastShown = false;
 
-function useApiSettings(): boolean {
+function apiSettingsEnabled(): boolean {
 	return import.meta.env.VITE_USE_API_SETTINGS === 'true';
 }
 
 export function isDesktopStateSyncEnabled(): boolean {
-	return useApiSettings() && useAuthStore.getState().isAuthenticated;
+	return apiSettingsEnabled() && useAuthStore.getState().isAuthenticated;
 }
 
 /** All USER/APP/WIN keys go through desktop-state (no per-key /api/settings). */

@@ -1,5 +1,5 @@
 import { Box } from '@mantine/core';
-import { IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconPencil, IconShare, IconTrash } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 
@@ -25,8 +25,11 @@ export interface DataTableProps<T extends object> {
 	storageKey: string;
 	onRowClick?: (row: T) => void;
 	onEdit?: (row: T) => void | Promise<void>;
+	onShare?: (row: T) => void | Promise<void>;
 	onDelete?: (row: T) => void | Promise<void>;
 	canEdit?: boolean;
+	canEditRow?: (row: T) => boolean;
+	canShareRow?: (row: T) => boolean;
 	canDelete?: boolean;
 	getRowLabel?: (row: T) => string;
 	loading?: boolean;
@@ -113,8 +116,11 @@ export function DataTable<T extends object>({
 	storageKey,
 	onRowClick,
 	onEdit,
+	onShare,
 	onDelete,
 	canEdit = true,
+	canEditRow,
+	canShareRow,
 	canDelete = true,
 	getRowLabel = defaultRowLabel,
 	loading = false,
@@ -137,11 +143,23 @@ export function DataTable<T extends object>({
 	groupedMultiple = false,
 }: DataTableProps<T>) {
 	const showEdit = Boolean(onEdit && canEdit);
+	const showShare = Boolean(onShare);
 	const showDelete = Boolean(onDelete && canDelete);
-	const hasActions = showEdit || showDelete;
+	const hasActions = showEdit || showShare || showDelete;
+	const actionsWidth = 36 + (showShare ? 36 : 0) + (showEdit ? 36 : 0) + (showDelete ? 36 : 0);
 
 	const rowActions = useMemo<TableRowAction<T>[]>(() => {
 		const actions: TableRowAction<T>[] = [];
+
+		if (showShare && onShare) {
+			actions.push({
+				id: 'share',
+				label: 'Поделиться',
+				icon: <IconShare size={16} />,
+				onClick: (item) => onShare(item),
+				hidden: canShareRow ? (node) => !canShareRow(node.data) : undefined,
+			});
+		}
 
 		if (showEdit && onEdit) {
 			actions.push({
@@ -149,6 +167,7 @@ export function DataTable<T extends object>({
 				label: 'Редактировать',
 				icon: <IconPencil size={16} />,
 				onClick: (item) => onEdit(item),
+				hidden: canEditRow ? (node) => !canEditRow(node.data) : undefined,
 			});
 		}
 
@@ -172,7 +191,7 @@ export function DataTable<T extends object>({
 		}
 
 		return actions;
-	}, [getRowLabel, onDelete, onEdit, showDelete, showEdit]);
+	}, [canEditRow, canShareRow, getRowLabel, onDelete, onEdit, onShare, showDelete, showEdit, showShare]);
 
 	const bodyStyle = useMemo(
 		() => (onRowClick ? { cursor: 'pointer' as const } : undefined),
@@ -253,7 +272,7 @@ export function DataTable<T extends object>({
 					align="center"
 					actions
 					actionsAt="end"
-					width={88}
+					width={actionsWidth}
 					sortable={false}
 					resizable={false}
 					toggleable={false}

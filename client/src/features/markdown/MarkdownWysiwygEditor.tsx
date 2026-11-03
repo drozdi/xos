@@ -1,3 +1,5 @@
+import '@mantine/tiptap/styles.css';
+
 import { RichTextEditor, Link } from '@mantine/tiptap';
 import { Markdown } from '@tiptap/markdown';
 import type { AnyExtension } from '@tiptap/core';

@@ -2,7 +2,7 @@
 
 namespace IBlock\Service;
 
-use AbstractRepository;
+use App\Security\RecipeIblockBridge;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use IBlock\Entity\Element;
@@ -21,7 +21,6 @@ use IBlock\Security\RecipesBlockGuard;
 use Main\Entity\File as MainFile;
 use Main\Entity\User;
 use Main\Repository\UserRepository;
-use App\Security\RecipeIblockBridge;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -43,11 +42,12 @@ class ElementManager extends AbstractIBlockManager
         private readonly UserRepository $userRepository,
         private readonly RecipesBlockGuard $recipesBlockGuard,
         private readonly RecipeIblockBridge $recipeIblockBridge,
+        private readonly ElementPrototypeHelper $prototypeHelper,
     ) {
         parent::__construct($validator, $entityManager);
     }
 
-    protected function getRepository(): AbstractRepository
+    protected function getRepository(): \AbstractRepository
     {
         return $this->elementRepository;
     }
@@ -150,6 +150,9 @@ class ElementManager extends AbstractIBlockManager
         $sectionIds = $this->extractSectionIdsInput($fields);
         $this->applyFields($element, $fields);
         if ($viewer instanceof User) {
+            if (null === $element->getCreatedBy()) {
+                $element->setCreatedBy($viewer);
+            }
             $element->setUpdatedBy($viewer);
         }
         if (null !== $propertyValues) {
@@ -179,6 +182,10 @@ class ElementManager extends AbstractIBlockManager
         $element = $this->requireEntity($elementId);
         $owner = $this->currentUser();
         $this->recipesBlockGuard->assertElementAllowed($owner, $element);
+        if ($owner instanceof User && null === $element->getCreatedBy() && $this->canWrite($element, $owner)) {
+            $element->setCreatedBy($owner);
+            $this->entityManager->flush();
+        }
         if (!$owner instanceof User || !$this->isOwner($element, $owner)) {
             throw new AccessDeniedHttpException('Делиться может только владелец');
         }
@@ -213,6 +220,10 @@ class ElementManager extends AbstractIBlockManager
         $element = $this->requireEntity($elementId);
         $owner = $this->currentUser();
         $this->recipesBlockGuard->assertElementAllowed($owner, $element);
+        if ($owner instanceof User && null === $element->getCreatedBy() && $this->canWrite($element, $owner)) {
+            $element->setCreatedBy($owner);
+            $this->entityManager->flush();
+        }
         if (!$owner instanceof User || !$this->isOwner($element, $owner)) {
             throw new AccessDeniedHttpException('Управлять доступом может только владелец');
         }
@@ -231,7 +242,7 @@ class ElementManager extends AbstractIBlockManager
 
     protected function serializeListItem(object $entity, ?User $viewer = null): array
     {
-        /** @var Element $entity */
+        /* @var Element $entity */
         return [
             'id' => $entity->getId(),
             'code' => $entity->getCode(),
@@ -300,7 +311,7 @@ class ElementManager extends AbstractIBlockManager
 
     protected function applyFields(object $entity, array $fields): void
     {
-        /** @var Element $entity */
+        /* @var Element $entity */
         if (array_key_exists('code', $fields)) {
             $entity->setCode((string) $fields['code']);
         }
@@ -585,7 +596,7 @@ class ElementManager extends AbstractIBlockManager
                 throw new BadRequestHttpException(sprintf('Unknown property code: %s', $code));
             }
 
-            if ($this->isPrototypeFieldType($property->getFieldType())) {
+            if ($this->prototypeHelper->isPrototypeFieldType($property->getFieldType())) {
                 $this->syncPrototypeValue($element, $property, $value);
                 continue;
             }
@@ -596,7 +607,7 @@ class ElementManager extends AbstractIBlockManager
                 continue;
             }
 
-            if ($this->isListFieldType($property->getFieldType())) {
+            if ($this->prototypeHelper->isListFieldType($property->getFieldType())) {
                 $items = is_array($value) ? $value : [$value];
                 $enums = [];
                 foreach ($items as $item) {
@@ -636,7 +647,7 @@ class ElementManager extends AbstractIBlockManager
         $fieldType = strtoupper($property->getFieldType());
 
         if ('F' === $fieldType) {
-            $fileId = $this->extractId($item);
+            $fileId = $this->prototypeHelper->extractId($item);
             if (null === $fileId) {
                 throw new BadRequestHttpException(sprintf('Invalid file id for property %s', $property->getCode()));
             }
@@ -654,7 +665,7 @@ class ElementManager extends AbstractIBlockManager
             if (!$linkBlock) {
                 throw new BadRequestHttpException(sprintf('Property %s has no link_iblock_id', $property->getCode()));
             }
-            $elementId = $this->extractId($item);
+            $elementId = $this->prototypeHelper->extractId($item);
             if (null === $elementId) {
                 throw new BadRequestHttpException(sprintf('Invalid element id for property %s', $property->getCode()));
             }
@@ -663,11 +674,7 @@ class ElementManager extends AbstractIBlockManager
                 throw new BadRequestHttpException(sprintf('Element #%d not found', $elementId));
             }
             if ($linked->getBlock()?->getId() !== $linkBlock->getId()) {
-                throw new BadRequestHttpException(sprintf(
-                    'Element #%d does not belong to link_iblock_id #%d',
-                    $elementId,
-                    $linkBlock->getId(),
-                ));
+                throw new BadRequestHttpException(sprintf('Element #%d does not belong to link_iblock_id #%d', $elementId, $linkBlock->getId()));
             }
 
             return $linked;
@@ -678,7 +685,7 @@ class ElementManager extends AbstractIBlockManager
             if (!$linkBlock) {
                 throw new BadRequestHttpException(sprintf('Property %s has no link_iblock_id', $property->getCode()));
             }
-            $sectionId = $this->extractId($item);
+            $sectionId = $this->prototypeHelper->extractId($item);
             if (null === $sectionId) {
                 throw new BadRequestHttpException(sprintf('Invalid section id for property %s', $property->getCode()));
             }
@@ -687,11 +694,7 @@ class ElementManager extends AbstractIBlockManager
                 throw new BadRequestHttpException(sprintf('Section #%d not found', $sectionId));
             }
             if ($section->getBlock()?->getId() !== $linkBlock->getId()) {
-                throw new BadRequestHttpException(sprintf(
-                    'Section #%d does not belong to link_iblock_id #%d',
-                    $sectionId,
-                    $linkBlock->getId(),
-                ));
+                throw new BadRequestHttpException(sprintf('Section #%d does not belong to link_iblock_id #%d', $sectionId, $linkBlock->getId()));
             }
 
             return $section;
@@ -709,7 +712,7 @@ class ElementManager extends AbstractIBlockManager
         } else {
             $tuples = array_values(array_filter(
                 $tuples,
-                fn (array $tuple): bool => $this->prototypeTupleHasValue($tuple, $children),
+                fn (array $tuple): bool => $this->prototypeHelper->tupleHasValue($tuple, $children),
             ));
         }
 
@@ -751,25 +754,16 @@ class ElementManager extends AbstractIBlockManager
             return [];
         }
         if (!\is_array($value)) {
-            throw new BadRequestHttpException(sprintf(
-                'Property %s: prototype value must be an object',
-                $prototype->getCode(),
-            ));
+            throw new BadRequestHttpException(sprintf('Property %s: prototype value must be an object', $prototype->getCode()));
         }
         if ($prototype->isMultiple()) {
             if (!array_is_list($value)) {
-                throw new BadRequestHttpException(sprintf(
-                    'Property %s: multiple prototype value must be a list',
-                    $prototype->getCode(),
-                ));
+                throw new BadRequestHttpException(sprintf('Property %s: multiple prototype value must be a list', $prototype->getCode()));
             }
             $tuples = [];
             foreach ($value as $tuple) {
                 if (!\is_array($tuple) || array_is_list($tuple)) {
-                    throw new BadRequestHttpException(sprintf(
-                        'Property %s: each prototype item must be an object',
-                        $prototype->getCode(),
-                    ));
+                    throw new BadRequestHttpException(sprintf('Property %s: each prototype item must be an object', $prototype->getCode()));
                 }
                 $tuples[] = $tuple;
             }
@@ -777,34 +771,27 @@ class ElementManager extends AbstractIBlockManager
             return $tuples;
         }
         if (array_is_list($value)) {
-            throw new BadRequestHttpException(sprintf(
-                'Property %s: prototype value must be an object',
-                $prototype->getCode(),
-            ));
+            throw new BadRequestHttpException(sprintf('Property %s: prototype value must be an object', $prototype->getCode()));
         }
 
         return [$value];
     }
 
     /**
-     * @param list<Property>            $children
+     * @param list<Property>             $children
      * @param list<array<string, mixed>> $tuples
      */
     private function assertPrototypeTuplesComplete(Property $prototype, array $children, array $tuples): void
     {
         $codes = array_map(static fn (Property $child): string => (string) $child->getCode(), $children);
         if ([] === $tuples) {
-            throw new BadRequestHttpException(sprintf(
-                'Property %s: required fields missing: %s',
-                $prototype->getCode(),
-                implode(', ', $codes),
-            ));
+            throw new BadRequestHttpException(sprintf('Property %s: required fields missing: %s', $prototype->getCode(), implode(', ', $codes)));
         }
         foreach ($tuples as $index => $tuple) {
             $missing = [];
             foreach ($children as $child) {
                 $childCode = (string) $child->getCode();
-                if (!$this->prototypeFieldIsFilled($tuple[$childCode] ?? null)) {
+                if (!$this->prototypeHelper->fieldIsFilled($tuple[$childCode] ?? null)) {
                     $missing[] = $childCode;
                 }
             }
@@ -814,60 +801,17 @@ class ElementManager extends AbstractIBlockManager
             $label = $prototype->isMultiple()
                 ? sprintf('%s[%d]', $prototype->getCode(), $index)
                 : (string) $prototype->getCode();
-            throw new BadRequestHttpException(sprintf(
-                'Property %s: required fields missing: %s',
-                $label,
-                implode(', ', $missing),
-            ));
+            throw new BadRequestHttpException(sprintf('Property %s: required fields missing: %s', $label, implode(', ', $missing)));
         }
-    }
-
-    /**
-     * @param array<string, mixed> $tuple
-     * @param list<Property>       $children
-     */
-    private function prototypeTupleHasValue(array $tuple, array $children): bool
-    {
-        foreach ($children as $child) {
-            $childCode = (string) $child->getCode();
-            if ($this->prototypeFieldIsFilled($tuple[$childCode] ?? null)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function prototypeFieldIsFilled(mixed $value): bool
-    {
-        if (null === $value || '' === $value) {
-            return false;
-        }
-        if (!\is_array($value)) {
-            return true;
-        }
-        if ([] === $value) {
-            return false;
-        }
-        if (!array_is_list($value)) {
-            return true;
-        }
-        foreach ($value as $item) {
-            if (null !== $item && '' !== $item && [] !== $item) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function writePrototypeChild(Element $element, Property $child, mixed $value, int $groupIndex): void
     {
-        if (!$this->prototypeFieldIsFilled($value)) {
+        if (!$this->prototypeHelper->fieldIsFilled($value)) {
             return;
         }
 
-        if ($this->isListFieldType($child->getFieldType())) {
+        if ($this->prototypeHelper->isListFieldType($child->getFieldType())) {
             $items = \is_array($value) && array_is_list($value) ? $value : [$value];
             $enums = [];
             foreach ($items as $item) {
@@ -876,10 +820,7 @@ class ElementManager extends AbstractIBlockManager
                 }
                 $enum = $this->resolveEnum($child, $item);
                 if (!$enum instanceof PropertyEnum) {
-                    throw new BadRequestHttpException(sprintf(
-                        'Unknown enum value for property %s',
-                        $child->getCode(),
-                    ));
+                    throw new BadRequestHttpException(sprintf('Unknown enum value for property %s', $child->getCode()));
                 }
                 $enums[] = $enum;
             }
@@ -896,7 +837,7 @@ class ElementManager extends AbstractIBlockManager
 
         $items = ($child->isMultiple() && \is_array($value) && array_is_list($value)) ? $value : [$value];
         foreach ($items as $item) {
-            if (!$this->prototypeFieldIsFilled($item)) {
+            if (!$this->prototypeHelper->fieldIsFilled($item)) {
                 continue;
             }
             $resolved = $this->resolveTypedPropertyItem($child, $item);
@@ -921,7 +862,7 @@ class ElementManager extends AbstractIBlockManager
             if (!$property->isActive() || !$property->isRequired()) {
                 continue;
             }
-            if (!$this->isPrototypeFieldType($property->getFieldType())) {
+            if (!$this->prototypeHelper->isPrototypeFieldType($property->getFieldType())) {
                 continue;
             }
             $code = (string) $property->getCode();
@@ -935,11 +876,7 @@ class ElementManager extends AbstractIBlockManager
                 static fn (Property $child): string => (string) $child->getCode(),
                 $this->activePrototypeChildren($property),
             );
-            throw new BadRequestHttpException(sprintf(
-                'Property %s: required fields missing: %s',
-                $code,
-                implode(', ', $codes),
-            ));
+            throw new BadRequestHttpException(sprintf('Property %s: required fields missing: %s', $code, implode(', ', $codes)));
         }
     }
 
@@ -983,21 +920,6 @@ class ElementManager extends AbstractIBlockManager
         }
     }
 
-    private function extractId(mixed $item): ?int
-    {
-        if (is_int($item)) {
-            return $item;
-        }
-        if (is_string($item) && ctype_digit($item)) {
-            return (int) $item;
-        }
-        if (is_array($item) && isset($item['id']) && (is_int($item['id']) || (is_string($item['id']) && ctype_digit((string) $item['id'])))) {
-            return (int) $item['id'];
-        }
-
-        return null;
-    }
-
     private function resolvePropertyByCode(Element $element, string $code): ?Property
     {
         $block = $element->getBlock();
@@ -1015,16 +937,6 @@ class ElementManager extends AbstractIBlockManager
         $property = $this->propertyRepository->findOneBy(['code' => $code, 'parent' => null]);
 
         return $property instanceof Property ? $property : null;
-    }
-
-    private function isListFieldType(string $fieldType): bool
-    {
-        return 'L' === strtoupper($fieldType);
-    }
-
-    private function isPrototypeFieldType(string $fieldType): bool
-    {
-        return 'P' === strtoupper($fieldType);
     }
 
     private function resolveEnum(Property $property, mixed $value): ?PropertyEnum
@@ -1086,7 +998,7 @@ class ElementManager extends AbstractIBlockManager
         }
         $fieldType = strtoupper($property->getFieldType());
 
-        if ($this->isListFieldType($fieldType)) {
+        if ($this->prototypeHelper->isListFieldType($fieldType)) {
             $ids = [];
             foreach ($row->getValueL() as $enum) {
                 $ids[] = $enum->getId();
@@ -1176,7 +1088,7 @@ class ElementManager extends AbstractIBlockManager
                 continue;
             }
             $parent = $property->getParent();
-            if ($parent instanceof Property && $this->isPrototypeFieldType($parent->getFieldType())) {
+            if ($parent instanceof Property && $this->prototypeHelper->isPrototypeFieldType($parent->getFieldType())) {
                 $parentId = (int) $parent->getId();
                 $prototypes[$parentId]['property'] = $parent;
                 $group = $row->getGroupIndex();

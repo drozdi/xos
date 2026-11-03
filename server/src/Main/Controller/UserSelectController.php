@@ -35,8 +35,8 @@ class UserSelectController extends AbstractController
             $req['limit'] = (int) $req['size'];
         }
 
-        $req['limit'] = (int) $req['limit'];
-        $req['offset'] = (int) $req['offset'];
+        $req['limit'] = max(1, min(100, (int) $req['limit']));
+        $req['offset'] = max(1, (int) $req['offset']);
 
         $totalItems = $userRepository->cnt($req['filters']);
         $items = $userRepository->findSelectItems(
@@ -47,7 +47,7 @@ class UserSelectController extends AbstractController
         );
 
         $start = $req['limit'] * ($req['offset'] - 1);
-        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = ($req['limit'] * $req['offset']) - 1;
         $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
 
         return $this->json($items, Response::HTTP_OK, [

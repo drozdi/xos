@@ -3,15 +3,13 @@ services:
     build: .
     ports:
       - "8080:80"
+    env_file:
+      - .env.docker
     environment:
       APP_ENV: prod
-      APP_SECRET: change-me
-      DATABASE_URL: mysql://xos:xos@mysql:3306/xos?serverVersion=8
       MERCURE_URL: http://mercure
-      MERCURE_PUBLIC_URL: http://localhost:9080
-      MERCURE_JWT_SECRET: '!ChangeMe!'
-      SSH_GATEWAY_SECRET: change-me-gateway
-      SSH_GATEWAY_PUBLIC_URL: ws://localhost:7681
+    volumes:
+      - uploads:/var/www/html/public/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -19,35 +17,35 @@ services:
         condition: service_started
   mercure:
     image: dunglas/mercure
+    env_file:
+      - .env.docker
     environment:
       SERVER_NAME: ':80'
-      MERCURE_PUBLISHER_JWT_KEY: '!ChangeMe!'
-      MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeMe!'
     ports:
       - "9080:80"
   ssh-gateway:
-    image: node:22-bookworm
-    working_dir: /gateway
-    volumes:
-      - ./ssh-gateway:/gateway
-    command: sh -c "npm install && node index.mjs"
+    build: ./ssh-gateway
+    env_file:
+      - .env.docker
     environment:
       SSH_GATEWAY_PORT: 7681
       SSH_API_URL: http://app
-      SSH_GATEWAY_SECRET: change-me-gateway
     ports:
       - "7681:7681"
     depends_on:
       - app
   mysql:
     image: mysql:8
-    environment:
-      MYSQL_DATABASE: xos
-      MYSQL_USER: xos
-      MYSQL_PASSWORD: xos
-      MYSQL_ROOT_PASSWORD: root
+    env_file:
+      - .env.docker
+    volumes:
+      - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p$$MYSQL_ROOT_PASSWORD"]
       interval: 5s
       timeout: 5s
       retries: 20
+
+volumes:
+  mysql-data:
+  uploads:

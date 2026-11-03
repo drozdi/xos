@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 import { desktopStateApi } from '@/core/api/endpoints/desktopState';
 import { registerAllApps } from '@/core/appManager';
-import { createSettingAdapter, useApiSettings } from '@/core/settings/createSettingAdapter';
+import { apiSettingsEnabled, createSettingAdapter } from '@/core/settings/createSettingAdapter';
 import { settingManager } from '@/core/settings/SettingManager';
 import { useAuthStore } from '@/core/auth/authStore';
 import * as tokenStorage from '@/core/auth/tokenStorage';
@@ -35,7 +35,7 @@ export default function CalendarStandaloneApp() {
 			}
 			let preloadedSnapshot: Awaited<ReturnType<typeof desktopStateApi.load>> | undefined;
 			let preloadFailed = false;
-			if (useAuthStore.getState().isAuthenticated && useApiSettings()) {
+			if (useAuthStore.getState().isAuthenticated && apiSettingsEnabled()) {
 				try {
 					preloadedSnapshot = await desktopStateApi.load();
 				} catch {

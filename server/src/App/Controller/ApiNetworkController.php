@@ -24,6 +24,10 @@ class ApiNetworkController extends AbstractController
         if (null === $user) {
             return $this->json(['message' => 'missing credentials'], Response::HTTP_UNAUTHORIZED);
         }
+        $roles = $user->getRoles();
+        if (!\in_array('ROLE_ADMIN', $roles, true) && !\in_array('ROLE_ROOT', $roles, true)) {
+            return $this->json(['message' => 'Доступ запрещён'], Response::HTTP_FORBIDDEN);
+        }
 
         return $this->json(['ip' => $this->egressAddress->get()]);
     }

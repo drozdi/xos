@@ -32,6 +32,22 @@ function TableBodyCellSlotInner<T>({
 		return getGroupedTreeLineKind(node, column, columns, groupKeys, isLastInGroupedBlock);
 	}, [column, columns, groupKeys, isLastInGroupedBlock, node]);
 
+	const cellValue = useMemo(() => {
+		if (typeof column.body === 'function') {
+			try {
+				return column.body(node.data, column);
+			} catch {
+				return null;
+			}
+		}
+
+		if (column.field) {
+			return node.data[column.field as keyof T];
+		}
+
+		return null;
+	}, [column, node.data]);
+
 	if (column.isGroup && !column.isGrouped) {
 		return null;
 	}
@@ -63,22 +79,6 @@ function TableBodyCellSlotInner<T>({
 			fontWeight: 700,
 		};
 	}
-
-	const cellValue = useMemo(() => {
-		if (typeof column.body === 'function') {
-			try {
-				return column.body(node.data, column);
-			} catch {
-				return null;
-			}
-		}
-
-		if (column.field) {
-			return node.data[column.field as keyof T];
-		}
-
-		return null;
-	}, [column, node.data]);
 
 	if (treeLineKind !== 'none') {
 		return (

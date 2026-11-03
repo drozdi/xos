@@ -12,14 +12,18 @@ import {
 import { notifications } from '@mantine/notifications';
 import { IconListCheck, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 import { todoApi } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { MarkdownPreview } from '@/features/markdown';
-import { MarkdownWysiwygEditor } from '@/features/markdown/MarkdownWysiwygEditor';
 
 import type { TodoDraftItem } from './todoMarkdown';
+
+const MarkdownWysiwygEditor = lazy(async () => {
+	const mod = await import('@/features/markdown/MarkdownWysiwygEditor');
+	return { default: mod.MarkdownWysiwygEditor };
+});
 
 interface TodoListEditorModalProps {
 	listId: number | null;
@@ -230,17 +234,19 @@ export function TodoListEditorModal({ listId, opened, onClose }: TodoListEditorM
 						/>
 
 						{canWrite ? (
-							<MarkdownWysiwygEditor
-								content={notesMd}
-								onChange={setNotesMd}
-								formatNonce={0}
-								formatCommand={null}
-								undoNonce={0}
-								redoNonce={0}
-								onFormatHandled={() => undefined}
-								embedded
-								minHeight={160}
-							/>
+							<Suspense fallback={<Loader size="sm" />}>
+								<MarkdownWysiwygEditor
+									content={notesMd}
+									onChange={setNotesMd}
+									formatNonce={0}
+									formatCommand={null}
+									undoNonce={0}
+									redoNonce={0}
+									onFormatHandled={() => undefined}
+									embedded
+									minHeight={160}
+								/>
+							</Suspense>
 						) : notesMd.trim() ? (
 							<MarkdownPreview content={notesMd} />
 						) : (

@@ -1,6 +1,6 @@
-import { ActionIcon, Alert, Badge, Button, Group, Select, Stack, Text, Tooltip } from '@mantine/core';
+import { Alert, Badge, Button, Group, Select, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconPencil, IconShare, IconListDetails } from '@tabler/icons-react';
+import { IconListDetails } from '@tabler/icons-react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -86,6 +86,14 @@ export default function RecipesApp() {
 		[launchApp, blockId],
 	);
 
+	const sectionLabelById = useMemo(() => {
+		const map = new Map<number, string>();
+		for (const opt of sectionOptions) {
+			map.set(Number(opt.value), opt.label);
+		}
+		return map;
+	}, [sectionOptions]);
+
 	const columns = useMemo(
 		() => [
 			{
@@ -130,48 +138,18 @@ export default function RecipesApp() {
 					),
 			},
 			{ field: 'preview_text' as const, header: 'Анонс' },
-			{ field: 'section_id' as const, header: 'Раздел', width: 90 },
-			{ field: 'sort' as const, header: 'Сорт.', width: 70 },
 			{
-				field: 'id' as const,
-				header: '',
-				width: 88,
-				render: (row: IblockElementListItem) => (
-					<Group
-						gap={4}
-						wrap="nowrap"
-						onClick={(event) => event.stopPropagation()}
-						onMouseDown={(event) => event.stopPropagation()}
-					>
-						{row.is_owner ? (
-							<Tooltip label="Поделиться">
-								<ActionIcon
-									variant="subtle"
-									color="gray"
-									aria-label="Поделиться"
-									onClick={() => setShareId(row.id)}
-								>
-									<IconShare size={16} />
-								</ActionIcon>
-							</Tooltip>
-						) : null}
-						{canUpdate && row.can_write ? (
-							<Tooltip label="Редактировать">
-								<ActionIcon
-									variant="subtle"
-									color="gray"
-									aria-label="Редактировать"
-									onClick={() => openRecipe(row.id, 'edit')}
-								>
-									<IconPencil size={16} />
-								</ActionIcon>
-							</Tooltip>
-						) : null}
-					</Group>
-				),
+				field: 'section_id' as const,
+				header: 'Раздел',
+				width: 140,
+				render: (row: IblockElementListItem) =>
+					row.section_id != null
+						? (sectionLabelById.get(row.section_id) ?? String(row.section_id))
+						: '—',
 			},
+			{ field: 'sort' as const, header: 'Сорт.', width: 70 },
 		],
-		[canUpdate, openRecipe],
+		[sectionLabelById],
 	);
 
 	if (!canRead) {
@@ -249,6 +227,11 @@ export default function RecipesApp() {
 					serverPagination
 					loading={listQuery.isFetching && !listQuery.isLoading}
 					onRowClick={(row) => openRecipe(row.id)}
+					onShare={(row) => setShareId(row.id)}
+					canShareRow={(row) => Boolean(row.is_owner)}
+					onEdit={(row) => openRecipe(row.id, 'edit')}
+					canEdit={canUpdate}
+					canEditRow={(row) => Boolean(row.can_write)}
 					onDelete={
 						canDelete
 							? async (row) => {
@@ -267,10 +250,11 @@ export default function RecipesApp() {
 				/>
 			</MainListLayout>
 
-			{shareQuery.data?.is_owner ? (
+			{shareId !== null ? (
 				<RecipeShareModal
-					recipe={shareQuery.data}
-					opened={shareId !== null}
+					recipe={shareQuery.data ?? null}
+					loading={shareQuery.isLoading || shareQuery.isFetching}
+					opened
 					onClose={() => setShareId(null)}
 					onUpdated={(next) => {
 						void queryClient.setQueryData(['iblock', 'element', next.id], next);

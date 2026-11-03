@@ -17,6 +17,8 @@ services:
 
     Board\Service\BoardMercurePublisher: ~
 
+    Board\Service\BoardInputNormalizer: ~
+
     Board\Service\BoardManager:
         lazy: true
         arguments:

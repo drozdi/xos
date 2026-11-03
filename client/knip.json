@@ -1,0 +1,25 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema.json",
+	"entry": ["src/main.tsx", "src/apps/*/index.ts", "vite.config.ts"],
+	"project": ["src/**/*.{ts,tsx}"],
+	"ignore": [
+		"src/apps/*/index.ts",
+		"src/**/index.ts",
+		"src/test/**",
+		"**/*.test.ts",
+		"**/*.test.tsx",
+		"**/*.stories.tsx",
+		"**/stories/**",
+		"e2e/**"
+	],
+	"ignoreDependencies": [
+		"@vitest/coverage-v8",
+		"@axe-core/playwright",
+		"happy-dom",
+		"postcss",
+		"postcss-preset-mantine",
+		"postcss-simple-vars",
+		"prettier",
+		"rollup-plugin-visualizer"
+	]
+}

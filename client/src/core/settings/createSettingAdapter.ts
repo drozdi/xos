@@ -11,7 +11,7 @@ import type { ISettingAdapter } from './adapters/ISettingAdapter';
 
 let apiErrorToastShown = false;
 
-function useApiSettings(): boolean {
+function apiSettingsEnabled(): boolean {
 	return import.meta.env.VITE_USE_API_SETTINGS === 'true';
 }
 
@@ -66,7 +66,7 @@ export async function createSettingAdapter(
 ): Promise<ISettingAdapter> {
 	const local = new LocalStorageAdapter();
 
-	if (!useApiSettings()) {
+	if (!apiSettingsEnabled()) {
 		return local;
 	}
 
@@ -98,4 +98,4 @@ export function resetSettingAdapterState(): void {
 	apiErrorToastShown = false;
 }
 
-export { useApiSettings };
+export { apiSettingsEnabled };

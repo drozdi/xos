@@ -1,5 +1,4 @@
 export * from './_'
-export * from './Axios-Interceptor'
 export * from './cached'
 export * from './cls'
 export * from './currency-format'

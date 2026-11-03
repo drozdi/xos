@@ -1,9 +1,9 @@
-import type {
-	UseDisclosureHandlers,
-	UseDisclosureOptions,
+import {
+	useDisclosure,
+	type UseDisclosureHandlers,
+	type UseDisclosureOptions,
 } from "@mantine/hooks";
-import { useDisclosure, useSetState } from "@mantine/hooks";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Config } from "./Config";
 import { storageLocal } from "./storages/storage-local";
 
@@ -177,44 +177,17 @@ export class Setting {
 		return this._[resolvedKey];
 	}
 
-	useDisclosure(
-		name: string,
-		initial: boolean,
-		options?: UseDisclosureOptions,
-	): [boolean, UseDisclosureHandlers] {
-		const [state, actions] = useDisclosure(this.get(name, initial), options);
-		useEffect(() => {
-			this.set(name, state);
-		}, [state]);
-		return [state, actions];
-	}
+}
 
-	useState<T>(
-		name: string,
-		initial?: T,
-	): [T, (value: T | ((prev: T) => T)) => void] {
-		const [state, setState] = useState<T>(this.get(name, initial));
-		useEffect(() => {
-			this.set(name, state);
-		}, [state]);
-		return [state as T, setState];
-	}
-
-	useSetState<T extends object>(
-		name: string,
-		initial?: T,
-	): [
-		T,
-		(
-			state:
-				| { [P in keyof T]?: T[P] | undefined }
-				| ((currentState: T) => { [P in keyof T]?: T[P] | undefined }),
-		) => void,
-	] {
-		const [state, updateState] = useSetState<T>(this.get(name, initial));
-		useEffect(() => {
-			this.set(name, state);
-		}, [state, name]);
-		return [state as T, updateState];
-	}
+export function useSettingDisclosure(
+	setting: Setting,
+	name: string,
+	initial: boolean,
+	options?: UseDisclosureOptions,
+): [boolean, UseDisclosureHandlers] {
+	const [state, actions] = useDisclosure(setting.get(name, initial), options);
+	useEffect(() => {
+		setting.set(name, state);
+	}, [setting, name, state]);
+	return [state, actions];
 }

@@ -2,7 +2,7 @@
 import { PersonalLink } from '@inccom/features/lk/personal-link';
 import { MainMenu } from '@inccom/features/menu/sidebar';
 import { useBreakpoint } from '@inccom/shared/hooks';
-import { $setting } from '@inccom/shared/setting';
+import { $setting, useSettingDisclosure } from '@inccom/shared/setting';
 import { Title } from '@inccom/shared/ui';
 import {
 	ActionIcon,
@@ -28,11 +28,13 @@ export function MainLayout() {
 	const back = useMemo<boolean>(() => {
 		return window?.history?.state?.idx > 0;
 	}, [window?.history?.state?.idx]);
-	const [mobileOpened, { toggle: toggleMobile }] = $setting.useDisclosure(
+	const [mobileOpened, { toggle: toggleMobile }] = useSettingDisclosure(
+		$setting,
 		'layout.mobile',
 		false,
 	);
-	const [desktopOpened, { toggle: toggleDesktop }] = $setting.useDisclosure(
+	const [desktopOpened, { toggle: toggleDesktop }] = useSettingDisclosure(
+		$setting,
 		'layout.desktop',
 		false,
 	);

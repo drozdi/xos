@@ -10,7 +10,7 @@ final class ContentRangeHeaders
     public static function forLegacyPagination(int $limit, int $offset, int $totalItems): array
     {
         $start = $limit * ($offset - 1);
-        $end = ($limit > 0 ? $limit * $offset : $totalItems) - 1;
+        $end = ($limit * $offset) - 1;
         $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
 
         return [

@@ -6,6 +6,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Main\Entity\File as MainFile;
 use Main\Entity\User;
 use Main\Service\FileAccess;
+use Main\Service\SharedFileRead;
 use Main\Service\UploadPathResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -26,6 +27,7 @@ class FileServeController extends AbstractController
         private readonly UploadPathResolver $uploadPathResolver,
         private readonly EntityManagerInterface $entityManager,
         private readonly FileAccess $fileAccess,
+        private readonly SharedFileRead $sharedFileRead,
     ) {
     }
 
@@ -41,7 +43,7 @@ class FileServeController extends AbstractController
             'subDir' => $subDir,
             'fileName' => $fileName,
         ]);
-        if (!$file instanceof MainFile || !$this->fileAccess->canRead($file, $user)) {
+        if (!$file instanceof MainFile || (!$this->fileAccess->canRead($file, $user) && !$this->sharedFileRead->canRead($file, $user))) {
             throw new NotFoundHttpException('File not found');
         }
 

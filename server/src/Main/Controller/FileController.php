@@ -6,6 +6,7 @@ use Main\Entity\File as MainFile;
 use Main\Entity\User;
 use Main\Service\FileAccess;
 use Main\Service\FileManager;
+use Main\Service\SharedFileRead;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,6 +23,12 @@ class FileController extends AbstractController
 {
     /** Same as FileServeController — use dedicated download APIs for these modules. */
     private const BLOCKED_MODULES = ['task'];
+
+    public function __construct(
+        private readonly FileAccess $fileAccess,
+        private readonly SharedFileRead $sharedFileRead,
+    ) {
+    }
 
     #[Route('/upload', name: 'main_file_upload', methods: ['POST'])]
     public function upload(Request $request, FileManager $fm): JsonResponse
@@ -60,7 +67,7 @@ class FileController extends AbstractController
         if (\in_array($file->getModule(), self::BLOCKED_MODULES, true)) {
             throw new AccessDeniedHttpException('Direct download of this module is forbidden');
         }
-        if (!(new FileAccess())->canRead($file, $user)) {
+        if (!$this->fileAccess->canRead($file, $user) && !$this->sharedFileRead->canRead($file, $user)) {
             throw new AccessDeniedHttpException('File access denied');
         }
 

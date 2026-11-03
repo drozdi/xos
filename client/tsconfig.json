@@ -30,7 +30,6 @@
 		"src/features/inccom/shared/ui/list/**",
 		"src/features/inccom/shared/ui/progress/**",
 		"src/features/inccom/shared/ui/table/**",
-		"src/features/inccom/shared/utils/Axios-Interceptor.ts",
 		"src/features/inccom/shared/utils/fns.ts",
 		"src/features/inccom/shared/utils/is.ts",
 		"src/features/inccom/shared/utils/factory-multi-select.tsx",

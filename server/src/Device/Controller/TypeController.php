@@ -3,6 +3,7 @@
 namespace Device\Controller;
 
 use App\Attribute\Access;
+use App\Http\ListRequest;
 use Device\Entity\Type;
 use Device\Repository\PropertyRepository;
 use Device\Repository\TypeRepository;
@@ -25,7 +26,7 @@ class TypeController extends AbstractController
     public function select(Request $request, TypeRepository $TypeRepository): JsonResponse
     {
         $defaults = [
-            'limit' => -1,
+            'limit' => 20,
             'offset' => 1,
             'sortBy' => [[
                 'key' => 'sort',
@@ -39,19 +40,10 @@ class TypeController extends AbstractController
                 'property' => null,
             ],
         ];
-        $req = array_merge($defaults, $request->toArray());
-        $req['filters'] = array_merge($defaults['filters'], $req['filters'] ?? []);
+        $req = ListRequest::merge($defaults, $request->toArray());
         if (empty($req['sortBy'])) {
-            $req['sortBy'] = [[
-                'key' => 'sort',
-                'order' => 'ASC',
-            ], [
-                'key' => 'name',
-                'order' => 'ASC',
-            ]];
+            $req['sortBy'] = $defaults['sortBy'];
         }
-        $req['limit'] = (int) $req['limit'];
-        $req['offset'] = (int) $req['offset'];
         $totalItems = $TypeRepository->cnt($req['filters']);
         $query = $TypeRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -66,7 +58,7 @@ class TypeController extends AbstractController
         }
 
         $start = $req['limit'] * ($req['offset'] - 1);
-        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = ($req['limit'] * $req['offset']) - 1;
         $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
 
         return $this->json($items, Response::HTTP_OK, [
@@ -79,7 +71,7 @@ class TypeController extends AbstractController
     public function list(Request $request, TypeRepository $TypeRepository): JsonResponse
     {
         $defaults = [
-            'limit' => -1,
+            'limit' => 20,
             'offset' => 1,
             'sortBy' => [[
                 'key' => 'sort',
@@ -93,19 +85,10 @@ class TypeController extends AbstractController
                 'property' => null,
             ],
         ];
-        $req = array_merge($defaults, $request->toArray());
-        $req['filters'] = array_merge($defaults['filters'], $req['filters'] ?? []);
+        $req = ListRequest::merge($defaults, $request->toArray());
         if (empty($req['sortBy'])) {
-            $req['sortBy'] = [[
-                'key' => 'sort',
-                'order' => 'ASC',
-            ], [
-                'key' => 'name',
-                'order' => 'ASC',
-            ]];
+            $req['sortBy'] = $defaults['sortBy'];
         }
-        $req['limit'] = (int) $req['limit'];
-        $req['offset'] = (int) $req['offset'];
         $totalItems = $TypeRepository->cnt($req['filters']);
         $query = $TypeRepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();

@@ -21,6 +21,7 @@ import { calendarApi } from '@/core/api/endpoints/calendarApi';
 import { todoApi } from '@/core/api/endpoints/todoApi';
 import { queryKeys } from '@/core/api/queryKeys';
 import { useAuthStore } from '@/core/auth/authStore';
+import { isRole } from '@/core/auth/coreRoles';
 import { dayjs } from '@/core/dates/dayjs';
 import { useDateSettings } from '@/core/dates/DatesSettingsProvider';
 import { loadWeatherPrefs } from '@/core/desktop/widgetPrefs';
@@ -465,7 +466,7 @@ export function TaskbarClock() {
 	const egressQuery = useQuery({
 		queryKey: queryKeys.network.egress,
 		queryFn: fetchEgressIp,
-		enabled: isAuthenticated,
+		enabled: isAuthenticated && (isRole('ROLE_ADMIN') || isRole('ROLE_ROOT')),
 		staleTime: EGRESS_STALE_MS,
 		retry: false,
 	});

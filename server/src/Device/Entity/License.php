@@ -4,7 +4,6 @@ namespace Device\Entity;
 
 use Device\Entity\License\Software as LicenseSoftware;
 use Device\Repository\LicenseRepository;
-use Doctrine\Common\Collections\Criteria;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
@@ -69,7 +68,7 @@ class License
     {
         $licenseSoftware = new LicenseSoftware();
         $this->addSoftware($licenseSoftware);
-        $licenseSoftware->setSoftware($software, false);
+        $licenseSoftware->setSoftware($software);
 
         return $licenseSoftware;
     }
@@ -276,13 +275,20 @@ class License
             $errors[] = 'Не вели CODE!';
         }
 
-        $criteria = new Criteria();
-        $criteria
-            ->where(Criteria::expr()->neq('id', $this->id))
-            ->andWhere(Criteria::expr()->eq('code', $this->code));
-
-        if ($event->getObjectManager()->getRepository(License::class)->matching($criteria)->count() > 0) {
-            $errors[] = 'Такой код уже используется!';
+        $manager = $event->getObjectManager();
+        if ($manager instanceof \Doctrine\ORM\EntityManagerInterface) {
+            $duplicate = (int) $manager->createQueryBuilder()
+                ->select('COUNT(l.id)')
+                ->from(self::class, 'l')
+                ->where('l.code = :code')
+                ->andWhere('l.id != :id')
+                ->setParameter('code', $this->code)
+                ->setParameter('id', $this->id)
+                ->getQuery()
+                ->getSingleScalarResult();
+            if ($duplicate > 0) {
+                $errors[] = 'Такой код уже используется!';
+            }
         }
 
         if (count($errors) > 0) {
@@ -294,10 +300,19 @@ class License
     public function preRemove(LifecycleEventArgs $event)
     {
         $errors = [];
-        if ((int) $event->getObjectManager()->getRepository(Device\License::class)->count([
-            'licenseSoftware' => $event->getObjectManager()->getRepository(LicenseSoftware::class)->findByLicense($this->getId()),
-        ]) > 0) {
-            $errors[] = 'Нельзя удалить лицензию, пока она используеться устройствами!';
+        $manager = $event->getObjectManager();
+        if ($manager instanceof \Doctrine\ORM\EntityManagerInterface) {
+            $used = (int) $manager->createQueryBuilder()
+                ->select('COUNT(dl.id)')
+                ->from(Device\License::class, 'dl')
+                ->join('dl.licenseSoftware', 'ls')
+                ->where('ls.license = :license')
+                ->setParameter('license', $this)
+                ->getQuery()
+                ->getSingleScalarResult();
+            if ($used > 0) {
+                $errors[] = 'Нельзя удалить лицензию, пока она используеться устройствами!';
+            }
         }
 
         if (count($errors) > 0) {

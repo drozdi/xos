@@ -1,9 +1,34 @@
 # XOS
 
-Веб-оболочка: React-клиент и API на Symfony.
+Рабочий стол в браузере: React-клиент и API на Symfony 7.4.
 
-DocumentRoot веб-сервера — `server/public`. Корень репозитория не должен отдавать файлы вне этого каталога и собранного клиента.
+DocumentRoot — `server/public`.
 
-Запуск для разработки, JWT, секреты и тесты: [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md).
+## Локально
 
-Docker: `docker compose up --build` поднимает PHP 8.4 и MySQL 8. Перед первым входом задайте `APP_SECRET` и `SSH_SECRET_KEY` (и остальные `*_SECRET`) в окружении контейнера.
+Нужны PHP 8.4, Node.js 22 и MySQL 8.
+
+```
+cd server
+composer install
+cp .env.example .env
+php bin/console lexik:jwt:generate-keypair
+php bin/console doctrine:migrations:migrate
+php bin/console main:claimant:sync
+```
+
+```
+cd client
+npm ci
+npm run dev
+```
+
+Подробности, тесты и секреты: [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md). Оглавление приложений: [docs/README.md](docs/README.md).
+
+## Docker
+
+Скопируйте `.env.docker.example` в `.env.docker`, заполните секреты и выполните `docker compose up --build`.
+
+## Окружение
+
+`APP_SECRET`, `JWT_PASSPHRASE`, `DATABASE_URL`, `SSH_SECRET_KEY`, `SSH_GATEWAY_SECRET`, `SSH_GATEWAY_PUBLIC_URL`, `SSH_GATEWAY_ORIGINS`, `MERCURE_URL`, `MERCURE_PUBLIC_URL`, `MERCURE_JWT_SECRET`, `SYMFONY_TRUSTED_PROXIES`, `INCCOM_FNS_SECRET`, `TS_TOKEN_SECRET`, `GITHUB_TOKEN_SECRET`, `YANDEX_DISK_TOKEN_SECRET`, `PKB_AT_REST_SECRET`.

@@ -277,6 +277,9 @@ class BoardApiTest extends AuthWebTestCase
         $entityManager = $client->getContainer()->get(EntityManagerInterface::class);
         $metadata = [
             $entityManager->getClassMetadata(User::class),
+            $entityManager->getClassMetadata(\Main\Entity\OU::class),
+            $entityManager->getClassMetadata(\Main\Entity\Group::class),
+            $entityManager->getClassMetadata(\Main\Entity\User\Group::class),
             $entityManager->getClassMetadata(\App\Entity\RefreshToken::class),
             $entityManager->getClassMetadata(\Main\Entity\User\Access::class),
             $entityManager->getClassMetadata(\Main\Entity\Claimant::class),

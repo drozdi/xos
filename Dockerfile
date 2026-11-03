@@ -21,4 +21,9 @@ COPY --from=assets /src/client/dist/assets ./public/assets
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+    && mkdir -p var public/uploads \
+    && chown -R www-data:www-data var public/uploads
 EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]

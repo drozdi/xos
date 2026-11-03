@@ -10,7 +10,7 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconPhoto } from '@tabler/icons-react';
-import { useCallback, useId, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useId, useRef, useState } from 'react';
 
 import { notifyApiError } from '@/core/api/apiError';
 import { uploadIblockFile } from '@/core/api/endpoints/iblockApi';
@@ -24,9 +24,13 @@ import {
 	showsMarkdownWysiwyg,
 	type MarkdownViewMode,
 } from '@/features/markdown';
-import { MarkdownWysiwygEditor } from '@/features/markdown/MarkdownWysiwygEditor';
 
 import { insertMarkdownImage } from './insertMarkdownImage';
+
+const MarkdownWysiwygEditor = lazy(async () => {
+	const mod = await import('@/features/markdown/MarkdownWysiwygEditor');
+	return { default: mod.MarkdownWysiwygEditor };
+});
 
 interface IblockMarkdownEditorProps {
 	value: string;
@@ -130,17 +134,19 @@ export function IblockMarkdownEditor({
 			>
 				{showWysiwyg && (
 					<Box style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-						<MarkdownWysiwygEditor
-							content={value}
-							onChange={onChange}
-							formatNonce={formatNonce}
-							formatCommand={null}
-							undoNonce={0}
-							redoNonce={0}
-							onFormatHandled={() => setFormatNonce(0)}
-							embedded
-							minHeight={minHeight}
-						/>
+						<Suspense fallback={<Text size="sm" c="dimmed">Загрузка редактора…</Text>}>
+							<MarkdownWysiwygEditor
+								content={value}
+								onChange={onChange}
+								formatNonce={formatNonce}
+								formatCommand={null}
+								undoNonce={0}
+								redoNonce={0}
+								onFormatHandled={() => setFormatNonce(0)}
+								embedded
+								minHeight={minHeight}
+							/>
+						</Suspense>
 					</Box>
 				)}
 				{showsMarkdownSource(mode) && (

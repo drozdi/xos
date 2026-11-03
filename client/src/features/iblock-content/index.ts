@@ -32,7 +32,6 @@ export {
 	leadsCatalogConfig,
 } from './contentConfigs';
 export { insertMarkdownImage, markdownSafeSrc } from './insertMarkdownImage';
-export { IblockMarkdownEditor } from './IblockMarkdownEditor';
 export { CoverField } from './CoverField';
 export { IblockImageField, type IblockImageValue } from './IblockImageField';
 export { slugifyCode } from './slugifyCode';

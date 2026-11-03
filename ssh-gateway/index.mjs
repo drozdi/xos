@@ -4,14 +4,29 @@ import { WebSocketServer } from 'ws';
 const port = Number(process.env.SSH_GATEWAY_PORT ?? 7681);
 const api = (process.env.SSH_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '');
 const secret = process.env.SSH_GATEWAY_SECRET ?? '';
+const allowedOrigins = (process.env.SSH_GATEWAY_ORIGINS ?? '')
+	.split(',')
+	.map((item) => item.trim())
+	.filter((item) => item !== '');
+const idleMs = 5 * 60 * 1000;
 
-const sockets = new WebSocketServer({ port });
+const sockets = new WebSocketServer({
+	port,
+	maxPayload: 64 * 1024,
+	verifyClient: ({ origin }) => allowedOrigins.length === 0 || allowedOrigins.includes(origin),
+});
 
 sockets.on('connection', (socket) => {
 	let client = null;
 	let userId = null;
+	let idle = setTimeout(() => socket.close(), idleMs);
+	const bumpIdle = () => {
+		clearTimeout(idle);
+		idle = setTimeout(() => socket.close(), idleMs);
+	};
 
 	socket.once('message', async (raw) => {
+		bumpIdle();
 		try {
 			const hello = JSON.parse(String(raw));
 			const response = await fetch(`${api}/api/ssh/gateway/redeem`, {
@@ -37,7 +52,10 @@ sockets.on('connection', (socket) => {
 						return;
 					}
 					stream.on('data', (chunk) => socket.send(chunk.toString('utf8')));
-					socket.on('message', (message) => stream.write(String(message)));
+					socket.on('message', (message) => {
+						bumpIdle();
+						stream.write(String(message));
+					});
 					socket.on('close', () => stream.end());
 				});
 			});
@@ -61,6 +79,7 @@ sockets.on('connection', (socket) => {
 	});
 
 	socket.on('close', () => {
+		clearTimeout(idle);
 		client?.end();
 		if (userId) {
 			void fetch(`${api}/api/ssh/gateway/release`, {

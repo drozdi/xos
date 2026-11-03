@@ -34,7 +34,6 @@ import {
 	CONTENT_PROPS,
 	CoverField,
 	IblockImageField,
-	IblockMarkdownEditor,
 	RECIPES_BLOCK_CODE,
 	RecipeShareModal,
 	RecipeView,
@@ -49,6 +48,7 @@ import {
 	type IngredientRow,
 	useContentBlock,
 } from '@/features/iblock-content';
+import { IblockMarkdownEditor } from '@/features/iblock-content/IblockMarkdownEditor';
 import { MainEntityForm } from '@/features/main/MainEntityForm';
 
 import { validateRecipeForm } from './recipeValidation';

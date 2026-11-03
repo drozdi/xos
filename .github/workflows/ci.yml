@@ -97,6 +97,50 @@ jobs:
           php bin/console doctrine:migrations:migrate --no-interaction
           php bin/console doctrine:schema:validate
 
+  mysql-empty:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: xos
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    defaults:
+      run:
+        working-directory: server
+    env:
+      APP_ENV: dev
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/xos?serverVersion=8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, iconv, pdo_mysql
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-scripts
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php bin/console lexik:jwt:generate-keypair --skip-if-exists
+
+      - name: Empty database plain migrate
+        run: |
+          php bin/console doctrine:migrations:migrate --no-interaction
+          php bin/console doctrine:schema:validate
+
   client:
     runs-on: ubuntu-latest
     defaults:
@@ -117,7 +161,9 @@ jobs:
 
       - name: npm audit
         run: npm audit --audit-level=high
-        continue-on-error: true
+
+      - name: Lint
+        run: node scripts/eslint-budget.mjs
 
       - name: Run Vitest
         run: npm run test
@@ -132,4 +178,4 @@ jobs:
         run: node scripts/check-bundle-size.mjs
 
       - name: Playwright login smoke
-        run: npx playwright install --with-deps chromium && npx playwright test e2e/smoke.spec.ts --grep "login page"
+        run: npx playwright install --with-deps chromium && npx playwright test e2e/smoke.spec.ts e2e/theme-switch.spec.ts e2e/calculator-loop.spec.ts --grep "login page|theme switch|calculator"

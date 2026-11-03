@@ -2,6 +2,7 @@
 
 namespace Main\Controller;
 
+use App\Http\ListRequest;
 use Main\Repository\OURepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,8 +19,8 @@ class OuSelectController extends AbstractController
     #[Route('/select', name: 'select', methods: ['POST'])]
     public function select(Request $request, OURepository $ouRepository): JsonResponse
     {
-        $req = array_merge([
-            'limit' => -1,
+        $req = ListRequest::merge([
+            'limit' => 20,
             'offset' => 1,
             'sortBy' => [[
                 'key' => 'sort',
@@ -31,13 +32,6 @@ class OuSelectController extends AbstractController
             'filters' => [],
         ], $request->toArray());
 
-        if (!array_key_exists('limit', $req) && array_key_exists('size', $req)) {
-            $req['limit'] = (int) $req['size'];
-        }
-
-        $req['limit'] = (int) $req['limit'];
-        $req['offset'] = (int) $req['offset'];
-
         $totalItems = $ouRepository->cnt($req['filters']);
         $items = $ouRepository->findSelectItems(
             $req['filters'],
@@ -47,7 +41,7 @@ class OuSelectController extends AbstractController
         );
 
         $start = $req['limit'] * ($req['offset'] - 1);
-        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = ($req['limit'] * $req['offset']) - 1;
         $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
 
         return $this->json($items, Response::HTTP_OK, [

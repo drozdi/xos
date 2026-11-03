@@ -4,6 +4,7 @@ namespace IBlock\Controller;
 
 use App\Attribute\Access;
 use App\Http\ContentRangeHeaders;
+use App\Http\ListRequest;
 use IBlock\Service\ElementManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -29,9 +30,9 @@ class ElementController extends AbstractController
     #[Access('can_read')]
     public function listAction(Request $request): JsonResponse
     {
-        $req = array_merge([
+        $req = ListRequest::merge([
             't' => 'list',
-            'limit' => -1,
+            'limit' => 20,
             'offset' => 1,
             'sortBy' => [
                 ['key' => 'sort', 'order' => 'ASC'],
