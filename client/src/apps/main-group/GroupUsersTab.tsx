@@ -8,11 +8,9 @@ import {
 	Text,
 } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { mainUserApi, type GroupUserItem } from '@/core/api/endpoints/mainApi';
-import { queryKeys } from '@/core/api/queryKeys';
+import { type GroupUserItem } from '@/core/api/endpoints/mainApi';
 import { DateTimeField } from '@/core/dates';
 import { UserSelect } from '@/features/main/UserSelect';
 import { useWindowSize } from '@/core/windowManager';
@@ -110,12 +108,7 @@ export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps)
 	const { width: windowWidth } = useWindowSize();
 	const isTableLayout = useTableLayout(windowWidth);
 	const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-
-	const userSelectQuery = useQuery({
-		queryKey: queryKeys.main.userSelect(undefined),
-		queryFn: () => mainUserApi.select({}),
-		enabled: !readOnly,
-	});
+	const [selectedLabel, setSelectedLabel] = useState('');
 
 	const entries = useMemo(() => Object.entries(users), [users]);
 
@@ -123,10 +116,9 @@ export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps)
 		if (!selectedUserId) {
 			return;
 		}
-		const label =
-			userSelectQuery.data?.items.find((item) => item.value === selectedUserId)?.label ?? '';
-		onChange(addGroupUser(users, selectedUserId, label));
+		onChange(addGroupUser(users, selectedUserId, selectedLabel || String(selectedUserId)));
 		setSelectedUserId(null);
+		setSelectedLabel('');
 	};
 
 	const layout = isTableLayout ? 'table' : 'card';
@@ -138,7 +130,10 @@ export function GroupUsersTab({ users, readOnly, onChange }: GroupUsersTabProps)
 					<UserSelect
 						label="Добавить пользователя"
 						value={selectedUserId}
-						onChange={(userId) => setSelectedUserId(userId)}
+						onChange={(userId, label) => {
+							setSelectedUserId(userId);
+							setSelectedLabel(label ?? '');
+						}}
 					/>
 					<Button onClick={handleAdd} disabled={!selectedUserId}>
 						Добавить

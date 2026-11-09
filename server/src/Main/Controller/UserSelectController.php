@@ -38,6 +38,16 @@ class UserSelectController extends AbstractController
         $req['limit'] = max(1, min(100, (int) $req['limit']));
         $req['offset'] = max(1, (int) $req['offset']);
 
+        $filters = is_array($req['filters'] ?? null) ? $req['filters'] : [];
+        $query = trim((string) ($filters['q'] ?? $filters['login'] ?? $filters['alias'] ?? ''));
+        if ('' === $query) {
+            return $this->json([], Response::HTTP_OK, [
+                'Content-Range' => 'items 0-0/0',
+            ]);
+        }
+        $filters['q'] = $query;
+        $req['filters'] = $filters;
+
         $totalItems = $userRepository->cnt($req['filters']);
         $items = $userRepository->findSelectItems(
             $req['filters'],

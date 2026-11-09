@@ -16,4 +16,13 @@ class SshSecretCipherTest extends TestCase
         self::assertStringStartsWith('enc:v1:', $encrypted);
         self::assertSame($secret, $cipher->decrypt($encrypted));
     }
+
+    public function testMissingKeyFallsBackToAppSecret(): void
+    {
+        $cipher = new SshSecretCipher('unit-test-ssh-secret', null);
+        $encrypted = $cipher->encrypt('secret');
+
+        self::assertFalse($cipher->usesDedicatedKey());
+        self::assertSame('secret', $cipher->decrypt($encrypted));
+    }
 }

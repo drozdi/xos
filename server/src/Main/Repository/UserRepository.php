@@ -94,6 +94,12 @@ class UserRepository extends \AbstractRepository implements PasswordUpgraderInte
                 $query->andWhere($this->fieldVal($n."ou.{$field}", $val));
             }
         }
+        $search = trim((string) ($filters['q'] ?? ''));
+        if ('' !== $search) {
+            $query->andWhere($n.'.login LIKE :user_q OR '.$n.'.alias LIKE :user_q')
+                ->setParameter('user_q', '%'.addcslashes($search, '%_').'%');
+        }
+
         if (!empty($filters['group']) && is_int($filters['group']) && $filters['group'] > 0) {
             $query->innerJoin($n.'.groups', $n.'ug');
             $query->innerJoin($n.'ug.group', $n.'g');
@@ -164,9 +170,8 @@ class UserRepository extends \AbstractRepository implements PasswordUpgraderInte
     public static function formatSelectLabel(User $user): string
     {
         $alias = $user->getAlias() ?: $user->getLogin() ?: '';
-        $email = $user->getEmail() ?? '';
 
-        return '' !== $email ? sprintf('%s - %s', $alias, $email) : $alias;
+        return $alias;
     }
 
     //    /**

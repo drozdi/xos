@@ -22,6 +22,7 @@ export {
 } from './contentCatalog';
 export {
 	notesCatalogConfig,
+	recipesCatalogConfig,
 	articlesCatalogConfig,
 	faqCatalogConfig,
 	galleryCatalogConfig,

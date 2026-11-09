@@ -1,0 +1,9 @@
+doctrine:
+    orm:
+        mappings:
+            Ops:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Ops/Entity'
+                prefix: 'Ops\Entity'
+                alias: Ops

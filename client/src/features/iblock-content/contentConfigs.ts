@@ -12,6 +12,7 @@ import {
 	LEAD_STAGE_OPTIONS,
 	LEADS_BLOCK_CODE,
 	NOTES_BLOCK_CODE,
+	RECIPES_BLOCK_CODE,
 	SERVICES_BLOCK_CODE,
 	type ContentCatalogConfig,
 } from './contentCatalog';
@@ -29,6 +30,41 @@ export const notesCatalogConfig: ContentCatalogConfig = {
 	codeFallback: 'note',
 	sectionsAppId: 'notebooks',
 	sectionsButtonLabel: 'Блокноты',
+};
+
+export const recipesCatalogConfig: ContentCatalogConfig = {
+	blockCode: RECIPES_BLOCK_CODE,
+	listAppId: 'recipes',
+	detailAppId: 'recipe',
+	listTitle: 'Рецепты',
+	detailTitle: 'Рецепт',
+	entityLabel: 'Рецепт',
+	createLabel: 'Новый рецепт',
+	sectionLabel: 'Категория',
+	sectionPlaceholder: 'Все категории',
+	storageKey: 'recipes-catalog',
+	codeFallback: 'recipe',
+	access: 'recipe',
+	listView: 'recipes',
+	sectionsAppId: 'recipe-categories',
+	sectionsButtonLabel: 'Категории',
+	features: {
+		cover: { multiple: true },
+		tags: false,
+		preview: true,
+		markdown: true,
+		share: true,
+		favorites: false,
+	},
+	extraFilters: [
+		{
+			type: 'select',
+			prop: CONTENT_PROPS.DIFFICULTY,
+			label: 'Сложность',
+			placeholder: 'Любая',
+			options: 'difficulty',
+		},
+	],
 };
 
 export const articlesCatalogConfig: ContentCatalogConfig = {
@@ -58,6 +94,7 @@ export const faqCatalogConfig: ContentCatalogConfig = {
 	nameLabel: 'Вопрос',
 	detailTextLabel: 'Ответ (Markdown)',
 	features: { cover: false, tags: true, preview: false, markdown: true, share: true },
+	listView: 'faq',
 };
 
 export const galleryCatalogConfig: ContentCatalogConfig = {
@@ -72,6 +109,7 @@ export const galleryCatalogConfig: ContentCatalogConfig = {
 	storageKey: 'gallery-catalog',
 	codeFallback: 'photo',
 	features: { cover: { multiple: true }, tags: false, preview: false, markdown: false, share: true },
+	listView: 'gallery',
 	extraFields: [{ type: 'text', prop: CONTENT_PROPS.CAPTION, label: 'Подпись' }],
 	detailTextLabel: 'Описание',
 };
@@ -105,6 +143,7 @@ export const contactsCatalogConfig: ContentCatalogConfig = {
 	storageKey: 'contacts-catalog',
 	codeFallback: 'contact',
 	features: { cover: { multiple: false }, tags: false, preview: false, markdown: false, share: true },
+	listView: 'contacts',
 	extraFields: [
 		{ type: 'text', prop: CONTENT_PROPS.POSITION, label: 'Должность' },
 		{ type: 'text', prop: CONTENT_PROPS.PHONE, label: 'Телефон' },

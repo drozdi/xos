@@ -115,9 +115,28 @@ class MainUserApiTest extends AuthWebTestCase
         /** @var list<array{value: int, label: string}> $items */
         $items = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
-        self::assertIsArray($items);
-        self::assertGreaterThanOrEqual(2, count($items));
-        self::assertArrayHasKey('value', $items[0]);
-        self::assertArrayHasKey('label', $items[0]);
+        self::assertSame([], $items);
+
+        $client->request(
+            'POST',
+            '/api/main/user/select',
+            [],
+            [],
+            array_merge($this->authHeaders($loginPayload['token']), [
+                'CONTENT_TYPE' => 'application/json',
+            ]),
+            json_encode([
+                'limit' => 20,
+                'offset' => 1,
+                'filters' => ['q' => 'basic_user'],
+            ], JSON_THROW_ON_ERROR)
+        );
+
+        self::assertResponseIsSuccessful();
+        /** @var list<array{value: int, label: string}> $found */
+        $found = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertCount(1, $found);
+        self::assertSame('basic_user', $found[0]['label']);
+        self::assertStringNotContainsString('@', $found[0]['label']);
     }
 }

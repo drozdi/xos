@@ -3,6 +3,7 @@ import {
 	Badge,
 	Box,
 	Button,
+	Grid,
 	Group,
 	Stack,
 	Text,
@@ -130,27 +131,32 @@ export function RecipeView({ data, difficultyLabel, onEdit, onShare }: RecipeVie
 				</Text>
 			)}
 
-			{ingredients.length > 0 ? (
-				<Box>
+			<Grid gap="lg">
+				<Grid.Col span={{ base: 12, sm: 4 }}>
 					<Text fw={600} mb="xs">
 						Ингредиенты
 					</Text>
-					<Stack gap={4}>
-						{ingredients.map((line, index) => (
-							<Text key={`ing-${index}`} size="sm">
-								• {line}
-							</Text>
-						))}
-					</Stack>
-				</Box>
-			) : null}
-
-			<Box>
-				<Text fw={600} mb="xs">
-					Инструкция
-				</Text>
-				<MarkdownPreview content={data.detail_text || ''} variant="reading" />
-			</Box>
+					{ingredients.length > 0 ? (
+						<Stack gap={4}>
+							{ingredients.map((line, index) => (
+								<Text key={`ing-${index}`} size="sm">
+									• {line}
+								</Text>
+							))}
+						</Stack>
+					) : (
+						<Text size="sm" c="dimmed">
+							Нет ингредиентов
+						</Text>
+					)}
+				</Grid.Col>
+				<Grid.Col span={{ base: 12, sm: 8 }}>
+					<Text fw={600} mb="xs">
+						Инструкция
+					</Text>
+					<MarkdownPreview content={data.detail_text || ''} variant="reading" />
+				</Grid.Col>
+			</Grid>
 		</Stack>
 	);
 }

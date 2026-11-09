@@ -94,8 +94,21 @@ export interface ContentCatalogConfig {
 		preview?: boolean;
 		markdown?: boolean;
 		share?: boolean;
+		favorites?: boolean;
 	};
 	extraFields?: ContentExtraField[];
+	/** Доп. фильтры списка. `difficulty` берёт enum свойства DIFFICULTY. */
+	extraFilters?: Array<{
+		type: 'select';
+		prop: string;
+		label: string;
+		placeholder?: string;
+		options: 'difficulty' | ReadonlyArray<{ value: string; label: string }>;
+	}>;
+	listView?: 'table' | 'gallery' | 'contacts' | 'faq' | 'recipes';
+	/** recipe — права приложения рецептов, иначе iblock.element */
+	access?: 'iblock' | 'recipe';
+	sectionPlaceholder?: string;
 	/** Start Menu / list button to manage sections (e.g. notebooks) */
 	sectionsAppId?: string;
 	sectionsButtonLabel?: string;
@@ -110,5 +123,6 @@ export function contentFeatures(config: ContentCatalogConfig) {
 		preview: f.preview !== false,
 		markdown: f.markdown !== false,
 		share: f.share !== false,
+		favorites: f.favorites !== false,
 	};
 }

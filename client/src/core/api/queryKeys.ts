@@ -166,6 +166,13 @@ export const queryKeys = {
 		connections: ['ssh', 'connections'] as const,
 		keys: ['ssh', 'keys'] as const,
 	},
+	sftp: {
+		list: (connectionId: number, path: string) => ['sftp', connectionId, path] as const,
+	},
+	ops: {
+		links: (kind: string) => ['ops', kind] as const,
+		docker: (id: number) => ['ops', 'docker', id] as const,
+	},
 	network: {
 		egress: ['network', 'egress'] as const,
 	},

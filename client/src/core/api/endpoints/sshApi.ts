@@ -137,4 +137,123 @@ export const sshApi = {
 		const token = getAccessToken();
 		return token ? { Authorization: `Bearer ${token}` } : {};
 	},
+	sftpList: async (body: SftpRequest): Promise<SftpList> =>
+		sftpJson('/api/ssh/sftp/list', body, (data) => sftpListSchema.parse(data)),
+	sftpMkdir: async (body: SftpRequest & { name: string }): Promise<void> => {
+		await sftpJson('/api/ssh/sftp/mkdir', body, () => true);
+	},
+	sftpRemove: async (body: SftpRequest): Promise<void> => {
+		await sftpJson('/api/ssh/sftp/remove', body, () => true);
+	},
+	sftpRename: async (body: SftpRequest & { name: string }): Promise<void> => {
+		await sftpJson('/api/ssh/sftp/rename', body, () => true);
+	},
+	sftpUpload: async (body: SftpRequest, file: File): Promise<void> => {
+		const form = new FormData();
+		form.set('connection_id', String(body.connection_id));
+		form.set('path', body.path);
+		form.set('accept_host_key', body.accept_host_key ? '1' : '0');
+		form.set('file', file);
+		try {
+			const config: AxiosRequestConfig & { _errorToastShown: boolean } = { _errorToastShown: true };
+			await apiClient.post('/api/ssh/sftp/upload', form, config);
+		} catch (error) {
+			throw await sftpError(error);
+		}
+	},
+	sftpDownload: async (body: SftpRequest): Promise<Blob> => {
+		try {
+			const config: AxiosRequestConfig & { _errorToastShown: boolean } = {
+				_errorToastShown: true,
+				responseType: 'blob',
+				params: {
+					connection_id: body.connection_id,
+					path: body.path,
+					accept_host_key: body.accept_host_key ? 1 : 0,
+				},
+			};
+			const response = await apiClient.get<Blob>('/api/ssh/sftp/download', config);
+			const type = String(response.headers['content-type'] ?? '');
+			if (type.includes('json')) {
+				throw await sftpError(response.data);
+			}
+			return response.data;
+		} catch (error) {
+			throw await sftpError(error);
+		}
+	},
 };
+
+const sftpEntrySchema = z.object({
+	name: z.string(),
+	dir: z.boolean(),
+	size: z.number(),
+	mtime: z.number(),
+});
+
+const sftpListSchema = z.object({
+	path: z.string(),
+	entries: z.array(sftpEntrySchema),
+});
+
+export type SftpEntry = z.infer<typeof sftpEntrySchema>;
+export type SftpList = z.infer<typeof sftpListSchema>;
+export type SftpRequest = {
+	connection_id: number;
+	path: string;
+	accept_host_key?: boolean;
+};
+
+async function sftpJson<T>(url: string, body: SftpRequest, parse: (data: unknown) => T): Promise<T> {
+	try {
+		const config: AxiosRequestConfig & { _errorToastShown: boolean } = { _errorToastShown: true };
+		const { data } = await apiClient.post<unknown>(url, body, config);
+		return parse(data);
+	} catch (error) {
+		throw await sftpError(error);
+	}
+}
+
+async function sftpError(error: unknown): Promise<Error> {
+	if (error instanceof SshHostKeyError) {
+		return error;
+	}
+	if (error instanceof Blob) {
+		return blobError(error);
+	}
+	if (axios.isAxiosError(error) && error.response?.status === 409) {
+		const payload = await payloadOf(error.response.data);
+		if (typeof payload?.fingerprint === 'string') {
+			return new SshHostKeyError(payload.fingerprint);
+		}
+	}
+	if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+		return blobError(error.response.data);
+	}
+	return error instanceof Error ? error : new Error('Запрос не выполнен');
+}
+
+async function blobError(blob: Blob): Promise<Error> {
+	const payload = await payloadOf(blob);
+	if (typeof payload?.fingerprint === 'string') {
+		return new SshHostKeyError(payload.fingerprint);
+	}
+	if (typeof payload?.message === 'string' && payload.message.length > 0) {
+		return new Error(payload.message);
+	}
+	return new Error('Запрос не выполнен');
+}
+
+async function payloadOf(data: unknown): Promise<{ fingerprint?: unknown; message?: unknown } | null> {
+	if (data instanceof Blob) {
+		try {
+			return JSON.parse(await data.text()) as { fingerprint?: unknown; message?: unknown };
+		} catch {
+			return null;
+		}
+	}
+	if (data && typeof data === 'object') {
+		return data as { fingerprint?: unknown; message?: unknown };
+	}
+	return null;
+}

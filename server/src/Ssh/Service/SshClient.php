@@ -3,6 +3,7 @@
 namespace Ssh\Service;
 
 use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Net\SFTP;
 use phpseclib3\Net\SSH2;
 use Ssh\Entity\SshConnection;
 use Ssh\Entity\SshKey;
@@ -17,8 +18,40 @@ final class SshClient
 
     public function connect(SshConnection $connection, bool $acceptHostKey, int $columns, int $rows): SSH2
     {
+        $ssh = $this->open($connection, $acceptHostKey, false);
+        $ssh->setWindowSize(max(20, min(500, $columns)), max(5, min(200, $rows)));
+
+        return $ssh;
+    }
+
+    public function openSftp(SshConnection $connection, bool $acceptHostKey): SFTP
+    {
+        $sftp = $this->open($connection, $acceptHostKey, true);
+        if (!$sftp instanceof SFTP) {
+            throw new BadRequestHttpException('Не удалось открыть SFTP');
+        }
+
+        return $sftp;
+    }
+
+    /**
+     * @return array{0: string, 1: string|false}
+     */
+    public function identity(SshConnection $connection): array
+    {
+        if ('key' !== $connection->getAuth()) {
+            throw new BadRequestHttpException('Туннель запускается ключом, без пароля');
+        }
+
+        return $this->privateKey($connection);
+    }
+
+    private function open(SshConnection $connection, bool $acceptHostKey, bool $sftp): SSH2
+    {
         try {
-            $ssh = new SSH2($connection->getHost(), $connection->getPort(), 12);
+            $ssh = $sftp
+                ? new SFTP($connection->getHost(), $connection->getPort(), 12)
+                : new SSH2($connection->getHost(), $connection->getPort(), 12);
         } catch (\Throwable $error) {
             throw new BadRequestHttpException($this->connectMessage($error));
         }
@@ -54,8 +87,6 @@ final class SshClient
             $ssh->disconnect();
             throw new BadRequestHttpException('Не удалось войти. Проверьте пользователя, пароль или ключ');
         }
-
-        $ssh->setWindowSize(max(20, min(500, $columns)), max(5, min(200, $rows)));
 
         return $ssh;
     }

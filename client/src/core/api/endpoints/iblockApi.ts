@@ -160,6 +160,8 @@ export const iblockElementListItemSchema = z.object({
 	section_id: nullableNumber,
 	section_ids: z.array(z.number()).optional().default([]),
 	preview_text: nullableString.optional().default(''),
+	detail_text: nullableString.optional().default(''),
+	PROPERTY_VALUES: z.record(z.string(), z.unknown()).optional().default({}),
 	cover: z
 		.object({
 			id: z.number(),

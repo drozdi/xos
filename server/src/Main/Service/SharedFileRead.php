@@ -61,10 +61,12 @@ final class SharedFileRead
         }
 
         $count = (int) $this->entityManager->createQueryBuilder()
-            ->select('COUNT(e.id)')
+            ->select('COUNT(DISTINCT e.id)')
             ->from(Element::class, 'e')
-            ->join(ElementShare::class, 's', 'WITH', 's.element = e AND s.user = :user')
-            ->where('e.previewImage = :file OR e.detailImage = :file')
+            ->leftJoin(ElementPropertyValue::class, 'epv', 'WITH', 'epv.element = e AND epv.valueFile = :file')
+            ->leftJoin(ElementShare::class, 's', 'WITH', 's.element = e AND s.user = :user')
+            ->where('e.previewImage = :file OR e.detailImage = :file OR epv.id IS NOT NULL')
+            ->andWhere('e.createdBy = :user OR e.createdBy IS NULL OR s.id IS NOT NULL')
             ->setParameter('file', $file)
             ->setParameter('user', $user)
             ->getQuery()

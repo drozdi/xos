@@ -1,5 +1,6 @@
 import { Select } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { mainUserApi } from '@/core/api/endpoints/mainApi';
 import { queryKeys } from '@/core/api/queryKeys';
@@ -14,7 +15,7 @@ export const tutorOuUserFilters: ListRequest['filters'] = {
 interface UserSelectProps {
 	label?: string;
 	value: number | null | undefined;
-	onChange: (userId: number | null) => void;
+	onChange: (userId: number | null, label?: string) => void;
 	filters?: ListRequest['filters'];
 	disabled?: boolean;
 	error?: string;
@@ -31,11 +32,13 @@ export function UserSelect({
 	withAsterisk,
 }: UserSelectProps) {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+	const [search, setSearch] = useState('');
+	const queryText = search.trim();
 
 	const query = useQuery({
-		queryKey: queryKeys.main.userSelect(filters),
-		queryFn: () => mainUserApi.select({ filters }),
-		enabled: isAuthenticated,
+		queryKey: queryKeys.main.userSelect({ ...filters, q: queryText }),
+		queryFn: () => mainUserApi.select({ filters: { ...filters, q: queryText } }),
+		enabled: isAuthenticated && queryText.length > 0,
 	});
 
 	const options = (query.data?.items ?? []).map((item) => ({
@@ -50,8 +53,16 @@ export function UserSelect({
 			error={error}
 			data={options}
 			value={value ? String(value) : null}
-			onChange={(next) => onChange(next ? Number(next) : null)}
+			onChange={(next) => {
+				if (!next) {
+					onChange(null);
+					return;
+				}
+				onChange(Number(next), options.find((item) => item.value === next)?.label);
+			}}
 			searchable
+			searchValue={search}
+			onSearchChange={setSearch}
 			clearable
 			disabled={disabled || query.isError}
 			nothingFoundMessage={query.isLoading ? 'Загрузка…' : 'Ничего не найдено'}

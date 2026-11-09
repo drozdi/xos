@@ -9,12 +9,15 @@ final class SshSecretCipher
 {
     private const PREFIX = 'enc:v1:';
 
+    private readonly string $sshSecretKey;
+
     public function __construct(
         #[Autowire('%kernel.secret%')]
         private readonly string $appSecret,
         #[Autowire('%env(default::SSH_SECRET_KEY)%')]
-        private readonly string $sshSecretKey = '',
+        ?string $sshSecretKey = null,
     ) {
+        $this->sshSecretKey = $sshSecretKey ?? '';
     }
 
     public function usesDedicatedKey(): bool

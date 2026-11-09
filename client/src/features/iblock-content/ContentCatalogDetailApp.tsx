@@ -158,7 +158,9 @@ export function ContentCatalogDetailApp({ config }: { config: ContentCatalogConf
 	const canCreate = canCreateIblockElement();
 	const isNew = entityId === 0;
 	const features = contentFeatures(config);
-	const [mode, setMode] = useState<'view' | 'edit'>(isNew ? 'edit' : 'view');
+	const [mode, setMode] = useState<'view' | 'edit'>(
+		isNew || launchProps.mode === 'edit' ? 'edit' : 'view',
+	);
 	const [shareOpen, setShareOpen] = useState(false);
 	const { blockId, sectionOptions, isReady, error: blockError } = useContentBlock(config.blockCode);
 

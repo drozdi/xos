@@ -10,7 +10,6 @@ import {
 	NumberInput,
 	Select,
 	Stack,
-	Tabs,
 	Text,
 	TextInput,
 	Textarea,
@@ -366,7 +365,6 @@ function RecipeFormFields({
 	blockId: number | null;
 }) {
 	const values = data.PROPERTY_VALUES ?? {};
-	const [activeTab, setActiveTab] = useState<string | null>('general');
 	const ingredients = useMemo(() => {
 		const list = ingredientRowsFromProperty(values[CONTENT_PROPS.INGREDIENTS]);
 		return list.length > 0 ? list : [emptyIngredientRow()];
@@ -406,13 +404,6 @@ function RecipeFormFields({
 	};
 
 	return (
-		<Tabs value={activeTab} onChange={setActiveTab}>
-			<Tabs.List>
-				<Tabs.Tab value="general">Основное</Tabs.Tab>
-				<Tabs.Tab value="instructions">Инструкция</Tabs.Tab>
-			</Tabs.List>
-
-			<Tabs.Panel value="general" pt="sm">
 				<Stack gap="sm">
 					<TextInput
 						label="Название"
@@ -552,18 +543,13 @@ function RecipeFormFields({
 						onChange={(e) => setField('preview_text', e.currentTarget.value)}
 						minRows={2}
 					/>
+					<IblockMarkdownEditor
+						label="Инструкция"
+						value={data.detail_text ?? ''}
+						readOnly={readOnly}
+						onChange={(next) => setField('detail_text', next)}
+						minHeight={320}
+					/>
 				</Stack>
-			</Tabs.Panel>
-
-			<Tabs.Panel value="instructions" pt="sm">
-				<IblockMarkdownEditor
-					label="Инструкция (Markdown)"
-					value={data.detail_text ?? ''}
-					readOnly={readOnly}
-					onChange={(next) => setField('detail_text', next)}
-					minHeight={420}
-				/>
-			</Tabs.Panel>
-		</Tabs>
 	);
 }

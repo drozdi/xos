@@ -84,8 +84,16 @@ class ElementManager extends AbstractIBlockManager
         $filter = $this->recipesBlockGuard->constrainListFilter($filter, $viewer);
         $qb = $this->buildFilteredQuery($filter, $order, $limit, $offset);
 
-        $items = [];
+        $entities = [];
         foreach ($qb->getQuery()->execute() as $entity) {
+            if ($entity instanceof Element) {
+                $entities[] = $entity;
+            }
+        }
+        $this->preloadListProperties($entities);
+
+        $items = [];
+        foreach ($entities as $entity) {
             $items[] = $this->serializeListItem($entity, $viewer);
         }
 
@@ -253,6 +261,8 @@ class ElementManager extends AbstractIBlockManager
             'section_id' => $entity->getSection()?->getId(),
             'section_ids' => $entity->getSectionIds(),
             'preview_text' => $entity->getPreviewText(),
+            'detail_text' => mb_substr((string) $entity->getDetailText(), 0, 280),
+            'PROPERTY_VALUES' => $this->serializeListProperties($entity),
             'preview_image' => IblockImageRef::serialize($entity->getPreviewImage()),
             'detail_image' => IblockImageRef::serialize($entity->getDetailImage()),
             'preview_image_id' => $entity->getPreviewImage()?->getId(),
@@ -1068,6 +1078,101 @@ class ElementManager extends AbstractIBlockManager
         }
 
         return null;
+    }
+
+    /**
+     * @param list<Element> $elements
+     */
+    private function preloadListProperties(array $elements): void
+    {
+        $ids = [];
+        foreach ($elements as $element) {
+            $id = $element->getId();
+            if (null !== $id) {
+                $ids[] = $id;
+            }
+        }
+        if ([] === $ids) {
+            return;
+        }
+
+        $this->entityManager->createQueryBuilder()
+            ->select('e', 'epv', 'p', 'parent', 'enum', 'file')
+            ->from(Element::class, 'e')
+            ->leftJoin('e.propertyValues', 'epv')
+            ->leftJoin('epv.property', 'p')
+            ->leftJoin('p.parent', 'parent')
+            ->leftJoin('epv.valueL', 'enum')
+            ->leftJoin('epv.valueFile', 'file')
+            ->where('e.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeListProperties(Element $element): array
+    {
+        /** @var array<string, list<mixed>> $grouped */
+        $grouped = [];
+        foreach ($element->getPropertyValues() as $row) {
+            $property = $row->getProperty();
+            if (!$property instanceof Property) {
+                continue;
+            }
+            $parent = $property->getParent();
+            if ($parent instanceof Property && $this->prototypeHelper->isPrototypeFieldType((string) $parent->getFieldType())) {
+                continue;
+            }
+            if ($this->prototypeHelper->isPrototypeFieldType((string) $property->getFieldType())) {
+                continue;
+            }
+            $fieldType = strtoupper((string) $property->getFieldType());
+            if (\in_array($fieldType, ['F', 'E', 'G'], true)) {
+                continue;
+            }
+            $scalar = $this->listPropertyScalar($row, $fieldType);
+            if (null === $scalar || '' === $scalar) {
+                continue;
+            }
+            $grouped[(string) $property->getCode()][] = $scalar;
+        }
+
+        $result = [];
+        foreach ($grouped as $code => $values) {
+            $result[$code] = 1 === \count($values) ? $values[0] : array_values($values);
+        }
+
+        return $result;
+    }
+
+    private function listPropertyScalar(ElementPropertyValue $row, string $fieldType): mixed
+    {
+        if ($this->prototypeHelper->isListFieldType($fieldType)) {
+            $enum = $row->getValueL()->first();
+            if (!$enum instanceof PropertyEnum) {
+                return null;
+            }
+
+            $code = $enum->getCode();
+
+            return null !== $code && '' !== $code ? $code : (string) $enum->getId();
+        }
+        if ('N' === $fieldType && null !== $row->getValueN()) {
+            return $row->getValueN();
+        }
+        if (null !== $row->getValueS() && '' !== $row->getValueS()) {
+            return $row->getValueS();
+        }
+        if (null !== $row->getValueN()) {
+            return $row->getValueN();
+        }
+        $value = $row->getValue();
+        if (null === $value || '' === $value || \is_array($value)) {
+            return null;
+        }
+
+        return $value;
     }
 
     /** @return array<string, mixed> */
