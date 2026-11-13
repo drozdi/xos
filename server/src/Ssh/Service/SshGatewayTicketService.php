@@ -16,16 +16,21 @@ final class SshGatewayTicketService
 {
     private const MAX_SESSIONS = 3;
 
+    private readonly string $gatewaySecret;
+    private readonly string $publicUrl;
+
     public function __construct(
         #[Autowire(service: 'cache.app')]
         private readonly CacheItemPoolInterface $cache,
         private readonly SshConnectionRepository $connections,
         private readonly SshSecretCipher $cipher,
         #[Autowire('%env(default::SSH_GATEWAY_SECRET)%')]
-        private readonly string $gatewaySecret = '',
+        ?string $gatewaySecret = null,
         #[Autowire('%env(default::SSH_GATEWAY_PUBLIC_URL)%')]
-        private readonly string $publicUrl = '',
+        ?string $publicUrl = null,
     ) {
+        $this->gatewaySecret = $gatewaySecret ?? '';
+        $this->publicUrl = $publicUrl ?? '';
     }
 
     /**
