@@ -8,6 +8,7 @@ XOS — рабочий стол в браузере: Symfony API и React-обо
 | [API.md](API.md) | Общий API: вход, аккаунт, стол, настройки, файлы |
 | [APP_IDEAS.md](APP_IDEAS.md) | Идеи новых приложений |
 | [IMPROVEMENTS.md](IMPROVEMENTS.md) | Идеи улучшений существующих частей |
+| [architecture-split.md](architecture-split.md) | Проект разделения: центр XOS и агент на хосте Samba. Код ещё не разделён |
 
 ## Приложения
 
