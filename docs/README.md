@@ -31,5 +31,7 @@ XOS — рабочий стол в браузере: Symfony API и React-обо
 | GitHub | [github/README.md](github/README.md) | [github/TZ.md](github/TZ.md) | [github/API.md](github/API.md) |
 | Привычки | [habits/README.md](habits/README.md) | [habits/TZ.md](habits/TZ.md) | [habits/API.md](habits/API.md) |
 | SSH | [ssh/README.md](ssh/README.md) | [ssh/TZ.md](ssh/TZ.md) | [ssh/API.md](ssh/API.md) |
+| Удалённый рабочий стол | [rdp/README.md](rdp/README.md) | [rdp/TZ.md](rdp/TZ.md) | [rdp/API.md](rdp/API.md) |
+| Samba | [samba/README.md](samba/README.md) | [samba/TZ.md](samba/TZ.md) | [samba/API.md](samba/API.md) |
 
 Полный перечень путей без схем тел: `php bin/console debug:router`. Как поднять стенд: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).

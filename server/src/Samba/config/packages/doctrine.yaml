@@ -1,0 +1,9 @@
+doctrine:
+    orm:
+        mappings:
+            Samba:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Samba/Entity'
+                prefix: 'Samba\Entity'
+                alias: Samba

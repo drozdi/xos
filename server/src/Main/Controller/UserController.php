@@ -1,34 +1,34 @@
 <?php
 
-
 namespace Main\Controller;
-
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
-use Doctrine\ORM\EntityManagerInterface;
 
 use App\Http\ApiResponse;
 use App\Security\UserScopeResolver;
+use Doctrine\ORM\EntityManagerInterface;
+use Main\Entity\Group;
 use Main\Entity\OU;
 use Main\Entity\User;
-use Main\Entity\Group;
-use Main\Repository\OURepository;
 use Main\Repository\UserRepository;
 use Main\Security\MainUserAccessMessages;
 use Main\Service\AuditLogger;
 use Main\Service\ClaimantManager;
 use Main\Service\MainManager;
 use Main\Service\OuScope;
+use Samba\Service\SambaServerManager;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 #[Route('/api/main/user', name: 'api_main_user_')]
-class UserController extends AbstractController {
+class UserController extends AbstractController
+{
     #[Route('/list', name: 'list')]
-    public function list (
+    public function list(
         Request $request,
         UserRepository $UserRepository,
         UserScopeResolver $userScopeResolver,
@@ -40,24 +40,24 @@ class UserController extends AbstractController {
         }
 
         $req = array_merge([
-            't' => "list",
+            't' => 'list',
             'size' => -1,
             'offset' => 1,
             'sortBy' => [[
-                'key' => "login",
-                'order' => "ASC"
+                'key' => 'login',
+                'order' => 'ASC',
             ]],
             'filters' => [
                 'ou' => -1,
                 'ou_id' => -1,
-                'group' => -1
-            ]
+                'group' => -1,
+            ],
         ], $request->toArray());
         if (!array_key_exists('limit', $req) && array_key_exists('size', $req)) {
-            $req['limit'] = (int)$req['size'];
+            $req['limit'] = (int) $req['size'];
         }
-        $req['limit'] = (int)$req['limit'];
-        $req['offset'] = (int)$req['offset'];
+        $req['limit'] = (int) $req['limit'];
+        $req['offset'] = (int) $req['offset'];
         if (!is_array($req['filters'] ?? null)) {
             $req['filters'] = [];
         }
@@ -77,13 +77,13 @@ class UserController extends AbstractController {
         switch ($req['t']) {
             case 'list':
                 foreach ($query->execute() as $userEntity) {
-                    $items[] = array(
+                    $items[] = [
                         'id' => $userEntity->getId(),
                         'login' => $userEntity->getLogin() ?? '',
                         'alias' => $userEntity->getAlias() ?? '',
-                        'ou' => (string)$userEntity->getOu(),
-                        'tutor' => (string)$userEntity->getParent(),
-                    );
+                        'ou' => (string) $userEntity->getOu(),
+                        'tutor' => (string) $userEntity->getParent(),
+                    ];
                 }
                 break;
             case 'select':
@@ -101,15 +101,17 @@ class UserController extends AbstractController {
                 }
                 break;
         }
-        $start = $req['limit']*($req['offset']-1);
-        $end = ($req['limit'] > 0? $req['limit']*$req['offset']: $totalItems)-1;
-        $end = $end > $totalItems-1? $totalItems - 1: $end;
+        $start = $req['limit'] * ($req['offset'] - 1);
+        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
+
         return $this->json($items, Response::HTTP_OK, [
-            'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
+            'Content-Range' => sprintf('items %d-%d/%d', $start, $end, $totalItems),
         ]);
     }
+
     #[Route('/filter', name: 'filter')]
-    public function filter (
+    public function filter(
         EntityManagerInterface $entityManager,
         UserScopeResolver $userScopeResolver,
         #[CurrentUser] User $user,
@@ -128,33 +130,33 @@ class UserController extends AbstractController {
             $groups = [];
             foreach ($entityManager->createQuery('SELECT g FROM '.Group::class.' g WHERE g.level = 0 AND g.ou = '.$ou->getId().' ORDER BY g.sort ASC, g.code ASC')->execute() as $group) {
                 if (count($group->getChildren()) > 0) {
-                    $groups[] = array(
+                    $groups[] = [
                         'type' => 'subheader',
                         'key' => $group->getId(),
                         'value' => $group->getId(),
                         'title' => $group->getName(),
-                    );
-                    $groups[] = array(
+                    ];
+                    $groups[] = [
                         'key' => $group->getId(),
                         'value' => $group->getId(),
-                        'title' => "Все",
-                    );
+                        'title' => 'Все',
+                    ];
                     foreach ($group->getChildren() as $subGroup) {
-                        $groups[] = array(
+                        $groups[] = [
                             'key' => $subGroup->getId(),
                             'value' => $subGroup->getId(),
                             'title' => $subGroup->getName(),
-                        );
+                        ];
                     }
-                    $groups[] = array(
+                    $groups[] = [
                         'type' => 'divider',
-                    );
+                    ];
                 } else {
-                    $groups[] = array(
+                    $groups[] = [
                         'key' => $group->getId(),
                         'value' => $group->getId(),
                         'title' => $group->getName(),
-                    );
+                    ];
                 }
             }
             if (!empty($groups)) {
@@ -162,6 +164,7 @@ class UserController extends AbstractController {
             }
             $items[] = $item;
         }
+
         return $this->json($items);
     }
 
@@ -179,7 +182,7 @@ class UserController extends AbstractController {
     }
 
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
-    public function detail (
+    public function detail(
         int $id,
         MainManager $mainManager,
         UserRepository $UserRepository,
@@ -196,7 +199,7 @@ class UserController extends AbstractController {
         }
 
         $userEntity = $mainManager->user($id);
-        $accesses = array();
+        $accesses = [];
         foreach ($userEntity->getAccesses() as $access) {
             $accesses[$access->getId()] = [
                 'id' => $access->getId(),
@@ -206,28 +209,28 @@ class UserController extends AbstractController {
                 'level' => $access->getLevel(),
             ];
         }
-        $groups = array();
+        $groups = [];
         foreach ($userEntity->getGroups() as $ug) {
             $groups[$ug->getId()] = [
                 'id' => $ug->getId(),
                 'user_id' => $ug->getUser()->getId(),
                 'group_id' => $ug->getGroup()->getId(),
-                'activeFrom' => $ug->getActiveFrom("Y-m-d H:m:s"),
-                'activeTo' => $ug->getActiveTo("Y-m-d H:m:s"),
-                'name' => sprintf('%s (%s)', $ug->getGroupName(), $ug->getGroupCode())
+                'activeFrom' => $ug->getActiveFrom('Y-m-d H:m:s'),
+                'activeTo' => $ug->getActiveTo('Y-m-d H:m:s'),
+                'name' => sprintf('%s (%s)', $ug->getGroupName(), $ug->getGroupCode()),
             ];
         }
 
         return $this->json([
             'id' => $userEntity->getId(),
-            'parent_id' => $userEntity->getParent()? $userEntity->getParent()->getId(): null,
-            'x_timestamp' => $userEntity->getXTimestamp("Y-m-d H:m:s"),
-            'date_register' => $userEntity->getDateRegister("Y-m-d H:m:s"),
-            'last_login' => $userEntity->getLastLogin("Y-m-d H:m:s"),
+            'parent_id' => $userEntity->getParent() ? $userEntity->getParent()->getId() : null,
+            'x_timestamp' => $userEntity->getXTimestamp('Y-m-d H:m:s'),
+            'date_register' => $userEntity->getDateRegister('Y-m-d H:m:s'),
+            'last_login' => $userEntity->getLastLogin('Y-m-d H:m:s'),
             'last_ip' => $userEntity->getLastIp(),
             'active' => $userEntity->isActive(),
-            'activeFrom' => $userEntity->getActiveFrom("Y-m-d H:m:s"),
-            'activeTo' => $userEntity->getActiveTo("Y-m-d H:m:s"),
+            'activeFrom' => $userEntity->getActiveFrom('Y-m-d H:m:s'),
+            'activeTo' => $userEntity->getActiveTo('Y-m-d H:m:s'),
             'loocked ' => $userEntity->isLoocked(),
             'stored_hash' => $userEntity->getStoredHash(),
             'checkword' => $userEntity->getCheckword(),
@@ -240,7 +243,7 @@ class UserController extends AbstractController {
             'gender' => $userEntity->getGender(),
             'login_attempts' => $userEntity->getLoginAttempts(),
             'country' => $userEntity->getCountry(),
-            'ou_id' => $userEntity->getOu()? $userEntity->getOu()->getId(): null,
+            'ou_id' => $userEntity->getOu() ? $userEntity->getOu()->getId() : null,
             'phone' => $userEntity->getPhone(),
             'description' => $userEntity->getDescription(),
             'accesses' => (object) $accesses,
@@ -248,8 +251,9 @@ class UserController extends AbstractController {
             'roles' => array_values($userEntity->getRoles()),
         ]);
     }
+
     #[Route('/', name: 'create', methods: ['POST'])]
-    public function create (
+    public function create(
         Request $request,
         MainManager $mainManager,
         UserScopeResolver $userScopeResolver,
@@ -262,7 +266,7 @@ class UserController extends AbstractController {
         }
 
         $req = $request->toArray();
-        $req['id'] = (int)$req['id'];
+        $req['id'] = (int) $req['id'];
         $req = $this->filterUserCreatePayload($req, $userScopeResolver, $user);
         $req = $ouScope->applyCreateDefaults($user, $req);
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
@@ -271,6 +275,7 @@ class UserController extends AbstractController {
             $mainManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $mainManager->getEntityManager()->getConnection()->rollBack();
+
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
         $auditLogger->log(
@@ -281,10 +286,12 @@ class UserController extends AbstractController {
             ['login' => $userEntity->getLogin()],
             $user,
         );
+
         return $this->json($userEntity->getId(), Response::HTTP_CREATED);
     }
+
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update (
+    public function update(
         int $id,
         Request $request,
         MainManager $mainManager,
@@ -310,6 +317,7 @@ class UserController extends AbstractController {
             $mainManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $mainManager->getEntityManager()->getConnection()->rollBack();
+
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
         $auditLogger->log(
@@ -320,14 +328,17 @@ class UserController extends AbstractController {
             ['fields' => array_keys($req)],
             $user,
         );
+
         return $this->json($userEntity->getId(), Response::HTTP_CREATED);
     }
+
     #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
-    public function remove (
+    public function remove(
         int $id,
         UserRepository $UserRepository,
         UserScopeResolver $userScopeResolver,
         AuditLogger $auditLogger,
+        SambaServerManager $sambaServers,
         #[CurrentUser] User $user,
     ): JsonResponse {
         if (!$userScopeResolver->canDeleteMainUser($user)) {
@@ -337,6 +348,12 @@ class UserController extends AbstractController {
         $userEntity = $UserRepository->find($id);
         if (null === $userEntity) {
             return ApiResponse::notFound(MainUserAccessMessages::NOT_FOUND);
+        }
+
+        try {
+            $sambaServers->assertDeletable($userEntity);
+        } catch (ConflictHttpException $error) {
+            return $this->json(['message' => $error->getMessage()], Response::HTTP_CONFLICT);
         }
 
         $arUser = [
@@ -353,6 +370,7 @@ class UserController extends AbstractController {
             $arUser,
             $user,
         );
+
         return $this->json($arUser);
     }
 

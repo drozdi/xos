@@ -1,0 +1,13 @@
+{
+  "name": "xos-agent",
+  "description": "Агент XOS на сервере Samba. PHP 8.1+, без Symfony.",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.1",
+    "ext-curl": "*",
+    "ext-json": "*",
+    "ext-sodium": "*"
+  },
+  "bin": ["bin/xos-agent"]
+}

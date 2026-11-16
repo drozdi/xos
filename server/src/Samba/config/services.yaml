@@ -1,0 +1,11 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Samba\:
+        resource: '../'
+        exclude:
+            - '../Entity/'
+            - '../config/'
+            - '../Security/SambaAgentIdentity.php'

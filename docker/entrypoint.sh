@@ -10,6 +10,7 @@ if ! php bin/console dbal:run-sql "SELECT 1 FROM main_user LIMIT 1" >/dev/null 2
   php bin/console doctrine:migrations:version --add --all --no-interaction
 fi
 php bin/console doctrine:migrations:migrate --no-interaction
+php bin/console main:claimant:sync --no-interaction
 php bin/console cache:warmup
 chown -R www-data:www-data var public/uploads
 exec apache2-foreground

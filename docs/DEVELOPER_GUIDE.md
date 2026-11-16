@@ -68,8 +68,9 @@ node scripts/check-bundle-size.mjs
 - `SYMFONY_TRUSTED_PROXIES` — IP прокси или `private_ranges`. Пустое значение никому не доверяет, cookie Secure и лимиты видят адрес соединения
 - `MERCURE_URL`, `MERCURE_PUBLIC_URL`, `MERCURE_JWT_SECRET` — хаб доски
 - `SSH_GATEWAY_SECRET`, `SSH_GATEWAY_PUBLIC_URL`, `SSH_GATEWAY_ORIGINS` — шлюз терминала
+- `RDP_GATEWAY_SECRET`, `RDP_GATEWAY_PUBLIC_URL`, `RDP_GATEWAY_ORIGINS`, `RDP_GUACD_HOST`, `RDP_DENY_CIDRS` — удалённый рабочий стол
 
-Docker: скопируйте `.env.docker.example` в `.env.docker` и заполните секреты. `docker compose up --build` поднимает PHP, MySQL, Mercure и ssh-gateway. Пароли в compose не зашиты.
+Docker: `powershell -File docker/install.ps1` или `sh docker/install.sh`. Скрипт создаёт `.env.docker` и поднимает PHP, MySQL, Mercure, ssh-gateway, guacd и rdp-gateway. Пароли в compose не зашиты.
 
 JWT-ключи лежат в `server/config/jwt` и не коммитятся. Пароль: `JWT_PASSPHRASE`.
 
@@ -78,5 +79,7 @@ Refresh-токен приходит в HttpOnly-cookie (`xos_refresh` или `xo
 Доска: `MERCURE_URL` для публикации, `MERCURE_PUBLIC_URL` для браузера. Без hub клиент остаётся на SSE.
 
 SSH-шлюз: `ssh-gateway` (`node index.mjs`), секрет `SSH_GATEWAY_SECRET`, публичный адрес `SSH_GATEWAY_PUBLIC_URL`. PHP выдаёт одноразовый билет, шлюз сам открывает сохранённое подключение. Без адреса шлюза терминал использует прежний поток PHP.
+
+RDP: `rdp-gateway` и контейнер `guacd`. Секрет `RDP_GATEWAY_SECRET`, адрес `RDP_GATEWAY_PUBLIC_URL`. guacd не публикуется наружу. Пароль остаётся на сервере, шлюз подставляет проверенный IP.
 
 Symfony остаётся на 7.4. `composer update` на 8.1 (extra.symfony.require = 8.1.*) не сходится при текущем наборе: `doctrine/dbal` ^3.10.6 конфликтует с `symfony/http-foundation` 8.1 (`conflict with doctrine/dbal <4.3`), `doctrine/doctrine-bundle` 2.19.3 требует `symfony/cache` ^6.4 || ^7.0, `gesdinet/jwt-refresh-token-bundle` 1.5.1 — `symfony/config` ^5.4|^6.0|^7.0. Ветка 8.0 без поддержки (EOL). `composer.lock` не меняли.

@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+
+require dirname(__DIR__).'/src/bootstrap.php';
+
+$path = $argv[1] ?? (dirname(__DIR__).'/agent.ini');
+foreach ($argv as $index => $arg) {
+    if ('--config' === $arg && isset($argv[$index + 1])) {
+        $path = $argv[$index + 1];
+    }
+}
+
+try {
+    Xos\Agent\Loop::run($path);
+} catch (Throwable $error) {
+    fwrite(STDERR, $error->getMessage().PHP_EOL);
+    exit(1);
+}

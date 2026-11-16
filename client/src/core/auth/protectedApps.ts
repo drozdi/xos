@@ -16,6 +16,8 @@ export const PROTECTED_APP_MODULES = [
 	'recipe',
 	'inbox',
 	'ssh',
+	'rdp',
+	'samba',
 ] as const;
 
 export type ProtectedAppModule = (typeof PROTECTED_APP_MODULES)[number];

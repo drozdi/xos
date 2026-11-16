@@ -20,6 +20,8 @@ final class ProtectedAppModules
         'recipe',
         'inbox',
         'ssh',
+        'rdp',
+        'samba',
     ];
 
     public static function isProtected(string $module): bool

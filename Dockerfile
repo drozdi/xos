@@ -3,6 +3,8 @@ WORKDIR /src/client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci
 COPY client/ ./
+ARG VITE_API_URL=
+ENV VITE_API_URL=$VITE_API_URL
 RUN npx vite build
 
 FROM composer:2 AS vendor
@@ -20,7 +22,8 @@ COPY --from=assets /src/client/dist/index.html ./public/index.html
 COPY --from=assets /src/client/dist/assets ./public/assets
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+    && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && printf '\n<Directory /var/www/html/public>\n\tAllowOverride All\n\tRequire all granted\n</Directory>\n' >> /etc/apache2/apache2.conf
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
     && mkdir -p var public/uploads \

@@ -1,0 +1,18 @@
+security:
+    firewalls:
+        samba_agent_bundle:
+            pattern: ^/api/samba/agent/bundle$
+            security: false
+        samba_agent_enroll:
+            pattern: ^/api/samba/agent/enroll$
+            security: false
+        samba_agent:
+            pattern: ^/api/samba/agent
+            stateless: true
+            provider: login_user_provider
+            custom_authenticators:
+                - Samba\Security\SambaAgentAuthenticator
+    access_control:
+        - { path: ^/api/samba/agent/bundle$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/samba/agent/enroll$, roles: PUBLIC_ACCESS, methods: [POST] }
+        - { path: ^/api/samba/agent, roles: IS_AUTHENTICATED_FULLY }

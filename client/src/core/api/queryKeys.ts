@@ -173,6 +173,15 @@ export const queryKeys = {
 		links: (kind: string) => ['ops', kind] as const,
 		docker: (id: number) => ['ops', 'docker', id] as const,
 	},
+	rdp: {
+		connections: ['rdp', 'connections'] as const,
+		networks: ['rdp', 'networks'] as const,
+		adminNetworks: ['rdp', 'admin', 'networks'] as const,
+	},
+	samba: {
+		servers: ['samba', 'servers'] as const,
+		server: (id: number) => ['samba', 'server', id] as const,
+	},
 	network: {
 		egress: ['network', 'egress'] as const,
 	},

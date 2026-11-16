@@ -25,6 +25,8 @@ describe('protectedApps', () => {
 			'recipe',
 			'inbox',
 			'ssh',
+			'rdp',
+			'samba',
 		]);
 	});
 

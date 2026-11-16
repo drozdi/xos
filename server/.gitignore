@@ -16,6 +16,10 @@
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
 
+###> samba agent CA (private key only) ###
+/config/samba/agent-ca.key
+###< samba agent CA ###
+
 ###> phpunit/phpunit ###
 /phpunit.xml
 /.phpunit.cache/

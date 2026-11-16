@@ -34,6 +34,22 @@ services:
       - "7681:7681"
     depends_on:
       - app
+  guacd:
+    image: guacamole/guacd:1.5.5
+    expose:
+      - "4822"
+  rdp-gateway:
+    build: ./rdp-gateway
+    env_file:
+      - .env.docker
+    environment:
+      RDP_GATEWAY_PORT: 7682
+      RDP_API_URL: http://app
+    ports:
+      - "7682:7682"
+    depends_on:
+      - app
+      - guacd
   mysql:
     image: mysql:8
     env_file:

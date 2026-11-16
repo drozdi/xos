@@ -27,8 +27,20 @@ npm run dev
 
 ## Docker
 
-Скопируйте `.env.docker.example` в `.env.docker`, заполните секреты и выполните `docker compose up --build`.
+Нужен Docker. Скрипт сам создаёт `.env.docker` с секретами и поднимает PHP, MySQL, Mercure, шлюзы SSH и RDP и guacd.
+
+```
+powershell -File docker/install.ps1
+```
+
+```
+sh docker/install.sh
+```
+
+Стол открывается на `http://localhost:8080`. Повторный запуск не перезаписывает уже созданный `.env.docker`. При старте контейнера сами выполняются миграции и `main:claimant:sync`.
+
+Агент Samba ставится на сервере Samba, не в этом compose: `server/agent/install.sh`.
 
 ## Окружение
 
-`APP_SECRET`, `JWT_PASSPHRASE`, `DATABASE_URL`, `SSH_SECRET_KEY`, `SSH_GATEWAY_SECRET`, `SSH_GATEWAY_PUBLIC_URL`, `SSH_GATEWAY_ORIGINS`, `MERCURE_URL`, `MERCURE_PUBLIC_URL`, `MERCURE_JWT_SECRET`, `SYMFONY_TRUSTED_PROXIES`, `INCCOM_FNS_SECRET`, `TS_TOKEN_SECRET`, `GITHUB_TOKEN_SECRET`, `YANDEX_DISK_TOKEN_SECRET`, `PKB_AT_REST_SECRET`.
+`APP_SECRET`, `JWT_PASSPHRASE`, `DATABASE_URL`, `SSH_SECRET_KEY`, `SSH_GATEWAY_SECRET`, `SSH_GATEWAY_PUBLIC_URL`, `SSH_GATEWAY_ORIGINS`, `RDP_GATEWAY_SECRET`, `RDP_GATEWAY_PUBLIC_URL`, `RDP_GATEWAY_ORIGINS`, `RDP_GUACD_HOST`, `RDP_DENY_CIDRS`, `MERCURE_URL`, `MERCURE_PUBLIC_URL`, `MERCURE_JWT_SECRET`, `SYMFONY_TRUSTED_PROXIES`, `INCCOM_FNS_SECRET`, `TS_TOKEN_SECRET`, `GITHUB_TOKEN_SECRET`, `YANDEX_DISK_TOKEN_SECRET`, `PKB_AT_REST_SECRET`.

@@ -1,0 +1,18 @@
+[Unit]
+Description=XOS Samba agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/php /opt/xos-agent/bin/xos-agent --config /etc/xos-agent/agent.ini
+Restart=always
+RestartSec=5
+WatchdogSec=120
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/etc/samba /var/lib/samba /var/lib/xos-agent /srv/samba
+
+[Install]
+WantedBy=multi-user.target

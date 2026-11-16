@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "XOS Samba agent message",
+  "type": "object",
+  "required": ["protocol", "kind"],
+  "properties": {
+    "protocol": { "const": "1" },
+    "id": { "type": "string" },
+    "server_id": { "type": "integer" },
+    "kind": { "enum": ["hello", "heartbeat", "command", "result", "event"] },
+    "type": { "type": "string" },
+    "capability": { "type": "string" },
+    "idempotency_key": { "type": "string" },
+    "generation": { "type": "integer" },
+    "payload": { "type": "object" }
+  }
+}

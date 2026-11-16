@@ -1,0 +1,7 @@
+security:
+    firewalls:
+        rdp_gateway:
+            pattern: ^/api/rdp/gateway/(redeem|release)$
+            security: false
+    access_control:
+        - { path: ^/api/rdp/gateway/(redeem|release)$, roles: PUBLIC_ACCESS, methods: [POST] }
