@@ -79,8 +79,13 @@ XOS — рабочий стол в браузере. Пользователь в
 | Github | `ROLE_GITHUB` | Токен и issues GitHub |
 | TeamStorm | `ROLE_TS` | Прокси TeamStorm |
 | SSH | `ROLE_SSH` | Подключения, ключи и терминал |
+| Ops | по kind / ролям Ops | Docker, VNC, SQL, туннель (`/api/ops`) |
+| RDP | `ROLE_RDP` | Подключения Windows, сети, guacd-шлюз |
+| Samba | `ROLE_SAMBA` | DC Samba, агент, домен и шары |
 
 Привычки своей роли и таблиц не имеют: отметки лежат в user-data, окно открывается вместе с задачами.
+
+Проектная документация: `docs/` → vault PKB `xos` и доска «XOS — roadmap» командой `php bin/console xos:seed-project`.
 
 Активное подразделение (`main.active_ou_id` в user-data) задаётся в настройках и применяется теми списками, которые сами вызывают `OuScope`. Список устройств `POST /api/device/device/list` подразделение не применяет: поля `ou` и `ou_id` из фильтра отбрасываются.
 

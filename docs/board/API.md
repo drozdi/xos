@@ -2,6 +2,13 @@
 
 Префикс `/api/board`. Роль `ROLE_BOARD`.
 
+Типичная цепочка создания:  
+`POST /workspaces` → `POST /workspaces/{id}/boards` → `POST /boards/{id}/lists` → `POST /lists/{listId}/cards` → `PUT /cards/{id}` (`description_md`, `pkb_vault_id`, `pkb_note_path`, …).
+
+`PUT` карточки может принять `expected_updated_at` (ISO); устаревшее значение → **409**.
+
+Сид документации: `php bin/console xos:seed-project`.
+
 ## Пространство
 
 | Метод | Путь | Назначение |

@@ -6,12 +6,21 @@ XOS — рабочий стол в браузере: Symfony API и React-обо
 |----------|------------|
 | [TZ.md](TZ.md) | Техническое задание на продукт целиком |
 | [API.md](API.md) | Общий API: вход, аккаунт, стол, настройки, файлы |
+| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Локальный стенд, Docker, секреты, тесты |
 | [APP_IDEAS.md](APP_IDEAS.md) | Идеи новых приложений |
 | [IMPROVEMENTS.md](IMPROVEMENTS.md) | Идеи улучшений существующих частей |
 
+Документация зеркалируется в PKB (vault `xos`) и на доску «XOS — roadmap»:
+
+```
+php bin/console xos:seed-project
+```
+
+Без `--force` — идемпотентный sync. С `--force` — пересоздание vault/доски.
+
 ## Приложения
 
-У каждого домена три файла: обзор, техническое задание, API. Пути взяты из `php bin/console debug:router`.
+У каждого домена три файла: обзор, техническое задание, API. Пути API сверяйте с `php bin/console debug:router`.
 
 | Домен | README | ТЗ | API |
 |-------|--------|----|-----|
@@ -24,14 +33,17 @@ XOS — рабочий стол в браузере: Symfony API и React-обо
 | Доходы и расходы | [inccom/README.md](inccom/README.md) | [inccom/TZ.md](inccom/TZ.md) | [inccom/API.md](inccom/API.md) |
 | Календарь | [calendar/README.md](calendar/README.md) | [calendar/TZ.md](calendar/TZ.md) | [calendar/API.md](calendar/API.md) |
 | Задачи | [todo/README.md](todo/README.md) | [todo/TZ.md](todo/TZ.md) | [todo/API.md](todo/API.md) |
+| Привычки | [habits/README.md](habits/README.md) | [habits/TZ.md](habits/TZ.md) | [habits/API.md](habits/API.md) |
 | Доска | [board/README.md](board/README.md) | [board/TZ.md](board/TZ.md) | [board/API.md](board/API.md) |
 | База знаний | [pkb/README.md](pkb/README.md) | [pkb/TZ.md](pkb/TZ.md) | [pkb/API.md](pkb/API.md) |
 | TeamStorm | [ts/README.md](ts/README.md) | [ts/TZ.md](ts/TZ.md) | [ts/API.md](ts/API.md) |
 | Почта | [inbox/README.md](inbox/README.md) | [inbox/TZ.md](inbox/TZ.md) | [inbox/API.md](inbox/API.md) |
 | GitHub | [github/README.md](github/README.md) | [github/TZ.md](github/TZ.md) | [github/API.md](github/API.md) |
-| Привычки | [habits/README.md](habits/README.md) | [habits/TZ.md](habits/TZ.md) | [habits/API.md](habits/API.md) |
 | SSH | [ssh/README.md](ssh/README.md) | [ssh/TZ.md](ssh/TZ.md) | [ssh/API.md](ssh/API.md) |
+| Ops (Docker/VNC/DB/туннель) | [ops/README.md](ops/README.md) | [ops/TZ.md](ops/TZ.md) | [ops/API.md](ops/API.md) |
 | Удалённый рабочий стол | [rdp/README.md](rdp/README.md) | [rdp/TZ.md](rdp/TZ.md) | [rdp/API.md](rdp/API.md) |
 | Samba | [samba/README.md](samba/README.md) | [samba/TZ.md](samba/TZ.md) | [samba/API.md](samba/API.md) |
 
-Полный перечень путей без схем тел: `php bin/console debug:router`. Как поднять стенд: [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md).
+Дополнительно Samba: [samba/nginx.md](samba/nginx.md) — таймауты и User-Agent перед API агента.
+
+Полный перечень путей без схем тел: `php bin/console debug:router` или `php bin/console app:openapi:dump`.

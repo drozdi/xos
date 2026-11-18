@@ -2,6 +2,19 @@
 
 Префикс `/api/pkb`. Роль `ROLE_PKB`. `{id}` — id хранилища.
 
+Запись заметки:
+
+```http
+PUT /api/pkb/vaults/{id}/files/content
+Content-Type: application/json
+
+{ "path": "Notes/Apps/Board/README.md", "content": "# …\n" }
+```
+
+Чтение: `GET .../files/content?path=Notes/...`. После пакетной записи из seed — `POST .../index/rebuild`.
+
+Сид: `php bin/console xos:seed-project` (зеркало `docs/` → `Notes/…`).
+
 ## Хранилище
 
 | Метод | Путь | Назначение |

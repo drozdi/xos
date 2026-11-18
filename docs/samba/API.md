@@ -23,3 +23,9 @@
 | POST | `/api/samba/agent/result` | Результат команды |
 
 `rights` со значением `log` отвечает 400. Удаление пользователя `DELETE /api/main/user/{id}`, у которого есть серверы, отвечает 409 «Сначала передайте серверы».
+
+Env: `SAMBA_AGENT_CA_FILE` — путь к PEM (Symfony `resolve:`). Без файла или без `BEGIN CERTIFICATE` bundle → **503**.
+
+Команды (`POST .../commands`): тело `{ "type": "<имя>", "args": {…} }`. Ответ — id и статус очереди; результат забирает агент и пишет в `POST /api/samba/agent/result`. Типы включают чтение каталога, CRUD user/group/ou, shares.*.
+
+Nginx перед агентом: [nginx.md](nginx.md).

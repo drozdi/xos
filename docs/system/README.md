@@ -12,6 +12,10 @@
 | shell-settings | Открывает настройки на вкладке макета |
 | browser | Страница через `GET /api/browser/proxy` |
 | sticky-note | Несколько стикеров, текст в user-data `sticky.*` |
+| samba-servers | Серверы Samba AD (модуль Samba) |
+| rdp / rdp-networks | RDP и админка сетей |
+| docker / vnc / db / tunnel | Ops-ссылки |
+| ssh / sftp | SSH-терминал и SFTP |
 | widget-clock | Время и пояс |
 | widget-weather | Город, °C/°F, несколько городов, кэш 10 минут |
 | widget-reminders | Локальные напоминания, повтор по дням |

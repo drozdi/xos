@@ -1197,6 +1197,9 @@ MD,
             'ts' => ['folder' => 'TeamStorm', 'label' => 'system', 'title' => 'TeamStorm'],
             'inbox' => ['folder' => 'Inbox', 'label' => 'inbox', 'title' => 'Inbox'],
             'ssh' => ['folder' => 'Ssh', 'label' => 'ssh', 'title' => 'SSH'],
+            'ops' => ['folder' => 'Ops', 'label' => 'ops', 'title' => 'Ops'],
+            'rdp' => ['folder' => 'Rdp', 'label' => 'rdp', 'title' => 'RDP'],
+            'samba' => ['folder' => 'Samba', 'label' => 'samba', 'title' => 'Samba'],
             'github' => ['folder' => 'GitHub', 'label' => 'github', 'title' => 'GitHub'],
         ];
     }
@@ -1732,9 +1735,66 @@ Claimant `ssh` · `ROLE_SSH` · `server/src/Ssh/` · app `ssh`
 
 ## Приложения
 
-`ssh`
+`ssh` · рядом SFTP `sftp`
 
-Документы: `docs/ssh/README.md`, `docs/ssh/TZ.md`, `docs/ssh/API.md`
+Документы: `docs/ssh/README.md`, `docs/ssh/TZ.md`, `docs/ssh/API.md` · см. также [[Ops]], [[RDP]]
+
+← [[Home]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Ops',
+                'notePath' => 'Notes/Apps/Ops.md',
+                'labels' => ['ops'],
+                'cardDescription' => "Docker, VNC, SQL, туннель.\n\nЗаметка: [[Ops]] · API `/api/ops/`",
+                'body' => <<<'MD'
+# Ops
+
+`server/src/Ops/` · apps `docker`, `vnc`, `db`, `tunnel` · UI `features/ops`
+
+## Назначение
+
+Сохранённые ссылки (`OpsLink`) по `kind`: docker / vnc / db / tunnel. SSRF режет `PublicHost`.
+
+Документы: `docs/ops/README.md`, `TZ.md`, `API.md`
+
+← [[Home]] · [[SSH]] · [[RDP]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'RDP',
+                'notePath' => 'Notes/Apps/Rdp.md',
+                'labels' => ['rdp'],
+                'cardDescription' => "Windows desktop через guacd.\n\nЗаметка: [[RDP]] · API `/api/rdp/`",
+                'body' => <<<'MD'
+# RDP
+
+Claimant `rdp` · `ROLE_RDP` · `server/src/Rdp/` · apps `rdp`, `rdp-networks` · `rdp-gateway` + guacd
+
+## Назначение
+
+Подключения RDP, сети CIDR для LAN, билет шлюза 30 с. Пароль только в `redeem`.
+
+Документы: `docs/rdp/README.md`, `TZ.md`, `API.md`
+
+← [[Home]] · [[SSH]] · [[Ops]] · [[AppsCatalog]]
+MD,
+            ],
+            [
+                'title' => 'Samba',
+                'notePath' => 'Notes/Apps/Samba.md',
+                'labels' => ['samba'],
+                'cardDescription' => "AD DC + агент: домен и шары.\n\nЗаметка: [[Samba]] · API `/api/samba/`",
+                'body' => <<<'MD'
+# Samba
+
+Claimant `samba` · `ROLE_SAMBA` · `server/src/Samba/` · app `samba-servers` · агент `server/agent`
+
+## Назначение
+
+Карточки DC, bundle установки, очередь команд, дерево домена и шары. CA: `SAMBA_AGENT_CA_FILE`. Nginx: `docs/samba/nginx.md`.
+
+Документы: `docs/samba/README.md`, `TZ.md`, `API.md`
 
 ← [[Home]] · [[AppsCatalog]]
 MD,
@@ -1872,6 +1932,9 @@ MD,
 - [[GitHub]] — Issues
 - [[Inbox]] — внутренние сообщения
 - [[SSH]] — терминал
+- [[Ops]] — Docker, VNC, SQL, туннель
+- [[RDP]] — удалённый Windows
+- [[Samba]] — контроллер домена и агент
 - [[Habits]] — привычки (на Todo)
 
 ## Обзорные заметки
@@ -2064,13 +2127,16 @@ MD,
 | TeamStorm | ts | teamstorm |
 | GitHub | github | github |
 | Inbox | inbox | inbox, inbox-message |
-| SSH | ssh | ssh |
+| SSH | ssh | ssh, sftp |
+| Ops | ops | docker, vnc, db, tunnel |
+| RDP | rdp | rdp, rdp-networks |
+| Samba | samba | samba-servers |
 | IBlock | iblock | iblock-types, iblock-type, iblock-blocks, iblock-block, iblock-sections, iblock-section, iblock-elements, iblock-element, iblock-properties, iblock-property |
 | Content | iblock / recipe | notes, note, notebooks, articles, article, faqs, faq, galleries, gallery, announcements, announcement, contacts, contact, services, service, ideas, idea, leads, lead, recipes, recipe, recipe-categories |
 
 ## Модули в vault
 
-[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]] · [[SSH]]
+[[Main]] · [[Device]] · [[Explorer]] · [[SchoolTask]] · [[IncCom]] · [[Calendar]] · [[Todo]] · [[Habits]] · [[Board]] · [[PKB]] · [[System]] · [[IBlock]] · [[Content]] · [[TeamStorm]] · [[GitHub]] · [[Inbox]] · [[SSH]] · [[Ops]] · [[RDP]] · [[Samba]]
 
 Полный каталог: `docs/README.md` · идеи: [[AppIdeas]]
 
