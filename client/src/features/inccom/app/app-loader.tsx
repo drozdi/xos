@@ -1,4 +1,4 @@
-﻿import { useStoreAccounts } from '@inccom/entities/account';
+import { useStoreAccounts } from '@inccom/entities/account';
 import { useStoreCategories } from '@inccom/entities/transaction-category';
 import { useStoreAuth, useStoreUserProfile } from '@inccom/entities/user';
 import { Loading } from '@inccom/shared/ui';

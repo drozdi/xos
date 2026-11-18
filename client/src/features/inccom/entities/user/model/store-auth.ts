@@ -1,4 +1,4 @@
-﻿import { api } from '@inccom/shared/api';
+import { api } from '@inccom/shared/api';
 import { canAccessInccomFromRoles } from '@inccom/inccomAccess';
 import { notification } from '@inccom/shared/notification';
 import { getterZustandMiddleware } from '@inccom/shared/stores';
