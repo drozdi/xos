@@ -22,7 +22,7 @@ final class Http
         if (false === $curl) {
             throw new \RuntimeException('Не удалось открыть запрос');
         }
-        $headers = ['Accept: application/json'];
+        $headers = ['Accept: application/json', 'User-Agent: xos-agent/1'];
         if (null !== $bearer) {
             $headers[] = 'Authorization: Bearer '.$bearer;
         }

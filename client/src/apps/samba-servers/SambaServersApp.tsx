@@ -213,7 +213,10 @@ function ServerCard({
 				</Group>
 			) : null}
 			{server.owner || server.can_directory || server.can_manage || server.can_shares ? (
-				<Tabs defaultValue={server.owner ? 'server' : server.can_directory || server.can_manage ? 'domain' : 'shares'}>
+				<Tabs
+					defaultValue={server.owner ? 'server' : server.can_directory || server.can_manage ? 'domain' : 'shares'}
+					keepMounted
+				>
 					<Tabs.List>
 						{server.owner ? <Tabs.Tab value="server">Сервер</Tabs.Tab> : null}
 						{server.owner ? <Tabs.Tab value="install">Установка</Tabs.Tab> : null}

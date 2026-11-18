@@ -296,6 +296,35 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		windowId,
 		windowState?.maximized,
 	]);
+
+	// Keep app content mounted across mobile/desktop layout changes (do not remount Rnd).
+	useEffect(() => {
+		if (!windowState || !boundsReady) {
+			return;
+		}
+		if (isMaximizedLayout) {
+			const bounds = isMobile ? mobileBounds : desktopMaxBounds;
+			rndRef.current?.updateSize({ width: bounds.width, height: bounds.height });
+			rndRef.current?.updatePosition({ x: bounds.x, y: bounds.y });
+		} else {
+			rndRef.current?.updateSize({ width: windowState.width, height: windowState.height });
+			rndRef.current?.updatePosition({ x: windowState.x, y: windowState.y });
+		}
+		emitWindowResize(windowId);
+	}, [
+		boundsReady,
+		desktopMaxBounds.height,
+		desktopMaxBounds.width,
+		isMaximizedLayout,
+		isMobile,
+		mobileBounds.height,
+		mobileBounds.width,
+		windowId,
+		windowState?.height,
+		windowState?.width,
+		windowState?.x,
+		windowState?.y,
+	]);
 	const dragBounds = useMemo(() => {
 		if (!windowState || isMaximizedLayout || !boundsReady) {
 			return undefined;
@@ -525,9 +554,7 @@ function WindowComponent({ windowId, children }: WindowProps) {
 		[windowId],
 	);
 
-	const rndKey = windowState
-		? `${windowState.contentKey}-${isMobile ? 'mob' : 'desk'}`
-		: 'missing';
+	const rndKey = windowState ? String(windowState.contentKey) : 'missing';
 	const defaultBounds = useMemo(
 		() => {
 			if (!windowState) {
@@ -555,7 +582,6 @@ function WindowComponent({ windowId, children }: WindowProps) {
 			isMobile,
 			mobileBounds.height,
 			mobileBounds.width,
-			rndKey,
 			windowState?.height,
 			windowState?.width,
 			windowState?.x,

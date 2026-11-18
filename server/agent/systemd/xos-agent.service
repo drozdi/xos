@@ -12,7 +12,8 @@ WatchdogSec=120
 ProtectHome=true
 PrivateTmp=true
 NoNewPrivileges=true
-ReadWritePaths=/etc/samba /var/lib/samba /var/lib/xos-agent /srv/samba
+ReadWritePaths=/etc/samba /var/lib/samba /var/lib/xos-agent
+BindPaths=/home/samba
 
 [Install]
 WantedBy=multi-user.target
