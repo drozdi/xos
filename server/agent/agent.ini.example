@@ -7,6 +7,7 @@ ca_file =
 [transport]
 prefer = poll
 heartbeat_sec = 30
+listen = 0.0.0.0:8765
 
 [samba]
 smb_conf = /etc/samba/smb.conf
@@ -15,6 +16,7 @@ ldbmodify = /usr/bin/ldbmodify
 ldbsearch = /usr/bin/ldbsearch
 sam_ldb = /var/lib/samba/private/sam.ldb
 share_roots = /srv/samba
+shares_conf = /etc/samba/xos-shares.conf
 allow_provision = true
 
 [agent]

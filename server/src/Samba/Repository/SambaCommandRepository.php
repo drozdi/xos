@@ -33,4 +33,20 @@ class SambaCommandRepository extends ServiceEntityRepository
 
         return $row instanceof SambaCommand ? $row : null;
     }
+
+    public function hasOpen(SambaServer $server, string $type): bool
+    {
+        $count = $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->andWhere('c.server = :server')
+            ->andWhere('c.type = :type')
+            ->andWhere('c.status IN (:status)')
+            ->setParameter('server', $server)
+            ->setParameter('type', $type)
+            ->setParameter('status', ['queued', 'delivered', 'running'])
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) $count > 0;
+    }
 }

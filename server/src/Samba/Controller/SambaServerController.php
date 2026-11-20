@@ -105,6 +105,13 @@ class SambaServerController extends AbstractController
         });
     }
 
+    #[Route('/{id}/directory', name: 'directory', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Access('samba', checkScopes: false)]
+    public function directory(int $id, #[CurrentUser] ?User $user): JsonResponse
+    {
+        return $this->call($user, fn (User $actor): array => $this->commands->directory($actor, $id));
+    }
+
     #[Route('/{id}/commands', name: 'command_create', methods: ['POST'], requirements: ['id' => '\d+'])]
     #[Access('samba', checkScopes: false)]
     public function commandCreate(int $id, Request $request, #[CurrentUser] ?User $user): JsonResponse
@@ -117,6 +124,13 @@ class SambaServerController extends AbstractController
     public function commandGet(int $id, int $commandId, #[CurrentUser] ?User $user): JsonResponse
     {
         return $this->call($user, fn (User $actor): array => $this->commands->get($actor, $id, $commandId));
+    }
+
+    #[Route('/{id}/agent-token', name: 'agent_token', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Access('samba', checkScopes: false)]
+    public function agentToken(int $id, #[CurrentUser] ?User $user): JsonResponse
+    {
+        return $this->call($user, fn (User $actor): array => $this->servers->rotateAgentToken($actor, $id));
     }
 
     #[Route('/{id}/enrollment', name: 'enrollment', methods: ['POST'], requirements: ['id' => '\d+'])]

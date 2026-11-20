@@ -13,7 +13,7 @@ final class Http
      *
      * @return array<string, mixed>
      */
-    public function request(string $method, string $path, ?array $body, ?string $bearer, int $timeout): array
+    public function request(string $method, string $path, ?array $body, ?string $bearer, int $timeout, ?callable $tick = null): array
     {
         if (!function_exists('curl_init')) {
             throw new \RuntimeException('Нужно расширение curl');
@@ -22,7 +22,7 @@ final class Http
         if (false === $curl) {
             throw new \RuntimeException('Не удалось открыть запрос');
         }
-        $headers = ['Accept: application/json', 'User-Agent: xos-agent/1'];
+        $headers = ['Accept: application/json', 'User-Agent: xos-agent/1', 'Cookie: bm_ssl=1']; // проверка HostiMan перед xos.h1n.ru
         if (null !== $bearer) {
             $headers[] = 'Authorization: Bearer '.$bearer;
         }
@@ -41,6 +41,15 @@ final class Http
             $options[CURLOPT_CAINFO] = $this->config->caFile;
         }
         curl_setopt_array($curl, $options);
+        if (null !== $tick) {
+            $options[\CURLOPT_NOPROGRESS] = false;
+            $options[\CURLOPT_PROGRESSFUNCTION] = static function ($curl, $downloadTotal, $downloaded, $uploadTotal, $uploaded) use ($tick): int {
+                $tick();
+
+                return 0;
+            };
+            curl_setopt_array($curl, $options);
+        }
         $raw = curl_exec($curl);
         $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
         $error = curl_error($curl);

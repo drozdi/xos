@@ -53,6 +53,7 @@ final class SambaServerManager
     {
         $server = new SambaServer($actor);
         $this->fill($server, $data);
+        $server->setAgentToken(bin2hex(random_bytes(24)));
         $this->entityManager->persist($server);
         $this->entityManager->flush();
         $this->audit->log('samba.server.create', 'samba_server', $server->getId(), $server->getName(), null, $actor);
@@ -72,6 +73,20 @@ final class SambaServerManager
         $this->fill($server, $data);
         $this->entityManager->flush();
         $this->audit->log('samba.server.update', 'samba_server', $server->getId(), $server->getName(), null, $actor);
+
+        return $this->serialize($actor, $server);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function rotateAgentToken(User $actor, int $id): array
+    {
+        $server = $this->requireVisible($actor, $id);
+        $this->assertOwner($actor, $server);
+        $server->setAgentToken(bin2hex(random_bytes(24)));
+        $this->entityManager->flush();
+        $this->audit->log('samba.agent_token.rotate', 'samba_server', $server->getId(), $server->getName(), null, $actor);
 
         return $this->serialize($actor, $server);
     }
@@ -247,7 +262,8 @@ final class SambaServerManager
             ->setDescription('' === $description ? null : $description)
             ->setRole('ad_dc')
             ->setCapabilities($file ? ['dc', 'file'] : ['dc'])
-            ->setExpectedTimezone($zone);
+            ->setExpectedTimezone($zone)
+            ->setAgentUrl($this->agentUrl($data['agent_url'] ?? null));
     }
 
     /**
@@ -281,6 +297,8 @@ final class SambaServerManager
             'file' => in_array('file', $server->getCapabilities(), true),
             'status' => $server->getStatus(),
             'expected_timezone' => $server->getExpectedTimezone(),
+            'agent_url' => $server->getAgentUrl(),
+            'agent_token_set' => null !== $server->getAgentToken() && '' !== $server->getAgentToken(),
             'owner' => $owner,
             'owner_label' => (string) ($server->getOwner()->getAlias() ?: $server->getOwner()->getLogin()),
             'can_directory' => $owner || SambaRights::has($mask, SambaRights::DIRECTORY),
@@ -288,6 +306,23 @@ final class SambaServerManager
             'can_shares' => $owner || SambaRights::has($mask, SambaRights::SHARES),
             'access' => $grants,
         ];
+    }
+
+    private function agentUrl(mixed $value): ?string
+    {
+        $url = trim((string) $value);
+        if ('' === $url) {
+            return null;
+        }
+        $parts = parse_url($url);
+        if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['http', 'https'], true) || !isset($parts['host'], $parts['port']) || isset($parts['user']) || isset($parts['pass'])) {
+            throw new BadRequestHttpException('Адрес агента заполнен неверно');
+        }
+        if (str_contains((string) $parts['host'], ' ') || ($parts['port'] < 1 || $parts['port'] > 65535)) {
+            throw new BadRequestHttpException('Адрес агента заполнен неверно');
+        }
+
+        return $parts['scheme'].'://'.$parts['host'].':'.$parts['port'];
     }
 
     private function same(User $left, User $right): bool

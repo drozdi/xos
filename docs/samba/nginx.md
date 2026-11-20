@@ -24,6 +24,23 @@ location /api/samba/agent/ {
 
 `/api/samba/agent/bundle` сюда не входит: архив скачивает администратор, не агент. Для него оставьте общий лимит тела API.
 
+## WebSocket
+
+Агент с `prefer = websocket` открывает `GET /api/samba/agent/ws`. Этот путь должен идти в процесс `php bin/console samba:agent-hub` (`SAMBA_AGENT_HUB`, по умолчанию `127.0.0.1:8766`), не в php-fpm. Таймаут чтения больше, чем у обычного API: соединение живёт, пока агент на связи.
+
+```nginx
+location /api/samba/agent/ws {
+    proxy_pass http://127.0.0.1:8766;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 3600s;
+}
+```
+
+Блок ставят раньше общего `location /api/samba/agent/`.
+
 ## Что не ставить на эти пути
 
 - `limit_except` и отдельные `if ($request_method …)`, которые оставляют GET и отрезают POST. Регистрация, heartbeat и результат — POST, опрос — GET.

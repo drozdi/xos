@@ -10,6 +10,8 @@ const serverSchema = z.object({
 	file: z.boolean(),
 	status: z.string(),
 	expected_timezone: z.string(),
+	agent_url: z.string().nullable(),
+	agent_token_set: z.boolean(),
 	owner: z.boolean(),
 	owner_label: z.string(),
 	can_directory: z.boolean(),
@@ -32,6 +34,7 @@ export type SambaServerWrite = {
 	role: 'ad_dc';
 	file: boolean;
 	expected_timezone: string;
+	agent_url?: string;
 };
 
 const rights = ['view', 'shares', 'directory', 'provision', 'manage'] as const;
@@ -56,6 +59,35 @@ export const sambaApi = {
 	},
 	remove: async (id: number): Promise<void> => {
 		await apiClient.delete(`/api/samba/servers/${id}`);
+	},
+	rotateToken: async (id: number): Promise<SambaServer> => {
+		const { data } = await apiClient.post<unknown>(`/api/samba/servers/${id}/agent-token`);
+		return serverSchema.parse(data);
+	},
+	directory: async (id: number) => {
+		const { data } = await apiClient.get<unknown>(`/api/samba/servers/${id}/directory`);
+		return z
+			.object({
+				synced_at: z.string().nullable(),
+				tree: z.object({
+					ous: z.array(z.object({ name: z.string(), cn: z.string().optional(), dn: z.string() })),
+					users: z.array(z.object({
+						name: z.string(),
+						cn: z.string().optional(),
+						dn: z.string(),
+						displayName: z.string().optional(),
+						enabled: z.boolean().optional(),
+					})),
+					groups: z.array(z.object({
+						name: z.string(),
+						cn: z.string().optional(),
+						dn: z.string(),
+						description: z.string().optional(),
+						members: z.array(z.string()).optional(),
+					})),
+				}),
+			})
+			.parse(data);
 	},
 	enqueue: async (id: number, type: string, args: Record<string, unknown>): Promise<{ id: number; status: string }> => {
 		const { data } = await apiClient.post<unknown>(`/api/samba/servers/${id}/commands`, { type, args });

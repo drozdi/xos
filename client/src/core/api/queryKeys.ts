@@ -181,6 +181,7 @@ export const queryKeys = {
 	samba: {
 		servers: ['samba', 'servers'] as const,
 		server: (id: number) => ['samba', 'server', id] as const,
+		directory: (id: number) => ['samba', 'directory', id] as const,
 	},
 	network: {
 		egress: ['network', 'egress'] as const,

@@ -34,7 +34,11 @@ final class SambaAgentService
      */
     public function issueEnrollment(User $actor, SambaServer $server, string $baseUrl): array
     {
-        $token = bin2hex(random_bytes(24));
+        $token = trim((string) $server->getAgentToken());
+        if ('' === $token) {
+            $token = bin2hex(random_bytes(24));
+            $server->setAgentToken($token);
+        }
         $enrollment = new SambaEnrollment(
             $server,
             password_hash($token, PASSWORD_DEFAULT),
@@ -81,6 +85,7 @@ final class SambaAgentService
         $server = $enrollment->getServer();
         $key = isset($data['seal_public_key']) ? trim((string) $data['seal_public_key']) : null;
         $credential = new SambaAgentCredential($server, self::lookup($secret), password_hash($secret, PASSWORD_DEFAULT), $key ?: null);
+        $credential->setBearer($secret);
         $server->setStatus('enrolled');
         if (isset($data['state']) && is_array($data['state'])) {
             $server->setDetected($data['state']);
@@ -136,6 +141,7 @@ final class SambaAgentService
         if (isset($data['state']) && is_array($data['state'])) {
             $server->setDetected($data['state']);
         }
+        $this->scheduleDirectory($server);
         $this->entityManager->flush();
 
         return ['status' => 'ok', 'skew_ms' => $skew, 'warning' => $warning];
@@ -183,11 +189,123 @@ final class SambaAgentService
             throw new BadRequestHttpException('Статус заполнен неверно');
         }
         $result = (string) ($data['result'] ?? '');
-        if (strlen($result) > 200_000) {
-            $result = substr($result, 0, 200_000);
+        $limit = 'directory.read' === $command->getType() ? 4_000_000 : 200_000;
+        if (strlen($result) > $limit) {
+            $result = substr($result, 0, $limit);
         }
         $command->finish($status, $result);
+        $this->rememberDirectory($command);
         $this->entityManager->flush();
+    }
+
+    private function scheduleDirectory(SambaServer $server): void
+    {
+        $synced = $server->getDirectorySyncedAt();
+        if ($synced instanceof \DateTimeInterface && $synced->getTimestamp() > time() - 3600) {
+            return;
+        }
+        if ($this->commands->hasOpen($server, 'directory.read')) {
+            return;
+        }
+        $this->entityManager->persist(new SambaCommand($server, null, 'агент', 'directory.read', [], null));
+    }
+
+    private function rememberDirectory(SambaCommand $command): void
+    {
+        if ('succeeded' !== $command->getStatus()) {
+            return;
+        }
+        $server = $command->getServer();
+        if ('directory.read' === $command->getType()) {
+            $decoded = json_decode((string) $command->getResult(), true);
+            if (!is_array($decoded) || !isset($decoded['ous'], $decoded['users'], $decoded['groups'])) {
+                return;
+            }
+            $server->setDirectorySnapshot($decoded);
+            $server->setDirectorySyncedAt(new \DateTime());
+
+            return;
+        }
+        $snapshot = $server->getDirectorySnapshot();
+        if (!is_array($snapshot)) {
+            return;
+        }
+        $next = $this->patchDirectory($snapshot, $command);
+        if (null !== $next) {
+            $server->setDirectorySnapshot($next);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $snapshot
+     *
+     * @return array<string, mixed>|null
+     */
+    private function patchDirectory(array $snapshot, SambaCommand $command): ?array
+    {
+        $args = $command->getArgs();
+        $name = trim((string) ($args['name'] ?? ''));
+        $type = $command->getType();
+        $bucket = match (true) {
+            str_starts_with($type, 'user.') => 'users',
+            str_starts_with($type, 'group.') => 'groups',
+            str_starts_with($type, 'ou.') => 'ous',
+            'object.move' === $type || 'object.write' === $type => match ((string) ($args['kind'] ?? '')) {
+                'user' => 'users',
+                'group' => 'groups',
+                'ou' => 'ous',
+                default => '',
+            },
+            default => '',
+        };
+        if ('' === $bucket || '' === $name || !isset($snapshot[$bucket]) || !is_array($snapshot[$bucket])) {
+            return null;
+        }
+        $rows = $snapshot[$bucket];
+        $drop = str_ends_with($type, '.delete');
+        $kept = [];
+        $found = false;
+        foreach ($rows as $row) {
+            if (!is_array($row) || 0 !== strcasecmp((string) ($row['name'] ?? ''), $name)) {
+                $kept[] = $row;
+                continue;
+            }
+            $found = true;
+            if ($drop) {
+                continue;
+            }
+            if ('object.move' === $type) {
+                $parent = trim((string) ($args['parent'] ?? ''));
+                $dn = (string) ($row['dn'] ?? '');
+                $comma = strpos($dn, ',');
+                if ('' !== $parent && false !== $comma) {
+                    $row['dn'] = substr($dn, 0, $comma + 1).$parent;
+                }
+            }
+            if ('object.write' === $type && is_array($args['attributes'] ?? null)) {
+                $written = $args['attributes'];
+                if (array_key_exists('displayName', $written)) {
+                    $row['displayName'] = (string) $written['displayName'];
+                }
+                if (array_key_exists('description', $written)) {
+                    $row['description'] = (string) $written['description'];
+                }
+            }
+            $kept[] = $row;
+        }
+        if (!$found && in_array($type, ['user.ensure', 'group.ensure', 'ou.ensure'], true)) {
+            $entry = ['name' => $name, 'cn' => $name, 'dn' => 'ous' === $bucket ? 'OU='.$name : ''];
+            if ('users' === $bucket) {
+                $entry['enabled'] = true;
+            }
+            if ('groups' === $bucket) {
+                $entry['members'] = [];
+            }
+            $kept[] = $entry;
+        }
+        $snapshot[$bucket] = $kept;
+
+        return $snapshot;
     }
 
     private function claim(SambaServer $server): ?SambaCommand

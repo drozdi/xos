@@ -18,7 +18,9 @@ final class Config
         public readonly string $ldbsearch,
         public readonly string $samLdb,
         public readonly string $shareRoots,
+        public readonly string $sharesConf,
         public readonly bool $allowProvision,
+        public readonly string $listen,
     ) {
     }
 
@@ -54,7 +56,9 @@ final class Config
             (string) ($samba['ldbsearch'] ?? '/usr/bin/ldbsearch'),
             (string) ($samba['sam_ldb'] ?? '/var/lib/samba/private/sam.ldb'),
             (string) ($samba['share_roots'] ?? '/srv/samba'),
+            trim((string) ($samba['shares_conf'] ?? '')) ?: '/etc/samba/xos-shares.conf',
             filter_var($samba['allow_provision'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            trim((string) ($transport['listen'] ?? '')),
         );
     }
 }

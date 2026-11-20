@@ -10,9 +10,11 @@ import { useAuthStore } from '@/core/auth/authStore';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 import { UserSelect } from '@/features/main/UserSelect';
 import { useAppContext } from '@/core/context/AppContext';
+import { useAppManager } from '@/core/appManager/useAppManager';
 import { DomainObject } from '@/apps/samba-servers/DomainObject';
-import { DomainTab } from '@/apps/samba-servers/DomainTab';
-import { SharesTab } from '@/apps/samba-servers/SharesTab';
+import { ConfigTab } from '@/apps/samba-servers/ConfigTab';
+import { DomainWindow } from '@/apps/samba-servers/DomainWindow';
+import { SharesWindow } from '@/apps/samba-servers/SharesWindow';
 
 const RIGHTS: Array<{ id: SambaRight; label: string }> = [
 	{ id: 'view', label: 'Просмотр' },
@@ -105,6 +107,7 @@ function ServerForm({
 	const [description, setDescription] = useState(server?.description ?? '');
 	const [file, setFile] = useState(server?.file ?? false);
 	const [timezone, setTimezone] = useState(server?.expected_timezone ?? 'Europe/Moscow');
+	const [agentUrl, setAgentUrl] = useState(server?.agent_url ?? '');
 	const [error, setError] = useState<string | null>(null);
 	const save = useMutation({
 		mutationFn: (payload: SambaServerWrite) => (server ? sambaApi.update(server.id, payload) : sambaApi.create(payload)),
@@ -119,6 +122,12 @@ function ServerForm({
 			<Textarea label="Описание" value={description} onChange={(event) => setDescription(event.currentTarget.value)} />
 			<Checkbox label="Раздаёт шары" checked={file} onChange={(event) => setFile(event.currentTarget.checked)} />
 			<TextInput label="Часовой пояс" value={timezone} onChange={(event) => setTimezone(event.currentTarget.value)} />
+			<TextInput
+				label="Адрес агента"
+				description="http://хост:8765. Пусто — агент сам забирает очередь."
+				value={agentUrl}
+				onChange={(event) => setAgentUrl(event.currentTarget.value)}
+			/>
 			<Badge variant="light">Новый</Badge>
 			{error ? <Text c="red" size="sm">{error}</Text> : null}
 			<Group>
@@ -132,6 +141,7 @@ function ServerForm({
 							role: 'ad_dc',
 							file,
 							expected_timezone: timezone.trim(),
+							agent_url: agentUrl.trim(),
 						})
 					}
 				>
@@ -157,10 +167,27 @@ function ServerCard({
 	onChanged: () => Promise<void>;
 	onDeleted: () => Promise<void>;
 }) {
+	const launchApp = useAppManager((state) => state.launchApp);
 	const [editing, setEditing] = useState(false);
 	const [copied, setCopied] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const login = useAuthStore((state) => state.user?.login) || 'ЛОГИН';
+
+	const openDomain = () => {
+		void launchApp('samba-servers', {
+			instanceKey: `domain-${server.id}`,
+			title: `Домен — ${server.name}`,
+			props: { view: 'domain', serverId: server.id },
+		});
+	};
+
+	const openShares = () => {
+		void launchApp('samba-servers', {
+			instanceKey: `shares-${server.id}`,
+			title: `Шары — ${server.name}`,
+			props: { view: 'shares', serverId: server.id },
+		});
+	};
 
 	if (editing && server.owner) {
 		return (
@@ -177,74 +204,105 @@ function ServerCard({
 
 	return (
 		<Stack>
-			<Group justify="space-between">
-				<Text fw={600}>{server.name}</Text>
-				<Badge>{server.status === 'new' ? 'Новый' : server.status}</Badge>
+			<Group>
+				{server.can_directory || server.can_manage ? (
+					<Button variant="light" w="fit-content" onClick={openDomain}>
+						Домен
+					</Button>
+				) : null}
+				{server.owner || server.can_shares ? (
+					<Button variant="light" w="fit-content" onClick={openShares}>
+						Шары
+					</Button>
+				) : null}
 			</Group>
-			<Text size="sm">{roleLabel(server)}</Text>
-			<Text size="sm" c="dimmed">{server.description || 'Без описания'}</Text>
-			<Text size="sm">Пояс: {server.expected_timezone}</Text>
-			<Text size="sm">Владелец: {server.owner_label}</Text>
-			{server.owner ? (
-				<Group>
-					<Button variant="light" w="fit-content" onClick={() => setEditing(true)}>
-						Изменить
-					</Button>
-					<Button
-						variant="light"
-						color="red"
-						w="fit-content"
-						onClick={() =>
-							confirmAction({
-								title: 'Удаление',
-								message: `Удалить «${server.name}»? Связь с агентом тоже снимется.`,
-								confirmLabel: 'Удалить',
-								confirmColor: 'red',
-								onConfirm: () => {
-									void sambaApi.remove(server.id).then(onDeleted).catch((reason: unknown) => {
-										setError(extractApiErrorMessage(reason));
-									});
-								},
-							})
-						}
-					>
-						Удалить
-					</Button>
-				</Group>
-			) : null}
-			{server.owner || server.can_directory || server.can_manage || server.can_shares ? (
-				<Tabs
-					defaultValue={server.owner ? 'server' : server.can_directory || server.can_manage ? 'domain' : 'shares'}
-					keepMounted
-				>
-					<Tabs.List>
-						{server.owner ? <Tabs.Tab value="server">Сервер</Tabs.Tab> : null}
-						{server.owner ? <Tabs.Tab value="install">Установка</Tabs.Tab> : null}
-						{server.can_directory || server.can_manage ? <Tabs.Tab value="domain">Домен</Tabs.Tab> : null}
-						{server.owner || server.can_shares ? <Tabs.Tab value="shares">Шары</Tabs.Tab> : null}
-					</Tabs.List>
-					{server.owner ? (
-						<Tabs.Panel value="server" pt="sm">
-							<OwnerTools server={server} onChanged={onChanged} onError={setError} />
-						</Tabs.Panel>
-					) : null}
-					{server.owner ? (
-						<Tabs.Panel value="install" pt="sm">
-							<InstallCommand serverId={server.id} login={login} copied={copied} onCopied={() => setCopied(true)} />
-						</Tabs.Panel>
-					) : null}
-					{server.can_directory || server.can_manage ? (
-						<Tabs.Panel value="domain" pt="sm">
-							<DomainTab server={server} />
-						</Tabs.Panel>
-					) : null}
-					{server.owner || server.can_shares ? (
-						<Tabs.Panel value="shares" pt="sm">
-							<SharesTab server={server} />
-						</Tabs.Panel>
-					) : null}
-				</Tabs>
-			) : null}
+			<Tabs defaultValue="general" keepMounted>
+				<Tabs.List>
+					<Tabs.Tab value="general">Общее</Tabs.Tab>
+					{server.owner ? <Tabs.Tab value="server">Сервер</Tabs.Tab> : null}
+					{server.owner ? <Tabs.Tab value="install">Установка</Tabs.Tab> : null}
+					{server.can_manage ? <Tabs.Tab value="config">Конфиг</Tabs.Tab> : null}
+				</Tabs.List>
+				<Tabs.Panel value="general" pt="sm">
+					<Stack gap="xs">
+						<Group justify="space-between">
+							<Text fw={600}>{server.name}</Text>
+							<Badge>{server.status === 'new' ? 'Новый' : server.status}</Badge>
+						</Group>
+						<Text size="sm">{roleLabel(server)}</Text>
+						<Text size="sm" c="dimmed">{server.description || 'Без описания'}</Text>
+						<Text size="sm">Пояс: {server.expected_timezone}</Text>
+						<Text size="sm">Адрес агента: {server.agent_url || 'агент забирает очередь'}</Text>
+						{server.owner ? (
+							<Group>
+								<Text size="sm">Токен агента: {server.agent_token_set ? 'выдан' : 'появится при установке'}</Text>
+								<Button
+									variant="light"
+									size="xs"
+									w="fit-content"
+									onClick={() =>
+										confirmAction({
+											title: 'Смена токена',
+											message: 'Новый токен попадёт на агента при следующей установке.',
+											confirmLabel: 'Сменить',
+											onConfirm: () => {
+												void sambaApi.rotateToken(server.id).then(onChanged).catch((reason: unknown) => {
+													setError(extractApiErrorMessage(reason));
+												});
+											},
+										})
+									}
+								>
+									Сменить токен
+								</Button>
+							</Group>
+						) : null}
+						<Text size="sm">Владелец: {server.owner_label}</Text>
+						{server.owner ? (
+							<Group>
+								<Button variant="light" w="fit-content" onClick={() => setEditing(true)}>
+									Изменить
+								</Button>
+								<Button
+									variant="light"
+									color="red"
+									w="fit-content"
+									onClick={() =>
+										confirmAction({
+											title: 'Удаление',
+											message: `Удалить «${server.name}»? Связь с агентом тоже снимется.`,
+											confirmLabel: 'Удалить',
+											confirmColor: 'red',
+											onConfirm: () => {
+												void sambaApi.remove(server.id).then(onDeleted).catch((reason: unknown) => {
+													setError(extractApiErrorMessage(reason));
+												});
+											},
+										})
+									}
+								>
+									Удалить
+								</Button>
+							</Group>
+						) : null}
+					</Stack>
+				</Tabs.Panel>
+				{server.owner ? (
+					<Tabs.Panel value="server" pt="sm">
+						<OwnerTools server={server} onChanged={onChanged} onError={setError} />
+					</Tabs.Panel>
+				) : null}
+				{server.owner ? (
+					<Tabs.Panel value="install" pt="sm">
+						<InstallCommand serverId={server.id} login={login} copied={copied} onCopied={() => setCopied(true)} />
+					</Tabs.Panel>
+				) : null}
+				{server.can_manage ? (
+					<Tabs.Panel value="config" pt="sm">
+						<ConfigTab serverId={server.id} />
+					</Tabs.Panel>
+				) : null}
+			</Tabs>
 			{error ? <Text c="red" size="sm">{error}</Text> : null}
 		</Stack>
 	);
@@ -375,6 +433,12 @@ function InstallCommand({
 
 export default function SambaServersApp() {
 	const { props } = useAppContext();
+	if (props?.view === 'domain') {
+		return <DomainWindow />;
+	}
+	if (props?.view === 'shares') {
+		return <SharesWindow />;
+	}
 	if (props?.kind === 'user' || props?.kind === 'group' || props?.kind === 'ou') {
 		return <DomainObject />;
 	}

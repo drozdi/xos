@@ -19,7 +19,7 @@ use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 final class SambaCommandService
 {
     /** @var list<string> */
-    private const READ = ['directory.read', 'object.read'];
+    private const READ = ['directory.read', 'object.read', 'conf.read'];
 
     /** @var list<string> */
     private const WRITE = [
@@ -35,6 +35,8 @@ final class SambaCommandService
         'group.members',
         'object.write',
         'object.move',
+        'conf.write',
+        'smb.template',
     ];
 
     /** @var list<string> */
@@ -61,6 +63,7 @@ final class SambaCommandService
         private readonly SambaCommandRepository $commands,
         private readonly SambaAgentCredentialRepository $credentials,
         private readonly EntityManagerInterface $entityManager,
+        private readonly AgentLink $agentLink,
     ) {
     }
 
@@ -74,14 +77,18 @@ final class SambaCommandService
         $server = $this->visible($actor, $serverId);
         $type = (string) ($data['type'] ?? '');
         if (in_array($type, self::READ, true)) {
-            $allowed = $this->hasRight($actor, $server, SambaRights::DIRECTORY) || $this->hasRight($actor, $server, SambaRights::MANAGE);
-            if ('directory.read' === $type && $this->hasRight($actor, $server, SambaRights::SHARES)) {
-                $allowed = true;
+            if ('conf.read' === $type) {
+                $this->assertRight($actor, $server, SambaRights::MANAGE);
+            } else {
+                $allowed = $this->hasRight($actor, $server, SambaRights::DIRECTORY) || $this->hasRight($actor, $server, SambaRights::MANAGE);
+                if ('directory.read' === $type && $this->hasRight($actor, $server, SambaRights::SHARES)) {
+                    $allowed = true;
+                }
+                if (!$allowed) {
+                    throw new AccessDeniedHttpException('Недостаточно прав');
+                }
             }
-            if (!$allowed) {
-                throw new AccessDeniedHttpException('Недостаточно прав');
-            }
-        } elseif (in_array($type, ['shares.read', 'shares.apply', 'share.remove'], true)) {
+        } elseif (in_array($type, ['shares.read', 'shares.apply', 'share.remove', 'shares.homes'], true)) {
             $this->assertRight($actor, $server, SambaRights::SHARES);
         } elseif (in_array($type, self::WRITE, true)) {
             $this->assertRight($actor, $server, SambaRights::MANAGE);
@@ -100,8 +107,27 @@ final class SambaCommandService
         $command = new SambaCommand($server, $actor, mb_substr($label, 0, 255), $type, $args, $sealed);
         $this->entityManager->persist($command);
         $this->entityManager->flush();
+        $this->agentLink->nudge($command);
 
         return ['id' => (int) $command->getId(), 'status' => $command->getStatus()];
+    }
+
+    /**
+     * @return array{synced_at: string|null, tree: array<string, mixed>}
+     */
+    public function directory(User $actor, int $serverId): array
+    {
+        $server = $this->visible($actor, $serverId);
+        $allowed = $this->hasRight($actor, $server, SambaRights::DIRECTORY) || $this->hasRight($actor, $server, SambaRights::MANAGE);
+        if (!$allowed) {
+            throw new AccessDeniedHttpException('Недостаточно прав');
+        }
+        $tree = $server->getDirectorySnapshot() ?? ['ous' => [], 'users' => [], 'groups' => []];
+
+        return [
+            'synced_at' => $server->getDirectorySyncedAt()?->format(\DateTimeInterface::ATOM),
+            'tree' => $tree,
+        ];
     }
 
     /**
@@ -185,8 +211,26 @@ final class SambaCommandService
      */
     private function arguments(string $type, array $args): array
     {
-        if ('directory.read' === $type || 'shares.read' === $type) {
+        if ('directory.read' === $type || 'shares.read' === $type || 'smb.template' === $type) {
             return [];
+        }
+        if ('shares.homes' === $type) {
+            return ['enabled' => true === ($args['enabled'] ?? false)];
+        }
+        if ('conf.read' === $type || 'conf.write' === $type) {
+            $file = (string) ($args['file'] ?? '');
+            if (!in_array($file, ['smb', 'shares'], true)) {
+                throw new BadRequestHttpException('Файл не из списка');
+            }
+            if ('conf.read' === $type) {
+                return ['file' => $file];
+            }
+            $content = (string) ($args['content'] ?? '');
+            if (strlen($content) > 1_000_000) {
+                throw new BadRequestHttpException('Текст конфига заполнен неверно');
+            }
+
+            return ['file' => $file, 'content' => $content];
         }
         if ('shares.apply' === $type) {
             return $this->shareArguments($args);
@@ -279,7 +323,7 @@ final class SambaCommandService
     private function shareArguments(array $args): array
     {
         $name = $this->label($args['name'] ?? null, true);
-        if (1 === preg_match('/[\[\]#="]/u', $name)) {
+        if (1 === preg_match('/[\[\]#="]/u', $name) || 0 === strcasecmp($name, 'homes')) {
             throw new BadRequestHttpException('Имя шары заполнено неверно');
         }
         $path = trim((string) ($args['path'] ?? ''));
@@ -317,6 +361,7 @@ final class SambaCommandService
             'comment' => $comment,
             'guest' => true === ($args['guest'] ?? false),
             'enabled' => false !== ($args['enabled'] ?? true),
+            'recycle' => true === ($args['recycle'] ?? false),
             'recursive' => true === ($args['recursive'] ?? false),
             'acl' => $acl,
         ];

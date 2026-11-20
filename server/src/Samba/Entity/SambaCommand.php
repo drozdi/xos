@@ -117,6 +117,16 @@ class SambaCommand
         $this->status = 'delivered';
     }
 
+    public function markRunning(): void
+    {
+        $this->status = 'running';
+    }
+
+    public function requeue(): void
+    {
+        $this->status = 'queued';
+    }
+
     public function finish(string $status, string $result): void
     {
         $this->status = $status;

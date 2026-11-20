@@ -32,6 +32,9 @@ class SambaAgentCredential
     #[ORM\Column(name: 'seal_public_key', type: Types::TEXT, nullable: true)]
     private ?string $sealPublicKey = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $bearer = null;
+
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_MUTABLE)]
     private \DateTimeInterface $createdAt;
 
@@ -60,6 +63,16 @@ class SambaAgentCredential
     public function getSealPublicKey(): ?string
     {
         return $this->sealPublicKey;
+    }
+
+    public function setBearer(string $bearer): void
+    {
+        $this->bearer = $bearer;
+    }
+
+    public function getBearer(): ?string
+    {
+        return $this->bearer;
     }
 
     public function getRevokedAt(): ?\DateTimeInterface

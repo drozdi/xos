@@ -23,6 +23,9 @@ final class Shares
         if ('share.remove' === $type) {
             return $this->remove($command);
         }
+        if ('shares.homes' === $type) {
+            return $this->homes($command);
+        }
         if ('shares.apply' === $type) {
             return $this->apply($command);
         }
@@ -31,7 +34,7 @@ final class Shares
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array{homes: bool, shares: list<array<string, mixed>>}
      */
     private function read(): array
     {
@@ -80,13 +83,24 @@ final class Shares
             'values' => [
                 'path' => $path,
                 'comment' => $comment,
-                'guest ok' => !empty($args['guest']) ? 'yes' : 'no',
-                'available' => array_key_exists('enabled', $args) && empty($args['enabled']) ? 'no' : 'yes',
-                'browseable' => 'yes',
-                'read only' => 'no',
             ],
             'acl' => $acl,
+            'recycle' => !empty($args['recycle']),
         ];
+
+        return $this->commit($sections, $path, $acl, !empty($args['recursive']), null);
+    }
+
+    /**
+     * @param array<string, mixed> $command
+     *
+     * @return array{status: string, result: string}
+     */
+    private function homes(array $command): array
+    {
+        $args = is_array($command['args'] ?? null) ? $command['args'] : [];
+
+        return $this->commit($this->sections($this->fileText()), null, [], false, !empty($args['enabled']));
 
         return $this->commit($sections, $path, $acl, !empty($args['recursive']));
     }
@@ -104,34 +118,45 @@ final class Shares
             return ['status' => 'rejected', 'result' => 'Имя шары заполнено неверно'];
         }
         $sections = $this->sections($this->fileText());
-        unset($sections[$name]);
+        return $this->commit($sections, null, [], false, null);
 
         return $this->commit($sections, null, [], false);
     }
-
-    /**
-     * @param array<string, array{values: array<string, string>, acl: list<array{kind: string, name: string, access: string}>}> $sections
+     * @param array<string, array{values: array<string, string>, acl: list<array{kind: string, name: string, access: string}>, recycle: bool}> $sections
      * @param list<array{kind: string, name: string, access: string}> $acl
      *
      * @return array{status: string, result: string}
      */
-    private function commit(array $sections, ?string $path, array $acl, bool $recursive): array
+    private function commit(array $sections, ?string $path, array $acl, bool $recursive, ?bool $homes): array
     {
-        $include = $this->ensureInclude();
-        if (null !== $include) {
-            return ['status' => 'failed', 'result' => $include];
+        if (!is_file($this->config->smbConf)) {
+            return ['status' => 'failed', 'result' => 'smb.conf не найден'];
         }
         $target = $this->sharesFile();
         $previousShares = is_file($target) ? (string) file_get_contents($target) : null;
-        $previousConf = is_file($this->config->smbConf) ? (string) file_get_contents($this->config->smbConf) : null;
-        if (false === file_put_contents($target, $this->render($sections))) {
+        $previousConf = (string) file_get_contents($this->config->smbConf);
+        $homesOn = $homes ?? $this->homesOn($previousShares ?? '');
+        $rendered = (new SmbTemplate($this->config))->render($previousConf);
+        if (null === $rendered) {
+            return ['status' => 'rejected', 'result' => 'В smb.conf нет workgroup или realm'];
+        }
+        $dir = dirname($target);
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            return ['status' => 'failed', 'result' => 'Каталог файла шар не создаётся'];
+        }
+        if (false === file_put_contents($target, $this->render($sections, $homesOn))) {
             return ['status' => 'failed', 'result' => 'Файл шар не записан'];
+        }
+        if (false === file_put_contents($this->config->smbConf, $rendered)) {
+            $this->restore($target, $previousShares);
+
+            return ['status' => 'failed', 'result' => 'smb.conf не записан'];
         }
         $testparm = dirname($this->config->sambaTool).'/testparm';
         $check = $this->process(is_file($testparm) ? $testparm : '/usr/bin/testparm', ['-s', $this->config->smbConf]);
         if (0 !== $check['code']) {
             $this->restore($target, $previousShares);
-            if (null !== $previousConf) {
+            file_put_contents($this->config->smbConf, $previousConf);
                 file_put_contents($this->config->smbConf, $previousConf);
             }
 
@@ -174,74 +199,102 @@ final class Shares
         }
 
         return [] === $notes ? '' : ' ACL не поставлены: '.implode(', ', $notes).'.';
-    }
-
-    private function ensureInclude(): ?string
-    {
-        if (!is_file($this->config->smbConf)) {
-            return 'smb.conf не найден';
-        }
-        $conf = (string) file_get_contents($this->config->smbConf);
-        $file = $this->sharesFile();
-        if (1 === preg_match('/^\s*include\s*=\s*'.preg_quote($file, '/').'\s*$/mi', $conf)) {
-            return null;
-        }
-        if (1 !== preg_match('/^\s*\[global\]\s*$/mi', $conf)) {
-            return 'В smb.conf нет секции global';
-        }
-        $updated = preg_replace('/(^\s*\[global\]\s*$)/mi', "$1\n\tinclude = ".$file, $conf, 1);
-        if (!is_string($updated) || false === file_put_contents($this->config->smbConf, $updated)) {
-            return 'Не удалось подключить файл шар';
-        }
-
-        return null;
-    }
-
     /**
-     * @param array<string, array{values: array<string, string>, acl: list<array{kind: string, name: string, access: string}>}> $sections
+     * @param array<string, array{values: array<string, string>, acl: list<array{kind: string, name: string, access: string}>, recycle: bool}> $sections
      */
-    private function render(array $sections): string
+    private function render(array $sections, bool $homes): string
     {
         $text = "# Шары XOS. Секцию global этот файл не содержит.\n";
+        $text .= '# xos-homes '.($homes ? 'yes' : 'no')."\n\n";
+        if ($homes) {
+            $text .= $this->shareBody('homes', [
+                'values' => [
+                    'comment' => 'Home Directories',
+                    'path' => '/home/%S',
+                    'browseable' => 'no',
+                    'read only' => 'no',
+                ],
+                'acl' => [],
+                'recycle' => false,
+            ], true);
+        }
         foreach ($sections as $name => $section) {
-            $text .= '['.$name."]\n";
-            $guest = $this->yes($section['values']['guest ok'] ?? '');
-            $valid = [];
-            $write = [];
-            $admin = [];
-            foreach ($section['acl'] as $row) {
-                $token = 'group' === $row['kind'] ? '@'.$row['name'] : $row['name'];
-                $text .= "\t# xos-acl ".$row['kind'].':'.$row['name'].':'.$row['access']."\n";
-                if (!$guest) {
-                    $valid[] = '"'.$token.'"';
-                    if ('read' !== $row['access']) {
-                        $write[] = '"'.$token.'"';
-                    }
-                    if ('admin' === $row['access']) {
-                        $admin[] = '"'.$token.'"';
-                    }
-                }
-            }
-            foreach ($section['values'] as $key => $value) {
-                $text .= "\t".$key.' = '.$value."\n";
-            }
-            if (!$guest && [] !== $valid) {
-                $text .= "\tvalid users = ".implode(' ', $valid)."\n";
-                if ([] !== $write) {
-                    $text .= "\twrite list = ".implode(' ', $write)."\n";
-                }
-                if ([] !== $admin) {
-                    $text .= "\tadmin users = ".implode(' ', $admin)."\n";
-                }
-            }
-            $text .= "\n";
+            $text .= $this->shareBody($name, $section, false);
         }
 
         return $text;
     }
 
     /**
-     * @return array<string, array{values: array<string, string>, acl: list<array{kind: string, name: string, access: string}>}>
+     * @param array{values: array<string, string>, acl: list<array{kind: string, name: string, access: string}>, recycle: bool} $section
+     */
+    private function shareBody(string $name, array $section, bool $homes): string
+    {
+        $text = '['.$name."]\n";
+        $guest = $this->yes($section['values']['guest ok'] ?? '');
+        $valid = [];
+        $read = [];
+        $write = [];
+        $admin = [];
+        foreach ($section['acl'] as $row) {
+            $token = 'group' === $row['kind'] ? '@'.$row['name'] : $row['name'];
+            $text .= "\t# xos-acl ".$row['kind'].':'.$row['name'].':'.$row['access']."\n";
+            if ($guest) {
+                continue;
+            }
+            $valid[] = '"'.$token.'"';
+            if ('read' === $row['access']) {
+                $read[] = '"'.$token.'"';
+            } else {
+                $write[] = '"'.$token.'"';
+            }
+            if ('admin' === $row['access']) {
+                $admin[] = '"'.$token.'"';
+            }
+        }
+        foreach ($section['values'] as $key => $value) {
+            if ('' === $value && 'comment' === $key) {
+                continue;
+            }
+            $text .= "\t".$key.' = '.$value."\n";
+        }
+        if (!$homes) {
+            $text .= "\tbrowseable = yes\n";
+            if ($guest) {
+                $text .= "\tread only = no\n";
+            }
+        }
+        $text .= "\tforce create mode = 0660\n";
+        $text .= "\tforce directory mode = 0770\n";
+        if (!$guest && [] !== $valid) {
+            $text .= "\tvalid users = ".implode(' ', $valid)."\n";
+            if ([] !== $read) {
+                $text .= "\tread list = ".implode(' ', $read)."\n";
+            }
+            if ([] !== $write) {
+                $text .= "\twrite list = ".implode(' ', $write)."\n";
+            }
+            if ([] !== $admin) {
+                $text .= "\tadmin users = ".implode(' ', $admin)."\n";
+            }
+        }
+        $vfs = ['acl_xattr'];
+        if ($section['recycle']) {
+            $vfs[] = 'recycle';
+        }
+        $text .= "\tvfs objects = ".implode(' ', $vfs)."\n";
+        if ($section['recycle']) {
+            $text .= "\trecycle:repository = .recycle\n";
+            $text .= "\trecycle:keeptree = yes\n";
+            $text .= "\trecycle:versions = yes\n";
+        }
+        $text .= "\n";
+            $text .= "\n";
+        }
+
+        return $text;
+    }
+     * @return array<string, array{values: array<string, string>, acl: list<array{kind: string, name: string, access: string}>, recycle: bool}>
      */
     private function sections(string $text): array
     {
@@ -251,7 +304,11 @@ final class Shares
             $trim = trim($line);
             if (1 === preg_match('/^\[([^\]\r\n]+)\]$/', $trim, $match)) {
                 $current = $match[1];
-                $sections[$current] = ['values' => [], 'acl' => []];
+                if (0 === strcasecmp($current, 'homes')) {
+                    $current = null;
+                    continue;
+                }
+                $sections[$current] = ['values' => [], 'acl' => [], 'recycle' => false];
                 continue;
             }
             if (null === $current) {
@@ -269,17 +326,28 @@ final class Shares
                 continue;
             }
             $key = strtolower(trim($parts[0]));
-            if (in_array($key, ['valid users', 'write list', 'admin users'], true)) {
+            $value = trim($parts[1]);
+            if ('vfs objects' === $key && str_contains($value, 'recycle')) {
+                $sections[$current]['recycle'] = true;
+            }
+            if (in_array($key, ['valid users', 'read list', 'write list', 'admin users', 'browseable', 'read only', 'force create mode', 'force directory mode', 'vfs objects'], true) || str_starts_with($key, 'recycle:')) {
                 continue;
             }
-            $sections[$current]['values'][$key] = trim($parts[1]);
+            $sections[$current]['values'][$key] = $value;
         }
 
         return $sections;
     }
 
-    private function shareName(mixed $value): ?string
+    private function homesOn(string $text): bool
     {
+        return 1 === preg_match('/^# xos-homes\s+yes\s*$/mi', $text);
+
+        return $sections;
+    }
+
+    private function shareName(mixed $value): ?string
+        if ('' === $name || str_starts_with($name, '-') || strlen($name) > 64 || 0 === strcasecmp($name, 'homes') || 1 === preg_match('/[\x00-\x1F\[\]#="]/', $name)) {
         $name = trim((string) $value);
         if ('' === $name || str_starts_with($name, '-') || strlen($name) > 64 || 1 === preg_match('/[\x00-\x1F\[\]#="]/', $name)) {
             return null;
@@ -343,7 +411,7 @@ final class Shares
 
     private function sharesFile(): string
     {
-        return '/etc/samba/xos-shares.conf';
+        return $this->config->sharesConf;
     }
 
     private function fileText(): string

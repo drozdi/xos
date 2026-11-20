@@ -1,7 +1,9 @@
-import { Button, Group, MultiSelect, Select, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Group, MultiSelect, PasswordInput, Select, Stack, Tabs, Text, TextInput } from '@mantine/core';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { extractApiErrorMessage } from '@/core/api/apiError';
+import { queryKeys } from '@/core/api/queryKeys';
 import { useAppContext } from '@/core/context/AppContext';
 import { useWindowTitle } from '@/core/hooks/useWindowTitle';
 
@@ -68,6 +70,7 @@ function namesFor(dns: string[], entries: DomainEntry[]): string[] {
 
 export function DomainObject() {
 	const { props } = useAppContext();
+	const queryClient = useQueryClient();
 	const serverId = Number(props?.serverId ?? 0);
 	const kind = (props?.kind === 'group' || props?.kind === 'ou' ? props.kind : 'user') as Kind;
 	const create = props?.create === true;
@@ -83,6 +86,7 @@ export function DomainObject() {
 	const [initialPicked, setInitialPicked] = useState<string[]>([]);
 	const [initialFields, setInitialFields] = useState<Record<string, string>>({});
 	const [password, setPassword] = useState('');
+	const [passwordConfirm, setPasswordConfirm] = useState('');
 	const [record, setRecord] = useState<RecordView | null>(null);
 	const [note, setNote] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
@@ -134,7 +138,47 @@ export function DomainObject() {
 	}, [create, kind, name, serverId]);
 
 	const ouOptions = ous.map((item) => ({ value: item.dn, label: `${item.cn || item.name} · ${item.dn}` }));
-	const pickOptions = (kind === 'group' ? users : groups).map((item) => ({ value: item.name, label: item.cn && item.cn !== item.name ? `${item.name} · ${item.cn}` : item.name }));
+	const pickOptions = (kind === 'group' ? users : groups).map((item) => ({
+		value: item.name,
+		label: kind === 'group' ? userLabel(item) : item.name,
+	}));
+
+	const passwordError = (): string | null => {
+		if (!password) {
+			return create && kind === 'user' ? 'Укажите пароль' : null;
+		}
+		if (password.length < 8) {
+			return 'Пароль не короче 8 символов';
+		}
+		if (password !== passwordConfirm) {
+			return 'Пароли не совпадают';
+		}
+		return null;
+	};
+
+	const changePassword = async () => {
+		const error = passwordError();
+		if (error) {
+			setNote(error);
+			return;
+		}
+		if (!name) {
+			setNote('Имя пользователя не задано');
+			return;
+		}
+		setBusy(true);
+		setNote(null);
+		try {
+			await runCommand(serverId, 'user.set_password', { name, password });
+			setPassword('');
+			setPasswordConfirm('');
+			setNote('Пароль изменён');
+		} catch (reason: unknown) {
+			setNote(reason instanceof Error ? reason.message : extractApiErrorMessage(reason));
+		} finally {
+			setBusy(false);
+		}
+	};
 
 	const save = async () => {
 		setBusy(true);
@@ -142,6 +186,11 @@ export function DomainObject() {
 		try {
 			if (create) {
 				if (kind === 'user') {
+					const error = passwordError();
+					if (error) {
+						setNote(error);
+						return;
+					}
 					await runCommand(serverId, 'user.ensure', {
 						name,
 						given_name: fields.givenName ?? '',
@@ -191,13 +240,12 @@ export function DomainObject() {
 					action: 'remove',
 				});
 			}
-			if (!create && password) {
-				await runCommand(serverId, 'user.set_password', { name, password });
-			}
 			setPassword('');
+			setPasswordConfirm('');
 			setInitialParent(parent ?? '');
 			setInitialPicked(picked);
 			setInitialFields(fields);
+			await queryClient.invalidateQueries({ queryKey: queryKeys.samba.directory(serverId) });
 			setNote('Готово');
 		} catch (reason: unknown) {
 			setNote(reason instanceof Error ? reason.message : extractApiErrorMessage(reason));
@@ -219,10 +267,7 @@ export function DomainObject() {
 		}
 	};
 
-	const readonly = Object.entries(record?.attributes ?? {}).filter(([key]) => {
-		const lower = key.toLowerCase();
-		return !shown.some(([field]) => field.toLowerCase() === lower) && lower !== 'memberof' && lower !== 'member';
-	});
+	const attributeRows = Object.entries(record?.attributes ?? {}).sort(([left], [right]) => left.localeCompare(right, 'ru'));
 
 	const sections: Array<{ title: string; keys: string[] }> = kind === 'user'
 		? [
@@ -233,7 +278,13 @@ export function DomainObject() {
 		: [{ title: 'Свойства', keys: shown.map(([key]) => key) }];
 
 	return (
-		<Stack gap="sm" p="md" h="100%" style={{ overflowY: 'auto', minHeight: 0 }}>
+		<Tabs defaultValue="card" keepMounted h="100%" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+			<Tabs.List>
+				<Tabs.Tab value="card">Карточка</Tabs.Tab>
+				<Tabs.Tab value="attributes">Атрибуты</Tabs.Tab>
+			</Tabs.List>
+			<Tabs.Panel value="card" pt="sm" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+		<Stack gap="sm" p="md">
 			{create ? <TextInput label="Имя" value={name} onChange={(event) => setName(event.currentTarget.value)} /> : <Text fw={600}>{name}</Text>}
 			<Text size="sm">CN: {record?.cn || '—'}</Text>
 			<Text size="sm">DN: {record?.dn || '—'}</Text>
@@ -268,7 +319,27 @@ export function DomainObject() {
 					/>
 				</Stack>
 			) : null}
-			{kind === 'user' && canManage ? <TextInput label="Пароль" type="password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} /> : null}
+			{kind === 'user' && canManage ? (
+				<Stack gap="xs">
+					<Text fw={600}>{create ? 'Пароль' : 'Смена пароля'}</Text>
+					<PasswordInput
+						label="Новый пароль"
+						description="Не короче 8 символов"
+						value={password}
+						onChange={(event) => setPassword(event.currentTarget.value)}
+					/>
+					<PasswordInput
+						label="Повтор пароля"
+						value={passwordConfirm}
+						onChange={(event) => setPasswordConfirm(event.currentTarget.value)}
+					/>
+					{!create ? (
+						<Button w="fit-content" variant="light" loading={busy} onClick={() => void changePassword()}>
+							Сменить пароль
+						</Button>
+					) : null}
+				</Stack>
+			) : null}
 			{canManage ? (
 				<Group>
 					<Button loading={busy} onClick={() => void save()}>Сохранить</Button>
@@ -281,18 +352,25 @@ export function DomainObject() {
 				</Group>
 			) : null}
 			{note ? <Text size="sm">{note}</Text> : null}
-			{readonly.length > 0 ? (
-				<Stack gap={2}>
-					<Text fw={600}>Атрибуты</Text>
-					{readonly.map(([key, values]) => (
-						<Text key={key} size="xs">
+		</Stack>
+			</Tabs.Panel>
+			<Tabs.Panel value="attributes" pt="sm" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+				<Stack gap={4} p="md">
+					{attributeRows.length === 0 ? <Text size="sm" c="dimmed">Атрибутов нет</Text> : null}
+					{attributeRows.map(([key, values]) => (
+						<Text key={key} size="sm" style={{ wordBreak: 'break-all' }}>
 							{key}: {values.join(', ')}
 						</Text>
 					))}
 				</Stack>
-			) : null}
-		</Stack>
+			</Tabs.Panel>
+		</Tabs>
 	);
+}
+
+function userLabel(item: DomainEntry): string {
+	const display = (item.displayName ?? '').trim();
+	return display ? `${display} · ${item.name}` : item.name;
 }
 
 function firstList(attributes: Record<string, string[]>, key: string): string[] {

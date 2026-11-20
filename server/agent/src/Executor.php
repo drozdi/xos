@@ -27,6 +27,12 @@ final class Executor
         'shares.read',
         'shares.apply',
         'share.remove',
+        'shares.homes',
+        'group.delete',
+        'ou.delete',
+        'conf.read',
+        'conf.write',
+        'smb.template',
         'testparm',
         'smbstatus.brief',
     ];
@@ -73,6 +79,9 @@ final class Executor
         if ('directory.read' === $type) {
             return $this->directory();
         }
+        if ('conf.read' === $type || 'conf.write' === $type) {
+            return $this->configFile($type, $command);
+        }
         if ('object.read' === $type) {
             return $this->objectRead($command);
         }
@@ -97,7 +106,10 @@ final class Executor
         if (in_array($type, $domain, true)) {
             return $this->mutate($type, $command);
         }
-        if (in_array($type, ['shares.read', 'shares.apply', 'share.remove'], true)) {
+        if ('smb.template' === $type) {
+            return (new SmbTemplate($this->config))->apply();
+        }
+        if (in_array($type, ['shares.read', 'shares.apply', 'share.remove', 'shares.homes'], true)) {
             return (new Shares($this->config))->run($command);
         }
 
@@ -257,8 +269,7 @@ final class Executor
             $encoded = str_starts_with($raw, ':');
             $value = trim($encoded ? substr($raw, 1) : $raw);
             if ($encoded) {
-                $decoded = base64_decode($value, true);
-                $value = is_string($decoded) ? $decoded : '';
+                $value = self::decodeBase64($value);
             }
             if (0 === strcasecmp($key, 'dn')) {
                 $dn = $value;
@@ -307,74 +318,196 @@ final class Executor
      */
     private function directory(): array
     {
-        if (!is_file($this->config->sambaTool)) {
-            return ['status' => 'failed', 'result' => 'samba-tool не найден'];
-        }
-        try {
-            $ouLines = $this->lines(['ou', 'list']);
-            $userLines = $this->lines(['user', 'list']);
-            $groupLines = $this->lines(['group', 'list']);
-        } catch (\RuntimeException $error) {
-            return ['status' => 'failed', 'result' => $error->getMessage()];
+        if (!is_file($this->config->ldbsearch) || !is_file($this->config->samLdb)) {
+            return ['status' => 'failed', 'result' => 'ldbsearch или sam.ldb не найден'];
         }
         $users = [];
-        foreach (array_slice($userLines, 0, 150) as $name) {
-            $dn = '';
-            $cn = '';
-            $enabled = true;
-            try {
-                foreach ($this->lines(['user', 'show', $name]) as $line) {
-                    if (str_starts_with($line, 'dn:')) {
-                        $dn = trim(substr($line, 3));
-                    }
-                    if (str_starts_with($line, 'cn:')) {
-                        $cn = trim(substr($line, 3));
-                    }
-                    if (str_starts_with($line, 'userAccountControl:')) {
-                        $enabled = (intval(trim(substr($line, strlen('userAccountControl:')))) & 2) === 0;
-                    }
-                }
-            } catch (\RuntimeException) {
-            }
-            $users[] = ['name' => $name, 'cn' => '' !== $cn ? $cn : $name, 'dn' => $dn, 'enabled' => $enabled];
-        }
         $groups = [];
-        foreach (array_slice($groupLines, 0, 80) as $name) {
-            $members = [];
-            try {
-                $members = $this->lines(['group', 'listmembers', $name]);
-            } catch (\RuntimeException) {
-            }
-            $dn = '';
-            $cn = $name;
-            try {
-                foreach ($this->lines(['group', 'show', $name]) as $line) {
-                    if (str_starts_with($line, 'dn:')) {
-                        $dn = trim(substr($line, 3));
-                    }
-                    if (str_starts_with($line, 'cn:')) {
-                        $cn = trim(substr($line, 3));
-                    }
-                }
-            } catch (\RuntimeException) {
-            }
-            $groups[] = ['name' => $name, 'cn' => $cn, 'dn' => $dn, 'members' => $members];
-        }
         $ous = [];
-        foreach ($ouLines as $dn) {
-            $name = $dn;
-            if (1 === preg_match('/^OU=([^,]+)/i', $dn, $match)) {
-                $name = $match[1];
+        $userSearch = $this->search('(&(objectClass=user)(!(objectClass=computer)))', ['dn', 'cn', 'sAMAccountName', 'displayName', 'userAccountControl']);
+        if (null === $userSearch) {
+            return ['status' => 'failed', 'result' => 'Не удалось прочитать пользователей'];
+        }
+        foreach ($userSearch as $row) {
+            $name = $row['samaccountname'][0] ?? ($row['cn'][0] ?? '');
+            if ('' === $name) {
+                continue;
+            }
+            $control = (int) ($row['useraccountcontrol'][0] ?? 0);
+            $users[] = [
+                'name' => $name,
+                'cn' => $row['cn'][0] ?? $name,
+                'dn' => $row['dn'][0] ?? '',
+                'displayName' => $row['displayname'][0] ?? '',
+                'enabled' => ($control & 2) === 0,
+            ];
+        }
+        $groupSearch = $this->search('(objectClass=group)', ['dn', 'cn', 'sAMAccountName', 'description', 'member']);
+        if (null === $groupSearch) {
+            return ['status' => 'failed', 'result' => 'Не удалось прочитать группы'];
+        }
+        foreach ($groupSearch as $row) {
+            $name = $row['samaccountname'][0] ?? ($row['cn'][0] ?? '');
+            if ('' === $name) {
+                continue;
+            }
+            $groups[] = [
+                'name' => $name,
+                'cn' => $row['cn'][0] ?? $name,
+                'dn' => $row['dn'][0] ?? '',
+                'description' => $row['description'][0] ?? '',
+                'members' => $row['member'] ?? [],
+            ];
+        }
+        $ouSearch = $this->search('(objectClass=organizationalUnit)', ['dn', 'ou', 'name']);
+        if (null === $ouSearch) {
+            return ['status' => 'failed', 'result' => 'Не удалось прочитать подразделения'];
+        }
+        foreach ($ouSearch as $row) {
+            $dn = $row['dn'][0] ?? '';
+            $name = $row['ou'][0] ?? ($row['name'][0] ?? $dn);
+            if ('' === $dn) {
+                continue;
             }
             $ous[] = ['dn' => $dn, 'name' => $name, 'cn' => $name];
         }
+        $json = json_encode(['ous' => $ous, 'users' => $users, 'groups' => $groups], JSON_UNESCAPED_UNICODE);
+        if (!is_string($json)) {
+            return ['status' => 'failed', 'result' => 'Каталог не сериализуется'];
+        }
+        if (strlen($json) > 4_000_000) {
+            return ['status' => 'failed', 'result' => 'Каталог больше 4 МБ'];
+        }
 
-        return ['status' => 'succeeded', 'result' => $this->encode([
-            'ous' => $ous,
-            'users' => $users,
-            'groups' => $groups,
-            'truncated' => count($userLines) > 150 || count($groupLines) > 80,
-        ])];
+        return ['status' => 'succeeded', 'result' => $json];
+    }
+
+    /**
+     * @param list<string> $attributes
+     *
+     * @return list<array<string, list<string>>>|null
+     */
+    private function search(string $filter, array $attributes): ?array
+    {
+        $ran = $this->runProcess($this->config->ldbsearch, array_merge(
+            ['-H', $this->config->samLdb, $filter],
+            $attributes,
+        ), null, 4_000_000);
+        if (0 !== $ran['code'] && !str_contains($ran['text'], 'dn:')) {
+            return null;
+        }
+
+        return $this->ldif($ran['text']);
+    }
+
+    /**
+     * @return list<array<string, list<string>>>
+     */
+    private function ldif(string $text): array
+    {
+        $records = [];
+        $current = [];
+        $last = null;
+        foreach (preg_split('/\R/', $text) ?: [] as $line) {
+            if ('' === $line) {
+                if ([] !== $current) {
+                    $records[] = $current;
+                    $current = [];
+                    $last = null;
+                }
+                continue;
+            }
+            if (str_starts_with($line, '#')) {
+                continue;
+            }
+            if ((str_starts_with($line, ' ') || str_starts_with($line, "\t")) && null !== $last && isset($current[$last])) {
+                $index = count($current[$last]) - 1;
+                $current[$last][$index] .= substr($line, 1);
+                continue;
+            }
+            $colon = strpos($line, ':');
+            if (false === $colon) {
+                continue;
+            }
+            $key = strtolower(trim(substr($line, 0, $colon)));
+            $value = substr($line, $colon + 1);
+            if (str_starts_with($value, ':')) {
+                $value = self::decodeBase64(trim(substr($value, 1)));
+            } else {
+                $value = ltrim($value);
+            }
+            $current[$key][] = $value;
+            $last = $key;
+        }
+        if ([] !== $current) {
+            $records[] = $current;
+        }
+
+        return $records;
+    }
+
+    private static function decodeBase64(string $value): string
+    {
+        $value = preg_replace('/\s+/', '', $value) ?? $value;
+        $rest = strlen($value) % 4;
+        if (0 !== $rest) {
+            $value .= str_repeat('=', 4 - $rest);
+        }
+        $decoded = base64_decode($value, true);
+
+        return is_string($decoded) ? $decoded : '';
+    }
+
+    /**
+     * @param array<string, mixed> $command
+     *
+     * @return array{status: string, result: string}
+     */
+    private function configFile(string $type, array $command): array
+    {
+        $args = is_array($command['args'] ?? null) ? $command['args'] : [];
+        $which = (string) ($args['file'] ?? '');
+        $path = match ($which) {
+            'smb' => $this->config->smbConf,
+            'shares' => $this->config->sharesConf,
+            default => '',
+        };
+        if ('' === $path) {
+            return ['status' => 'rejected', 'result' => 'Файл не из списка'];
+        }
+        if ('conf.read' === $type) {
+            if (!is_file($path)) {
+                return ['status' => 'succeeded', 'result' => ''];
+            }
+            $text = file_get_contents($path);
+
+            return ['status' => is_string($text) ? 'succeeded' : 'failed', 'result' => is_string($text) ? $text : 'Файл не читается'];
+        }
+        $content = (string) ($args['content'] ?? '');
+        if (strlen($content) > 1_000_000 || str_contains($content, "\0")) {
+            return ['status' => 'rejected', 'result' => 'Текст конфига заполнен неверно'];
+        }
+        $dir = dirname($path);
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            return ['status' => 'failed', 'result' => 'Каталог конфига не создаётся'];
+        }
+        $previous = is_file($path) ? file_get_contents($path) : null;
+        if (false === file_put_contents($path, $content)) {
+            return ['status' => 'failed', 'result' => 'Файл не записался'];
+        }
+        $testparm = is_file('/usr/bin/testparm') ? '/usr/bin/testparm' : 'testparm';
+        $check = $this->runProcess($testparm, ['-s', $this->config->smbConf], null);
+        if (0 !== $check['code']) {
+            if (is_string($previous)) {
+                file_put_contents($path, $previous);
+            } else {
+                @unlink($path);
+            }
+
+            return ['status' => 'failed', 'result' => '' !== $check['text'] ? $check['text'] : 'testparm отклонил конфиг'];
+        }
+
+        return ['status' => 'succeeded', 'result' => 'Сохранено'];
     }
 
     /**
@@ -568,7 +701,7 @@ final class Executor
      *
      * @return array{code: int, text: string}
      */
-    private function runProcess(string $binary, array $args, ?string $stdin): array
+    private function runProcess(string $binary, array $args, ?string $stdin, int $limit = 200_000): array
     {
         $descriptor = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
         $process = @proc_open(array_merge([$binary], $args), $descriptor, $pipes);
@@ -585,8 +718,8 @@ final class Executor
         fclose($pipes[2]);
         $code = proc_close($process);
         $text = trim((string) $output."\n".(string) $error);
-        if (strlen($text) > 200_000) {
-            $text = substr($text, 0, 200_000);
+        if (strlen($text) > $limit) {
+            $text = substr($text, 0, $limit);
         }
 
         return ['code' => $code, 'text' => $text];

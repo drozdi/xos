@@ -75,6 +75,19 @@ class SambaServer
     #[ORM\Column(name: 'updated_at', type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $updatedAt = null;
 
+    /** @var array<string, mixed>|null */
+    #[ORM\Column(name: 'directory_snapshot', type: Types::JSON, nullable: true)]
+    private ?array $directorySnapshot = null;
+
+    #[ORM\Column(name: 'directory_synced_at', type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $directorySyncedAt = null;
+
+    #[ORM\Column(name: 'agent_url', length: 255, nullable: true)]
+    private ?string $agentUrl = null;
+
+    #[ORM\Column(name: 'agent_token', type: Types::TEXT, nullable: true)]
+    private ?string $agentToken = null;
+
     public function __construct(User $owner)
     {
         $this->owner = $owner;
@@ -244,6 +257,60 @@ class SambaServer
     public function setProtocolVersion(?string $protocolVersion): self
     {
         $this->protocolVersion = $protocolVersion;
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getDirectorySnapshot(): ?array
+    {
+        return $this->directorySnapshot;
+    }
+
+    /**
+     * @param array<string, mixed>|null $directorySnapshot
+     */
+    public function setDirectorySnapshot(?array $directorySnapshot): self
+    {
+        $this->directorySnapshot = $directorySnapshot;
+
+        return $this;
+    }
+
+    public function getDirectorySyncedAt(): ?\DateTimeInterface
+    {
+        return $this->directorySyncedAt;
+    }
+
+    public function setDirectorySyncedAt(?\DateTimeInterface $directorySyncedAt): self
+    {
+        $this->directorySyncedAt = $directorySyncedAt;
+
+        return $this;
+    }
+
+    public function getAgentUrl(): ?string
+    {
+        return $this->agentUrl;
+    }
+
+    public function setAgentUrl(?string $agentUrl): self
+    {
+        $this->agentUrl = $agentUrl;
+
+        return $this;
+    }
+
+    public function getAgentToken(): ?string
+    {
+        return $this->agentToken;
+    }
+
+    public function setAgentToken(?string $agentToken): self
+    {
+        $this->agentToken = $agentToken;
 
         return $this;
     }
