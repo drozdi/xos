@@ -64,6 +64,28 @@ export const sambaApi = {
 		const { data } = await apiClient.post<unknown>(`/api/samba/servers/${id}/agent-token`);
 		return serverSchema.parse(data);
 	},
+	importMap: async (id: number) => {
+		const { data } = await apiClient.get<unknown>(`/api/samba/servers/${id}/import-map`);
+		return z.object({ user: z.record(z.string(), z.string()), group: z.record(z.string(), z.string()) }).parse(data);
+	},
+	saveImportMap: async (id: number, map: { user: Record<string, string>; group: Record<string, string> }) => {
+		const { data } = await apiClient.put<unknown>(`/api/samba/servers/${id}/import-map`, map);
+		return z.object({ user: z.record(z.string(), z.string()), group: z.record(z.string(), z.string()) }).parse(data);
+	},
+	importFromMain: async (
+		id: number,
+		payload: {
+			user_ids: number[];
+			group_ids: number[];
+			ou_ids: number[];
+			seen_user_ids: number[];
+			seen_group_ids: number[];
+			seen_ou_ids: number[];
+		},
+	) => {
+		const { data } = await apiClient.post<unknown>(`/api/samba/servers/${id}/import`, payload);
+		return z.object({ queued: z.number(), skipped: z.array(z.string()) }).parse(data);
+	},
 	directory: async (id: number) => {
 		const { data } = await apiClient.get<unknown>(`/api/samba/servers/${id}/directory`);
 		return z

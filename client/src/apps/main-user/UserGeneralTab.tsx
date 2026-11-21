@@ -124,6 +124,12 @@ export function UserGeneralTab({
 				disabled={readOnly}
 				onChange={(e) => setField('active', e.currentTarget.checked)}
 			/>
+			<Switch
+				label="В домене"
+				checked={Boolean(data.domain)}
+				disabled={readOnly}
+				onChange={(e) => setField('domain', e.currentTarget.checked)}
+			/>
 			<DateTimeField
 				label="Активен с"
 				value={data.activeFrom as string | null | undefined}

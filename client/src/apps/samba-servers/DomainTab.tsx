@@ -9,6 +9,7 @@ import { useAppManager } from '@/core/appManager/useAppManager';
 import { confirmAction } from '@/core/confirm';
 
 import { runCommand } from './domainCommand';
+import { ImportTab } from './ImportTab';
 
 export type DomainEntry = { name: string; cn?: string; dn: string; displayName?: string; description?: string };
 
@@ -227,6 +228,7 @@ export function DomainTab({ server, fill = false }: { server: SambaServer; fill?
 						<Tabs.Tab value="users">Пользователи ({tree.users.length})</Tabs.Tab>
 						<Tabs.Tab value="groups">Группы ({tree.groups.length})</Tabs.Tab>
 						<Tabs.Tab value="folder">В папке</Tabs.Tab>
+						{server.can_manage ? <Tabs.Tab value="import">Импорт</Tabs.Tab> : null}
 					</Tabs.List>
 					<TextInput
 						mt="sm"
@@ -338,6 +340,11 @@ export function DomainTab({ server, fill = false }: { server: SambaServer; fill?
 							</Stack>
 						</Group>
 					</Tabs.Panel>
+					{server.can_manage ? (
+						<Tabs.Panel value="import" pt="sm" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+							<ImportTab serverId={server.id} ready={Boolean(snapshot.data?.synced_at)} />
+						</Tabs.Panel>
+					) : null}
 				</Tabs>
 			) : null}
 		</Stack>

@@ -88,6 +88,10 @@ class SambaServer
     #[ORM\Column(name: 'agent_token', type: Types::TEXT, nullable: true)]
     private ?string $agentToken = null;
 
+    /** @var array<string, mixed>|null */
+    #[ORM\Column(name: 'import_map', type: Types::JSON, nullable: true)]
+    private ?array $importMap = null;
+
     public function __construct(User $owner)
     {
         $this->owner = $owner;
@@ -311,6 +315,24 @@ class SambaServer
     public function setAgentToken(?string $agentToken): self
     {
         $this->agentToken = $agentToken;
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getImportMap(): ?array
+    {
+        return $this->importMap;
+    }
+
+    /**
+     * @param array<string, mixed>|null $importMap
+     */
+    public function setImportMap(?array $importMap): self
+    {
+        $this->importMap = $importMap;
 
         return $this;
     }

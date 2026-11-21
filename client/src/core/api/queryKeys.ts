@@ -182,6 +182,7 @@ export const queryKeys = {
 		servers: ['samba', 'servers'] as const,
 		server: (id: number) => ['samba', 'server', id] as const,
 		directory: (id: number) => ['samba', 'directory', id] as const,
+		importMap: (id: number) => ['samba', 'import-map', id] as const,
 	},
 	network: {
 		egress: ['network', 'egress'] as const,

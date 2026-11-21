@@ -2,15 +2,16 @@
 
 namespace Main\Entity;
 
-use Main\Repository\OURepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Main\Repository\OURepository;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OURepository::class)]
 #[ORM\Table(name: 'main_ou')]
 #[ORM\HasLifecycleCallbacks]
-class OU {
+class OU
+{
     #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;
 
@@ -32,14 +33,17 @@ class OU {
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(type: Types::BOOLEAN, options: ["default" => false])]
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
     private ?bool $isTutors = false;
 
-    #[ORM\Column(type: Types::INTEGER, options: ["default" => 100])]
+    #[ORM\Column(name: 'domain', type: Types::BOOLEAN, options: ['default' => false])]
+    private ?bool $domain = false;
+
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 100])]
     private ?int $sort = 100;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, onDelete: "SET NULL")]
+    #[ORM\JoinColumn(name: 'user_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     #[Assert\NotNull(
         message: 'Ответственный должен быть указан'
     )]
@@ -55,6 +59,7 @@ class OU {
         if (null != $format && null != $this->xTimestamp) {
             return $this->xTimestamp->format($format);
         }
+
         return $this->xTimestamp;
     }
 
@@ -106,6 +111,18 @@ class OU {
         return $this->isTutors;
     }
 
+    public function isDomain(): bool
+    {
+        return true === $this->domain;
+    }
+
+    public function setDomain(bool $domain): self
+    {
+        $this->domain = $domain;
+
+        return $this;
+    }
+
     public function setIsTutors(bool $isTutors): self
     {
         $this->isTutors = $isTutors;
@@ -137,15 +154,18 @@ class OU {
         return $this;
     }
 
-    public function __toString(): string {
-        return sprintf("%s (%s)", $this->name, $this->code);
+    public function __toString(): string
+    {
+        return sprintf('%s (%s)', $this->name, $this->code);
     }
 
-    public function prePersist (): void {
+    public function prePersist(): void
+    {
         $this->xTimestamp = new \DateTime();
     }
 
-    public function preUpdate (): void {
+    public function preUpdate(): void
+    {
         $this->xTimestamp = new \DateTime();
     }
 }

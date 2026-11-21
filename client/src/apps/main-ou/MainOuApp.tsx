@@ -93,6 +93,12 @@ export default function MainOuApp() {
 						onChange={(e) => setField('description', e.currentTarget.value)}
 					/>
 					<Switch
+						label="В домене"
+						checked={Boolean(data.domain)}
+						disabled={readOnly}
+						onChange={(e) => setField('domain', e.currentTarget.checked)}
+					/>
+					<Switch
 						label="Руководители"
 						checked={Boolean(data.is_tutors)}
 						disabled={readOnly}

@@ -74,6 +74,17 @@ final class SambaCommandService
      */
     public function enqueue(User $actor, int $serverId, array $data): array
     {
+        $command = $this->stage($actor, $serverId, $data);
+        $this->agentLink->nudge($command);
+
+        return ['id' => (int) $command->getId(), 'status' => $command->getStatus()];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function stage(User $actor, int $serverId, array $data): SambaCommand
+    {
         $server = $this->visible($actor, $serverId);
         $type = (string) ($data['type'] ?? '');
         if (in_array($type, self::READ, true)) {
@@ -107,9 +118,8 @@ final class SambaCommandService
         $command = new SambaCommand($server, $actor, mb_substr($label, 0, 255), $type, $args, $sealed);
         $this->entityManager->persist($command);
         $this->entityManager->flush();
-        $this->agentLink->nudge($command);
 
-        return ['id' => (int) $command->getId(), 'status' => $command->getStatus()];
+        return $command;
     }
 
     /**
@@ -148,6 +158,14 @@ final class SambaCommandService
             'result' => $command->getResult(),
             'created_at' => $command->getCreatedAt()->format(\DateTimeInterface::ATOM),
         ];
+    }
+
+    public function managed(User $actor, int $id): SambaServer
+    {
+        $server = $this->visible($actor, $id);
+        $this->assertRight($actor, $server, SambaRights::MANAGE);
+
+        return $server;
     }
 
     private function visible(User $actor, int $id): SambaServer

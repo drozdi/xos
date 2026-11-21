@@ -6,6 +6,7 @@ use App\Attribute\Access;
 use Main\Entity\User;
 use Samba\Service\SambaAgentService;
 use Samba\Service\SambaCommandService;
+use Samba\Service\SambaImportService;
 use Samba\Service\SambaServerManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,6 +24,7 @@ class SambaServerController extends AbstractController
         private readonly SambaServerManager $servers,
         private readonly SambaAgentService $agents,
         private readonly SambaCommandService $commands,
+        private readonly SambaImportService $import,
     ) {
     }
 
@@ -103,6 +105,27 @@ class SambaServerController extends AbstractController
 
             return $this->servers->transfer($actor, $id, (int) ($data['user_id'] ?? 0));
         });
+    }
+
+    #[Route('/{id}/import-map', name: 'import_map_get', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Access('samba', checkScopes: false)]
+    public function importMap(int $id, #[CurrentUser] ?User $user): JsonResponse
+    {
+        return $this->call($user, fn (User $actor): array => $this->import->map($actor, $id));
+    }
+
+    #[Route('/{id}/import-map', name: 'import_map_save', methods: ['PUT'], requirements: ['id' => '\d+'])]
+    #[Access('samba', checkScopes: false)]
+    public function saveImportMap(int $id, Request $request, #[CurrentUser] ?User $user): JsonResponse
+    {
+        return $this->call($user, fn (User $actor): array => $this->import->saveMap($actor, $id, $request->toArray()));
+    }
+
+    #[Route('/{id}/import', name: 'import', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Access('samba', checkScopes: false)]
+    public function import(int $id, Request $request, #[CurrentUser] ?User $user): JsonResponse
+    {
+        return $this->call($user, fn (User $actor): array => $this->import->run($actor, $id, $request->toArray()));
     }
 
     #[Route('/{id}/directory', name: 'directory', methods: ['GET'], requirements: ['id' => '\d+'])]

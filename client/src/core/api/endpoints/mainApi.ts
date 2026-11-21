@@ -75,6 +75,7 @@ export const userListItemSchema = z.object({
 	id: z.number(),
 	login: z.string().nullable().transform((value) => value ?? ''),
 	alias: z.string().nullable().transform((value) => value ?? ''),
+	domain: z.boolean().optional(),
 	ou: z.string().nullable().transform((value) => value ?? ''),
 	tutor: z.string().nullable().transform((value) => value ?? ''),
 });
@@ -107,6 +108,7 @@ export const userDetailSchema = z
 		second_name: z.string().nullable().optional(),
 		patronymic: z.string().nullable().optional(),
 		active: z.boolean().optional(),
+		domain: z.boolean().optional(),
 		ou_id: z.number().nullable().optional(),
 		parent_id: z.number().nullable().optional(),
 		phone: z.string().nullable().optional(),
@@ -171,6 +173,8 @@ export const groupListItemSchema = z.object({
 	name: z.string(),
 	sort: z.number(),
 	ou: z.string(),
+	ou_id: z.number().nullable().optional(),
+	domain: z.boolean().optional(),
 	tutor: z.string(),
 });
 
@@ -218,6 +222,7 @@ export const groupDetailSchema = z
 		parent_id: z.number().nullable().optional(),
 		user_id: z.number().nullable().optional(),
 		active: z.boolean().optional(),
+		domain: z.boolean().optional(),
 		anonymous: z.boolean().optional(),
 		description: z.string().nullable().optional(),
 		activeFrom: z.string().nullable().optional(),
@@ -255,6 +260,7 @@ export const ouListItemSchema = z.object({
 	description: z.string().nullable().optional(),
 	sort: z.number(),
 	is_tutors: z.number(),
+	domain: z.boolean().optional(),
 	user_id: z.number(),
 	tutor: z.string(),
 });
@@ -266,6 +272,7 @@ export const ouDetailSchema = z.object({
 	description: z.string().nullable().optional(),
 	sort: z.number().nullable().optional(),
 	is_tutors: z.boolean().optional(),
+	domain: z.boolean().optional(),
 	user_id: z.number().nullable().optional(),
 	x_timestamp: z.union([z.string(), z.number()]).nullable().optional(),
 });
@@ -276,6 +283,7 @@ export type OuDetail = z.infer<typeof ouDetailSchema>;
 export const ouSelectItemSchema = z.object({
 	value: z.number(),
 	label: z.string(),
+	domain: z.boolean().optional(),
 });
 
 export type OuSelectItem = z.infer<typeof ouSelectItemSchema>;

@@ -1,39 +1,27 @@
 <?php
 
-
 namespace Main\Controller;
-
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\CurrentUser;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 use App\Http\ApiResponse;
 use App\Security\UserScopeResolver;
-use Main\Entity\OU;
 use Main\Entity\User;
-use Main\Entity\Group;
-use Main\Entity\Claimant;
-use Main\Security\MainOuAccessMessages;
-
 use Main\Repository\OURepository;
-use Main\Repository\UserRepository;
-use Main\Repository\GroupRepository;
-use Main\Repository\ClaimantRepository;
-
+use Main\Security\MainOuAccessMessages;
 use Main\Service\AuditLogger;
 use Main\Service\MainManager;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 #[Route('/api/main/ou', name: 'api_main_ou_')]
-class OUController extends AbstractController {
+class OUController extends AbstractController
+{
     #[Route('/list', name: 'list')]
-    public function list (
+    public function list(
         Request $request,
         OURepository $OURepository,
         UserScopeResolver $userScopeResolver,
@@ -44,20 +32,20 @@ class OUController extends AbstractController {
         }
 
         $req = array_merge([
-            't' => "list",
+            't' => 'list',
             'size' => -1,
             'offset' => 1,
             'sortBy' => [[
-                'key' => "sort",
-                'order' => "ASC",
+                'key' => 'sort',
+                'order' => 'ASC',
             ], [
-                'key' => "name",
-                'order' => "ASC",
+                'key' => 'name',
+                'order' => 'ASC',
             ]],
-            'filters' => []
+            'filters' => [],
         ], $request->toArray());
-        $req['limit'] = (int)$req['limit'];
-        $req['offset'] = (int)$req['offset'];
+        $req['limit'] = (int) $req['limit'];
+        $req['offset'] = (int) $req['offset'];
         $totalItems = $OURepository->cnt($req['filters']);
         $query = $OURepository->getQueryBuilder($req['filters'], $req['sortBy'], $req['limit'], $req['offset']);
         $query = $query->getQuery();
@@ -71,18 +59,20 @@ class OUController extends AbstractController {
                         'code' => $ou->getCode(),
                         'description' => $ou->getDescription(),
                         'sort' => $ou->getSort(),
-                        'is_tutors' => $ou->isIsTutors()? 1: 0,
-                        'user_id' => $ou->getUser()? $ou->getUser()->getId(): 0,
-                        'tutor' => (string)$ou->getUser(),
+                        'is_tutors' => $ou->isIsTutors() ? 1 : 0,
+                        'domain' => $ou->isDomain(),
+                        'user_id' => $ou->getUser() ? $ou->getUser()->getId() : 0,
+                        'tutor' => (string) $ou->getUser(),
                     ];
                 }
                 break;
             case 'select':
                 foreach ($query->execute() as $ou) {
-                    $items[] = array(
+                    $items[] = [
                         'value' => $ou->getId(),
-                        'label' => (string)$ou,
-                    );
+                        'label' => (string) $ou,
+                        'domain' => $ou->isDomain(),
+                    ];
                 }
                 break;
             default:
@@ -92,15 +82,17 @@ class OUController extends AbstractController {
                 }
                 break;
         }
-        $start = $req['limit']*($req['offset']-1);
-        $end = ($req['limit'] > 0? $req['limit']*$req['offset']: $totalItems)-1;
-        $end = $end > $totalItems-1? $totalItems - 1: $end;
+        $start = $req['limit'] * ($req['offset'] - 1);
+        $end = ($req['limit'] > 0 ? $req['limit'] * $req['offset'] : $totalItems) - 1;
+        $end = $end > $totalItems - 1 ? $totalItems - 1 : $end;
+
         return $this->json($items, Response::HTTP_OK, [
-            'Content-Range' => sprintf("items %d-%d/%d", $start, $end, $totalItems)
+            'Content-Range' => sprintf('items %d-%d/%d', $start, $end, $totalItems),
         ]);
     }
+
     #[Route('/', name: 'create', methods: ['POST'])]
-    public function create (
+    public function create(
         Request $request,
         MainManager $mainManager,
         UserScopeResolver $userScopeResolver,
@@ -112,13 +104,14 @@ class OUController extends AbstractController {
         }
 
         $req = $request->toArray();
-        $req['id'] = (int)$req['id'];
+        $req['id'] = (int) $req['id'];
         $mainManager->getEntityManager()->getConnection()->beginTransaction();
         try {
             $ou = $mainManager->ou($req['id'], $req);
             $mainManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $mainManager->getEntityManager()->getConnection()->rollBack();
+
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
         $auditLogger->log(
@@ -129,10 +122,12 @@ class OUController extends AbstractController {
             ['code' => $ou->getCode(), 'name' => $ou->getName()],
             $user,
         );
+
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
+
     #[Route('/{id}', name: 'update', methods: ['PUT'])]
-    public function update (
+    public function update(
         int $id,
         Request $request,
         MainManager $mainManager,
@@ -156,6 +151,7 @@ class OUController extends AbstractController {
             $mainManager->getEntityManager()->getConnection()->commit();
         } catch (ValidationFailedException $e) {
             $mainManager->getEntityManager()->getConnection()->rollBack();
+
             return $this->json($mainManager->parseViolation($e->getViolations()), Response::HTTP_BAD_REQUEST);
         }
         $auditLogger->log(
@@ -166,10 +162,12 @@ class OUController extends AbstractController {
             ['fields' => array_keys($req)],
             $user,
         );
+
         return $this->json($ou->getId(), Response::HTTP_CREATED);
     }
+
     #[Route('/{id}', name: 'detail', methods: ['GET', 'HEAD'])]
-    public function detail (
+    public function detail(
         int $id,
         MainManager $mainManager,
         OURepository $OURepository,
@@ -193,11 +191,13 @@ class OUController extends AbstractController {
             'sort' => $ou->getSort(),
             'x_timestamp' => $ou->getXTimestamp('Y-m-d H:m:s'),
             'is_tutors' => $ou->isIsTutors(),
-            'user_id' => $ou->getUser()? $ou->getUser()->getId(): null,
+            'domain' => $ou->isDomain(),
+            'user_id' => $ou->getUser() ? $ou->getUser()->getId() : null,
         ]);
     }
+
     #[Route('/{id}', name: 'remove', methods: ['DELETE'])]
-    public function remove (
+    public function remove(
         int $id,
         OURepository $OURepository,
         UserScopeResolver $userScopeResolver,
@@ -219,7 +219,7 @@ class OUController extends AbstractController {
             'sort' => $ou->getSort(),
             'x_timestamp' => $ou->getXTimestamp('Y-m-d H:m:s'),
             'is_tutors' => $ou->isIsTutors(),
-            'user_id' => $ou->getUser()? $ou->getUser()->getId(): null,
+            'user_id' => $ou->getUser() ? $ou->getUser()->getId() : null,
         ];
         $OURepository->remove($ou, true);
         $auditLogger->log(
@@ -230,6 +230,7 @@ class OUController extends AbstractController {
             $arOu,
             $user,
         );
+
         return $this->json($arOu);
     }
 }

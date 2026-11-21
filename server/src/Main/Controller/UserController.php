@@ -81,6 +81,7 @@ class UserController extends AbstractController
                         'id' => $userEntity->getId(),
                         'login' => $userEntity->getLogin() ?? '',
                         'alias' => $userEntity->getAlias() ?? '',
+                        'domain' => $userEntity->isDomain(),
                         'ou' => (string) $userEntity->getOu(),
                         'tutor' => (string) $userEntity->getParent(),
                     ];
@@ -229,6 +230,7 @@ class UserController extends AbstractController
             'last_login' => $userEntity->getLastLogin('Y-m-d H:m:s'),
             'last_ip' => $userEntity->getLastIp(),
             'active' => $userEntity->isActive(),
+            'domain' => $userEntity->isDomain(),
             'activeFrom' => $userEntity->getActiveFrom('Y-m-d H:m:s'),
             'activeTo' => $userEntity->getActiveTo('Y-m-d H:m:s'),
             'loocked ' => $userEntity->isLoocked(),

@@ -85,6 +85,12 @@ export function GroupGeneralTab({
 				onChange={(e) => setField('description', e.currentTarget.value)}
 			/>
 			<Switch
+				label="В домене"
+				checked={Boolean(data.domain)}
+				disabled={readOnly}
+				onChange={(e) => setField('domain', e.currentTarget.checked)}
+			/>
+			<Switch
 				label="Активна"
 				checked={Boolean(data.active)}
 				disabled={readOnly}
