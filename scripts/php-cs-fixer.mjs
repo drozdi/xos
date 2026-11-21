@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 const candidates = [
 	process.env.PHP_BIN,
 	'php',
-	'C:\\OSPanel\\modules\\PHP-8.4\\php.exe',
+	'C:\\OSPanel\\modules\\PHP-8.3\\php.exe',
 ].filter((candidate) => typeof candidate === 'string' && candidate !== '');
 
 function canRun(bin) {
