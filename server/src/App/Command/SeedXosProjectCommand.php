@@ -1784,7 +1784,7 @@ MD,
                 'title' => 'Samba',
                 'notePath' => 'Notes/Apps/Samba.md',
                 'labels' => ['samba'],
-                'cardDescription' => "AD DC + агент: домен и шары.\n\nЗаметка: [[Samba]] · API `/api/samba/`",
+                'cardDescription' => "AD DC, агент, снимок домена, шары, импорт из Main.\n\nЗаметка: [[Samba]] · API `/api/samba/`",
                 'body' => <<<'MD'
 # Samba
 
@@ -1792,11 +1792,11 @@ Claimant `samba` · `ROLE_SAMBA` · `server/src/Samba/` · app `samba-servers` �
 
 ## Назначение
 
-Карточки DC, bundle установки, очередь команд, дерево домена и шары. CA: `SAMBA_AGENT_CA_FILE`. Nginx: `docs/samba/nginx.md`.
+Карточки DC, адрес и токен агента, снимок каталога, шары и импорт отмеченных пользователей, групп и подразделений Main. CA: `SAMBA_AGENT_CA_FILE`. Nginx: `docs/samba/nginx.md`.
 
 Документы: `docs/samba/README.md`, `TZ.md`, `API.md`
 
-← [[Home]] · [[AppsCatalog]]
+← [[Home]] · [[Main]] · [[AppsCatalog]]
 MD,
             ],
             [

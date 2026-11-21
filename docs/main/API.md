@@ -14,7 +14,7 @@
 | POST | `/api/main/user/select` | Выбор пользователя |
 | POST | `/api/main/user/` | Создать |
 | GET, HEAD | `/api/main/user/{id}` | Карточка |
-| PUT | `/api/main/user/{id}` | Изменить, включая пароль и роли |
+| PUT | `/api/main/user/{id}` | Изменить, включая пароль, роли и `domain` |
 | DELETE | `/api/main/user/{id}` | Удалить |
 
 ## Группы
@@ -25,7 +25,7 @@
 | ANY | `/api/main/group/filter` | Фильтр |
 | POST | `/api/main/group/` | Создать |
 | GET, HEAD | `/api/main/group/{id}` | Карточка |
-| PUT | `/api/main/group/{id}` | Изменить |
+| PUT | `/api/main/group/{id}` | Изменить, включая `domain` |
 | DELETE | `/api/main/group/{id}` | Удалить |
 
 ## Подразделения
@@ -36,7 +36,7 @@
 | POST | `/api/main/ou/select` | Выбор для селекта |
 | POST | `/api/main/ou/` | Создать |
 | GET, HEAD | `/api/main/ou/{id}` | Карточка |
-| PUT | `/api/main/ou/{id}` | Изменить |
+| PUT | `/api/main/ou/{id}` | Изменить, включая `domain` |
 | DELETE | `/api/main/ou/{id}` | Удалить |
 
 ## Права и журнал
