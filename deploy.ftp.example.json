@@ -1,0 +1,15 @@
+{
+  "host": "ftp.example.com",
+  "port": 21,
+  "user": "login",
+  "password": "",
+  "remote": "/public_html",
+  "passive": true,
+  "ssl": false,
+  "paths": [
+    "client/public",
+    "server/migrations",
+    "server/src",
+    "server/agent"
+  ]
+}

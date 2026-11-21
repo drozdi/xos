@@ -87,7 +87,7 @@ export default defineConfig(({ mode }) => ({
 			}),
 		mode === 'analyze' &&
 			visualizer({
-				filename: 'dist/stats.html',
+				filename: 'public/stats.html',
 				gzipSize: true,
 				brotliSize: true,
 				open: false,
@@ -125,7 +125,10 @@ export default defineConfig(({ mode }) => ({
 			'/uploads': 'http://localhost:8000',
 		},
 	},
+	publicDir: 'static',
 	build: {
+		outDir: 'public',
+		emptyOutDir: true,
 		target: 'es2022',
 		modulePreload: false,
 		rollupOptions: {

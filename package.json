@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "deploy": "node scripts/deploy-ftp.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",
